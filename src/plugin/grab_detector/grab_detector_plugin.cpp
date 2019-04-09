@@ -4,7 +4,8 @@
 #include <QTimer>
 #include <QMessageBox>
 #include <QThread>
-#include <cv.h>
+//#include <cv.h>
+#include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include <sstream>
 #include <iostream>
@@ -138,7 +139,8 @@ namespace bias
             foundStream << "object found";
         }
         cv::Mat currentImageBGR;
-        cv::cvtColor(currentImage, currentImageBGR, CV_GRAY2BGR);
+        //cv::cvtColor(currentImage, currentImageBGR, CV_GRAY2BGR);
+        cv::cvtColor(currentImage, currentImageBGR, cv::COLOR_GRAY2BGR);
         cv::rectangle(currentImageBGR, boxRect,boxColor, boxLineWidth);
 
         double fontScale = 1.0;
@@ -146,9 +148,11 @@ namespace bias
         int baseline = 0;
 
 
-        cv::Size textSize = cv::getTextSize(foundStream.str(), CV_FONT_HERSHEY_SIMPLEX, fontScale, thickness, &baseline);
+        //cv::Size textSize = cv::getTextSize(foundStream.str(), CV_FONT_HERSHEY_SIMPLEX, fontScale, thickness, &baseline);
+        cv::Size textSize = cv::getTextSize(foundStream.str(), cv::FONT_HERSHEY_SIMPLEX, fontScale, thickness, &baseline);
         cv::Point textPoint(currentImage.cols/2 - textSize.width/2, textSize.height+baseline);
-        cv::putText(currentImageBGR, foundStream.str(), textPoint, CV_FONT_HERSHEY_SIMPLEX, fontScale, boxColor,thickness);
+        //cv::putText(currentImageBGR, foundStream.str(), textPoint, CV_FONT_HERSHEY_SIMPLEX, fontScale, boxColor,thickness);
+        cv::putText(currentImageBGR, foundStream.str(), textPoint, cv::FONT_HERSHEY_SIMPLEX, fontScale, boxColor,thickness);
         return currentImageBGR;
     }
 

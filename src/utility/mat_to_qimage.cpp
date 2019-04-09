@@ -2,6 +2,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+
 namespace bias
 {
     static QVector<QRgb> colorTable = createColorTable();
@@ -25,7 +26,8 @@ namespace bias
         else if (mat.type()==CV_16UC1)
         {
             cv::Mat matBGR = cv::Mat(mat.size(), CV_8UC3, cv::Scalar(0,0,0));
-            cvtColor(mat,matBGR,CV_GRAY2BGR);
+            //cvtColor(mat,matBGR,CV_GRAY2BGR);
+            cvtColor(mat, matBGR, cv::COLOR_GRAY2BGR);
             const uchar *qImageBuffer = (const uchar*)mat.data;
             QImage img = QImage(
                     qImageBuffer, 
