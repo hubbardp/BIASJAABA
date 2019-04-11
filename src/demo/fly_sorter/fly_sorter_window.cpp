@@ -19,6 +19,7 @@
 #include <list>
 #include <random>
 #include <cmath>
+#include <opencv2/imgproc/imgproc.hpp>
 
 
 // Constants
@@ -497,7 +498,7 @@ void FlySorterWindow::updateDisplayOnTimer()
                     4.0,
                     cv::Scalar(0,0,255),
                     2,
-                    CV_AA
+                    cv::LINE_AA
                     );
         }
     }

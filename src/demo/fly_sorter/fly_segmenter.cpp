@@ -42,7 +42,8 @@ FlySegmenter::FlySegmenter(FlySegmenterParam param)
     {
         cv::namedWindow(
                 "FlySegmenter",
-                CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED
+                //CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED
+                cv::WINDOW_AUTOSIZE | cv::WINDOW_KEEPRATIO | cv::WINDOW_GUI_EXPANDED
                 );
     }
 }
@@ -79,7 +80,8 @@ FlySegmenterData FlySegmenter::segment(BlobFinderData blobFinderData)
             cv::cvtColor(
                     blobData.boundingImage,
                     boundingImageBGR,
-                    CV_GRAY2BGR
+                    //CV_GRAY2BGR
+                    cv::COLOR_GRAY2BGR
                     );
         }
         else

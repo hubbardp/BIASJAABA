@@ -220,8 +220,8 @@ void ImageGrabber::runCaptureFromFile()
     int fourcc;
     try
     {
-        numFrames = (unsigned int)(fileCapture.get(CV_CAP_PROP_FRAME_COUNT));
-        fourcc = int(fileCapture.get(CV_CAP_PROP_FOURCC));
+        numFrames = (unsigned int)(fileCapture.get(cv::CAP_PROP_FRAME_COUNT));
+        fourcc = int(fileCapture.get(cv::CAP_PROP_FOURCC));
     }
     catch(cv::Exception& exception)
     {
