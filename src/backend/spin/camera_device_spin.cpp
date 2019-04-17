@@ -21,9 +21,10 @@
 
 namespace bias {
 
+    constexpr double CameraDevice_spin::MinAllowedShutterUs;
+    constexpr double CameraDevice_spin::MaxAllowedShutterUs;
 
     CameraDevice_spin::CameraDevice_spin() : CameraDevice() {}
-
 
     CameraDevice_spin::CameraDevice_spin(Guid guid) : CameraDevice(guid)
     {
@@ -1199,6 +1200,7 @@ namespace bias {
 
     PropertyInfo CameraDevice_spin::getPropertyInfoShutter()
     {
+
         EnumNode_spin exposureAutoNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("ExposureAuto");
         FloatNode_spin exposureTimeNode = nodeMapCamera_.getNodeByName<FloatNode_spin>("ExposureTime");
 
@@ -1221,8 +1223,8 @@ namespace bias {
             {
                 propInfo.minValue = exposureTimeNode.minIntValue();
                 propInfo.maxValue = exposureTimeNode.maxIntValue();
-                propInfo.minAbsoluteValue = std::max(exposureTimeNode.minValue(), MinAllowedShutterUs);
-                propInfo.maxAbsoluteValue = std::min(exposureTimeNode.maxValue(), MaxAllowedShutterUs);
+                propInfo.minAbsoluteValue = std::max(exposureTimeNode.minValue(), CameraDevice_spin::MinAllowedShutterUs);
+                propInfo.maxAbsoluteValue = std::min(exposureTimeNode.maxValue(), CameraDevice_spin::MaxAllowedShutterUs);
                 propInfo.haveUnits = !exposureTimeNode.unit().empty();
                 propInfo.units =  exposureTimeNode.unit();
                 propInfo.unitsAbbr = exposureTimeNode.unit();

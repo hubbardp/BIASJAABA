@@ -89,8 +89,9 @@ int main(int argc, char *argv[])
         if (false)
         {
             camDev.startCapture();
-            cv::namedWindow("preview", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED); 
-
+            //cv::namedWindow("preview", CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED); 
+            cv::namedWindow("preview", cv::WINDOW_AUTOSIZE | cv::WINDOW_KEEPRATIO | cv::WINDOW_GUI_EXPANDED);
+ 
             int cnt = 0;
             while (cnt < 1000)
             {

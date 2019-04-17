@@ -21,6 +21,17 @@ if (with_spin)
 endif()
 
 
+if (with_video)
+    project(bias_test_video)
+
+    add_EXECUTABLE(
+                  test_video 
+                  test_video.cpp) 
+    target_link_libraries(test_video ${bias_ext_link_LIBS} bias_backend_video)
+endif()
+
+
+
 # Serial test
 # ---------------------------------------------------------------------------------------
 #project(bias_test_serial)

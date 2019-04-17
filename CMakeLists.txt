@@ -13,16 +13,18 @@ option(with_qt_gui  "include image acquisition GUI"   ON)
 option(with_fc2     "include the FlyCapture2 backend" OFF)
 option(with_dc1394  "include the libdc1394 backend"   OFF)
 option(with_spin    "include the spin backend"   ON)
-option(with_demos   "include demos" OFF)
-option(with_tests   "include tests" OFF)
+option(with_video    "include the video backend"   ON)
+option(with_demos   "include demos" ON)
+option(with_tests   "include tests" ON)
 
 message(STATUS "Option: with_fc2     = ${with_fc2}")
 message(STATUS "Option: with_dc1394  = ${with_dc1394}")
 message(STATUS "Option: with_qt_gui  = ${with_qt_gui}")
 message(STATUS "Option: with_demos   = ${with_demos}")
 message(STATUS "Option: with_tests   = ${with_tests}") 
+message(STATUS "Option: with_video   = ${with_video}")
 
-if( NOT( with_fc2 OR with_dc1394 OR with_spin) )
+if( NOT( with_fc2 OR with_dc1394 OR with_spin OR with_video) )
     message(FATAL_ERROR "their must be at least one camera backend")
 endif()
 
@@ -66,17 +68,32 @@ if(with_qt_gui)
 
 endif()
 
+find_package(CUDA)
+find_package(HDF5 COMPONENTS CXX)
 
 # Compiler flags
 # -----------------------------------------------------------------------------
 #set(CMAKE_CXX_FLAGS "-std=gnu++0x -O2 -Wall")
-set(CMAKE_CXX_FLAGS "-std=gnu++0x -O2")
+#set(CMAKE_CXX_FLAGS "-std=gnu++0x -O2")
 #set(CMAKE_CXX_FLAGS "-std=gnu++0x -mwindows -O2")
+#set(CMAKE_CXX_FLAGS  "-std=c++11 ")
+
+CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
+list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+
+set(CUDA_NVCC_FLAGS_DEBUG          -Xcompiler -fPIC;-std=c++11;-g;-G CACHE STRING "" FORCE)
+set(CUDA_NVCC_FLAGS_RELEASE        -Xcompiler -fPIC;-std=c++11;--use_fast_math CACHE STRING "" FORCE)
+set(CUDA_NVCC_FLAGS_RELWITHDEBINFO -Xcompiler -fPIC;-std=c++11;--use_fast_math;-g;-lineinfo CACHE STRING "" FORCE)
+set(CUDA_NVCC_FLAGS_MINSIZEREL     -Xcompiler -fPIC;--std=c++11;-use_fast_math CACHE STRING "" FORCE)
+
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_C_STANDARD   99)
+set(CMAKE_CXX_STANDARD 11)
 
 
 # Definitions 
 # -----------------------------------------------------------------------------
- add_definitions(-DDebug)
+add_definitions(-DDebug)
 
 if(with_fc2)
     add_definitions(-DWITH_FC2)
@@ -88,6 +105,10 @@ endif()
 
 if(with_dc1394)
     add_definitions(-DWITH_DC1394)
+endif()
+
+if(with_video)
+    add_definitions(-DWITH_VIDEO)
 endif()
 
 
@@ -102,6 +123,12 @@ include_directories("./src/plugin/base")
 include_directories("./src/plugin/stampede")
 include_directories("./src/plugin/grab_detector")
 include_directories("./src/3rd_party/qcustomplot")
+
+set(HEFFALUMP_SRC_DIR /groups/branson/home/patilr/rutuja_heffalump/heffalump)
+include_directories(${HEFFALUMP_SRC_DIR}/gpu 
+                    ${HEFFALUMP_SRC_DIR}/src 
+                    ${CUDA_INCLUDE_DIRS} 
+                    ${HDF5_INCLUDE_DIRS})
 
 if(with_fc2)
     include_directories(${FlyCapture2_INCLUDE_DIRS})
@@ -118,6 +145,11 @@ if(with_dc1394)
     #include_directories("/home/wbd/local/include")
     #link_directories("/home/wbd/local/lib")
 endif()
+
+if(with_video)
+    include_directories("./src/backend/video")
+endif()
+
 
 
 # External link libraries
@@ -162,12 +194,17 @@ if(with_spin)
     add_subdirectory("src/backend/spin")
 endif()
 
+if(with_video)
+    add_subdirectory("src/backend/video")
+endif()
+
 add_subdirectory("src/facade")
 add_subdirectory("src/utility")
 add_subdirectory("src/plugin/base")
 add_subdirectory("src/plugin/stampede")
 add_subdirectory("src/plugin/grab_detector")
 add_subdirectory("src/3rd_party/qcustomplot")
+add_subdirectory(${HEFFALUMP_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/heffalump_build)
 
 if(with_qt_gui)
     add_subdirectory("src/gui")
@@ -175,6 +212,7 @@ endif()
 
 if (with_demos)
     add_subdirectory("src/demo/fly_sorter")
+    add_subdirectory("src/demo/beh_class")
 endif()
 
 if (with_tests)
