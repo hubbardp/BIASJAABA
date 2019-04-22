@@ -62,6 +62,33 @@ namespace bias {
 
     }
 
+
+    int videoBackend::getImageHeight(cv::VideoCapture& cap) {
+
+        return cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+    
+    }
+
+    int videoBackend::getImageWidth(cv::VideoCapture& cap) {
+
+        return cap.get(cv::CAP_PROP_FRAME_WIDTH);
+
+    }
+
+
+    float videoBackend::getfps(cv::VideoCapture& cap) {
+
+        return cap.get(cv::CAP_PROP_FPS);
+
+    }
+
+
+    int videoBackend::getNumFrames(cv::VideoCapture& cap) {
+
+        return cap.get(cv::CAP_PROP_FRAME_COUNT);
+
+    }
+
 }
 
 #endif

@@ -126,9 +126,12 @@ include_directories("./src/3rd_party/qcustomplot")
 
 set(HEFFALUMP_SRC_DIR /groups/branson/home/patilr/rutuja_heffalump/heffalump)
 include_directories(${HEFFALUMP_SRC_DIR}/gpu 
-                    ${HEFFALUMP_SRC_DIR}/src 
-                    ${CUDA_INCLUDE_DIRS} 
+                    ${HEFFALUMP_SRC_DIR}/src)
+
+if(with_demos) 
+include_directories(${CUDA_INCLUDE_DIRS} 
                     ${HDF5_INCLUDE_DIRS})
+endif()
 
 if(with_fc2)
     include_directories(${FlyCapture2_INCLUDE_DIRS})
@@ -149,7 +152,6 @@ endif()
 if(with_video)
     include_directories("./src/backend/video")
 endif()
-
 
 
 # External link libraries
