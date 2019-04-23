@@ -13,13 +13,14 @@
 
 QString HOGParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOGparam.json";
 QString HOFParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOFparam.json";
-
+QString CropParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/Cropparam.json";
 
 int main(int argc, char* argv[]) {
 
     beh_class classifier;
     classifier.loadHOGParams();
     classifier.loadHOFParams();
+    classifier.loadCropParams();
     // Create video context 
     /*QString vidFile = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi" ;
     bias::videoBackend vid(vidFile) ;
@@ -119,6 +120,38 @@ void beh_class::loadHOFParams() {
 
 }
 
+void beh_class::loadCropParams() {
+
+    RtnStatus rtnStatus;
+    QString errMsgTitle("Load Parameter Error");
+
+    QFile parameterFile(CropParam_file);
+    if (!parameterFile.exists())
+    {
+        QString errMsgText = QString("Parameter file, %1").arg(CropParam_file);
+        errMsgText += QString(", does not exist - using default values");
+        qDebug() << errMsgText;
+        return;
+    }
+
+    bool ok = parameterFile.open(QIODevice::ReadOnly);
+    if (!ok)
+    {
+        QString errMsgText = QString("Unable to open parameter file %1").arg(CropParam_file);
+        errMsgText += QString(" - using default values");
+        qDebug() << errMsgText;
+        return;
+    }
+
+    QByteArray paramJson = parameterFile.readAll();
+    parameterFile.close();
+
+    QJsonDocument doc = QJsonDocument::fromJson(paramJson);
+    QJsonObject obj = doc.object();
+    copytoCropParams(obj);
+
+}
+
 
 void beh_class::copytoHOGParams(QJsonObject& obj) {
 
@@ -177,6 +210,47 @@ void beh_class::copytoHOFParams(QJsonObject& obj) {
         }
     }   
 }
+
+
+void beh_class::copytoCropParams(QJsonObject& obj) {
+
+    QJsonValue value;
+    foreach(const QString& key, obj.keys()) {
+
+        value = obj.value(key);
+        if(value.isString() && key == "crop_flag")
+            Cropparams.crop_flag = value.toString().toInt();
+    
+        if(value.isString() && key == "ncells")
+            Cropparams.ncells = value.toString().toInt();
+ 
+        if(value.isString() && key == "npatches")
+            Cropparams.npatches = value.toString().toInt();
+
+        if(value.isArray() && key == "interest_pnts") {
+
+            QJsonArray arr = value.toArray();
+            allocateCrop(arr.size());
+            int idx = 0;
+            foreach(const QJsonValue& id, arr) {       
+                
+                QJsonArray ips = id.toArray();
+                Cropparams.interest_pnts[idx*2+ 0] = ips[0].toInt();
+                Cropparams.interest_pnts[idx*2 + 1] = ips[1].toInt();
+                idx = idx + 1;
+            }
+        }
+    }
+    std::cout << Cropparams.ncells << " " << Cropparams.npatches;
+}
+
+
+void beh_class::allocateCrop(int sz) {
+
+    Cropparams.interest_pnts = (int*)malloc(2*sz*sizeof(int));
+
+}
+
 
 int beh_class::copyValueInt(QJsonObject& ob, 
                             QString subobj_key) {

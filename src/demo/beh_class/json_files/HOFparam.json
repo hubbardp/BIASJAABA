@@ -7,8 +7,8 @@
     "lk": {
         "threshold": "0.000003", 
         "sigma": {
-            "derivative": "3.0", 
-            "smoothing": "1.0"
+            "derivative": "1.0", 
+            "smoothing": "3.0"
         }
     }
 }
