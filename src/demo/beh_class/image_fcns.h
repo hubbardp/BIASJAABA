@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <set>
+#include "H5Cpp.h"
 
 
 void parse_input_HOG(int nargs, char** arg_inputs, struct HOGParameters& params,

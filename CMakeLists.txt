@@ -76,7 +76,7 @@ find_package(HDF5 COMPONENTS CXX)
 #set(CMAKE_CXX_FLAGS "-std=gnu++0x -O2 -Wall")
 #set(CMAKE_CXX_FLAGS "-std=gnu++0x -O2")
 #set(CMAKE_CXX_FLAGS "-std=gnu++0x -mwindows -O2")
-#set(CMAKE_CXX_FLAGS  "-std=c++11 ")
+#set(CMAKE_CXX_FLAGS "-std=c++11 ")
 
 CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
 list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
@@ -173,6 +173,11 @@ if(with_dc1394)
         set(bias_ext_link_LIBS ${bias_ext_link_LIBS} dc1394)
     endif()
 endif()
+
+if(with_demos)
+    set(bias_ext_link_LIBS ${bias_ext_link_LIBS} ${HDF5_CXX_LIBRARIES})
+endif()
+
 set(bias_ext_link_LIBS ${bias_ext_link_LIBS})
 
 

@@ -213,9 +213,31 @@ void read_image(std::string filename, float* img, int w, int h){
 }
 
 
+//https://support.hdfgroup.org/HDF5/doc/cpplus_RM/readdata_8cpp-example.html
+void readh5(std::string filename, std::string dataset_name, float* data_out) {
+
+    H5::H5File file(filename, H5F_ACC_RDONLY);
+    int rank,ndims;
+    hsize_t dims_out[2];
+
+
+    H5::DataSet dataset = file.openDataSet(dataset_name);
+    H5::DataSpace dataspace = dataset.getSpace();
+    rank = dataspace.getSimpleExtentNdims();
+
+    ndims = dataspace.getSimpleExtentDims(dims_out,NULL);
+    std::cout << "rank " << rank << ", dimensions " <<
+    (unsigned long)(dims_out[0]) << " x " <<
+    (unsigned long)(dims_out[1]) << std::endl;
+
+    H5::DataSpace memspace(rank,dims_out);
+    dataset.read(data_out, H5::PredType::IEEE_F32LE, memspace, dataspace);
+    file.close();
+}
+
+
 // write out the ouput as a 1d array
 void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins){
-
 
      std::ofstream x_out;
      x_out.open(file.c_str());
