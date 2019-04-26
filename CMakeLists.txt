@@ -32,10 +32,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Mod
 
 # Opencv library
 # -----------------------------------------------------------------------------
-find_package( OpenCV REQUIRED )
+find_package( OpenCV 4 REQUIRED )
 
 if(${OpenCV_FOUND})
     message(STATUS "OpenCV found")
+    message(STATUS ${OpenCV_INCLUDE_DIRS})
 else()
     message(STATUS "OpenCv not found")
 endif()
@@ -54,17 +55,22 @@ endif()
 # Qt library
 # ------------------------------------------------------------------------------
 if(with_qt_gui)
-    set(QT_BINARY_DIR "$ENV{QTDIR}/bin")
+    #set(QT_BINARY_DIR "$ENV{QTDIR}/bin")
+    set(Qt5_DIR "/opt/qt/5.12.3/gcc_64/lib/cmake/Qt5")
+    #set(Qt5Core_DIR "/opt/qt/5.12.3")
+    #set(Qt5Widgets_DIR "/opt/qt/5.12.3")
+    #set(Qt5Network_DIR "")
 
     # Old qt 4.8 build
     # ------------------------------------------------------------
     #find_package(Qt4 COMPONENTS QtCore QtGui QtNetwork REQUIRED)
     # ------------------------------------------------------------
 
-    find_package(Qt5Core REQUIRED) 
-    find_package(Qt5Widgets REQUIRED)
-    find_package(Qt5Gui REQUIRED) 
-    find_package(Qt5Network REQUIRED)
+    #find_package(Qt5Core REQUIRED) 
+    #find_package(Qt5Widgets REQUIRED)
+    #find_package(Qt5Gui REQUIRED) 
+    #find_package(Qt5Network REQUIRED)
+    find_package(Qt5 COMPONENTS Core Gui Widgets Network REQUIRED) 
 
 endif()
 
