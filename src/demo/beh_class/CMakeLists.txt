@@ -5,8 +5,9 @@ project(beh_class)
 # beh_class build
 
 set(beh_class_sources
-    image_fcns.cpp
+    utils.cpp
     HOGHOF.cpp
+    beh_class.cpp
     beh_class_main.cpp)
 
 include_directories(CMAKE_CURRENT_BINARY_DIR)

@@ -95,6 +95,7 @@ set(CUDA_NVCC_FLAGS_MINSIZEREL     -Xcompiler -fPIC;--std=c++11;-use_fast_math C
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_C_STANDARD   99)
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_BUILD_TYPE Release)
 
 
 # Definitions 

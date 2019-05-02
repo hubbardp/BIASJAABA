@@ -3,6 +3,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <QDebug>
 
+#include <iostream>
+
 using namespace bias; 
 
 void HOGHOF::loadHOGParams() { 
@@ -37,6 +39,7 @@ void HOGHOF::loadHOGParams() {
    
 }
 
+
 void HOGHOF::loadHOFParams() {
 
     RtnStatus rtnStatus;
@@ -69,15 +72,16 @@ void HOGHOF::loadHOFParams() {
 
 }
 
-void HOGHOF::loadCropParams() {
+
+void HOGHOF::loadCropParams(QString Cropfile) {
 
     RtnStatus rtnStatus;
     QString errMsgTitle("Load Parameter Error");
 
-    QFile parameterFile(CropParam_file);
+    QFile parameterFile(Cropfile);
     if (!parameterFile.exists())
     {
-        QString errMsgText = QString("Parameter file, %1").arg(CropParam_file);
+        QString errMsgText = QString("Parameter file, %1").arg(Cropfile);
         errMsgText += QString(", does not exist - using default values");
         qDebug() << errMsgText;
         return;
@@ -86,7 +90,7 @@ void HOGHOF::loadCropParams() {
     bool ok = parameterFile.open(QIODevice::ReadOnly);
     if (!ok)
     {
-        QString errMsgText = QString("Unable to open parameter file %1").arg(CropParam_file);
+        QString errMsgText = QString("Unable to open parameter file %1").arg(Cropfile);
         errMsgText += QString(" - using default values");
         qDebug() << errMsgText;
         return;
@@ -101,6 +105,7 @@ void HOGHOF::loadCropParams() {
 
 }
 
+
 void HOGHOF::loadImageParams(int img_width, int img_height) {
 
     img.w = img_width;
@@ -111,17 +116,85 @@ void HOGHOF::loadImageParams(int img_width, int img_height) {
  
 }
 
-/*void HOGHOF::loadclassifiermodel(boost_classifier& model, QString& file) {
 
-    std::vector<std::string>dataset_name{"alpha","dim","dir","error","tr"};
-    allocate_model(file,dataset_name[0],&model);
-    readh5(file,dataset_name[0],&model.cls_alpha.data()[0]);
-    readh5(file,dataset_name[1],&model.cls_dim.data()[0]);
-    readh5(file,dataset_name[2],&model.cls_dir.data()[0]);
-    readh5(file,dataset_name[3],&model.cls_error.data()[0]);
-    readh5(file,dataset_name[4],&model.cls_tr.data()[0]);
+void HOGHOF::genFeatures(QString vidname, QString CropFile) {
 
-}*/
+
+    bias::videoBackend vid(vidname) ;
+    cv::VideoCapture capture = vid.videoCapObject(vid);
+
+    std::string fname = vidname.toStdString();
+    int num_frames = vid.getNumFrames(capture);
+    int height = vid.getImageHeight(capture);
+    int width =  vid.getImageWidth(capture);
+    float fps = capture.get(cv::CAP_PROP_FPS);
+
+    // Parse HOG/HOF/Crop Params
+    loadHOGParams();
+    loadHOFParams();
+    HOFParams.input.w = width;
+    HOFParams.input.h = height;
+    HOFParams.input.pitch = width;
+    loadImageParams(width, height);
+    loadCropParams(CropFile);
+
+    // create input HOGContext / HOFConntext
+    struct HOGContext hog_ctx = HOGInitialize(logger, HOGParams, width, height, Cropparams);
+    struct HOFContext hof_ctx = HOFInitialize(logger, HOFParams, Cropparams);
+
+    //allocate output HOG/HOF per frame 
+    size_t hog_outputbytes = HOGOutputByteCount(&hog_ctx);
+    size_t hof_outputbytes = HOFOutputByteCount(&hof_ctx);
+    float* tmp_hog = (float*)malloc(hog_outputbytes);
+    float* tmp_hof = (float*)malloc(hof_outputbytes);
+
+    struct HOGFeatureDims hogshape;
+    HOGOutputShape(&hog_ctx, &hogshape);
+    struct HOGFeatureDims hofshape;
+    HOFOutputShape(&hof_ctx, &hofshape);
+
+    hog_shape = hogshape;
+    hof_shape = hofshape;
+    int hof_num_elements = hof_shape.x * hof_shape.y * hof_shape.bin;
+    int hog_num_elements = hog_shape.x * hog_shape.y * hog_shape.bin;
+    hof_out.resize(num_frames*hof_num_elements,0.0);
+    hog_out.resize(num_frames*hog_num_elements,0.0);
+
+    cv::Mat cur_frame;
+    int frame = 0;
+    while(frame < num_frames) {
+
+        //capture frame and convert to grey
+        cur_frame = vid.getImage(capture);
+
+        //convert to Float and normalize
+        vid.convertImagetoFloat(cur_frame);
+        img.buf = cur_frame.ptr<float>(0);
+
+        //Compute and copy HOG/HOF      
+        HOFCompute(&hof_ctx, img.buf, hof_f32); // call to compute and copy is asynchronous
+        HOFOutputCopy(&hof_ctx, tmp_hof, hof_outputbytes); // should be called one after 
+                                                           // the other to get correct answer
+                                                             
+
+        HOGCompute(&hog_ctx, img);
+        HOGOutputCopy(&hog_ctx, tmp_hog, hog_outputbytes);
+
+        copy_features1d(frame, hog_num_elements, hog_out, tmp_hog);
+        if(frame > 0)
+            copy_features1d(frame-1, hof_num_elements, hof_out, tmp_hof);
+
+        frame++;
+
+    }
+
+    vid.releaseCapObject(capture) ;
+    HOFTeardown(&hof_ctx);
+    HOGTeardown(&hog_ctx);
+    free(tmp_hog);
+    free(tmp_hof);
+
+}
 
 void HOGHOF::copytoHOGParams(QJsonObject& obj) {
 
@@ -218,6 +291,7 @@ void HOGHOF::copytoCropParams(QJsonObject& obj) {
     }
 }
 
+
 void HOGHOF::allocateCrop(int sz) {
 
     Cropparams.interest_pnts = (int*)malloc(2*sz*sizeof(int));
@@ -244,7 +318,7 @@ float HOGHOF::copyValueFloat(QJsonObject& ob,
 
 }
 
-void HOGHOF::allocateHOGoutput(float* out, HOGContext* hog_init) {
+/*void HOGHOF::allocateHOGoutput(float* out, HOGContext* hog_init) {
 
     size_t hog_nbytes = HOGOutputByteCount(hog_init);
     out = (float*)malloc(hog_nbytes);
@@ -257,4 +331,4 @@ void HOGHOF::allocateHOFoutput(float* out, const HOFContext* hof_init) {
     size_t hof_nbytes = HOFOutputByteCount(hof_init);
     out = (float*)malloc(hof_nbytes);
 
-}
+}*/

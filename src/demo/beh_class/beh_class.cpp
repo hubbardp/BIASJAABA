@@ -1,274 +1,237 @@
 #include "beh_class.hpp"
-#include "json.hpp"
-#include "json_utils.hpp"
-#include <iostream> 
-#include <QDebug>
-#include <QJsonDocument>
-#include <QJsonValue>
-#include <QJsonArray>
-#include <QJsonObject>
 
 
-//CONSTANTS
 
-QString HOGParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOGparam.json";
-QString HOFParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOFparam.json";
-QString CropParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/Cropparam.json";
+void beh_class::allocate_model() {
 
-int main(int argc, char* argv[]) {
+    H5::H5File file(this->classifier_file.toStdString(), H5F_ACC_RDONLY);
+    int rank, ndims;
+    hsize_t dims_out[2];
+    H5::DataSet dataset = file.openDataSet(this->model_params[0]);
+    H5::DataSpace dataspace = dataset.getSpace();
+    rank = dataspace.getSimpleExtentNdims();
+    ndims = dataspace.getSimpleExtentDims(dims_out,NULL);
 
-    beh_class classifier;
-    classifier.loadHOGParams();
-    classifier.loadHOFParams();
-    classifier.loadCropParams();
-    // Create video context 
-    /*QString vidFile = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi" ;
-    bias::videoBackend vid(vidFile) ;
-    cv::VideoCapture capture = vid.videoCapObject(vid);
+    this->model.cls_alpha.resize(dims_out[0]);
+    this->model.cls_dim.resize(dims_out[0]);
+    this->model.cls_dir.resize(dims_out[0]);
+    this->model.cls_error.resize(dims_out[0]);
+    this->model.cls_tr.resize(dims_out[0]);
 
-    //cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.
-    //cv::imshow( "Display window", img );                   // Sh
-    //cv::waitKey(0);
-    //qDebug() << "sdfs " << vid.filename;
+    //initialize other arrays
+    this->translated_index.resize(dims_out[0],0);
+    this->flag.resize(dims_out[0]);
 
-    // HOG/HOF Context 
-    HOFParameters HOF_params;
-    HOGParameters HOG_params;
-    CropParams crp_params;
-    HOGImage img;
+}
 
-    std::string fname = vidFile.toStdString();
-    std::string view = "";
-    int verbose = 0;
-    int num_frames = vid.getNumFrames(capture); 
-    int height = vid.getImageHeight(capture);
-    int width =  vid.getImageWidth(capture);
-    std::cout << height << " " << width << " " << "" << num_frames << std::endl;
-    parse_input_HOG(argc, argv, HOG_params, img, num_frames, verbose, view, fname, crp_params);
-    parse_input_HOF(argc, argv, HOF_params, num_frames, verbose, view, fname, crp_params);  
+
+void beh_class::loadclassifier_model() {
+
+    std::string class_file = this->classifier_file.toStdString();
+    readh5(class_file, this->model_params[0], &this->model.cls_alpha.data()[0]);
+    readh5(class_file, this->model_params[1], &this->model.cls_dim.data()[0]);
+    readh5(class_file, this->model_params[2], &this->model.cls_dir.data()[0]);
+    readh5(class_file, this->model_params[3], &this->model.cls_error.data()[0]);
+    readh5(class_file, this->model_params[4], &this->model.cls_tr.data()[0]);
+
+}
+
+void beh_class::translate_mat2C(struct HOGShape *shape_side, HOFShape *shape_front) {
+
+    //shape of hist side
+    unsigned int side_x = shape_side->x;
+    unsigned int side_y = shape_side->y;
+    unsigned int side_bin = shape_side->bin;
+
+    //shape of hist front 
+    unsigned int front_x = shape_front->x;
+    unsigned int front_y = shape_front->y;
+    unsigned int front_bin = shape_front->bin;
+
+    // translate index from matlab to C indexing  
+    unsigned int rollout_index, rem;
+    unsigned int ind_k, ind_j, ind_i;
+    unsigned int index;
+    int dim;
+    rem = 0; 
+    int flag = 0;
+    int numWkCls = model.cls_alpha.size();
  
-    cv::Mat tmp_img = vid.getImage(capture);
-    vid.convertImagetoFloat(tmp_img);
-    img.buf = tmp_img.ptr<float>(0);
-    vid.releaseCapObject(capture);*/
+    for(int midx = 0; midx < numWkCls; midx ++) {
 
-}
+        dim = this->model.cls_dim[midx];
+        flag = 0;
 
-using namespace bias; 
+        if(dim > ((side_x+front_x) * side_y * side_bin) ) { // checking if feature is hog/hof
 
-void beh_class::loadHOGParams() { 
+            rollout_index = dim - ( (side_x +front_x) * side_y * side_bin) - 1;
+            flag = 3;
 
-    RtnStatus rtnStatus;
-    QString errMsgTitle("Load Parameter Error");
+        } else {
 
-    QFile parameterFile(HOGParam_file);
-    if (!parameterFile.exists())
-    {
-        QString errMsgText = QString("Parameter file, %1").arg(HOGParam_file);
-        errMsgText += QString(", does not exist - using default values");
-        qDebug() << errMsgText;
-        return;
-    }
-
-    bool ok = parameterFile.open(QIODevice::ReadOnly);
-    if (!ok)
-    {
-        QString errMsgText = QString("Unable to open parameter file %1").arg(HOGParam_file);
-        errMsgText += QString(" - using default values");
-        qDebug() << errMsgText;
-        return;
-    }
-
-    QByteArray paramJson = parameterFile.readAll();
-    parameterFile.close();
-
-    QJsonDocument doc = QJsonDocument::fromJson(paramJson);
-    QJsonObject obj = doc.object();
-    copytoHOGParams(obj);
-   
-}
-
-void beh_class::loadHOFParams() {
-
-    RtnStatus rtnStatus;
-    QString errMsgTitle("Load Parameter Error");
-
-    QFile parameterFile(HOFParam_file);
-    if (!parameterFile.exists())
-    {
-        QString errMsgText = QString("Parameter file, %1").arg(HOFParam_file);
-        errMsgText += QString(", does not exist - using default values");
-        qDebug() << errMsgText;
-        return;
-    }
-
-    bool ok = parameterFile.open(QIODevice::ReadOnly);
-    if (!ok)
-    {
-        QString errMsgText = QString("Unable to open parameter file %1").arg(HOFParam_file);
-        errMsgText += QString(" - using default values");
-        qDebug() << errMsgText;
-        return;
-    }
-
-    QByteArray paramJson = parameterFile.readAll();
-    parameterFile.close();
-
-    QJsonDocument doc = QJsonDocument::fromJson(paramJson);  
-    QJsonObject obj = doc.object();
-    copytoHOFParams(obj);
-
-}
-
-void beh_class::loadCropParams() {
-
-    RtnStatus rtnStatus;
-    QString errMsgTitle("Load Parameter Error");
-
-    QFile parameterFile(CropParam_file);
-    if (!parameterFile.exists())
-    {
-        QString errMsgText = QString("Parameter file, %1").arg(CropParam_file);
-        errMsgText += QString(", does not exist - using default values");
-        qDebug() << errMsgText;
-        return;
-    }
-
-    bool ok = parameterFile.open(QIODevice::ReadOnly);
-    if (!ok)
-    {
-        QString errMsgText = QString("Unable to open parameter file %1").arg(CropParam_file);
-        errMsgText += QString(" - using default values");
-        qDebug() << errMsgText;
-        return;
-    }
-
-    QByteArray paramJson = parameterFile.readAll();
-    parameterFile.close();
-
-    QJsonDocument doc = QJsonDocument::fromJson(paramJson);
-    QJsonObject obj = doc.object();
-    copytoCropParams(obj);
-
-}
-
-
-void beh_class::copytoHOGParams(QJsonObject& obj) {
-
-    QJsonValue value;
-    foreach(const QString& key, obj.keys()) {
-
-        value = obj.value(key);
-        if(value.isString() && key == "nbins")
-            HOGParams.nbins = value.toString().toInt();
-
-        if(value.isObject() && key == "cell") {
-          
-            QJsonObject ob = value.toObject();
-            HOGParams.cell.h = copyValueInt(ob, "h");
-            HOGParams.cell.w = copyValueInt(ob, "w");
-
-        }
-    }
-}
-
-
-void beh_class::copytoHOFParams(QJsonObject& obj) {
-
-    QJsonValue value;  
-    foreach(const QString& key, obj.keys()) {
-    
-        value = obj.value(key);
-        if(value.isString() && key == "nbins")
-            HOFParams.nbins = value.toString().toInt();
-     
-        if(value.isObject() && key == "cell") {
-   
-            QJsonObject ob = value.toObject();
-            HOFParams.cell.h = copyValueInt(ob, "h");
-            HOFParams.cell.w = copyValueInt(ob, "w");           
+            rollout_index = dim - 1;
+            flag = 1;
 
         }
 
-        if(value.isObject() && key == "lk") {
+        ind_k = rollout_index / ((side_x + front_x) * side_y); // calculate index for bin
+        rem = rollout_index % ((side_x + front_x) * side_y); // remainder index for patch index
 
-            QJsonObject ob = value.toObject();
-            foreach(const QString& key, ob.keys()) {
+        if(rem > 0) {
 
-                value = ob.value(key);
-                if(value.isString() && key == "threshold") 
-                    HOFParams.lk.threshold = value.toString().toFloat();
+            ind_i = (rem) / side_y; // divide by second dim because that is first dim for matlab. This gives 
+                             // index for first dim.
+            ind_j = (rem) % side_y;
 
-                if(value.isObject() && key == "sigma") {
+        } else {
 
-                    QJsonObject ob = value.toObject();
-                    HOFParams.lk.sigma.smoothing = copyValueFloat(ob, "smoothing");
-                    HOFParams.lk.sigma.derivative = copyValueFloat(ob, "derivative");
+            ind_i = 0;
 
-                }
-            }
+            ind_j = 0;
+
         }
-    }   
-}
 
+        if(ind_i >= side_x) { // check view by comparing with size of first dim of the view
 
-void beh_class::copytoCropParams(QJsonObject& obj) {
+            ind_i = ind_i - side_x;
+            flag = flag + 1;
 
-    QJsonValue value;
-    foreach(const QString& key, obj.keys()) {
-
-        value = obj.value(key);
-        if(value.isString() && key == "crop_flag")
-            Cropparams.crop_flag = value.toString().toInt();
-    
-        if(value.isString() && key == "ncells")
-            Cropparams.ncells = value.toString().toInt();
- 
-        if(value.isString() && key == "npatches")
-            Cropparams.npatches = value.toString().toInt();
-
-        if(value.isArray() && key == "interest_pnts") {
-
-            QJsonArray arr = value.toArray();
-            allocateCrop(arr.size());
-            int idx = 0;
-            foreach(const QJsonValue& id, arr) {       
-                
-                QJsonArray ips = id.toArray();
-                Cropparams.interest_pnts[idx*2+ 0] = ips[0].toInt();
-                Cropparams.interest_pnts[idx*2 + 1] = ips[1].toInt();
-                idx = idx + 1;
-            }
         }
+
+        if(flag == 1) {  // book keeping to check which feature to choose
+
+            index = ind_k*side_x*side_y + ind_j*side_x + ind_i;
+            this->translated_index[midx] = index;
+            this->flag[midx] = flag;
+
+        } else if(flag == 2) {
+
+            index = ind_k*front_x*front_y + ind_j*front_x + ind_i;
+            this->translated_index[midx] = index;
+            this->flag[midx] = flag;
+
+        } else if(flag == 3) {
+
+            index = ind_k*side_x*side_y + ind_j*side_x + ind_i;
+            this->translated_index[midx] = index;
+            this->flag[midx] = flag;
+
+        } else if(flag == 4) {
+
+            index = ind_k*front_x*front_y + ind_j*front_x + ind_i;
+            this->translated_index[midx] = index;
+            this->flag[midx] = flag;
+
+        } 
+
     }
-    std::cout << Cropparams.ncells << " " << Cropparams.npatches;
-}
-
-
-void beh_class::allocateCrop(int sz) {
-
-    Cropparams.interest_pnts = (int*)malloc(2*sz*sizeof(int));
 
 }
 
 
-int beh_class::copyValueInt(QJsonObject& ob, 
-                            QString subobj_key) {
+// boost score from a single stump of the model 
+void beh_class::boost_compute(std::vector<float> &scr, std::vector<float> &features, int ind,
+                       int num_feat, int feat_len, int frame, int dir, float tr, float alpha) {
 
-    QJsonValue value = ob.value(subobj_key);
-    if(value.isString())
-        return (value.toString().toInt());
-                        
+
+    std::vector<float> addscores(feat_len, 0.0);
+
+    if(dir > 0) {
+
+        if(features[frame * num_feat + ind] > tr) {
+
+                addscores[frame] = 1;
+
+        } else {
+
+                addscores[frame] = -1;
+        }
+
+        addscores[frame] = addscores[frame] * alpha;
+        scr[frame] = scr[frame] + addscores[frame];
+
+    } else {
+
+        if(features[frame * num_feat + ind] <= tr) {
+
+           addscores[frame] = 1;
+
+        } else {
+
+           addscores[frame] = -1;
+        }
+
+        addscores[frame] = addscores[frame] * alpha;
+        scr[frame] = scr[frame] + addscores[frame];
+
+    }
+
 }
 
 
-float beh_class::copyValueFloat(QJsonObject& ob, 
-                            QString subobj_key) {
+void beh_class::boost_classify(std::vector<float> &scr, std::vector<float> &hogs_features,
+                     std::vector<float> &hogf_features, std::vector<float> &hofs_features,
+                     std::vector<float> &hoff_features, struct HOGShape *shape_side,
+                     struct HOFShape *shape_front, int feat_len, int frame_id,
+                     boost_classifier& model) {
 
-    QJsonValue value = ob.value(subobj_key);
-    if(value.isString())
-        return (value.toString().toFloat());
+    //shape of hist side
+    unsigned int side_x = shape_side->x;
+    unsigned int side_y = shape_side->y;
+    unsigned int side_bin = shape_side->bin;
+
+    //shape of hist front 
+    unsigned int front_x = shape_front->x;
+    unsigned int front_y = shape_front->y;
+    unsigned int front_bin = shape_front->bin;
+
+    //index variables
+    unsigned int rollout_index, rem;
+    unsigned int ind_k, ind_j, ind_i;
+    unsigned int num_feat, index;
+    int dir, dim;
+    float alpha, tr;
+    //rem = 0;
+    //int flag = 0;
+    int numWkCls = model.cls_alpha.size();
+
+    // translate index from matlab to C indexing  
+    for(int midx = 0; midx < numWkCls; midx ++) {
+
+        dim = model.cls_dim[midx];
+        dir = model.cls_dir[midx];
+        alpha = model.cls_alpha[midx];
+        tr = model.cls_tr[midx];
+
+        if(this->flag[midx] == 1) {  // book keeping to check which feature to choose
+
+            index = this->translated_index[midx];
+            num_feat = side_x * side_y * side_bin;
+            boost_compute(scr, hofs_features, index, num_feat, feat_len, frame_id, dir, tr, alpha);
+
+        } else if(this->flag[midx] == 2) {
+
+            index = this->translated_index[midx];
+            num_feat = front_x * front_y * front_bin;
+            boost_compute(scr, hoff_features, index, num_feat, feat_len, frame_id, dir, tr, alpha);
+
+        } else if(this->flag[midx] == 3) {
+
+            index = this->translated_index[midx];
+            num_feat = side_x * side_y * side_bin;
+            boost_compute(scr, hogs_features, index, num_feat, feat_len, frame_id, dir, tr, alpha);
+
+        } else if(this->flag[midx] == 4) {
+
+            index = this->translated_index[midx];
+            num_feat = front_x * front_y * front_bin;
+            boost_compute(scr, hogf_features, index, num_feat, feat_len, frame_id, dir, tr, alpha);
+
+        }
+
+    }
 
 }
+
 
 
