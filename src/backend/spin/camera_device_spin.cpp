@@ -306,7 +306,8 @@ namespace bias {
             //
         }
 
-        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " end" << std::endl;
+        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " end" << std::endl; 
+
     }
 
 

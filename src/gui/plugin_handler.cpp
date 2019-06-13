@@ -39,6 +39,7 @@ namespace bias
         initialize(cameraNumber, pluginImageQueuePtr, emptyPluginPtr);
     }
 
+
     void PluginHandler::setCameraNumber(unsigned int cameraNumber)
     {
        cameraNumber_ = cameraNumber;
@@ -91,6 +92,7 @@ namespace bias
         return currentImage;
     }
 
+
     void PluginHandler::setReadyState()
     {
         if ((pluginImageQueuePtr_ != NULL) && (!pluginPtr_.isNull()))
@@ -102,6 +104,7 @@ namespace bias
             ready_ = false;
         }
     }
+
 
     void PluginHandler::run()
     {
@@ -142,7 +145,7 @@ namespace bias
 
             // Process Frame with plugin
             if (!pluginPtr_.isNull())
-            {
+            { 
                 pluginPtr_ -> processFrames(frameList);
             }
             
@@ -152,9 +155,12 @@ namespace bias
 
         } // while (!done)
 
+      
         // Plugin clean up actions
         //std::cout << "plugin: clean up" << std::endl;
 
     } // PlugingHandler::run()
+
+    
 
 } // namespace bias;

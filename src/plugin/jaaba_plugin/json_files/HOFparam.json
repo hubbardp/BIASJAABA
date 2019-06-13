@@ -1,0 +1,14 @@
+{
+    "cell": {
+        "h": "40", 
+        "w": "40"
+    }, 
+    "nbins": "8", 
+    "lk": {
+        "threshold": "0.000003", 
+        "sigma": {
+            "derivative": "1.0", 
+            "smoothing": "3.0"
+        }
+    }
+}

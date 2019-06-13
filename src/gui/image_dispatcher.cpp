@@ -105,7 +105,7 @@ namespace bias
 
     void ImageDispatcher::run()
     {
-        bool done = false;
+        bool done = false; 
         StampedImage newStampImage;
 
         if (!ready_) 

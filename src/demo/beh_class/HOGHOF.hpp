@@ -46,7 +46,7 @@ struct HOFShape {
 class HOGHOF {
 
   public:
- 
+
     QString HOGParam_file; 
     QString HOFParam_file;
     QString CropParam_file;

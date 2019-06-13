@@ -36,9 +36,8 @@ find_package( OpenCV 4 REQUIRED )
 
 if(${OpenCV_FOUND})
     message(STATUS "OpenCV found")
-    message(STATUS ${OpenCV_INCLUDE_DIRS})
 else()
-    message(STATUS "OpenCv not found")
+    message(STATUS "OpenCV not found")
 endif()
 
 
@@ -70,7 +69,7 @@ if(with_qt_gui)
     #find_package(Qt5Widgets REQUIRED)
     #find_package(Qt5Gui REQUIRED) 
     #find_package(Qt5Network REQUIRED)
-    find_package(Qt5 COMPONENTS Core Gui Widgets Network REQUIRED) 
+    find_package(Qt5 COMPONENTS Core Gui Widgets Network REQUIRED)
 
 endif()
 
@@ -129,6 +128,7 @@ include_directories("./src/gui")
 include_directories("./src/plugin/base")
 include_directories("./src/plugin/stampede")
 include_directories("./src/plugin/grab_detector")
+include_directories("./src/plugin/jaaba_plugin")
 include_directories("./src/3rd_party/qcustomplot")
 
 set(HEFFALUMP_SRC_DIR /groups/branson/home/patilr/rutuja_heffalump/heffalump)
@@ -136,8 +136,8 @@ include_directories(${HEFFALUMP_SRC_DIR}/gpu
                     ${HEFFALUMP_SRC_DIR}/src)
 
 if(with_demos) 
-include_directories(${CUDA_INCLUDE_DIRS} 
-                    ${HDF5_INCLUDE_DIRS})
+    include_directories(${CUDA_INCLUDE_DIRS} 
+                        ${HDF5_INCLUDE_DIRS})
 endif()
 
 if(with_fc2)
@@ -217,6 +217,7 @@ add_subdirectory("src/utility")
 add_subdirectory("src/plugin/base")
 add_subdirectory("src/plugin/stampede")
 add_subdirectory("src/plugin/grab_detector")
+add_subdirectory("src/plugin/jaaba_plugin")
 add_subdirectory("src/3rd_party/qcustomplot")
 add_subdirectory(${HEFFALUMP_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/heffalump_build)
 

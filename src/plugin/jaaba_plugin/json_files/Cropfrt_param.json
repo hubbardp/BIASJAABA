@@ -1,0 +1,15 @@
+{
+    "ncells": "10",
+    "interest_pnts": [
+        [
+            181,
+            166
+        ],
+        [
+            207,
+            85
+        ]
+    ],
+    "crop_flag": "1",
+    "npatches": "2"
+}

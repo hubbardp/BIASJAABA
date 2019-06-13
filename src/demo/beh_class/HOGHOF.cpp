@@ -1,6 +1,7 @@
 #include "HOGHOF.hpp"
 #include <string>
 #include <opencv2/highgui/highgui.hpp>
+//#include <opencv2/opencv.h>
 #include <QDebug>
 
 #include <iostream>
@@ -120,7 +121,7 @@ void HOGHOF::loadImageParams(int img_width, int img_height) {
 void HOGHOF::genFeatures(QString vidname, QString CropFile) {
 
 
-    bias::videoBackend vid(vidname) ;
+    bias::videoBackend vid(vidname);
     cv::VideoCapture capture = vid.videoCapObject(vid);
 
     std::string fname = vidname.toStdString();
@@ -128,6 +129,7 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
     int height = vid.getImageHeight(capture);
     int width =  vid.getImageWidth(capture);
     float fps = capture.get(cv::CAP_PROP_FPS);
+    std::cout << num_frames << " " << fps <<  std::endl;
 
     // Parse HOG/HOF/Crop Params
     loadHOGParams();
@@ -166,10 +168,11 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
 
         //capture frame and convert to grey
         cur_frame = vid.getImage(capture);
-
         //convert to Float and normalize
         vid.convertImagetoFloat(cur_frame);
         img.buf = cur_frame.ptr<float>(0);
+        //write_output("./beh_feat/beh_" + std::to_string(frame) + ".csv", cur_frame.ptr<float>(0), width, height);
+
 
         //Compute and copy HOG/HOF      
         HOFCompute(&hof_ctx, img.buf, hof_f32); // call to compute and copy is asynchronous
@@ -188,6 +191,11 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
 
     }
 
+    createh5("./hoghof", ".h5", num_frames, 
+             hog_num_elements, hof_num_elements,
+             hog_num_elements, hof_num_elements,
+             hog_out, hog_out,
+             hof_out, hof_out);    
     vid.releaseCapObject(capture) ;
     HOFTeardown(&hof_ctx);
     HOGTeardown(&hog_ctx);

@@ -16,6 +16,7 @@ set(
     auto_naming_dialog.ui
     ../plugin/stampede/stampede_plugin.ui
     ../plugin/grab_detector/grab_detector_plugin.ui
+    ../plugin/jaaba_plugin/jaaba_plugin.ui
     )
 
 set(
@@ -110,6 +111,7 @@ target_link_libraries(
     bias_utility
     stampede_plugin
     grab_detector_plugin
+    jaaba_plugin
     )
 
 qt5_use_modules(test_gui Core Gui Widgets Network PrintSupport SerialPort)

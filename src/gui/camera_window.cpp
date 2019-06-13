@@ -56,6 +56,7 @@
 // ------------------------------------
 #include "stampede_plugin.hpp"
 #include "grab_detector_plugin.hpp"
+#include "jaaba_plugin.hpp"
 // -------------------------------------
 
 namespace bias
@@ -144,6 +145,7 @@ namespace bias
 
     RtnStatus CameraWindow::connectCamera(bool showErrorDlg) 
     {
+
         bool error = false;
         unsigned int errorId;
         QString errorMsg;
@@ -329,7 +331,6 @@ namespace bias
         logImageQueuePtr_ -> clear();
         pluginImageQueuePtr_ -> clear();
 
-
         QString autoNamingString = getAutoNamingString();
         unsigned int versionNumber = 0;
 
@@ -422,9 +423,10 @@ namespace bias
 
         } // if (logging_)
 
+
         if (isPluginEnabled())
         {
-            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin(); 
+            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
             if (!currentPluginPtr.isNull())
             {
                 currentPluginPtr -> setFileAutoNamingString(autoNamingString);
@@ -1498,12 +1500,14 @@ namespace bias
         rtnStatus.message = QString("");
 
         bool pluginNameFound = false;
+
         for (auto itemPluginName : pluginMap_.keys())
         {
+
             if (itemPluginName == pluginName)
             {
                 pluginNameFound = true;
-                pluginMap_[pluginName] -> setActive(true);; 
+                pluginMap_[pluginName] -> setActive(true);
                 pluginActionMap_[pluginName] -> setChecked(true);
                 updateTimerMenu();
             }
@@ -1851,6 +1855,7 @@ namespace bias
 
             if (!pluginHandlerPtr_.isNull())
             {
+
                 if (pluginHandlerPtr_ -> tryLock(IMAGE_DISPLAY_CAMERA_LOCK_TRY_DT))
                 {
                     pluginImageMat = pluginHandlerPtr_ -> getImage();
@@ -2580,6 +2585,9 @@ namespace bias
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
         pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
+        pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] -> show();
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, this);
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------
 
         setupStatusLabel();
@@ -2595,10 +2603,11 @@ namespace bias
         tabWidgetPtr_ -> setCurrentWidget(previewTabPtr_);
 
         //setCurrentPlugin(pluginMap_.firstKey());
-        setCurrentPlugin("grabDetector");
+        //setCurrentPlugin("grabDetector");
+        setCurrentPlugin("jaabaPlugin");
         //setCurrentPlugin("stampede");
-        setPluginEnabled(false);
-        //setPluginEnabled(true);
+        //setPluginEnabled(false);
+        setPluginEnabled(true);
 
         updateWindowTitle();
         updateCameraInfoMessage();
@@ -3115,6 +3124,7 @@ namespace bias
         cameraTriggerActionGroupPtr_ = new QActionGroup(menuCameraPtr_);
         cameraTriggerActionGroupPtr_ -> addAction(actionCameraTriggerInternalPtr_);
         cameraTriggerActionGroupPtr_ -> addAction(actionCameraTriggerExternalPtr_);
+        //cameraTriggerActionGroupPtr_ -> show();
     }
 
 
@@ -3203,7 +3213,7 @@ namespace bias
             QPointer<BiasPlugin> pluginPtr = pluginIt.value();
             QString pluginName = pluginPtr -> getName();
             QString pluginDisplayName = pluginPtr -> getDisplayName();
-
+            
             QPointer<QAction> pluginActionPtr = menuPluginsPtr_ -> addAction(pluginDisplayName);
             pluginActionMap_.insert(pluginName, pluginActionPtr);
             pluginActionPtr -> setData(QVariant(pluginName));

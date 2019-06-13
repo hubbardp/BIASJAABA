@@ -805,6 +805,7 @@ namespace bias
 
     void GrabDetectorPlugin::connectPushButtonClicked()
     {
+
         if (pulseDevice_.isOpen())
         {
             disconnectTriggerDev();

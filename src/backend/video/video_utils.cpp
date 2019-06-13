@@ -53,12 +53,11 @@ namespace bias {
 
     }
 
-    cv::Mat videoBackend::convertImagetoFloat(cv::Mat& img) {
+    void videoBackend::convertImagetoFloat(cv::Mat& img) {
 
         // convert the frame into float32
         img.convertTo(img, CV_32FC1);
         img = img / 255;
-        return img;
 
     }
 

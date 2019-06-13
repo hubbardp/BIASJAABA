@@ -8,6 +8,8 @@
 #include <queue>
 #include <iostream>
 #include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
+#include <fstream>
 
 namespace bias
 {
@@ -81,6 +83,7 @@ namespace bias
         stopped_ = false;
         frameCount_ = 0;
         releaseLock();
+        cv::Mat tmp_img;
 
         while (!done)
         {
@@ -116,6 +119,13 @@ namespace bias
                 try 
                 {
                     videoWriterPtr_ -> addFrame(newStampedImage);
+                    //tmp_img = newStampedImage.image;
+                    //imwrite("./out_feat/imgtest_" + std::to_string(newStampedImage.frameCount) + ".jpg",newStampedImage.image);
+                    //newStampedImage.image.convertTo(tmp_img, CV_32FC1);
+                    //tmp_img = tmp_img / 255;
+                    //write_output("./out_feat/img_" + std::to_string(newStampedImage.frameCount) + ".csv", tmp_img.ptr<float>(0),
+                    //          tmp_img.cols, tmp_img.rows);
+
                 }
                 catch (RuntimeError &runtimeError)
                 {
@@ -144,7 +154,6 @@ namespace bias
         }
     
     }  // void ImageLogger::run()
-
 
 
 } // namespace bias

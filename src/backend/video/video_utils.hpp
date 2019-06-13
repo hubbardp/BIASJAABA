@@ -19,7 +19,7 @@ namespace bias {
         void releaseCapObject(cv::VideoCapture& cap); 
    
         cv::Mat getImage(cv::VideoCapture& cap);
-        cv::Mat convertImagetoFloat(cv::Mat& img);
+        void convertImagetoFloat(cv::Mat& img);
         int getImageHeight(cv::VideoCapture& cap);
         int getImageWidth(cv::VideoCapture& cap);
         float getfps(cv::VideoCapture& cap);

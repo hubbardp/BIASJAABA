@@ -43,8 +43,9 @@ int main(int argc, char* argv[]) {
 
     // Video Capture
     int nviews = 2;
-    QString vidFile[nviews] = {"/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi",
-                               "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi"};
+    QString vidFile[nviews] = {"/groups/branson/home/patilr/bias_video_cam_0_date_2019_06_12_time_17_23_48_v001/image_%d.bmp"}; 
+                               //"/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi",
+                               //"/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi"};
 
     //Initialize and load classifier model
     beh_class classifier;
@@ -54,14 +55,15 @@ int main(int argc, char* argv[]) {
 
     //compute features
     feat_side.genFeatures(vidFile[0], feat_side.CropParam_file);
-    feat_frt.genFeatures(vidFile[1], feat_frt.CropParam_file);
+    //feat_frt.genFeatures(vidFile[1], feat_frt.CropParam_file);
 
     //predict scores
-    classifier.translate_mat2C(&feat_side.hog_shape, &feat_frt.hof_shape);
+    /*classifier.translate_mat2C(&feat_side.hog_shape, &feat_frt.hof_shape);
     classifier.scores.resize(classifier.nframes,0.0);
     
     for(int frame_id = 0;frame_id < classifier.nframes; frame_id++) {
 
+        std::cout << frame_id << std::endl;
         classifier.boost_classify(classifier.scores, feat_side.hog_out, feat_frt.hog_out, feat_side.hof_out, feat_frt.hof_out,
                                   &feat_side.hog_shape, &feat_frt.hof_shape, classifier.nframes, frame_id, classifier.model);
         
@@ -71,6 +73,7 @@ int main(int argc, char* argv[]) {
     H5::H5File file_scr(out_scores.c_str(), H5F_ACC_TRUNC);
     create_dataset(file_scr,"scores", classifier.scores, 1, classifier.nframes);
     file_scr.close();
+    std::cout << "hi" << std::endl;*/
 
 }
 

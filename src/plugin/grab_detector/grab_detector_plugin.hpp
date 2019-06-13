@@ -1,5 +1,6 @@
 #ifndef GRAB_DETECTOR_PLUGIN_HPP
 #define GRAB_DETECTOR_PLUGIN_HPP
+
 #include "ui_grab_detector_plugin.h"
 #include "grab_detector_config.hpp"
 #include "bias_plugin.hpp"
