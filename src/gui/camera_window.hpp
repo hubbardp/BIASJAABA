@@ -2,9 +2,11 @@
 #define BIAS_GUI_CAMERA_WINDOW_HPP
 
 #include <memory>
+#include <list>
 #include <QDir>
 #include <QSize>
 #include <QMap>
+#include <QList>
 #include <QPointer>
 #include <QDateTime>
 #include <QMainWindow>
@@ -55,8 +57,12 @@ namespace bias
                     Guid cameraGuid, 
                     unsigned int cameraNumber, 
                     unsigned int numberOfCameras, 
+                    QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList,
                     QWidget *parent=0
                     );
+
+            void finalSetup();
+
             RtnStatus connectCamera(bool showErrorDlg=true);
             RtnStatus disconnectCamera(bool showErrorDlg=true);
             RtnStatus startImageCapture(bool showErrorDlg=true);
@@ -110,12 +116,16 @@ namespace bias
             RtnStatus setPluginEnabled(bool enabled);
             RtnStatus setCurrentPlugin(QString pluginName);
             QString getCurrentPluginName(RtnStatus &rtnStatus);
+            QPointer<BiasPlugin> getPluginByName(QString pluginName);
             RtnStatus runPluginCmd(
                     QByteArray jsonPluginCmdArray, 
                     bool showErrorDlg=true
                     );
 
-            QString getCameraGuidString(RtnStatus &rtnStatus);
+            unsigned int getCameraNumber();
+            QString getCameraGuidString();
+            QSharedPointer<QList<QPointer<CameraWindow>>> getCameraWindowPtrList();
+
             QString getVideoFileFullPath(QString autoNamingString="");
             QString getVideoFileName();
             QDir getVideoFileDir();
@@ -224,6 +234,7 @@ namespace bias
             bool skippedFramesWarning_;
             unsigned int cameraNumber_;
             unsigned int numberOfCameras_;
+            QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             unsigned int format7PercentSpeed_;
             int colorMapNumber_;
 
@@ -303,7 +314,8 @@ namespace bias
             void initialize(
                     Guid guid, 
                     unsigned int cameraNumber, 
-                    unsigned int numberOfCameras
+                    unsigned int numberOfCameras,
+                    QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList
                     );
 
 

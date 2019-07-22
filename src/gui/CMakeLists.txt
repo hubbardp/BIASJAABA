@@ -16,6 +16,7 @@ set(
     auto_naming_dialog.ui
     ../plugin/stampede/stampede_plugin.ui
     ../plugin/grab_detector/grab_detector_plugin.ui
+    ../plugin/signal_slot_demo/signal_slot_demo_plugin.ui
     ../plugin/jaaba_plugin/jaaba_plugin.ui
     )
 
@@ -111,6 +112,7 @@ target_link_libraries(
     bias_utility
     stampede_plugin
     grab_detector_plugin
+    signal_slot_demo_plugin
     jaaba_plugin
     )
 

@@ -1,4 +1,5 @@
-#include <list>
+//#include <list>
+#include <QList>
 #include <QApplication>
 #include <QSharedPointer>
 #include <QMessageBox>
@@ -18,7 +19,6 @@ int main (int argc, char *argv[])
    
     bias::GuidList guidList;
     bias::CameraFinder cameraFinder;
-    std::list<QSharedPointer<bias::CameraWindow>> windowPtrList;
 
     // Get list guids for all cameras found
     try
@@ -54,10 +54,14 @@ int main (int argc, char *argv[])
     QRect nextGeom;
     unsigned int camCnt;
     bias::GuidList::iterator guidIt;
+
+    QSharedPointer<QList<QPointer<bias::CameraWindow>>> windowPtrList(new QList<QPointer<bias::CameraWindow>>);
+
     for (guidIt=guidList.begin(), camCnt=0; guidIt!=guidList.end(); guidIt++, camCnt++)
     {
         bias::Guid guid = *guidIt;
-        QSharedPointer<bias::CameraWindow> windowPtr(new bias::CameraWindow(guid, camCnt, numCam));
+        QPointer<bias::CameraWindow> windowPtr(new bias::CameraWindow(guid, camCnt, numCam, windowPtrList));
+
         windowPtr -> show();
         if (camCnt==0)
         {
@@ -71,8 +75,17 @@ int main (int argc, char *argv[])
             nextGeom.setHeight(baseGeom.height());
             windowPtr -> setGeometry(nextGeom);
         }
-        windowPtrList.push_back(windowPtr);
+        windowPtrList -> push_back(windowPtr);
     }
+
+    // Run final setup for camera windows. This is for things which require all camera windows to 
+    // have already been created and added to the windowPtrList. For example,  creating signals/slots
+    // between plugins for different camera windows, etc.
+    for (auto windowPtr : *windowPtrList)
+    {
+        windowPtr -> finalSetup();
+    }
+
     return app.exec();
 }
 

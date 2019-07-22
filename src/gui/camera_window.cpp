@@ -56,6 +56,7 @@
 // ------------------------------------
 #include "stampede_plugin.hpp"
 #include "grab_detector_plugin.hpp"
+#include "signal_slot_demo_plugin.hpp"
 #include "jaaba_plugin.hpp"
 // -------------------------------------
 
@@ -134,18 +135,28 @@ namespace bias
             Guid cameraGuid, 
             unsigned int cameraNumber, 
             unsigned int numberOfCameras, 
+            QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList,
             QWidget *parent
             ) : QMainWindow(parent)
     {
         setupUi(this);
         connectWidgets();
-        initialize(cameraGuid, cameraNumber, numberOfCameras);
+        initialize(cameraGuid, cameraNumber, numberOfCameras, cameraWindowPtrList);
+    }
+
+    void CameraWindow::finalSetup()
+    {
+        // Run things which require all camera windows to exists and be in the cameraWindowPtrList_.
+
+        for (auto pluginName : pluginMap_.keys())
+        {
+            pluginMap_[pluginName] -> finalSetup();
+        }
     }
 
 
     RtnStatus CameraWindow::connectCamera(bool showErrorDlg) 
     {
-
         bool error = false;
         unsigned int errorId;
         QString errorMsg;
@@ -331,6 +342,7 @@ namespace bias
         logImageQueuePtr_ -> clear();
         pluginImageQueuePtr_ -> clear();
 
+
         QString autoNamingString = getAutoNamingString();
         unsigned int versionNumber = 0;
 
@@ -423,10 +435,9 @@ namespace bias
 
         } // if (logging_)
 
-
         if (isPluginEnabled())
         {
-            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin(); 
             if (!currentPluginPtr.isNull())
             {
                 currentPluginPtr -> setFileAutoNamingString(autoNamingString);
@@ -1277,22 +1288,24 @@ namespace bias
         return rtnStatus;
     }
 
-    
-    QString CameraWindow::getCameraGuidString(RtnStatus &rtnStatus)
-    {
-        if (!connected_)
-        {
-            rtnStatus.success = false;
-            rtnStatus.message = QString("Unable to get camera Guid: camera not connected");
-            QString emptyString;
-            return emptyString;
-        }
 
+    unsigned int CameraWindow::getCameraNumber()
+    {
+        return cameraNumber_;
+    }
+
+    
+    QString CameraWindow::getCameraGuidString()
+    {
         Guid guid = cameraPtr_ -> getGuid();
         QString guidString = QString::fromStdString(guid.toString());
-        rtnStatus.success = true;
-        rtnStatus.message = QString("");
         return guidString;
+    } 
+    
+
+    QSharedPointer<QList<QPointer<CameraWindow>>> CameraWindow::getCameraWindowPtrList()
+    {
+        return cameraWindowPtrList_; 
     }
 
 
@@ -1500,14 +1513,12 @@ namespace bias
         rtnStatus.message = QString("");
 
         bool pluginNameFound = false;
-
         for (auto itemPluginName : pluginMap_.keys())
         {
-
             if (itemPluginName == pluginName)
             {
                 pluginNameFound = true;
-                pluginMap_[pluginName] -> setActive(true);
+                pluginMap_[pluginName] -> setActive(true);; 
                 pluginActionMap_[pluginName] -> setChecked(true);
                 updateTimerMenu();
             }
@@ -1535,6 +1546,17 @@ namespace bias
             rtnStatus.message = QString("no plugin is checked");
         }
         return currentPluginName;
+    }
+
+
+    QPointer<BiasPlugin> CameraWindow::getPluginByName(QString pluginName)
+    {
+        QPointer<BiasPlugin> pluginPtr = nullptr; 
+        if (pluginMap_.contains(pluginName))
+        {
+            pluginPtr = pluginMap_[pluginName];
+        }
+       return pluginPtr; 
     }
 
 
@@ -1855,7 +1877,6 @@ namespace bias
 
             if (!pluginHandlerPtr_.isNull())
             {
-
                 if (pluginHandlerPtr_ -> tryLock(IMAGE_DISPLAY_CAMERA_LOCK_TRY_DT))
                 {
                     pluginImageMat = pluginHandlerPtr_ -> getImage();
@@ -2535,7 +2556,8 @@ namespace bias
     void CameraWindow::initialize(
             Guid guid, 
             unsigned int cameraNumber, 
-            unsigned int numberOfCameras
+            unsigned int numberOfCameras,
+            QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList
             )
     {
         connected_ = false;
@@ -2566,6 +2588,7 @@ namespace bias
 
         cameraNumber_ = cameraNumber;
         numberOfCameras_ = numberOfCameras;
+        cameraWindowPtrList_ = cameraWindowPtrList;
         cameraPtr_ = std::make_shared<Lockable<Camera>>(guid);
 
         threadPoolPtr_ = new QThreadPool(this);
@@ -2585,9 +2608,9 @@ namespace bias
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
         pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
-        pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] -> show();
+        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_,this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, this);
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();
+        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();  
         // -------------------------------------------------------------------------------
 
         setupStatusLabel();
@@ -2604,10 +2627,10 @@ namespace bias
 
         //setCurrentPlugin(pluginMap_.firstKey());
         //setCurrentPlugin("grabDetector");
-        setCurrentPlugin("jaabaPlugin");
         //setCurrentPlugin("stampede");
-        //setPluginEnabled(false);
+        setCurrentPlugin("signalSlotDemo");
         setPluginEnabled(true);
+        //setPluginEnabled(true);
 
         updateWindowTitle();
         updateCameraInfoMessage();
@@ -3124,7 +3147,6 @@ namespace bias
         cameraTriggerActionGroupPtr_ = new QActionGroup(menuCameraPtr_);
         cameraTriggerActionGroupPtr_ -> addAction(actionCameraTriggerInternalPtr_);
         cameraTriggerActionGroupPtr_ -> addAction(actionCameraTriggerExternalPtr_);
-        //cameraTriggerActionGroupPtr_ -> show();
     }
 
 
@@ -3213,7 +3235,7 @@ namespace bias
             QPointer<BiasPlugin> pluginPtr = pluginIt.value();
             QString pluginName = pluginPtr -> getName();
             QString pluginDisplayName = pluginPtr -> getDisplayName();
-            
+
             QPointer<QAction> pluginActionPtr = menuPluginsPtr_ -> addAction(pluginDisplayName);
             pluginActionMap_.insert(pluginName, pluginActionPtr);
             pluginActionPtr -> setData(QVariant(pluginName));
