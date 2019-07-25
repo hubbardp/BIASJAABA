@@ -11,24 +11,30 @@
 namespace bias {
 
 
+    //videoBackend::videoBackend() {}
+    
+
     videoBackend::videoBackend(QString file) {
 
         filename = file;   
 
     }
 
-    cv::VideoCapture videoBackend::videoCapObject(videoBackend& vid) {
 
-        cv::VideoCapture cap(vid.filename.toStdString().c_str());
+    cv::VideoCapture videoBackend::videoCapObject() {
+
+        cv::VideoCapture cap(this->filename.toStdString().c_str());
         return cap;
 
     }
+
 
     void videoBackend::releaseCapObject(cv::VideoCapture& cap) {
 
         cap.release();
 
     }
+
     
     cv::Mat videoBackend::getImage(cv::VideoCapture& cap) {
 

@@ -122,7 +122,7 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
 
 
     bias::videoBackend vid(vidname);
-    cv::VideoCapture capture = vid.videoCapObject(vid);
+    cv::VideoCapture capture = vid.videoCapObject();
 
     std::string fname = vidname.toStdString();
     int num_frames = vid.getNumFrames(capture);
@@ -179,23 +179,24 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
         HOFOutputCopy(&hof_ctx, tmp_hof, hof_outputbytes); // should be called one after 
                                                            // the other to get correct answer
                                                              
-
         HOGCompute(&hog_ctx, img);
         HOGOutputCopy(&hog_ctx, tmp_hog, hog_outputbytes);
 
-        copy_features1d(frame, hog_num_elements, hog_out, tmp_hog);
-        if(frame > 0)
+        //copy_features1d(frame, hog_num_elements, hog_out, tmp_hog);
+        if(frame > 0) {
+            copy_features1d(frame-1, hog_num_elements, hog_out, tmp_hog);
             copy_features1d(frame-1, hof_num_elements, hof_out, tmp_hof);
+        }
 
         frame++;
 
     }
 
-    createh5("./hoghof", ".h5", num_frames, 
+    /*createh5("./hoghof_side", ".h5", num_frames, 
              hog_num_elements, hof_num_elements,
              hog_num_elements, hof_num_elements,
              hog_out, hog_out,
-             hof_out, hof_out);    
+             hof_out, hof_out);*/  
     vid.releaseCapObject(capture) ;
     HOFTeardown(&hof_ctx);
     HOGTeardown(&hog_ctx);

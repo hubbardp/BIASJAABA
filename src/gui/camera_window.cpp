@@ -2610,7 +2610,7 @@ namespace bias
         pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_,this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, this);
-        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();  
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         // -------------------------------------------------------------------------------
 
         setupStatusLabel();
@@ -2628,7 +2628,7 @@ namespace bias
         //setCurrentPlugin(pluginMap_.firstKey());
         //setCurrentPlugin("grabDetector");
         //setCurrentPlugin("stampede");
-        setCurrentPlugin("signalSlotDemo");
+        setCurrentPlugin("jaabaPlugin");
         setPluginEnabled(true);
         //setPluginEnabled(true);
 

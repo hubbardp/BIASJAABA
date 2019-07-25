@@ -58,7 +58,7 @@ namespace bias
 
 
             QPointer<ImageLabel> imageLabelPtr_;
-            QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;;
+            QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             
             void connectWidgets();
             void initialize();

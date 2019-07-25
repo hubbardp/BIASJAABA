@@ -372,6 +372,71 @@
            </widget>
           </item>
           <item>
+           <widget class="QGroupBox" name="ClasscomGroupBoxPtr">
+            <property name="font">
+             <font>
+              <weight>50</weight>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="title">
+             <string>Classifier file locations</string>
+            </property>
+            <layout class="QVBoxLayout" name="ClassverticalLayout_1">
+             <item>
+              <widget class="QWidget" name="ClasscommWidgetPtr_1" native="true">
+               <layout class="QVBoxLayout" name="ClassverticalLayout_2">
+                <item>
+                 <widget class="QWidget" name="ClasscommWidgetPtr_2" native="true">
+                  <layout class="QHBoxLayout" name="ClasshorizontalLayout_1">
+                   <item>
+                    <widget class="QLabel" name="ClasscomPortLabelPtr1">
+                     <property name="sizePolicy">
+                      <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                       <horstretch>0</horstretch>
+                       <verstretch>0</verstretch>
+                      </sizepolicy>
+                     </property>
+                     <property name="minimumSize">
+                      <size>
+                       <width>80</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>250</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
+                     <property name="font">
+                      <font>
+                       <weight>50</weight>
+                       <bold>false</bold>
+                      </font>
+                     </property>
+                     <property name="text">
+                      <string> Classifier File Location</string>
+                     </property>
+                    </widget>
+                   </item>
+                   <item>
+                    <widget class="QLineEdit" name="ClassFilePtr_">
+                     <property name="placeholderText">
+                      <string>json_files/classifier_Lift.mat</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                </layout>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="detectButtonPtr_">
             <property name="text">
              <string>Detect</string>

@@ -12,10 +12,11 @@ namespace bias {
         public:
 
         QString filename;
-    
+          
+        videoBackend();    
         videoBackend(QString file);
 
-        cv::VideoCapture videoCapObject(videoBackend& vid);    
+        cv::VideoCapture videoCapObject();    
         void releaseCapObject(cv::VideoCapture& cap); 
    
         cv::Mat getImage(cv::VideoCapture& cap);

@@ -26,7 +26,7 @@ namespace bias
     void HOGHOF::loadHOGParams() 
     { 
 
-        RtnStatus rtnStatus;
+        //RtnStatus rtnStatus;
         QString errMsgTitle("Load Parameter Error");
 
         QFile parameterFile(HOGParam_file);
@@ -64,7 +64,7 @@ namespace bias
     void HOGHOF::loadHOFParams() 
     {
 
-        RtnStatus rtnStatus;
+        //RtnStatus rtnStatus;
         QString errMsgTitle("Load Parameter Error");
 
         QFile parameterFile(HOFParam_file);

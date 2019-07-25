@@ -5,6 +5,7 @@
 #include "affinity.hpp"
 #include "stamped_image.hpp"
 #include <QtDebug>
+//#include "timer.h"
 
 namespace bias
 { 
@@ -123,6 +124,8 @@ namespace bias
         stopped_ = false;
         releaseLock();
 
+        //GpuTimer timer;
+        //timer.Start();
         while (!done)
         {
             QList<StampedImage> frameList;
@@ -154,8 +157,9 @@ namespace bias
             releaseLock();
 
         } // while (!done)
-
-      
+        //timer.Stop();
+        //std::cout << timer.Elapsed()/1000 << std::endl;
+        
         // Plugin clean up actions
         //std::cout << "plugin: clean up" << std::endl;
 

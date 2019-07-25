@@ -15,12 +15,15 @@ set(
     jaaba_plugin_HEADERS 
     jaaba_plugin.hpp
     HOGHOF.hpp
+    beh_class.hpp
+    timer.h
     )
 
 set(
     jaaba_plugin_SOURCES 
     jaaba_plugin.cpp
     HOGHOF.cpp
+    beh_class.cpp
     )
 
 qt5_wrap_ui(jaaba_plugin_FORMS_HEADERS ${jaaba_plugin_FORMS})
