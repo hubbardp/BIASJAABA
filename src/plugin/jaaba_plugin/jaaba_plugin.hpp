@@ -45,7 +45,6 @@ namespace bias
             cv::Mat getCurrentImage();
 
         protected:
-
   
             unsigned int cameraNumber_;
             unsigned int partnerCameraNumber_ ;
@@ -65,25 +64,23 @@ namespace bias
             bool detectStarted;
             bool save;
             bool stop_save;
+            
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
             FrameData frameData;
-
-        
-            QSharedMemory scrmem;
-            float frontclsscr;            
-
-            HOGShape tmp_sideshape;
-            HOGShape tmp_frontshape;
+            LockableQueue<FrameData> senderImageQueue_;
+            LockableQueue<StampedImage> receiverImageQueue_;
+         
+            //HOGShape tmp_sideshape;
+            //HOGShape tmp_frontshape;
             videoBackend* vid_sde;
             videoBackend* vid_front;
             cv::VideoCapture capture_sde;
             cv::VideoCapture capture_front;
         
+            bool pluginReady();
             bool isSender();
             bool isReceiver(); 
-            void loadfromSharedMemory();
-            void copytoSharedMemory();
             void initialize();
             void initHOGHOF(QPointer<HOGHOF> hoghof);
             void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
@@ -94,6 +91,7 @@ namespace bias
             void updateWidgetsOnLoad();
             void checkviews();
             void detectEnabled();
+            void startProcessthread();
 
             //test development
             void copy_features1d(int frame_num, int num_elements, 
@@ -113,7 +111,7 @@ namespace bias
  
         signals:
 
-            void newFrameData(FrameData data); 
+            void newFrameData(FrameData data);
 
         private slots:
 
@@ -123,6 +121,7 @@ namespace bias
             void detectClicked();
             void saveClicked();
             void onNewFrameData(FrameData data);
+            void processData();
 
     
     };

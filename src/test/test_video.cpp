@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     
     QString vidFile = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi" ;
     videoBackend vid(vidFile) ;
-    cv::VideoCapture capture = vid.videoCapObject(vid);
+    cv::VideoCapture capture = vid.videoCapObject();
     cv::Mat img = vid.getImage(capture);
      
     cv::namedWindow( "Display window", cv::WINDOW_AUTOSIZE );// Create a window for display.

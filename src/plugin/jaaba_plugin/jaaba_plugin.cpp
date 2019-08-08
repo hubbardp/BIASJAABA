@@ -6,6 +6,8 @@
 #include <iostream>
 #include <QDebug>
 #include <cuda_runtime.h>
+#include <string>
+#include <QThread>
 
 namespace bias {
 
@@ -22,7 +24,6 @@ namespace bias {
         setupUi(this);
         connectWidgets();
         initialize();
-        frameCount =0;
     }
 
 
@@ -50,7 +51,7 @@ namespace bias {
     bool JaabaPlugin::isSender() 
     {
 
-        if(!sideRadioButtonPtr_->isChecked() && !frontRadioButtonPtr_->isChecked())
+        if(!(sideRadioButtonPtr_->isChecked()) && !(frontRadioButtonPtr_->isChecked()))
             return true;
         else 
             return false;
@@ -83,6 +84,7 @@ namespace bias {
                 HOGTeardown(HOGHOF_side->hog_ctx);
 
             }
+           
         }
         
         if(frontRadioButtonPtr_->isChecked())
@@ -112,59 +114,14 @@ namespace bias {
         }
         //updateMessageLabels();*/
     }
-    
-
-    void JaabaPlugin::copytoSharedMemory() 
-    {
-
-        scrmem.setKey("QSharedMemoryExample");
-        if (scrmem.isAttached())
-            scrmem.detach();
-
-        QBuffer buffer;
-        buffer.open(QBuffer::ReadWrite);
-        QDataStream out(&buffer);
-        out << classifier->score;
-        int size = buffer.size();
-        std::cout << "class score" << classifier->score << std::endl;
-        scrmem.create(size);
-        scrmem.attach();
-
-        scrmem.lock();
-        char *to = (char*)scrmem.data();
-        const char *from = buffer.data().data();
-        memcpy(to, from, qMin(scrmem.size(), size));
-        scrmem.unlock();
-
-    }
-
-
-    void JaabaPlugin::loadfromSharedMemory() 
-    {
-
-        scrmem.attach();
-
-        QBuffer buffer;
-        QDataStream in(&buffer);
-
-        scrmem.lock();
-        buffer.setData((char*)scrmem.constData(), scrmem.size());
-        buffer.open(QBuffer::ReadOnly);
-        in >> frontclsscr;
-        scrmem.unlock();
-
-        scrmem.detach();
-        std::cout << "i get" << frontclsscr << std::endl;
-
-
-    }
 
 
     void JaabaPlugin::initHOGHOF(QPointer<HOGHOF> hoghof)
     {
  
-        hoghof->loadImageParams(currentImage_.cols, currentImage_.rows);
-        struct HOGContext hogctx = HOGInitialize(logger, hoghof->HOGParams, currentImage_.cols, currentImage_.rows, hoghof->Cropparams);
+        //std::cout << " " << currentImage_.cols << " " << currentImage_.cols << std::endl;
+        hoghof->loadImageParams(384, 260);
+        struct HOGContext hogctx = HOGInitialize(logger, hoghof->HOGParams, 384, 260, hoghof->Cropparams);
         struct HOFContext hofctx = HOFInitialize(logger, hoghof->HOFParams, hoghof->Cropparams);
         hoghof->hog_ctx = (HOGContext*)malloc(sizeof(hogctx));
         hoghof->hof_ctx = (HOFContext*)malloc(sizeof(hofctx));
@@ -192,8 +149,6 @@ namespace bias {
     void JaabaPlugin::genFeatures(QPointer<HOGHOF> hoghof,int frame)
     {
 
-        //float* tmp_hof = (float*)malloc(hoghof->hof_outputbytes);
-        //float* tmp_hog = (float*)malloc(hoghof->hog_outputbytes);
         size_t hog_num_elements = hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin;
         size_t hof_num_elements = hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin;
 
@@ -205,81 +160,74 @@ namespace bias {
         HOGCompute(hoghof->hog_ctx, hoghof->img);
         HOGOutputCopy(hoghof->hog_ctx, hoghof->hog_out.data(), hoghof->hog_outputbytes);
         
-        if(save && frame == 2) 
-        {
-
-            if(sideRadioButtonPtr_->isChecked())
-            {
-                //createh5("./out_feat/hoghof_side", frame, 1, hog_num_elements, hof_num_elements, hoghof->hog_out, hoghof->hof_out);
-                write_histoutput("./out_feat/hog_side_" + std::to_string(frame) + ".csv", hoghof->hog_out.data(), 
-                                 hoghof->hog_shape.x, hoghof->hog_shape.y, hoghof->hog_shape.bin);
-                write_histoutput("./out_feat/hof_side_" + std::to_string(frame) + ".csv", hoghof->hof_out.data(), 
-                                 hoghof->hof_shape.x, hoghof->hof_shape.y, hoghof->hof_shape.bin);
-
-            } else {
-
-                //createh5("./out_feat_front/hoghof_front", frame, 1, hog_num_elements, hof_num_elements, hoghof->hog_out, hoghof->hof_out);
-                write_histoutput("./out_feat/hog_front_" + std::to_string(frame) + ".csv", hoghof->hog_out.data()
-                                 , hoghof->hog_shape.x, hoghof->hog_shape.y, hoghof->hog_shape.bin);
-                write_histoutput("./out_feat/hof_front_" + std::to_string(frame) + ".csv", hoghof->hof_out.data()
-                                 , hoghof->hof_shape.x, hoghof->hof_shape.y, hoghof->hof_shape.bin);
-            }
-        }        
-
     }
 
               
-    void JaabaPlugin::processFrames(QList<StampedImage> frameList)
+    /*void JaabaPlugin::processFrmeData(frameData));
+ames(QList<StampedImage> frameList)
     {
 
         StampedImage latestFrame = frameList.back();
-        int frame = latestFrame.frameCount;
         frameList.clear();
 
          //get current image
         cv::Mat currentImageFloat;
+        cv::Mat image_side;
+        cv::Mat image_front;
         cv::Mat workingImage = latestFrame.image.clone();
-        frameCount_ = latestFrame.frameCount;       
+
         // initialize gpu HOGHOF Context
         if((workingImage.rows != 0) && (workingImage.cols != 0)) 
         {
         
-            /*acquireLock();
+            acquireLock();
             currentImage_ = workingImage;
             releaseLock();
             currentImage_.convertTo(currentImageFloat, CV_32FC1);
-            currentImageFloat = currentImageFloat / 255;*/
- 
-            /*if(isSender())
+            currentImageFloat = currentImageFloat / 255;
+            frameCount_ = latestFrame.frameCount;
+            releaseLock();
+
+            if(isSender())
             {
              
                //Test Development
-               cv::Mat image_front = vid_front->getImage(capture_front); 
-               vid_front->convertImagetoFloat(image_front);
-               frameData.count = frameCount_;
-               frameData.image = image_front;
-               //
+                //image_front = vid_front->getImage(capture_front); 
+                //vid_front->convertImagetoFloat(image_front);
+                //image_side = vid_sde->getImage(capture_sde);
+                //vid_sde->convertImagetoFloat(image_side);
+                //pthread_mutex_lock(&mut);  
+                acquireLock();    
+                image_front = frameCount_*cv::Mat::ones(260, 352, CV_8UC1);
+                frameData.count = frameCount_;
+                frameData.image = image_front;
+                releaseLock();
+                cond_.wakeAll();
+                //pthread_mutex_unlock(&mut);
+               
+                //frameData.image = image_side;
 
-               //frameData.image = currentImageFloat;
-               numMessageSent_++; 
-               emit(newFrameData(frameData));
-            }*/
+                numMessageSent_++; 
+                emit(newFrameData(frameData));
+            }
 
                                
             if(sideRadioButtonPtr_->isChecked())             
             {
   
                 ///Test Development
-
                 //capture frame and convert to grey
+                acquireLock();
                 currentImage_ = vid_sde->getImage(capture_sde);
                 //convert to Float and normalize
                 vid_sde->convertImagetoFloat(currentImage_);
                 currentImageFloat = currentImage_;
+                
 
-                //
-                               
-                HOGHOF_side->img.buf = currentImageFloat.ptr<float>(0); 
+                //HOGHOF_side->img.buf = frameData.image.ptr<float>(0);
+                //HOGHOF_side->img.buf = currentImageFloat.ptr<float>(0);
+                releaseLock(); 
+
                 if(HOGHOF_side->isHOGPathSet 
                    && HOGHOF_side->isHOFPathSet)
                 {
@@ -288,29 +236,39 @@ namespace bias {
                     {
 
                         initHOGHOF(HOGHOF_side); 
-                        write_output_shape("./output_shape.csv", "side", HOGHOF_side->hog_shape.x , 
-                                          HOGHOF_side->hog_shape.y , HOGHOF_side->hog_shape.bin);
-                        read_output_shape("./output_shape.csv");
-                        classifier->translate_mat2C(&tmp_sideshape,&tmp_frontshape);
+                        //write_output_shape("./output_shape.csv", "side", HOGHOF_side->hog_shape.x , 
+                        //                  HOGHOF_side->hog_shape.y , HOGHOF_side->hog_shape.bin);
+                        //read_output_shape("./output_shape.csv");
+                        //classifier->translate_mat2C(&tmp_sideshape,&tmp_frontshape);
                         //loadfromSharedMemory();
                                                                      
                     } 
 
-                } 
+                }
 
                
                 if(detectStarted)
                 {
 
                     genFeatures(HOGHOF_side, frameCount);
+                    if(save && frameCount == 500)
+                    {
+
+                        //createh5("./out_feat/hoghof_side", frame, 1, hog_num_elements, hof_num_elements, hoghof->hog_out, hoghof->hof_out);
+                        write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hog_out.data(),
+                                 HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
+                        write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hof_out.data(),
+                                 HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
+                    }
+
 
                     if(classifier->isClassifierPathSet && frameCount > 1)
                     {
 
                         classifier->score = 0.0;
                         classifier->boost_classify_side(classifier->score, HOGHOF_side->hog_out, HOGHOF_side->hof_out,
-                                                        &tmp_sideshape, classifier->nframes, frameCount,classifier->model);
-                        write_score("classifierscr_side.csv", frameCount, classifier->score);
+                                                        &HOGHOF_side->hog_shape, classifier->nframes, frameCount,classifier->model);
+                        //write_score("classifierscr_side.csv", frameCount, classifier->score);
                         //read_score("classifierscr_side.csv","classifierscr_front.csv", frameCount);
 
                         //load shared Memory
@@ -319,21 +277,37 @@ namespace bias {
                         //std::cout << "classifier score side" << classifier->score << "classifier score front " 
                         //<< frontclsscr << std::endl;
                     }
-                    frameCount++;
+                    //frameCount++;
                 }
+                //frameCount++;
 
             }
-             
-         
+            
+ 
             if(frontRadioButtonPtr_->isChecked())
             {
- 
-                //HOGHOF_front->img.buf = frameData.image.ptr<float>(0);
-                currentImage_ = vid_front->getImage(capture_front); 
-                vid_front->convertImagetoFloat(currentImage_);
-                currentImageFloat = currentImage_;
 
-                HOGHOF_front->img.buf = currentImageFloat.ptr<float>(0);
+                std::cout << "got:" << frameData.count << "current frame:" << frameCount_ << std::endl;
+                acquireLock();
+                //pthread_mutex_lock(&mut);
+                while(!(frameData.count==frameCount_))                                 
+                {
+                    //cond_.wait(&mutex_);
+                }
+                //pthread_mutex_unlock(&mut);
+                releaseLock();
+                std::cout << "re" << frameData.count << std::endl;
+                //HOGHOF_front->img.buf = frameData.image.ptr<float>(0);
+               
+                //imwrite("./out_feat/img" + std::to_string(frameData.count) + ".bmp", frameData.image);
+                //currentImage_ = vid_front->getImage(capture_front); 
+                //vid_front->convertImagetoFloat(currentImage_);
+                //currentImageFloat = currentImage_;
+
+                //HOGHOF_front->img.buf = currentImageFloat.ptr<float>(0);
+                //releaseLock();
+                
+
                 if(HOGHOF_front->isHOGPathSet 
                    && HOGHOF_front->isHOFPathSet)
                 {
@@ -342,10 +316,10 @@ namespace bias {
                     {
                         //initialize HOGHOF
                         initHOGHOF(HOGHOF_front);
-                        write_output_shape("./output_shape.csv", "front", HOGHOF_front->hog_shape.x , 
-                                           HOGHOF_front->hog_shape.y , HOGHOF_front->hog_shape.bin);
-                        read_output_shape("./output_shape.csv");
-                        classifier->translate_mat2C(&tmp_sideshape,&tmp_frontshape);
+                        //write_output_shape("./output_shape.csv", "front", HOGHOF_front->hog_shape.x , 
+                        //                   HOGHOF_front->hog_shape.y , HOGHOF_front->hog_shape.bin);
+                        //read_output_shape("./output_shape.csv");
+                        //classifier->translate_mat2C(&HOGHOF_side->hog_shape,&HOGHOF_front->hog_shape);
                     }
 
                 }
@@ -353,9 +327,16 @@ namespace bias {
                 if(detectStarted)
                 {  
 
-                   
                     genFeatures(HOGHOF_front, frameCount);  
-                
+                    if(save && frameCount == 50) 
+                    {
+
+                        write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hog_out.data()
+                                         , HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, HOGHOF_front->hog_shape.bin);
+                        write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hof_out.data()
+                                         , HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, HOGHOF_front->hof_shape.bin);
+                    }
+            
 
                     if(classifier->isClassifierPathSet && frameCount > 1)
                     {
@@ -363,19 +344,170 @@ namespace bias {
                         classifier->score = 0.0;
                         classifier->boost_classify_front(classifier->score, HOGHOF_front->hog_out, HOGHOF_front->hof_out,
                                                      &tmp_frontshape, classifier->nframes, frameCount, classifier->model);
-                        write_score("classifierscr_front.csv", frameCount, classifier->score);
-                        //if(frameCount == 50)
-                            //copytoSharedMemory();
-
+                        //write_score("classifierscr_front.csv", frameCount, classifier->score);
+                        //std::cout << "se" << classifier->score  << "re " << frameData.score << std::endl;
 
                     }
-                    frameCount++;
-                }                  
+                }
+                frameCount++;       
             }
         }
+    }*/
+
+
+    void JaabaPlugin::processFrames(QList<StampedImage> frameList)
+    {
+         
+        cv::Mat currentImageFloat;
+        cv::Mat image_front;
+        cv::Mat image_side;
+        StampedImage latestFrame = frameList.back();
+        frameList.clear();
+        cv::Mat workingImage = latestFrame.image.clone();    
+
+        
+        if((workingImage.rows != 0) && (workingImage.cols != 0))
+        {
+
+            acquireLock();  
+            currentImage_ = workingImage; 
+            frameCount_ = latestFrame.frameCount;
+            releaseLock();
+ 
+
+            if(isSender())
+            {
+
+                acquireLock();
+                //image_front = frameCount_*cv::Mat::ones(260, 352, CV_8UC1);
+                frameData.count = frameCount_;
+                frameData.image = currentImage_;
+                releaseLock();
+                emit(newFrameData(frameData)); 
+            }
+
+
+            if(isReceiver())
+            {
+
+                receiverImageQueue_.acquireLock();
+                //image_side = frameCount_*cv::Mat::ones(260, 352, CV_8UC1);
+                //latestFrame.image = image_side.clone();
+                receiverImageQueue_.push(latestFrame);
+                receiverImageQueue_.releaseLock();
+
+                startProcessthread();
+                //std::cout << "grabThread:receiver" << QThread::currentThreadId() << std::endl;
+                //std::cout << "re" << receiverImageQueue_.size() << std::endl;
+                
+            }
+
+        }
+        
+    }
+
+ 
+    void JaabaPlugin::startProcessthread()
+    {
+
+        // thread to monitor the queues
+        QThread *thread = new QThread;
+	connect(thread, SIGNAL(started()), this , SLOT(processData()));
+	connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+	thread->start();
+
     }
 
 
+    void JaabaPlugin::processData()
+    {
+
+        int frame;
+
+        if(!(senderImageQueue_.empty()) && !(receiverImageQueue_.empty()))
+        {
+        
+            acquireLock();   
+            FrameData sendImage = senderImageQueue_.front();
+            StampedImage receiveImage = receiverImageQueue_.front();
+            cv::Mat currImage_side; //= receiveImage.image.clone();
+            cv::Mat currImage_front; //= sendImage.image.clone();
+
+            currImage_side = vid_sde->getImage(capture_sde);
+            vid_sde->convertImagetoFloat(currImage_side);
+            currImage_front = vid_front->getImage(capture_front); 
+            vid_front->convertImagetoFloat(currImage_front);
+           
+
+            if(receiveImage.frameCount == sendImage.count)
+            {
+                frame = receiveImage.frameCount;
+
+            } else {
+               
+                std::cout << "frameCount not synchronized" << std::endl;
+            }
+            HOGHOF_side->img.buf = currImage_side.ptr<float>(0);
+            HOGHOF_front->img.buf = currImage_front.ptr<float>(0);
+            //imwrite("./out_feat/se_img" + std::to_string(frameCount) + ".bmp", currImage_front);
+            //imwrite("./out_feat/re_img" + std::to_string(frameCount) + ".bmp", currImage_side);
+            receiverImageQueue_.pop(); 
+            senderImageQueue_.pop();
+            releaseLock();
+            std::cout << "video framecount" << frameCount << std::endl;
+            std::cout << "sesz:" << senderImageQueue_.size() << "resz :" << receiverImageQueue_.size() << std::endl;
+
+            //initialize HOGHOF on cpu/gpu
+            if(HOGHOF_side->isHOGPathSet 
+             && HOGHOF_side->isHOFPathSet)
+            {
+                if(HOGHOF_side->startFrameSet)
+                {
+
+                    initHOGHOF(HOGHOF_side);
+
+                }
+            }
+
+                
+            if(HOGHOF_front->isHOGPathSet
+                   && HOGHOF_front->isHOFPathSet)
+            {
+                if(HOGHOF_front->startFrameSet)
+                {
+                        
+                    initHOGHOF(HOGHOF_front);
+
+                }
+            }
+
+
+            if(detectStarted)
+            {
+                genFeatures(HOGHOF_side,frameCount);
+                genFeatures(HOGHOF_front,frameCount);
+            
+            if(save && frameCount == 200) 
+            {
+
+
+                write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hog_out.data(),
+                                 HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
+                write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hof_out.data(),
+                                 HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
+
+                write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hog_out.data()
+                                         , HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, HOGHOF_front->hog_shape.bin);
+                write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hof_out.data()
+                                         , HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, HOGHOF_front->hof_shape.bin);
+            }}
+            frameCount++;
+
+        }
+
+    }
+
+    
     unsigned int JaabaPlugin::getPartnerCameraNumber()
     {
         // Returns camera number of partner camera. For this example
@@ -420,7 +552,11 @@ namespace bias {
         cameraNumber_ = cameraWindowPtr -> getCameraNumber();
         partnerCameraNumber_ = getPartnerCameraNumber();
         cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
-
+    
+        //connect(this, SIGNAL(finished()), thread, SLOT(quit()));
+        
+    
+        frameCount =0; 
         numMessageSent_=0;
         numMessageReceived_=0;
         frameCount_ = 0;
@@ -433,7 +569,7 @@ namespace bias {
 
 
     void JaabaPlugin::connectWidgets()
-    {
+    { 
 
         connect(
             sideRadioButtonPtr_,
@@ -491,22 +627,18 @@ namespace bias {
             HOGHOF_side->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
             HOGHOF_side->loadHOGParams();
             HOGHOF_side->loadHOFParams();
-            HOGHOF_side->loadCropParams(); 
-
+            HOGHOF_side->loadCropParams();
+ 
         }
 
         if(frontRadioButtonPtr_->isChecked()) 
         {
 
-            //if(isSender())
-            //{
-            //Test Development
             QString file("/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi");
             vid_front = new videoBackend(file);
             capture_front = vid_front->videoCapObject();
-            //}
 
-                           
+              
             HOGHOF *hoghoffront = new HOGHOF(this);
       	    HOGHOF_front = hoghoffront;
             HOGHOF_front->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
@@ -518,6 +650,15 @@ namespace bias {
  
         }
 
+        //Test Development
+        if(isSender())
+        {
+        
+            //QString file("/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi");
+            //vid_front = new videoBackend(file);
+            //capture_front = vid_front->videoCapObject();
+
+        }
 
     }
 
@@ -606,13 +747,23 @@ namespace bias {
         
         if(!detectStarted) 
         {
+            //acquireLock();
             detectButtonPtr_->setText(QString("Stop Detecting"));
             detectStarted = true;
+            //releaseLock();
+            //QThread *thread = new QThread;
+            //this->moveToThread(thread);
+            //connect(thread, SIGNAL(started()), this , SLOT(run()));
+            //connect(this, SIGNAL(finished()), thread, SLOT(quit()));
+            //thread->start();
+            //thread -> setPriority(QThread::LowPriority);
 
         } else {
 
+            //acquireLock();
             detectButtonPtr_->setText(QString("Detect"));
             detectStarted = false;
+            //releaseLock();
             save = false;
 
         }
@@ -679,14 +830,12 @@ namespace bias {
 
         } else {
 
-
             HOGHOF_side->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
             HOGHOF_side->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
             HOGHOF_side->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
             HOGHOF_side->loadHOGParams();
             HOGHOF_side->loadHOFParams();
-            HOGHOF_side->loadCropParams();
-            
+            HOGHOF_side->loadCropParams();            
         }
 
         // load front HOGHOFParams if front view checked
@@ -696,14 +845,12 @@ namespace bias {
 
         } else {
 
-
             HOGHOF_front->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
             HOGHOF_front->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
             HOGHOF_front->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
             HOGHOF_front->loadHOGParams();
             HOGHOF_front->loadHOFParams();
             HOGHOF_front->loadCropParams();
-
         }
 
         //load classifier
@@ -765,8 +912,25 @@ namespace bias {
     void JaabaPlugin::onNewFrameData(FrameData data)
     {
 
-        if(isReceiver())
-          numMessageReceived_++;
+        if(isReceiver()) {
+
+            acquireLock();
+            frameData.count = data.count;
+            frameData.image = data.image;
+            releaseLock();
+            //std::cout << "2" << std::endl;
+
+            //get frame from sender plugin
+            senderImageQueue_.acquireLock();
+            senderImageQueue_.push(frameData);
+            senderImageQueue_.releaseLock();
+            //std::cout << "4" << std::endl;
+            //std::cout << frameData.count << std::endl;
+            std::cout <<senderImageQueue_.size() << std::endl;
+            
+            numMessageReceived_++;
+          
+        }
         //updateMessageLabels();
 
     }
@@ -821,7 +985,7 @@ namespace bias {
     }
 
     
-    void JaabaPlugin::write_output_shape(std::string filename, std::string view, unsigned x, unsigned y, unsigned bin) 
+    /*void JaabaPlugin::write_output_shape(std::string filename, std::string view, unsigned x, unsigned y, unsigned bin) 
     {
 
         std::ofstream x_out;
@@ -830,10 +994,10 @@ namespace bias {
         // write hist output to csv file
         x_out << view  << "," << x  <<  ","  << y << "," << bin << "\n"; 
         x_out.close();
-    }
+    }*/
 
 
-    void JaabaPlugin::read_output_shape(std::string filename)
+    /*void JaabaPlugin::read_output_shape(std::string filename)
     {
 
         std::ifstream x_in(filename);
@@ -878,7 +1042,7 @@ namespace bias {
             exit(1);
         }
 
-    }
+    }*/
 
   
     void JaabaPlugin::write_score(std::string file, int framenum, float score)

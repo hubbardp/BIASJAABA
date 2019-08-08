@@ -125,7 +125,7 @@ namespace bias
             unsigned int getCameraNumber();
             QString getCameraGuidString();
             QSharedPointer<QList<QPointer<CameraWindow>>> getCameraWindowPtrList();
-
+         
             QString getVideoFileFullPath(QString autoNamingString="");
             QString getVideoFileName();
             QDir getVideoFileDir();
@@ -323,8 +323,7 @@ namespace bias
             void setupImageDisplayTimer();
             void setupCaptureDurationTimer();
             void updateWindowTitle();
-            
-            QPointer<BiasPlugin> getCurrentPlugin();
+            QPointer<BiasPlugin> getCurrentPlugin(); 
             
             // Menu and statusbar setup methods
             void setupCameraMenu();
