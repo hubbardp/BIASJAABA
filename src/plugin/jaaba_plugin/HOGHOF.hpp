@@ -48,8 +48,10 @@ struct HOFShape {
 
 namespace bias {
 
-    class HOGHOF: public QDialog 
+    class HOGHOF : public QDialog 
     {
+
+        Q_OBJECT
 
         public:
 

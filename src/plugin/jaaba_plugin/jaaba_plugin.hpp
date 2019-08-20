@@ -7,12 +7,11 @@
 #include "frame_data.hpp"
 #include "HOGHOF.hpp"
 #include "beh_class.hpp"
+#include "process_scores.hpp"
 #include <QMainWindow>
 #include <QPointer>
 #include <QThreadPool>
 #include <QThread>
-#include <QSharedMemory>
-//#include <QBuffer>
 //test development
 #include <fstream>
 #include <string>
@@ -42,6 +41,8 @@ namespace bias
             virtual QString getName();
             virtual QString getDisplayName();
             virtual void processFrames(QList<StampedImage> frameList);
+            virtual void reset();
+            virtual void stop();
             cv::Mat getCurrentImage();
 
         protected:
@@ -53,6 +54,8 @@ namespace bias
             QPointer<HOGHOF> HOGHOF_side;
             QPointer<HOGHOF> HOGHOF_front;
             QPointer<beh_class> classifier;
+            QPointer<ProcessScores> processScoresPtr_;
+            QPointer<QThreadPool> threadPoolPtr_;
 
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
@@ -61,15 +64,14 @@ namespace bias
         private:
 
             int nviews_;
-            bool detectStarted;
             bool save;
             bool stop_save;
             
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
             FrameData frameData;
-            LockableQueue<FrameData> senderImageQueue_;
-            LockableQueue<StampedImage> receiverImageQueue_;
+            //QQueue<FrameData> senderImageQueue_;
+            //QQueue<FrameData> receiverImageQueue_;
          
             //HOGShape tmp_sideshape;
             //HOGShape tmp_frontshape;
@@ -82,8 +84,8 @@ namespace bias
             bool isSender();
             bool isReceiver(); 
             void initialize();
-            void initHOGHOF(QPointer<HOGHOF> hoghof);
-            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
+            //void initHOGHOF(QPointer<HOGHOF> hoghof);
+            //void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
             void setupHOGHOF();
             void setupClassifier();
             void connectWidgets();
@@ -91,7 +93,7 @@ namespace bias
             void updateWidgetsOnLoad();
             void checkviews();
             void detectEnabled();
-            void startProcessthread();
+
 
             //test development
             void copy_features1d(int frame_num, int num_elements, 
@@ -101,7 +103,6 @@ namespace bias
                           std::vector<float> hog, std::vector<float> hof);
             void create_dataset(H5::H5File& file, std::string key,
                           std::vector<float> features, int num_frames, int num_elements);
-            void stop();
             //void write_output(std::string file,float* out_img, unsigned w, unsigned h);
             void write_output_shape(std::string filename, std::string view, unsigned x, unsigned y, unsigned bin);
             void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
@@ -112,6 +113,7 @@ namespace bias
         signals:
 
             void newFrameData(FrameData data);
+            void process();
 
         private slots:
 

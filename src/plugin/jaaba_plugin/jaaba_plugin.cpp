@@ -9,6 +9,12 @@
 #include <string>
 #include <QThread>
 
+//
+
+//Camera 0 should always be front view
+//Camera 1 should always be side view
+//
+
 namespace bias {
 
     //Public static variables 
@@ -51,7 +57,7 @@ namespace bias {
     bool JaabaPlugin::isSender() 
     {
 
-        if(!(sideRadioButtonPtr_->isChecked()) && !(frontRadioButtonPtr_->isChecked()))
+        if(cameraNumber_ ==0)
             return true;
         else 
             return false;
@@ -62,7 +68,7 @@ namespace bias {
     bool JaabaPlugin::isReceiver() 
     {
 
-        if(sideRadioButtonPtr_->isChecked() && frontRadioButtonPtr_->isChecked())
+        if(cameraNumber_==1) 
             return true;
         else 
             return false;
@@ -73,10 +79,10 @@ namespace bias {
     void JaabaPlugin::stop() 
     {
 
-        if(sideRadioButtonPtr_->isChecked())
+        /*if(sideRadioButtonPtr_->isChecked())
         {
-            if(HOGHOF_side->isHOGPathSet 
-               && HOGHOF_side->isHOFPathSet
+            if(processScoresPtr_->HOGHOF_side->isHOGPathSet 
+               && processScoresPtr_->HOGHOF_side->isHOFPathSet
                && classifier-> isClassifierPathSet)
             {
 
@@ -90,13 +96,29 @@ namespace bias {
         if(frontRadioButtonPtr_->isChecked())
         {
 
-            if(HOGHOF_front->isHOGPathSet 
-               && HOGHOF_front->isHOFPathSet 
+            if(processScoresPtr_->HOGHOF_front->isHOGPathSet 
+               && processScoresPtr_->HOGHOF_front->isHOFPathSet 
                && classifier-> isClassifierPathSet)
             {
 
                 HOFTeardown(HOGHOF_front->hof_ctx);
                 HOGTeardown(HOGHOF_front->hog_ctx);
+            }
+        }*/
+
+    }
+
+
+    void JaabaPlugin::reset()
+    {
+        
+        if (isReceiver())
+        {
+            processScoresPtr_ = new ProcessScores();
+            threadPoolPtr_ = new QThreadPool(this);
+            if ((threadPoolPtr_ != nullptr) && (processScoresPtr_ != nullptr))
+            {
+                threadPoolPtr_ -> start(processScoresPtr_);
             }
         }
     }
@@ -116,7 +138,7 @@ namespace bias {
     }
 
 
-    void JaabaPlugin::initHOGHOF(QPointer<HOGHOF> hoghof)
+    /*void JaabaPlugin::initHOGHOF(QPointer<HOGHOF> hoghof)
     {
  
         //std::cout << " " << currentImage_.cols << " " << currentImage_.cols << std::endl;
@@ -143,10 +165,10 @@ namespace bias {
         hoghof->hog_out.resize(hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin);
         hoghof->hof_out.resize(hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin);
 
-    }
+    }*/
 
 
-    void JaabaPlugin::genFeatures(QPointer<HOGHOF> hoghof,int frame)
+    /*void JaabaPlugin::genFeatures(QPointer<HOGHOF> hoghof,int frame)
     {
 
         size_t hog_num_elements = hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin;
@@ -160,7 +182,7 @@ namespace bias {
         HOGCompute(hoghof->hog_ctx, hoghof->img);
         HOGOutputCopy(hoghof->hog_ctx, hoghof->hog_out.data(), hoghof->hog_outputbytes);
         
-    }
+    }*/
 
               
     /*void JaabaPlugin::processFrmeData(frameData));
@@ -365,7 +387,7 @@ ames(QList<StampedImage> frameList)
         frameList.clear();
         cv::Mat workingImage = latestFrame.image.clone();    
 
-        
+ 
         if((workingImage.rows != 0) && (workingImage.cols != 0))
         {
 
@@ -373,16 +395,14 @@ ames(QList<StampedImage> frameList)
             currentImage_ = workingImage; 
             frameCount_ = latestFrame.frameCount;
             releaseLock();
- 
+
+            frameData.count = frameCount_;
+            frameData.image = currentImage_;
 
             if(isSender())
             {
 
-                acquireLock();
                 //image_front = frameCount_*cv::Mat::ones(260, 352, CV_8UC1);
-                frameData.count = frameCount_;
-                frameData.image = currentImage_;
-                releaseLock();
                 emit(newFrameData(frameData)); 
             }
 
@@ -390,16 +410,12 @@ ames(QList<StampedImage> frameList)
             if(isReceiver())
             {
 
-                receiverImageQueue_.acquireLock();
+                acquireLock();
                 //image_side = frameCount_*cv::Mat::ones(260, 352, CV_8UC1);
                 //latestFrame.image = image_side.clone();
-                receiverImageQueue_.push(latestFrame);
-                receiverImageQueue_.releaseLock();
-
-                startProcessthread();
-                //std::cout << "grabThread:receiver" << QThread::currentThreadId() << std::endl;
-                //std::cout << "re" << receiverImageQueue_.size() << std::endl;
-                
+                processScoresPtr_->enqueueFrameDataReceiver(frameData);
+                releaseLock(); 
+ 
             }
 
         }
@@ -407,29 +423,18 @@ ames(QList<StampedImage> frameList)
     }
 
  
-    void JaabaPlugin::startProcessthread()
-    {
-
-        // thread to monitor the queues
-        QThread *thread = new QThread;
-	connect(thread, SIGNAL(started()), this , SLOT(processData()));
-	connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
-	thread->start();
-
-    }
-
 
     void JaabaPlugin::processData()
     {
 
         int frame;
 
-        if(!(senderImageQueue_.empty()) && !(receiverImageQueue_.empty()))
+        /*if(!(senderImageQueue_->isEmpty()) && !(receiverImageQueue_->isEmpty()))
         {
         
             acquireLock();   
-            FrameData sendImage = senderImageQueue_.front();
-            StampedImage receiveImage = receiverImageQueue_.front();
+            FrameData sendImage = senderImageQueue_->dequeue();
+            FrameData receiveImage = receiverImageQueue_->dequeue();
             cv::Mat currImage_side; //= receiveImage.image.clone();
             cv::Mat currImage_front; //= sendImage.image.clone();
 
@@ -451,11 +456,11 @@ ames(QList<StampedImage> frameList)
             HOGHOF_front->img.buf = currImage_front.ptr<float>(0);
             //imwrite("./out_feat/se_img" + std::to_string(frameCount) + ".bmp", currImage_front);
             //imwrite("./out_feat/re_img" + std::to_string(frameCount) + ".bmp", currImage_side);
-            receiverImageQueue_.pop(); 
-            senderImageQueue_.pop();
+            receiverImageQueue_->pop(); 
+            senderImageQueue_->pop();
             releaseLock();
             std::cout << "video framecount" << frameCount << std::endl;
-            std::cout << "sesz:" << senderImageQueue_.size() << "resz :" << receiverImageQueue_.size() << std::endl;
+            std::cout << "sesz:" << senderImageQueue_->size() << "resz :" << receiverImageQueue_->size() << std::endl;
 
             //initialize HOGHOF on cpu/gpu
             if(HOGHOF_side->isHOGPathSet 
@@ -503,7 +508,7 @@ ames(QList<StampedImage> frameList)
             }}
             frameCount++;
 
-        }
+        }*/
 
     }
 
@@ -552,10 +557,7 @@ ames(QList<StampedImage> frameList)
         cameraNumber_ = cameraWindowPtr -> getCameraNumber();
         partnerCameraNumber_ = getPartnerCameraNumber();
         cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
-    
-        //connect(this, SIGNAL(finished()), thread, SLOT(quit()));
-        
-    
+         
         frameCount =0; 
         numMessageSent_=0;
         numMessageReceived_=0;
@@ -611,36 +613,27 @@ ames(QList<StampedImage> frameList)
     void JaabaPlugin::setupHOGHOF()
     {
      
+        std::cout << "in" << std::endl; 
         if(sideRadioButtonPtr_->isChecked())
         {
-
-            //Test DEvelopment
-            QString file("/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi");
-            vid_sde = new videoBackend(file);
-            capture_sde = vid_sde->videoCapObject();
-            ///
-
-            HOGHOF *hoghofside = new HOGHOF(this);  
-	    HOGHOF_side = hoghofside;
+              
+            HOGHOF *hoghofside = new HOGHOF(this);
+            //processScoresPtr_->HOGHOF_side = hoghofside;
+            HOGHOF_side = hoghofside;
 	    HOGHOF_side->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
             HOGHOF_side->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
             HOGHOF_side->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
             HOGHOF_side->loadHOGParams();
             HOGHOF_side->loadHOFParams();
             HOGHOF_side->loadCropParams();
- 
+
         }
 
         if(frontRadioButtonPtr_->isChecked()) 
         {
-
-            QString file("/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi");
-            vid_front = new videoBackend(file);
-            capture_front = vid_front->videoCapObject();
-
-              
-            HOGHOF *hoghoffront = new HOGHOF(this);
-      	    HOGHOF_front = hoghoffront;
+            
+            HOGHOF *hoghoffront = new HOGHOF(this);  
+            HOGHOF_front = hoghoffront;
             HOGHOF_front->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
             HOGHOF_front->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
             HOGHOF_front->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
@@ -649,16 +642,7 @@ ames(QList<StampedImage> frameList)
             HOGHOF_front->loadCropParams();
  
         }
-
-        //Test Development
-        if(isSender())
-        {
-        
-            //QString file("/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi");
-            //vid_front = new videoBackend(file);
-            //capture_front = vid_front->videoCapObject();
-
-        }
+        std::cout << "out" << std::endl;
 
     }
 
@@ -695,7 +679,6 @@ ames(QList<StampedImage> frameList)
         frontRadioButtonPtr_ -> setChecked(false);
         detectButtonPtr_ ->setEnabled(false);
         saveButtonPtr_->setEnabled(false);
-        detectStarted = false;
         save = false;
         //checkviews();
 
@@ -708,7 +691,6 @@ ames(QList<StampedImage> frameList)
         if (state == Qt::Checked)
 	{
 	    sideRadioButtonPtr_ -> setChecked(true);
-
 	}
 	else
 	{  
@@ -745,26 +727,23 @@ ames(QList<StampedImage> frameList)
     void JaabaPlugin::detectClicked() 
     {
         
-        if(!detectStarted) 
+        if(!processScoresPtr_->detectStarted) 
         {
-            //acquireLock();
             detectButtonPtr_->setText(QString("Stop Detecting"));
-            detectStarted = true;
-            //releaseLock();
-            //QThread *thread = new QThread;
-            //this->moveToThread(thread);
-            //connect(thread, SIGNAL(started()), this , SLOT(run()));
-            //connect(this, SIGNAL(finished()), thread, SLOT(quit()));
-            //thread->start();
-            //thread -> setPriority(QThread::LowPriority);
+            processScoresPtr_->detectStarted = true;
 
         } else {
 
-            //acquireLock();
             detectButtonPtr_->setText(QString("Detect"));
-            detectStarted = false;
-            //releaseLock();
+            processScoresPtr_->detectStarted = false;
             save = false;
+
+            if (processScoresPtr_ != nullptr)
+            {
+                processScoresPtr_ -> acquireLock();
+                processScoresPtr_ -> stop();
+                processScoresPtr_ -> releaseLock();
+            }
 
         }
 
@@ -794,6 +773,7 @@ ames(QList<StampedImage> frameList)
 
         if(sideRadioButtonPtr_->isChecked())
         {
+
             if(HOGHOF_side->isHOGPathSet 
                && HOGHOF_side->isHOFPathSet
                && classifier->isClassifierPathSet)
@@ -806,6 +786,7 @@ ames(QList<StampedImage> frameList)
 
         if(frontRadioButtonPtr_->isChecked())
         {
+
             if(HOGHOF_front->isHOGPathSet 
                && HOGHOF_front->isHOFPathSet
                && classifier->isClassifierPathSet)
@@ -830,6 +811,7 @@ ames(QList<StampedImage> frameList)
 
         } else {
 
+            
             HOGHOF_side->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
             HOGHOF_side->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
             HOGHOF_side->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
@@ -841,8 +823,9 @@ ames(QList<StampedImage> frameList)
         // load front HOGHOFParams if front view checked
         if(HOGHOF_front == nullptr)
         {
-            setupHOGHOF();
 
+            setupHOGHOF();        
+  
         } else {
 
             HOGHOF_front->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
@@ -854,7 +837,7 @@ ames(QList<StampedImage> frameList)
         }
 
         //load classifier
-        if(classifier == nullptr)
+        /*if(classifier == nullptr)
         {
 
             setupClassifier();
@@ -865,8 +848,8 @@ ames(QList<StampedImage> frameList)
             classifier->allocate_model();
             classifier->loadclassifier_model();
 
-        }
-        detectEnabled();
+        }*/
+        //detectEnabled();
        
     }
 
@@ -921,12 +904,9 @@ ames(QList<StampedImage> frameList)
             //std::cout << "2" << std::endl;
 
             //get frame from sender plugin
-            senderImageQueue_.acquireLock();
-            senderImageQueue_.push(frameData);
-            senderImageQueue_.releaseLock();
-            //std::cout << "4" << std::endl;
-            //std::cout << frameData.count << std::endl;
-            std::cout <<senderImageQueue_.size() << std::endl;
+            acquireLock();
+            processScoresPtr_->enqueueFrameDataSender(frameData);
+            releaseLock();
             
             numMessageReceived_++;
           

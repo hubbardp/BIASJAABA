@@ -16,6 +16,8 @@ set(
     jaaba_plugin.hpp
     HOGHOF.hpp
     beh_class.hpp
+    process_scores.hpp
+    frame_data.hpp
     timer.h
     )
 
@@ -24,6 +26,7 @@ set(
     jaaba_plugin.cpp
     HOGHOF.cpp
     beh_class.cpp
+    process_scores.cpp
     )
 
 qt5_wrap_ui(jaaba_plugin_FORMS_HEADERS ${jaaba_plugin_FORMS})

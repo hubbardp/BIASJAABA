@@ -109,6 +109,7 @@ namespace bias
 
     void PluginHandler::run()
     {
+
         bool done = false;
 
         if (!ready_) 
@@ -144,6 +145,8 @@ namespace bias
                 frameList.append(stampedImage);
                 pluginImageQueuePtr_ -> pop();
             }
+
+
             pluginImageQueuePtr_ -> releaseLock();
 
             // Process Frame with plugin

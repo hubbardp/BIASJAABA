@@ -343,7 +343,7 @@ namespace bias
 	    }
 	}
 	if(!Cropparams.crop_flag) 
-	    {  // if croping is not enabled
+	{  // if croping is not enabled
 	    Cropparams.interest_pnts = nullptr;
 	    Cropparams.ncells = 0; 
 	    Cropparams.npatches = 0;      
@@ -371,7 +371,8 @@ namespace bias
 
 
     float HOGHOF::copyValueFloat(QJsonObject& ob, 
-				QString subobj_key) {
+				QString subobj_key) 
+    {
 
 	QJsonValue value = ob.value(subobj_key);
 	if(value.isString())

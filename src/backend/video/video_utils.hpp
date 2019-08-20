@@ -1,4 +1,7 @@
 #ifdef WITH_VIDEO
+#ifndef VIDEO_UTILS_HPP
+#define VIDEO_UTILS_HPP
+
 #include <QString>
 #include <opencv2/core/core.hpp>
 #include <opencv2/videoio.hpp>
@@ -30,4 +33,5 @@ namespace bias {
 
 }
 
+#endif
 #endif
