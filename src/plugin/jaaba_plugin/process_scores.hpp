@@ -29,36 +29,40 @@ namespace bias
 
        public :
 
-           bool detectStarted;
+           bool save;
            QPointer<HOGHOF> HOGHOF_side;
            QPointer<HOGHOF> HOGHOF_front;
+           QPointer<beh_class> classifier; 
 
-           ProcessScores();
+           ProcessScores(QObject *parent=0);
            void stop();
            void enqueueFrameDataSender(FrameData frameData);
            void enqueueFrameDataReceiver(FrameData frameData);
-           void setupHOGHOF_side();
-           void setupHOGHOF_front();
-
+           void detectOn();
+           void detectOff();
+            
+           videoBackend* vid_sde;
+           videoBackend* vid_frt;
+           cv::VideoCapture capture_sde;
+           cv::VideoCapture capture_frt;
 
        private :
 
            bool stopped_;
            bool ready_;
+           bool detectStarted_;
            int frameCount;
-
-           videoBackend* vid_sde;
-           videoBackend* vid_frt;
-           cv::VideoCapture capture_sde;
-           cv::VideoCapture capture_frt;
-            
+ 
            QQueue<FrameData> senderImageQueue_;
            QQueue<FrameData> receiverImageQueue_;
-
 
            void run();
            void initHOGHOF(QPointer<HOGHOF> hoghof);
            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
+
+           void write_score(std::string file, int framenum, float score);
+           void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
+
 
     };
 

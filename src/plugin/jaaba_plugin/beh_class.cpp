@@ -8,8 +8,8 @@ namespace bias {
     beh_class::beh_class(QWidget *parent): QDialog(parent) {}
   
 
-    void beh_class::allocate_model() {
-
+    void beh_class::allocate_model() 
+    {
 
         hsize_t dims_out[2] = {0};
         H5::Exception::dontPrint();
@@ -51,7 +51,8 @@ namespace bias {
     }  
 
 
-    void beh_class::loadclassifier_model() {
+    void beh_class::loadclassifier_model() 
+    {
  
         RtnStatus rtnstatus; 
         std::string class_file = this->classifier_file.toStdString();
@@ -241,10 +242,10 @@ namespace bias {
     }
 
 
-    /*void beh_class::boost_classify(std::vector<float> &scr, std::vector<float> &hogs_features,
+    void beh_class::boost_classify(float &scr, std::vector<float> &hogs_features,
 			 std::vector<float> &hogf_features, std::vector<float> &hofs_features,
 			 std::vector<float> &hoff_features, struct HOGShape *shape_side,
-			 struct HOFShape *shape_front, int feat_len, int frame_id,
+			 struct HOFShape *shape_front, int feat_len,
 			 boost_classifier& model) 
     {
 
@@ -280,34 +281,34 @@ namespace bias {
 
 		index = this->translated_index[midx];
 		num_feat = side_x * side_y * side_bin;
-		boost_compute(scr, hofs_features, index, num_feat, feat_len, frame_id, dir, tr, alpha);
+		boost_compute(scr, hofs_features, index, num_feat, feat_len, dir, tr, alpha);
 
 	    } else if(this->flag[midx] == 2) {
 
 		index = this->translated_index[midx];
 		num_feat = front_x * front_y * front_bin;
-		boost_compute(scr, hoff_features, index, num_feat, feat_len, frame_id, dir, tr, alpha);
+		boost_compute(scr, hoff_features, index, num_feat, feat_len, dir, tr, alpha);
 
 	    } else if(this->flag[midx] == 3) {
 
 		index = this->translated_index[midx];
 		num_feat = side_x * side_y * side_bin;
-		boost_compute(scr, hogs_features, index, num_feat, feat_len, frame_id, dir, tr, alpha);
+		boost_compute(scr, hogs_features, index, num_feat, feat_len, dir, tr, alpha);
 
 	    } else if(this->flag[midx] == 4) {
 
 		index = this->translated_index[midx];
 		num_feat = front_x * front_y * front_bin;
-		boost_compute(scr, hogf_features, index, num_feat, feat_len, frame_id, dir, tr, alpha);
+		boost_compute(scr, hogf_features, index, num_feat, feat_len, dir, tr, alpha);
 
 	    }
 
 	}
 
-    }*/
+    }
 
 
-    void beh_class::boost_classify_side(float &scr, std::vector<float> &hogs_features,
+    /*void beh_class::boost_classify_side(float &scr, std::vector<float> &hogs_features,
                                         std::vector<float> &hofs_features, HOGShape *shape_side,
                                         int feat_len, int frame_id, boost_classifier& model)
     {
@@ -393,6 +394,6 @@ namespace bias {
 
             }
         }
-    }
+    }*/
 }
 

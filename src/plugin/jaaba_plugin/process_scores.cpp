@@ -3,11 +3,15 @@
 namespace bias {
 
 
-    ProcessScores::ProcessScores()
+    // public 
+ 
+    ProcessScores::ProcessScores(QObject *parent) : QObject(parent)
     {
 
         stopped_ = true;
-
+        detectStarted_ = false; 
+        save = false;
+        frameCount = 0;
 
     }
    
@@ -15,6 +19,7 @@ namespace bias {
     void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof)
     {
 
+        std::cout << "initside" << std::endl;
         //std::cout << " " << currentImage_.cols << " " << currentImage_.cols << std::endl;
         hoghof->loadImageParams(384, 260);
         struct HOGContext hogctx = HOGInitialize(logger, hoghof->HOGParams, 384, 260, hoghof->Cropparams);
@@ -65,6 +70,22 @@ namespace bias {
     }
 
 
+    void ProcessScores::detectOn()
+    {
+
+        detectStarted_ = true;
+
+    }
+
+
+    void ProcessScores::detectOff()
+    {
+
+        detectStarted_ = false;
+
+    }
+    
+        
     void ProcessScores::enqueueFrameDataSender(FrameData frameData)
     {
         acquireLock();
@@ -79,52 +100,19 @@ namespace bias {
         receiverImageQueue_.enqueue(frameData);
         releaseLock();
     }
-
     
-    void ProcessScores::setupHOGHOF_side()
-    {
-
-
-        //Test DEvelopment
-        QString file("/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi");
-        //vid_sde = new videoBackend(file);
-        //capture_sde = vid_sde->videoCapObject();
-        ///
-
-        //HOGHOF *hoghofside = new HOGHOF(this);
-        //HOGHOF_side = hoghofside;
-
-     }
-
-
-    void ProcessScores::setupHOGHOF_front()
-    {
-
-
-        QString file("/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi");
-        //vid_front = new videoBackend(file);
-        //capture_front = vid_front->videoCapObject();
-
-
-        //HOGHOF *hoghoffront = new HOGHOF(this);
-        //HOGHOF_front = hoghoffront;
-        //HOGHOF_front->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-        //HOGHOF_front->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-        //HOGHOF_front->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
- 
-    }
-
 
     void ProcessScores::run()
     {
 
-
         bool done = false;
+        cv::Mat curr_side;
+        cv::Mat curr_front;
  
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
-
+          
         acquireLock();
         stopped_ = false;
         releaseLock();
@@ -137,6 +125,8 @@ namespace bias {
 
         while (!done)
         {
+
+            //std::cout << stopped_ << std::endl;
 
             if (haveDataCamera0 && haveDataCamera1)
             {
@@ -178,13 +168,55 @@ namespace bias {
                 // If frame counts match and are greater than last processed frame count then process the data
                 if (frameDataCamera0.count == frameDataCamera1.count)
                 {
-                    if (((long long)(frameDataCamera0.count) > lastProcessedCount))
+
+                    if (((long long)(frameDataCamera0.count) > lastProcessedCount) && detectStarted_)
                     {
                         // --------------------------
                         // Process data here 
                         // --------------------------
 
-                        // Update last processed frame count
+                        //normalize frame
+                        curr_side = vid_sde->getImage(capture_sde);
+                        vid_sde->convertImagetoFloat(curr_side);
+                        curr_front = vid_frt->getImage(capture_frt); 
+                        vid_frt->convertImagetoFloat(curr_front);
+           
+                        HOGHOF_side->img.buf = curr_side.ptr<float>(0);
+                        HOGHOF_front->img.buf = curr_front.ptr<float>(0);
+ 
+                        genFeatures(HOGHOF_side,frameCount);
+                        genFeatures(HOGHOF_front,frameCount);
+
+                        if(save && frameCount == 200) 
+                        {
+
+                            std::cout << frameCount << std::endl;
+                            write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hog_out.data(),
+                                 HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
+                            write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hof_out.data(),
+                                 HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
+
+                            write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hog_out.data()
+                                         , HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, HOGHOF_front->hog_shape.bin);
+                            write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hof_out.data()
+                                         , HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, HOGHOF_front->hof_shape.bin);
+                        }
+
+                        if(classifier->isClassifierPathSet && frameCount > 1)
+                        {
+
+                            classifier->score = 0.0;
+                            classifier->boost_classify(classifier->score, HOGHOF_side->hog_out, HOGHOF_front->hog_out, HOGHOF_side->hof_out,
+                                                       HOGHOF_front->hof_out, &HOGHOF_side->hog_shape, &HOGHOF_front->hof_shape,
+                                                       classifier->nframes, classifier->model);
+                            write_score("classifierscr.csv", frameCount, classifier->score);
+
+                        }
+
+                      
+                        frameCount++;
+
+                        // Update last processed frame count 
                         lastProcessedCount = frameDataCamera0.count;
 
                         // Print some info
@@ -199,10 +231,8 @@ namespace bias {
                 if (!haveDataCamera0)
                 {
                     acquireLock();
-                    std::cout << "inside framegrab" << std::endl;
                     if (!senderImageQueue_.isEmpty())
                     {
-                        std::cout << "grabbing first frame " << std::endl; 
                         frameDataCamera0 = senderImageQueue_.dequeue();
                         haveDataCamera0 = true;
                     }
@@ -216,14 +246,53 @@ namespace bias {
                     {
                         frameDataCamera1 = receiverImageQueue_.dequeue();
                         haveDataCamera1 = true;
-                        //initHOGHOF(HOGHOF_side);
-                        //initHOGHOF(HOGHOF_front);
+
+                        if(!(HOGHOF_side.isNull()) && !(HOGHOF_front.isNull()))
+                        {
+                            initHOGHOF(HOGHOF_side);
+                            initHOGHOF(HOGHOF_front);
+                            classifier->translate_mat2C(&HOGHOF_side->hog_shape,&HOGHOF_front->hog_shape);
+                        }
                     }
                     releaseLock();
                 }
             }
         }
     }
+
+
+    //Test
+    void ProcessScores::write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins)
+    {
+
+        std::ofstream x_out;
+        x_out.open(file.c_str());
+
+        // write hist output to csv file
+        for(int k=0;k < nbins;k++){
+            for(int i = 0;i < h;i++){
+                for(int j = 0; j < w;j++){
+                    x_out << out_img[k*w*h +i*w + j]; // i*h +j
+                    if(j != w-1 || i != h-1 || k != nbins -1)
+                        x_out << ",";
+                }
+            }
+        }
+    }
+
+
+    void ProcessScores::write_score(std::string file, int framenum, float score)
+    {
+
+        std::ofstream x_out;
+        x_out.open(file.c_str(), std::ios_base::app);
+
+        // write score to csv file
+        x_out << framenum << ","<< score << "\n";
+        x_out.close();
+
+    }
+
 }
 
 

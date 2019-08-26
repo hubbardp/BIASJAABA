@@ -13,11 +13,11 @@
 #include <QThreadPool>
 #include <QThread>
 //test development
-#include <fstream>
-#include <string>
-#include "H5Cpp.h"
-#include "video_utils.hpp"
-#include <opencv2/highgui/highgui.hpp>
+//#include <fstream>
+//#include <string>
+//#include "H5Cpp.h"
+//#include "video_utils.hpp"
+//#include <opencv2/highgui/highgui.hpp>
 
 namespace bias
 {
@@ -49,11 +49,7 @@ namespace bias
   
             unsigned int cameraNumber_;
             unsigned int partnerCameraNumber_ ;
-            //FrameData frameData;
  
-            QPointer<HOGHOF> HOGHOF_side;
-            QPointer<HOGHOF> HOGHOF_front;
-            QPointer<beh_class> classifier;
             QPointer<ProcessScores> processScoresPtr_;
             QPointer<QThreadPool> threadPoolPtr_;
 
@@ -66,15 +62,12 @@ namespace bias
             int nviews_;
             bool save;
             bool stop_save;
+            bool detectStarted = false;
             
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
             FrameData frameData;
-            //QQueue<FrameData> senderImageQueue_;
-            //QQueue<FrameData> receiverImageQueue_;
          
-            //HOGShape tmp_sideshape;
-            //HOGShape tmp_frontshape;
             videoBackend* vid_sde;
             videoBackend* vid_front;
             cv::VideoCapture capture_sde;
@@ -84,36 +77,18 @@ namespace bias
             bool isSender();
             bool isReceiver(); 
             void initialize();
-            //void initHOGHOF(QPointer<HOGHOF> hoghof);
-            //void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
             void setupHOGHOF();
             void setupClassifier();
             void connectWidgets();
             int getNumberofViews();
             void updateWidgetsOnLoad();
-            void checkviews();
+            //void checkviews();
             void detectEnabled();
 
-
-            //test development
-            void copy_features1d(int frame_num, int num_elements, 
-                            std::vector<float> &vec_feat, float* array_feat);
-            int createh5(std::string filename, int frame_num,
-                          int num_frames, int hog_elements, int hof_elements,
-                          std::vector<float> hog, std::vector<float> hof);
-            void create_dataset(H5::H5File& file, std::string key,
-                          std::vector<float> features, int num_frames, int num_elements);
-            //void write_output(std::string file,float* out_img, unsigned w, unsigned h);
-            void write_output_shape(std::string filename, std::string view, unsigned x, unsigned y, unsigned bin);
-            void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
-            void read_output_shape(std::string filename);      
-            void write_score(std::string file, int frame, float score);
-            void read_score(std::string file_side, std::string file_front, int framenum);    
  
         signals:
 
             void newFrameData(FrameData data);
-            void process();
 
         private slots:
 
@@ -123,7 +98,6 @@ namespace bias
             void detectClicked();
             void saveClicked();
             void onNewFrameData(FrameData data);
-            void processData();
 
     
     };

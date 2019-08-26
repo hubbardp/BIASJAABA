@@ -250,6 +250,7 @@ namespace bias
 
     }*/
 
+
     void HOGHOF::copytoHOGParams(QJsonObject& obj) 
     {
 
@@ -270,7 +271,6 @@ namespace bias
 	    }
         }
     }
-
 
 
     void HOGHOF::copytoHOFParams(QJsonObject& obj) 
