@@ -118,6 +118,7 @@ namespace bias {
         if (isReceiver())
         {
             threadPoolPtr_ = new QThreadPool(this);
+            threadPoolPtr_ -> setMaxThreadCount(1);
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_ != nullptr))
             {
                 threadPoolPtr_ -> start(processScoresPtr_);
@@ -143,9 +144,6 @@ namespace bias {
     void JaabaPlugin::processFrames(QList<StampedImage> frameList)
     {
          
-        cv::Mat currentImageFloat;
-        cv::Mat image_front;
-        cv::Mat image_side;
         StampedImage latestFrame = frameList.back();
         frameList.clear();
         cv::Mat workingImage = latestFrame.image.clone();    
@@ -159,6 +157,7 @@ namespace bias {
             frameCount_ = latestFrame.frameCount;
             releaseLock();
 
+            FrameData frameData;
             frameData.count = frameCount_;
             frameData.image = currentImage_;
 
@@ -309,8 +308,8 @@ namespace bias {
         {
 
             QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";  
-            processScoresPtr_ -> vid_frt = new videoBackend(file_frt);          
-            processScoresPtr_ -> capture_frt = processScoresPtr_ -> vid_frt -> videoCapObject();
+            processScoresPtr_ -> vid_frt = new videoBackend(file_frt); 
+            processScoresPtr_ -> capture_frt = processScoresPtr_ -> vid_frt -> videoCapObject(); 
 
             HOGHOF *hoghoffront = new HOGHOF(this);  
             acquireLock();
@@ -585,20 +584,14 @@ namespace bias {
         if(isReceiver()) 
         {
 
-            acquireLock();
-            frameData.count = data.count;
-            frameData.image = data.image;
-            releaseLock();
-
             //get frame from sender plugin
             acquireLock();
-            processScoresPtr_->enqueueFrameDataSender(frameData);
+            processScoresPtr_->enqueueFrameDataSender(data);
             releaseLock();
             
             numMessageReceived_++;
           
         }        
-        //updateMessageLabels();
     }
     
 }

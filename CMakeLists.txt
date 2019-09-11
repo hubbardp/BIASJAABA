@@ -55,11 +55,15 @@ endif()
 # ------------------------------------------------------------------------------
 if(with_qt_gui)
     #set(QT_BINARY_DIR "$ENV{QTDIR}/bin")
+    #message(STATUS "${QT_BINARY_DIR}")
     set(Qt5_DIR "/opt/qt/5.12.3/gcc_64/lib/cmake/Qt5")
-    #set(Qt5Core_DIR "/opt/qt/5.12.3")
-    #set(Qt5Widgets_DIR "/opt/qt/5.12.3")
-    #set(Qt5Network_DIR "")
+    #set(Qt5Core_DIR "/groups/branson/home/patilr/anaconda3/lib")
+    #set(Qt5Widgets_DIR "/groups/branson/home/patilr/anaconda3/lib")
+    #set(Qt5Network_DIR "/groups/branson/home/patilr/anaconda3/lib")
+    #set(Qt5SerialPort_DIR "/groups/branson/home/patilr/anaconda3/lib")
 
+
+ 
     # Old qt 4.8 build
     # ------------------------------------------------------------
     #find_package(Qt4 COMPONENTS QtCore QtGui QtNetwork REQUIRED)
@@ -69,7 +73,7 @@ if(with_qt_gui)
     #find_package(Qt5Widgets REQUIRED)
     #find_package(Qt5Gui REQUIRED) 
     #find_package(Qt5Network REQUIRED)
-    find_package(Qt5 COMPONENTS Core Gui Widgets Network REQUIRED)
+    find_package(Qt5 COMPONENTS Core Gui Widgets Network SerialPort REQUIRED)
 
 endif()
 
@@ -94,7 +98,7 @@ set(CUDA_NVCC_FLAGS_MINSIZEREL     -Xcompiler -fPIC;--std=c++11;-use_fast_math C
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_C_STANDARD   99)
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE RELEASE)
 
 
 # Definitions 

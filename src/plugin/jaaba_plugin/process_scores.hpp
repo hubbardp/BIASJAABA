@@ -14,7 +14,7 @@
 #include <memory>
 #include "video_utils.hpp"
 #include <opencv2/highgui/highgui.hpp>
-
+#include <fstream>
 
 namespace bias 
 {
@@ -45,6 +45,10 @@ namespace bias
            videoBackend* vid_frt;
            cv::VideoCapture capture_sde;
            cv::VideoCapture capture_frt;
+           cv::Mat curr_side; 
+           cv::Mat curr_front;
+           cv::Mat grey_sde;
+           cv::Mat grey_frt;
 
        private :
 
@@ -57,7 +61,7 @@ namespace bias
            QQueue<FrameData> receiverImageQueue_;
 
            void run();
-           void initHOGHOF(QPointer<HOGHOF> hoghof);
+           void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
 
            void write_score(std::string file, int framenum, float score);

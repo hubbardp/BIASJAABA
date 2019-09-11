@@ -66,7 +66,6 @@ namespace bias
             
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
-            FrameData frameData;
          
             videoBackend* vid_sde;
             videoBackend* vid_front;

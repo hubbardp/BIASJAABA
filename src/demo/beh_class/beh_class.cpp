@@ -1,7 +1,6 @@
 #include "beh_class.hpp"
 
 
-
 void beh_class::allocate_model() {
 
     H5::H5File file(this->classifier_file.toStdString(), H5F_ACC_RDONLY);
@@ -140,11 +139,11 @@ void beh_class::boost_compute(std::vector<float> &scr, std::vector<float> &featu
 
         if(features[frame * num_feat + ind] > tr) {
 
-                addscores[frame] = 1;
+            addscores[frame] = 1;
 
         } else {
 
-                addscores[frame] = -1;
+            addscores[frame] = -1;
         }
 
         addscores[frame] = addscores[frame] * alpha;

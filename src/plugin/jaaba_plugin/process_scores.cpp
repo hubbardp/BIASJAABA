@@ -16,13 +16,13 @@ namespace bias {
     }
    
  
-    void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof)
+    void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
     {
 
-        std::cout << "initside" << std::endl;
-        //std::cout << " " << currentImage_.cols << " " << currentImage_.cols << std::endl;
-        hoghof->loadImageParams(384, 260);
-        struct HOGContext hogctx = HOGInitialize(logger, hoghof->HOGParams, 384, 260, hoghof->Cropparams);
+        //hoghof->loadImageParams(384, 260);
+        std::cout << img_height << " " << img_width << std::endl;
+        hoghof->loadImageParams(img_width, img_height);
+        struct HOGContext hogctx = HOGInitialize(logger, hoghof->HOGParams, img_width, img_height, hoghof->Cropparams);
         struct HOFContext hofctx = HOFInitialize(logger, hoghof->HOFParams, hoghof->Cropparams);
         hoghof->hog_ctx = (HOGContext*)malloc(sizeof(hogctx));
         hoghof->hof_ctx = (HOFContext*)malloc(sizeof(hofctx));
@@ -66,7 +66,9 @@ namespace bias {
 
     void ProcessScores::stop()
     {
+
         stopped_ = true;
+
     }
 
 
@@ -106,8 +108,6 @@ namespace bias {
     {
 
         bool done = false;
-        cv::Mat curr_side;
-        cv::Mat curr_front;
  
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -125,8 +125,6 @@ namespace bias {
 
         while (!done)
         {
-
-            //std::cout << stopped_ << std::endl;
 
             if (haveDataCamera0 && haveDataCamera1)
             {
@@ -175,53 +173,92 @@ namespace bias {
                         // Process data here 
                         // --------------------------
 
-                        //normalize frame
-                        curr_side = vid_sde->getImage(capture_sde);
-                        vid_sde->convertImagetoFloat(curr_side);
-                        curr_front = vid_frt->getImage(capture_frt); 
-                        vid_frt->convertImagetoFloat(curr_front);
-           
-                        HOGHOF_side->img.buf = curr_side.ptr<float>(0);
-                        HOGHOF_front->img.buf = curr_front.ptr<float>(0);
- 
-                        genFeatures(HOGHOF_side,frameCount);
-                        genFeatures(HOGHOF_front,frameCount);
-
-                        if(save && frameCount == 200) 
+                        //Test development capture framme and normalize frame
+                        /*if(capture_sde.isOpened())
                         {
-
-                            std::cout << frameCount << std::endl;
-                            write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hog_out.data(),
-                                 HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
-                            write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hof_out.data(),
-                                 HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
-
-                            write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hog_out.data()
-                                         , HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, HOGHOF_front->hog_shape.bin);
-                            write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hof_out.data()
-                                         , HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, HOGHOF_front->hof_shape.bin);
+                            curr_side = vid_sde->getImage(capture_sde);
+                            vid_sde->convertImagetoFloat(curr_side);
+                            grey_sde = curr_side;
                         }
 
-                        if(classifier->isClassifierPathSet && frameCount > 1)
+                        if(capture_frt.isOpened())
+                        {
+                            curr_front = vid_frt->getImage(capture_frt); 
+                            vid_frt->convertImagetoFloat(curr_front);
+                            grey_frt = curr_front;
+                        }*/
+
+                        
+                        curr_side = frameDataCamera0.image;
+                        curr_front = frameDataCamera1.image;
+
+                        std::cout << "count" << frameDataCamera0.count << " " << frameDataCamera1.count << std::endl;
+                        std::cout << "rows " << curr_side.rows << "cols " << curr_side.cols << std::endl; 
+                        std::cout << "rows " << curr_front.rows << "cols " << curr_front.cols << std::endl;
+                                                    
+                        // convert the frame into RGB2GRAY
+                        if(curr_side.channels() == 3) 
+                        {
+                            cv::cvtColor(curr_side, curr_side, cv::COLOR_BGR2GRAY);
+                        }
+
+                        if(curr_front.channels() == 3)
+                        {
+                            cv::cvtColor(curr_front, curr_front, cv::COLOR_BGR2GRAY);
+                        }
+
+                        // convert the frame into float32
+                        curr_side.convertTo(grey_sde, CV_32FC1);
+                        grey_sde = grey_sde / 255;
+                        curr_front.convertTo(grey_frt, CV_32FC1);
+                        grey_frt = grey_frt / 255;                        
+                        //cv::imwrite("out_feat/img" + std::to_string(frameCount) + ".bmp",curr_side);*/                         
+       
+                        HOGHOF_side->img.buf = grey_sde.ptr<float>(0);
+                        HOGHOF_front->img.buf = grey_frt.ptr<float>(0);
+ 
+                        genFeatures(HOGHOF_side, lastProcessedCount);
+                        genFeatures(HOGHOF_front, lastProcessedCount);
+                        //genFeatures(HOGHOF_side, frameCount);
+                        //genFeatures(HOGHOF_front, frameCount);
+
+
+                        if(save && lastProcessedCount == 1000) 
+                        {
+
+                            write_histoutput("./out_feat/hog_side_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_side->hog_out.data(),
+                                 HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
+                            write_histoutput("./out_feat/hof_side_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_side->hof_out.data(),
+                                 HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
+
+                            write_histoutput("./out_feat/hog_front_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_front->hog_out.data()
+                                         , HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, HOGHOF_front->hog_shape.bin);
+                            write_histoutput("./out_feat/hof_front_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_front->hof_out.data()
+                                         , HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, HOGHOF_front->hof_shape.bin);
+                        }
+                         
+
+                        if(classifier->isClassifierPathSet && lastProcessedCount > 0)
                         {
 
                             classifier->score = 0.0;
                             classifier->boost_classify(classifier->score, HOGHOF_side->hog_out, HOGHOF_front->hog_out, HOGHOF_side->hof_out,
                                                        HOGHOF_front->hof_out, &HOGHOF_side->hog_shape, &HOGHOF_front->hof_shape,
                                                        classifier->nframes, classifier->model);
-                            write_score("classifierscr.csv", frameCount, classifier->score);
+                            //write_score("classifierscr.csv", lastProcessedCount, classifier->score);
+                            write_score("buffer_0.csv", lastProcessedCount, sizeQueue0);
+                            //write_score("buffer_1.csv", lastProcessedCount, sizeQueue1);
 
                         }
 
-                      
-                        frameCount++;
-
+                     
                         // Update last processed frame count 
+                        frameCount++;
                         lastProcessedCount = frameDataCamera0.count;
 
                         // Print some info
-                        std::cout << "processed frame " << lastProcessedCount;
-                        std::cout << ", queue0 size = " << sizeQueue0 << ", queue1 size = " << sizeQueue1 << std::endl;
+                        //std::cout << "processed frame " << lastProcessedCount;
+                        //std::cout << ", queue0 size = " << sizeQueue0 << ", queue1 size = " << sizeQueue1 << std::endl;
                     }
                 }
             }
@@ -235,6 +272,12 @@ namespace bias {
                     {
                         frameDataCamera0 = senderImageQueue_.dequeue();
                         haveDataCamera0 = true;
+
+                        if(!(HOGHOF_front.isNull()))
+                        {
+                            //initHOGHOF(HOGHOF_front, 260, 384);
+                            initHOGHOF(HOGHOF_front, frameDataCamera0.image.rows, frameDataCamera0.image.cols);
+                        }
                     }
                     releaseLock();
 
@@ -247,15 +290,22 @@ namespace bias {
                         frameDataCamera1 = receiverImageQueue_.dequeue();
                         haveDataCamera1 = true;
 
-                        if(!(HOGHOF_side.isNull()) && !(HOGHOF_front.isNull()))
+                        if(!(HOGHOF_side.isNull()))
                         {
-                            initHOGHOF(HOGHOF_side);
-                            initHOGHOF(HOGHOF_front);
-                            classifier->translate_mat2C(&HOGHOF_side->hog_shape,&HOGHOF_front->hog_shape);
+                            // initHOGHOF(HOGHOF_side, 260, 384);
+                            initHOGHOF(HOGHOF_side, frameDataCamera1.image.rows, frameDataCamera1.image.cols);
                         }
                     }
                     releaseLock();
                 }
+                
+                //check if HOGHOF initialized on gpu and initialize classifier params 
+                acquireLock();
+                if(haveDataCamera0 && haveDataCamera1)
+                {
+                    classifier->translate_mat2C(&HOGHOF_side->hog_shape,&HOGHOF_front->hog_shape);
+                }
+                releaseLock();
             }
         }
     }
