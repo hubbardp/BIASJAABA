@@ -360,6 +360,17 @@ namespace bias {
         detectButtonPtr_ ->setEnabled(false);
         saveButtonPtr_->setEnabled(false);
         save = false;
+
+        if(cameraNumber_ == 0)
+        {
+            
+            this->setEnabled(false);            
+
+        } else {
+
+            this->setEnabled(true);
+
+        }
         //checkviews();
 
     }

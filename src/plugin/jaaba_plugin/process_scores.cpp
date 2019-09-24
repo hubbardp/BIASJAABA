@@ -1,4 +1,5 @@
-#include "process_scores.hpp" 
+#include "process_scores.hpp"
+#include <cuda_runtime_api.h> 
 
 namespace bias {
 
@@ -20,7 +21,10 @@ namespace bias {
     {
 
         //hoghof->loadImageParams(384, 260);
-        std::cout << img_height << " " << img_width << std::endl;
+        int nDevices;
+        cudaError_t err = cudaGetDeviceCount(&nDevices); 
+        if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
+        std::cout << img_height << " " << img_width << " " << nDevices << std::endl;
         hoghof->loadImageParams(img_width, img_height);
         struct HOGContext hogctx = HOGInitialize(logger, hoghof->HOGParams, img_width, img_height, hoghof->Cropparams);
         struct HOFContext hofctx = HOFInitialize(logger, hoghof->HOFParams, hoghof->Cropparams);
@@ -192,9 +196,9 @@ namespace bias {
                         curr_side = frameDataCamera0.image;
                         curr_front = frameDataCamera1.image;
 
-                        std::cout << "count" << frameDataCamera0.count << " " << frameDataCamera1.count << std::endl;
-                        std::cout << "rows " << curr_side.rows << "cols " << curr_side.cols << std::endl; 
-                        std::cout << "rows " << curr_front.rows << "cols " << curr_front.cols << std::endl;
+                        //std::cout << "count" << frameDataCamera0.count << " " << frameDataCamera1.count << std::endl;
+                        //std::cout << "rows " << curr_side.rows << "cols " << curr_side.cols << std::endl; 
+                        //std::cout << "rows " << curr_front.rows << "cols " << curr_front.cols << std::endl;
                                                     
                         // convert the frame into RGB2GRAY
                         if(curr_side.channels() == 3) 
@@ -246,7 +250,7 @@ namespace bias {
                                                        HOGHOF_front->hof_out, &HOGHOF_side->hog_shape, &HOGHOF_front->hof_shape,
                                                        classifier->nframes, classifier->model);
                             //write_score("classifierscr.csv", lastProcessedCount, classifier->score);
-                            write_score("buffer_0.csv", lastProcessedCount, sizeQueue0);
+                            //write_score("buffer_0.csv", lastProcessedCount, sizeQueue0);
                             //write_score("buffer_1.csv", lastProcessedCount, sizeQueue1);
 
                         }
