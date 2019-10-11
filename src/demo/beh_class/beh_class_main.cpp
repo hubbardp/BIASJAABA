@@ -1,7 +1,7 @@
 #include "HOGHOF.hpp"
 #include "beh_class.hpp"
 #include <vector>
-
+#include "timer.h"
 #include <fstream>
 #include <iostream>
 #include <QDebug>
@@ -16,7 +16,7 @@
         options.insert(opt);
 
         switch(opt){
-
+iiiii
             case 'v': g = optarg;
                 break;
             default: std::cout << "Missing arguments:<help>"
@@ -31,6 +31,7 @@
 int main(int argc, char* argv[]) {
 
     //Input files
+    //cudaSetDevice(1);
     HOGHOF feat_side;
     feat_side.HOGParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOGparam.json";
     feat_side.HOFParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOFparam.json";
@@ -53,14 +54,27 @@ int main(int argc, char* argv[]) {
     classifier.allocate_model();
     classifier.loadclassifier_model();
 
-    //compute features
+ 
+    //compute Featues 
+    cudaSetDevice(0); 
+    GpuTimer timer1;
+    timer1.Start();
     feat_side.genFeatures(vidFile[0], feat_side.CropParam_file);
+    timer1.Stop();
+
+    cudaSetDevice(1);
+    GpuTimer timer2 ;
+    timer2.Start();
     feat_frt.genFeatures(vidFile[1], feat_frt.CropParam_file);
-    createh5("./hoghof", ".h5", 2498, 
+    timer2.Stop();
+    std::cout << timer1.Elapsed()/1000 << std::endl;
+    std::cout << timer2.Elapsed()/1000 << std::endl;
+
+    /*createh5("./hoghof", ".h5", 2498, 
              2400, 2400,
              1600, 1600,
              feat_side.hog_out, feat_frt.hog_out,
-             feat_side.hof_out, feat_frt.hof_out);    
+             feat_side.hof_out, feat_frt.hof_out);*/    
 
     //predict scores
     classifier.translate_mat2C(&feat_side.hog_shape, &feat_frt.hof_shape);

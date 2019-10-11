@@ -18,7 +18,7 @@ set(
     beh_class.hpp
     process_scores.hpp
     frame_data.hpp
-    #timer.h
+    shape_data.hpp
     )
 
 set(

@@ -63,6 +63,7 @@ namespace bias {
             int startFrameSet=true;
             size_t hog_outputbytes;
             size_t hof_outputbytes;
+            bool isInitialized=false;
             HOGHOF(QWidget *parent);
     
          

@@ -17,8 +17,10 @@ namespace bias
     void HOGHOF::initialize() 
     {
         
-        //loadHOGParams();
-        //loadHOFParams();
+        isHOGPathSet=false;
+        isHOFPathSet=false;
+        startFrameSet=true;
+        isInitialized=false;
 
     }
     

@@ -20,6 +20,8 @@ if(with_qt_gui)
         image_label.hpp
         stamped_image.hpp
         lockable.hpp
+        timer.h
+        tictoc.h
         )
     
     set(
@@ -33,6 +35,7 @@ if(with_qt_gui)
         basic_image_proc.cpp
         basic_http_server.cpp
         image_label.cpp
+        tictoc.c
         )
     
     qt5_wrap_cpp(bias_utility_HEADERS_MOC ${bias_utility_HEADERS})

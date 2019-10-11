@@ -1,5 +1,13 @@
 #include "process_scores.hpp"
 #include <cuda_runtime_api.h> 
+//#include "timer.h"
+#include "tictoc.h"
+//#include <ctime>
+#include <chrono>
+#include <time.h>
+
+struct timespec tp;
+clockid_t clk_id =  CLOCK_MONOTONIC;
 
 namespace bias {
 
@@ -7,8 +15,7 @@ namespace bias {
     // public 
  
     ProcessScores::ProcessScores(QObject *parent) : QObject(parent)
-    {
-
+    {   
         stopped_ = true;
         detectStarted_ = false; 
         save = false;
@@ -17,14 +24,11 @@ namespace bias {
     }
    
  
-    void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
+    /*void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
     {
 
         //hoghof->loadImageParams(384, 260);
-        int nDevices;
-        cudaError_t err = cudaGetDeviceCount(&nDevices); 
-        if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
-        std::cout << img_height << " " << img_width << " " << nDevices << std::endl;
+        std::cout << img_height << " " << img_width << std::endl;
         hoghof->loadImageParams(img_width, img_height);
         struct HOGContext hogctx = HOGInitialize(logger, hoghof->HOGParams, img_width, img_height, hoghof->Cropparams);
         struct HOFContext hofctx = HOFInitialize(logger, hoghof->HOFParams, hoghof->Cropparams);
@@ -47,25 +51,42 @@ namespace bias {
         hoghof->hof_shape = hofshape;
         hoghof->hog_out.resize(hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin);
         hoghof->hof_out.resize(hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin);
+    }*/
 
-    }
 
-
-    void ProcessScores::genFeatures(QPointer<HOGHOF> hoghof,int frame)
+    /*void ProcessScores::genFeatures(QPointer<HOGHOF> hoghof,int frame)
     {
 
         size_t hog_num_elements = hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin;
         size_t hof_num_elements = hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin;
 
         //Compute and copy HOG/HOF
+        //int nDevices;
+        //cudaError_t err = cudaGetDeviceCount(&nDevices);
+        //if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
 
-        HOFCompute(hoghof->hof_ctx, hoghof->img.buf, hof_f32); // call to compute and copy is asynchronous
-        HOFOutputCopy(hoghof->hof_ctx, hoghof->hof_out.data(), hoghof->hof_outputbytes); // should be called one after 
-                                                           // the other to get correct answer
-        HOGCompute(hoghof->hog_ctx, hoghof->img);
-        HOGOutputCopy(hoghof->hog_ctx, hoghof->hog_out.data(), hoghof->hog_outputbytes);
+        //std::cout << "no of devices " << nDevices << std::endl;
+        if(nDevices>=2)
+        {
+            //cudaSetDevice(0);
+            HOFCompute(hoghof->hof_ctx, hoghof->img.buf, hof_f32); // call to compute and copy is asynchronous
+            HOFOutputCopy(hoghof->hof_ctx, hoghof->hof_out.data(), hoghof->hof_outputbytes); // should be called one after 
+                                                                                     // the other to get correct answer
+            //cudaSetDevice(1);
+            HOGCompute(hoghof->hog_ctx, hoghof->img);
+            HOGOutputCopy(hoghof->hog_ctx, hoghof->hog_out.data(), hoghof->hog_outputbytes);
 
-    }
+        } else {
+
+            //HOFCompute(hoghof->hof_ctx, hoghof->img.buf, hof_f32); // call to compute and copy is asynchronous
+            //HOFOutputCopy(hoghof->hof_ctx, hoghof->hof_out.data(), hoghof->hof_outputbytes); // should be called one after 
+                                                                                     // the other to get correct answer
+            //HOGCompute(hoghof->hog_ctx, hoghof->img);
+            //HOGOutputCopy(hoghof->hog_ctx, hoghof->hog_out.data(), hoghof->hog_outputbytes);
+
+        }
+
+    }*/
 
 
     void ProcessScores::stop()
@@ -92,7 +113,7 @@ namespace bias {
     }
     
         
-    void ProcessScores::enqueueFrameDataSender(FrameData frameData)
+    /*void ProcessScores::enqueueFrameDataSender(FrameData frameData)
     {
         acquireLock();
         senderImageQueue_.enqueue(frameData);
@@ -105,14 +126,14 @@ namespace bias {
         acquireLock();
         receiverImageQueue_.enqueue(frameData);
         releaseLock();
-    }
+    }*/
     
 
     void ProcessScores::run()
     {
 
-        bool done = false;
- 
+        /*bool done = false;
+        //cudaSetDevice(1);
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
@@ -125,18 +146,22 @@ namespace bias {
         bool haveDataCamera1 = false;
         FrameData frameDataCamera0;
         FrameData frameDataCamera1;
-        long long lastProcessedCount = -1;
+        long long lastProcessedCount = -1;        
 
+        //GpuTimer timer1;
+        //GpuTimer timer2;
+        
         while (!done)
         {
 
-            if (haveDataCamera0 && haveDataCamera1)
+            if (haveDataCamera0)
             {
                 int sizeQueue0 = -1;
                 int sizeQueue1 = -1;
+                //std::cout << "enter" << std::endl;
 
+                //timer1.Start();
                 acquireLock();
-
                 // Remove frames from queue #0 until caught up with queue #1
                 while ((frameDataCamera0.count < frameDataCamera1.count) && !senderImageQueue_.isEmpty())
                 {
@@ -159,26 +184,54 @@ namespace bias {
                     frameDataCamera1 = receiverImageQueue_.dequeue();
                 }
 
+                if(!senderImageQueue_.isEmpty()) 
+                {
+                    frameDataCamera1 = receiverImageQueue_.dequeue();
+                    sizeQueue1 = receiverImageQueue_.size();
+                    lastProcessedCount = frameDataCamera1.count;
+                    curr_side = frameDataCamera1.image;
+                    curr_side.convertTo(grey_sde, CV_32FC1);
+                    grey_sde = grey_sde / 255;
+                    HOGHOF_side->img.buf = grey_sde.ptr<float>(0);
+                    genFeatures(HOGHOF_side, lastProcessedCount);
+                    write_score("buffer_1.csv", lastProcessedCount, sizeQueue1);
+
+                    frameDataCamera0 = senderImageQueue_.dequeue();
+                    sizeQueue0 = senderImageQueue_.size();
+                    lastProcessedCount = frameDataCamera0.count;
+                    curr_front = frameDataCamera0.image;
+                    curr_front.convertTo(grey_frt, CV_32FC1);
+                    grey_frt = grey_frt / 255;
+                    //HOGHOF_front->img.buf = grey_frt.ptr<float>(0);
+                    //genFeatures(HOGHOF_front, lastProcessedCount);
+                    write_score("buffer_0.csv", lastProcessedCount, sizeQueue0);
+
+                    std::cout << "frameCount " << lastProcessedCount <<  "size " << sizeQueue1 << std::endl;
+                    std::cout << "frameCount " << lastProcessedCount << "size " << sizeQueue0 << std::endl;
+                }
+ 
                 // Get queue sizes - just for general info
-                sizeQueue0 = senderImageQueue_.size();
-                sizeQueue1 = receiverImageQueue_.size();
+                //sizeQueue0 = senderImageQueue_.size();
+                //sizeQueue1 = receiverImageQueue_.size();
 
                 // Check to see if stop has been called
                 done = stopped_;
                 releaseLock();
 
-                // If frame counts match and are greater than last processed frame count then process the data
-                if (frameDataCamera0.count == frameDataCamera1.count)
-                {
 
-                    if (((long long)(frameDataCamera0.count) > lastProcessedCount) && detectStarted_)
-                    {
+                // If frame counts match and are greater than last processed frame count then process the data
+                //if (frameDataCamera0.count == frameDataCamera1.count)
+                //{
+
+                    //if (((long long)(frameDataCamera0.count) > lastProcessedCount) && detectStarted_)
+                    //{
                         // --------------------------
                         // Process data here 
                         // --------------------------
 
+                        //std::cout << sizeQueue0 << std::endl;
                         //Test development capture framme and normalize frame
-                        /*if(capture_sde.isOpened())
+                        if(capture_sde.isOpened())
                         {
                             curr_side = vid_sde->getImage(capture_sde);
                             vid_sde->convertImagetoFloat(curr_side);
@@ -190,11 +243,15 @@ namespace bias {
                             curr_front = vid_frt->getImage(capture_frt); 
                             vid_frt->convertImagetoFloat(curr_front);
                             grey_frt = curr_front;
-                        }*/
+                        }
+
+
+                        //write_score("buffer_0.csv", lastProcessedCount, sizeQueue0);
+                        //write_score("buffer_1.csv", lastProcessedCount, sizeQueue1);
 
                         
-                        curr_side = frameDataCamera0.image;
-                        curr_front = frameDataCamera1.image;
+                        //curr_side = frameDataCamera1.image;
+                        //curr_front = frameDataCamera0.image;
 
                         //std::cout << "count" << frameDataCamera0.count << " " << frameDataCamera1.count << std::endl;
                         //std::cout << "rows " << curr_side.rows << "cols " << curr_side.cols << std::endl; 
@@ -215,29 +272,76 @@ namespace bias {
                         curr_side.convertTo(grey_sde, CV_32FC1);
                         grey_sde = grey_sde / 255;
                         curr_front.convertTo(grey_frt, CV_32FC1);
-                        grey_frt = grey_frt / 255;                        
-                        //cv::imwrite("out_feat/img" + std::to_string(frameCount) + ".bmp",curr_side);*/                         
+                        grey_frt = grey_frt / 255;                  
+                        //cv::imwrite("out_feat/img" + std::to_string(frameCount) + ".bmp",curr_side);                      
        
-                        HOGHOF_side->img.buf = grey_sde.ptr<float>(0);
-                        HOGHOF_front->img.buf = grey_frt.ptr<float>(0);
- 
-                        genFeatures(HOGHOF_side, lastProcessedCount);
-                        genFeatures(HOGHOF_front, lastProcessedCount);
-                        //genFeatures(HOGHOF_side, frameCount);
-                        //genFeatures(HOGHOF_front, frameCount);
+                        //HOGHOF_side->img.buf = grey_sde.ptr<float>(0);
+                        //HOGHOF_front->img.buf = grey_frt.ptr<float>(0);
 
+                        //write_score("buffer_0.csv", lastProcessedCount, sizeQueue0);
+                        //write_score("buffer_1.csv", lastProcessedCount, sizeQueue1);
+                         
+                        
+                        //int nDevices;
+                        //cudaError_t err = cudaGetDeviceCount(&nDevices);
+                        //if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
+                        //std::cout << "no of devices " << nDevices << std::endl;
 
-                        if(save && lastProcessedCount == 1000) 
+                        //timer1.Start();
+                        //std::clock_t c_start = std::clock();
+                        //TicTocTimer clock;
+                        //clock=tic(); 
+
+                        //auto start = std::chrono::system_clock::now();
+                        if(nDevices>=2)
+                        {
+                            cudaSetDevice(1);
+                            HOGHOF_side->img.buf = grey_sde.ptr<float>(0);
+                            genFeatures(HOGHOF_side, lastProcessedCount);
+                            //genFeatures(HOGHOF_side, frameCount);
+                            cudaSetDevice(0);
+                            HOGHOF_front->img.buf = grey_frt.ptr<float>(0);                            
+                            genFeatures(HOGHOF_front, lastProcessedCount);
+                            //genFeatures(HOGHOF_front, frameCount);
+
+                        } else {
+
+                            HOGHOF_side->img.buf = grey_sde.ptr<float>(0);
+                            genFeatures(HOGHOF_side, lastProcessedCount);
+                            //genFeatures(HOGHOF_side, frameCount);
+                            HOGHOF_front->img.buf = grey_frt.ptr<float>(0);
+                            genFeatures(HOGHOF_front, lastProcessedCount);
+                            //genFeatures(HOGHOF_front, frameCount);
+
+                        }
+
+                        //timer1.Stop();
+                        //std::cout << "frameCount " <<  lastProcessedCount << 
+                        //" " << timer1.Elapsed()/1000 << std::endl;
+
+                        //std::clock_t c_end = std::clock();
+                        //double time_elapsed = (double)(c_end - c_start)/CLOCKS_PER_SEC;
+
+                        //double time_elapsed = toc(&clock);
+                        //clock = tic();
+                        //long int now = unix_timestamp();
+                        //int result;
+                        //result = clock_gettime(clk_id, &tp); 
+                        //printf("result: %i\n", result);
+                                                
+                        write_score("process.csv", lastProcessedCount, (tp.tv_sec*1000000000LL + tp.tv_nsec)/1000000); 
+                       
+                        if(save && frameCount == 1000) 
                         {
 
-                            write_histoutput("./out_feat/hog_side_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_side->hog_out.data(),
+                            write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hog_out.data(),
                                  HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
-                            write_histoutput("./out_feat/hof_side_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_side->hof_out.data(),
+                            write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount) + ".csv", HOGHOF_side->hof_out.data(),
                                  HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
 
-                            write_histoutput("./out_feat/hog_front_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_front->hog_out.data()
+                            write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hog_out.data()
                                          , HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, HOGHOF_front->hog_shape.bin);
-                            write_histoutput("./out_feat/hof_front_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_front->hof_out.data()
+                            write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount) + ".csv", HOGHOF_front->hof_out.data()
                                          , HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, HOGHOF_front->hof_shape.bin);
                         }
                          
@@ -255,20 +359,24 @@ namespace bias {
 
                         }
 
-                     
                         // Update last processed frame count 
-                        frameCount++;
-                        lastProcessedCount = frameDataCamera0.count;
-
+                        //frameCount++;
+                        //lastProcessedCount = frameDataCamera0.count;
+                         
+                       
                         // Print some info
                         //std::cout << "processed frame " << lastProcessedCount;
                         //std::cout << ", queue0 size = " << sizeQueue0 << ", queue1 size = " << sizeQueue1 << std::endl;
-                    }
-                }
-            }
+                    //}
+                //}
+                //timer1.Stop();
+                //std::cout << "frameCount:" << lastProcessedCount << "time grab" << timer1.Elapsed()/1000 << std::endl;
+                
+            }            
             else
             {
                 // Grab initial frame data from queues
+                //timer2.Start();
                 if (!haveDataCamera0)
                 {
                     acquireLock();
@@ -279,6 +387,7 @@ namespace bias {
 
                         if(!(HOGHOF_front.isNull()))
                         {
+                            //cudaSetDevice(0);
                             //initHOGHOF(HOGHOF_front, 260, 384);
                             initHOGHOF(HOGHOF_front, frameDataCamera0.image.rows, frameDataCamera0.image.cols);
                         }
@@ -296,8 +405,9 @@ namespace bias {
 
                         if(!(HOGHOF_side.isNull()))
                         {
-                            // initHOGHOF(HOGHOF_side, 260, 384);
-                            initHOGHOF(HOGHOF_side, frameDataCamera1.image.rows, frameDataCamera1.image.cols);
+                             //cudaSetDevice(1);
+                             //initHOGHOF(HOGHOF_side, 260, 384);
+                             initHOGHOF(HOGHOF_side, frameDataCamera1.image.rows, frameDataCamera1.image.cols);
                         }
                     }
                     releaseLock();
@@ -310,13 +420,16 @@ namespace bias {
                     classifier->translate_mat2C(&HOGHOF_side->hog_shape,&HOGHOF_front->hog_shape);
                 }
                 releaseLock();
+                //timer2.Stop();
+                //std::cout << "frameCount:" << lastProcessedCount << "time grab" << timer2.Elapsed()/1000 << std::endl;
+
             }
-        }
+        }*/
     }
 
 
     //Test
-    void ProcessScores::write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins)
+    /*void ProcessScores::write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins)
     {
 
         std::ofstream x_out;
@@ -347,8 +460,16 @@ namespace bias {
 
     }
 
-}
 
+    long int ProcessScores::unix_timestamp()
+    {
+        time_t t = std::time(0);
+        long int now = static_cast<long int> (t);
+        return now;
+    }*/
+
+
+}
 
 
 

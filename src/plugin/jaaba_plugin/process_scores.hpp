@@ -30,14 +30,14 @@ namespace bias
        public :
 
            bool save;
-           QPointer<HOGHOF> HOGHOF_side;
-           QPointer<HOGHOF> HOGHOF_front;
-           QPointer<beh_class> classifier; 
+           //QPointer<HOGHOF> HOGHOF_side;
+           //QPointer<HOGHOF> HOGHOF_front;
+           //QPointer<beh_class> classifier; 
 
            ProcessScores(QObject *parent=0);
            void stop();
-           void enqueueFrameDataSender(FrameData frameData);
-           void enqueueFrameDataReceiver(FrameData frameData);
+           //void enqueueFrameDataSender(FrameData frameData);
+           //void enqueueFrameDataReceiver(FrameData frameData);
            void detectOn();
            void detectOff();
             
@@ -61,11 +61,12 @@ namespace bias
            QQueue<FrameData> receiverImageQueue_;
 
            void run();
-           void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
-           void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
+           //void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
+           //void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
 
-           void write_score(std::string file, int framenum, float score);
-           void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
+           //void write_score(std::string file, int framenum, float score);
+           //void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
+           //long int unix_timestamp();
 
 
     };

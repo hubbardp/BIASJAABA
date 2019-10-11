@@ -3,7 +3,7 @@
 #include <opencv2/highgui/highgui.hpp>
 //#include <opencv2/opencv.h>
 #include <QDebug>
-
+#include "timer.h"
 #include <iostream>
 
 using namespace bias; 
@@ -164,6 +164,8 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
 
     cv::Mat cur_frame;
     int frame = 0;
+    GpuTimer timer1;
+    //timer1.Start();
     while(frame < num_frames) {
 
         //capture frame and convert to grey
@@ -174,14 +176,17 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
         //write_output("./beh_feat/beh_" + std::to_string(frame) + ".csv", cur_frame.ptr<float>(0), width, height);
 
 
-        //Compute and copy HOG/HOF      
+        //Compute and copy HOG/HOF     
+        //timer1.Start();
         HOFCompute(&hof_ctx, img.buf, hof_f32); // call to compute and copy is asynchronous
         HOFOutputCopy(&hof_ctx, tmp_hof, hof_outputbytes); // should be called one after 
-                                                           // the other to get correct answer
-                                                             
+                                                           // the other to get correct answer                                                             
         HOGCompute(&hog_ctx, img);
         HOGOutputCopy(&hog_ctx, tmp_hog, hog_outputbytes);
 
+        //timer1.Stop();
+        //std::cout << "time elapsed: " << timer1.Elapsed()/1000 << std::endl; 
+      
         //copy_features1d(frame, hog_num_elements, hog_out, tmp_hog);
         if(frame > 0) {
             copy_features1d(frame-1, hog_num_elements, hog_out, tmp_hog);
@@ -191,6 +196,8 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
         frame++;
 
     }
+    //timer1.Stop();
+    //std::cout << "time Elapsed " << timer1.Elapsed()/1000 << std::endl;
 
     /*createh5("./hoghof_side", ".h5", num_frames, 
              hog_num_elements, hof_num_elements,

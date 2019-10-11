@@ -45,21 +45,20 @@ namespace bias {
         RtnStatus readh5(std::string filename, std::vector<std::string> &model_params, boost_classifier &data_out);
         //RtnStatus readh5(std::string filename, std::string model_params, float *data_out);
         void translate_mat2C(HOGShape *shape_side, HOGShape *shape_front);
-	void boost_classify(float &scr, std::vector<float> &hogs_features,
-			    std::vector<float> &hogf_features, std::vector<float> &hofs_features,
-			    std::vector<float> &hoff_features, struct HOGShape *shape_side,
-			    HOFShape *shape_front, int feat_len, 
-			    boost_classifier& model);
+	//void boost_classify(float &scr, std::vector<float> &hogs_features,
+	//		    std::vector<float> &hogf_features, std::vector<float> &hofs_features,
+	//		    std::vector<float> &hoff_features, struct HOGShape *shape_side,
+	//		    HOFShape *shape_front, int feat_len, 
+	//		    boost_classifier& model);
 	void boost_compute(float &scr, std::vector<float> &features, int ind,
 			   int num_feat, int feat_len, int dir, float tr, float alpha);
-        //void boost_classify_side(float &scr, std::vector<float> &hogf_features,
-        //                         std::vector<float> &hoff_features, HOGShape *shape_side,
-        //                         int feat_len, int frame_id, boost_classifier &model);
+        void boost_classify_side(float &scr, std::vector<float> &hogf_features,
+                                 std::vector<float> &hoff_features, HOGShape *shape_side,
+                                 int feat_len, int frame_id, boost_classifier &model);
 
-        //void boost_classify_front(float &scr, std::vector<float> &hogf_features,
-        //                          std::vector<float> &hoff_features, HOGShape *shape_front,
-        //                          int feat_len, int frame_id, boost_classifier &model);
-
+        void boost_classify_front(float &scr, std::vector<float> &hogf_features,
+                                  std::vector<float> &hoff_features, HOGShape *shape_front,
+                                  int feat_len, int frame_id, boost_classifier &model);
 
 	
     };
