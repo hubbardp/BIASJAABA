@@ -56,13 +56,13 @@ int main(int argc, char* argv[]) {
 
  
     //compute Featues 
-    cudaSetDevice(0); 
+    //cudaSetDevice(0); 
     GpuTimer timer1;
     timer1.Start();
     feat_side.genFeatures(vidFile[0], feat_side.CropParam_file);
     timer1.Stop();
 
-    cudaSetDevice(1);
+    //cudaSetDevice(1);
     GpuTimer timer2 ;
     timer2.Start();
     feat_frt.genFeatures(vidFile[1], feat_frt.CropParam_file);
@@ -70,11 +70,11 @@ int main(int argc, char* argv[]) {
     std::cout << timer1.Elapsed()/1000 << std::endl;
     std::cout << timer2.Elapsed()/1000 << std::endl;
 
-    /*createh5("./hoghof", ".h5", 2498, 
+    createh5("./hoghof", ".h5", 2498, 
              2400, 2400,
              1600, 1600,
              feat_side.hog_out, feat_frt.hog_out,
-             feat_side.hof_out, feat_frt.hof_out);*/    
+             feat_side.hof_out, feat_frt.hof_out); 
 
     //predict scores
     classifier.translate_mat2C(&feat_side.hog_shape, &feat_frt.hof_shape);

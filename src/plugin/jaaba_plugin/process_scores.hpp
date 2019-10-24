@@ -12,9 +12,13 @@
 #include <QPointer>
 #include <QQueue>
 #include <memory>
+#include "bias_plugin.hpp"
 #include "video_utils.hpp"
 #include <opencv2/highgui/highgui.hpp>
 #include <fstream>
+#include "timer.h"
+
+#include "shape_data.hpp"
 
 namespace bias 
 {
@@ -30,25 +34,29 @@ namespace bias
        public :
 
            bool save;
+           bool isSide;
+           bool isFront;
+           bool isHOGHOFInitialised;
            //QPointer<HOGHOF> HOGHOF_side;
            //QPointer<HOGHOF> HOGHOF_front;
-           //QPointer<beh_class> classifier; 
+           QPointer<HOGHOF> HOGHOF_frame;
+           QPointer<HOGHOF> HOGHOF_partner;
+           QPointer<beh_class> classifier; 
 
            ProcessScores(QObject *parent=0);
            void stop();
            //void enqueueFrameDataSender(FrameData frameData);
            //void enqueueFrameDataReceiver(FrameData frameData);
+           void enqueueFrameData(FrameData frameData);
            void detectOn();
            void detectOff();
             
-           videoBackend* vid_sde;
-           videoBackend* vid_frt;
-           cv::VideoCapture capture_sde;
-           cv::VideoCapture capture_frt;
-           cv::Mat curr_side; 
-           cv::Mat curr_front;
-           cv::Mat grey_sde;
-           cv::Mat grey_frt;
+           videoBackend* vid_;
+           cv::VideoCapture capture_;
+           cv::Mat curr_frame; 
+           cv::Mat grey_frame;
+          
+           void write_score(std::string file, int framenum, float score);
 
        private :
 
@@ -57,16 +65,26 @@ namespace bias
            bool detectStarted_;
            int frameCount;
  
-           QQueue<FrameData> senderImageQueue_;
-           QQueue<FrameData> receiverImageQueue_;
+           QQueue<FrameData> frameQueue_;
+           QPointer<BiasPlugin> partnerPluginPtr_;
+           //QQueue<FrameData> senderImageQueue_;
+           //QQueue<FrameData> receiverImageQueue_;
 
            void run();
-           //void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
-           //void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
+           void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
+           void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
 
-           //void write_score(std::string file, int framenum, float score);
-           //void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
-           //long int unix_timestamp();
+           void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
+
+        signals:
+
+            void newShapeData(ShapeData data); 
+       
+        private slots:
+
+            //void onNewShapeData(ShapeData data);
+
+
 
 
     };

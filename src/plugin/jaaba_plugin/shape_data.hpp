@@ -12,9 +12,10 @@ namespace bias
 
             ShapeData() {};
 
-            int shape_x;
-            int shape_y;
-            int shape_bin;
+            int shapex;
+            int shapey;
+            int bins;
+
     };
 
 }
