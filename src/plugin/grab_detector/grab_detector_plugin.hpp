@@ -52,7 +52,8 @@ namespace bias
             virtual void reset();
             virtual void stop();
 
-            virtual void processFrames(QList<StampedImage> frameList);
+            //virtual void processFrames(QList<StampedImage> frameList);
+            virtual void processFrames();
             virtual cv::Mat getCurrentImage();
 
             virtual QString getName();

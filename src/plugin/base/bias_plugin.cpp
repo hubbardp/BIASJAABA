@@ -57,15 +57,40 @@ namespace bias
         return requireTimer_;
     }
 
-    void BiasPlugin::processFrames(QList<StampedImage> frameList) 
+    //void BiasPlugin::processFrames(QList<StampedImage> frameList) 
+    void BiasPlugin::processFrames()
     { 
-        acquireLock();
+
+        pluginImageQueuePtr_ -> acquireLock();
+        pluginImageQueuePtr_ -> waitIfEmpty();
+        if (pluginImageQueuePtr_ -> empty())
+        {
+            pluginImageQueuePtr_ -> releaseLock();
+            return;
+            //break;
+        }
+
+        while ( !(pluginImageQueuePtr_ ->  empty()) )
+        {
+            StampedImage stampedImage = pluginImageQueuePtr_ -> front();
+            pluginImageQueuePtr_ -> pop();
+        
+            acquireLock();
+            currentImage_ = stampedImage.image;
+            timeStamp_ = stampedImage.timeStamp;
+            frameCount_ = stampedImage.frameCount; 
+            releaseLock();
+
+        }
+
+        pluginImageQueuePtr_ -> releaseLock(); 
+        /*acquireLock();
         StampedImage latestFrame = frameList.back();
         frameList.clear();
         currentImage_ = latestFrame.image;
         timeStamp_ = latestFrame.timeStamp;
         frameCount_ = latestFrame.frameCount;
-        releaseLock();
+        releaseLock();*/
     } 
 
 
@@ -176,6 +201,14 @@ namespace bias
         logFileDir_ = cameraWindowPtr -> getVideoFileDir();
         QString logFileFullPath = logFileDir_.absoluteFilePath(logFileName);
         return logFileFullPath;
+    }
+
+    
+    void BiasPlugin::setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr) 
+    {
+
+        pluginImageQueuePtr_ = pluginImageQueuePtr;
+
     }
 
     // Protected methods

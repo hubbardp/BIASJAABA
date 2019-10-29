@@ -16,7 +16,7 @@ namespace bias {
         isFront = false;
         frameCount = 0;
         isHOGHOFInitialised = false;
-        
+
         //partnerPluginPtr_ = partnerPluginPtr;
         //qRegisterMetaType<ShapeData>("ShapeData");
         //connect(partnerPluginPtr, SIGNAL(newShapeData(ShapeData)), this, SLOT(onNewShapeData(ShapeData)));          
@@ -350,7 +350,6 @@ namespace bias {
                         }
                     }
                     releaseLock();
-
                 }
                                 
                 //check if HOGHOF initialized on gpu and initialize classifier params 

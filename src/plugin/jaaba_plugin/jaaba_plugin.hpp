@@ -36,18 +36,18 @@ namespace bias
 
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
-            int frameCount = 0;
+            int lastProcessedFrameCount = 0;
 
             JaabaPlugin(int numberOfCameras,QWidget *parent=0);
 
             virtual void finalSetup();
             virtual QString getName();
             virtual QString getDisplayName();
-            virtual void processFrames(QList<StampedImage> frameList);
+            //virtual void processFrames(QList<StampedImage> frameList);
+            virtual void processFrames();
             virtual void reset();
             virtual void stop();
             cv::Mat getCurrentImage();
-            virtual QObject getObject();
 
         protected:
   
@@ -62,6 +62,7 @@ namespace bias
 
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
+            std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr_;
             unsigned int getPartnerCameraNumber();
 
         private:
@@ -91,11 +92,15 @@ namespace bias
             //void checkviews();
             void detectEnabled();
 
+            // Test
+            void write_output(std::string file,float* out_img, unsigned w, unsigned h);
+
  
         signals:
 
             void newFrameData(FrameData data);
             void newShapeData(ShapeData data);
+            void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
 
         private slots:
 
@@ -106,6 +111,7 @@ namespace bias
             void saveClicked();
             void onNewFrameData(FrameData data);
             void onNewShapeData(ShapeData data);
+            void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
     
     };
 

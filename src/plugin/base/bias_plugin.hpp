@@ -44,7 +44,8 @@ namespace bias
             virtual void reset();
             virtual void stop();
             virtual void setActive(bool value);
-            virtual void processFrames(QList<StampedImage> frameList);
+            //virtual void processFrames(QList<StampedImage> frameList);
+            virtual void processFrames();
             virtual void setFileAutoNamingString(QString autoNamingString);
             virtual void setFileVersionNumber(unsigned verNum);
             virtual cv::Mat getCurrentImage();
@@ -58,6 +59,11 @@ namespace bias
             virtual QString getLogFilePostfix();
             virtual QString getLogFileName(bool includeAutoNaming);
             virtual QString getLogFileFullPath(bool includeAutoNaming);
+
+            virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr);
+
+ 
+            std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
 
         signals:
 

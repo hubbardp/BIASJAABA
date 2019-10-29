@@ -129,7 +129,7 @@ namespace bias
         //timer.Start();
         while (!done)
         {
-            QList<StampedImage> frameList;
+            /*QList<StampedImage> frameList;
 
             // Grab frame from image queue
             pluginImageQueuePtr_ -> acquireLock();
@@ -147,12 +147,14 @@ namespace bias
             }
 
 
-            pluginImageQueuePtr_ -> releaseLock();
+            pluginImageQueuePtr_ -> releaseLock();*/
 
             // Process Frame with plugin
             if (!pluginPtr_.isNull())
             { 
-                pluginPtr_ -> processFrames(frameList);
+                //pluginPtr_ -> processFrames(frameList);
+                pluginPtr_ -> setImageQueue(pluginImageQueuePtr_);
+                pluginPtr_ -> processFrames(); 
             }
             
             acquireLock();

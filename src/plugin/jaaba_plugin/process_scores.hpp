@@ -56,6 +56,8 @@ namespace bias
            cv::Mat curr_frame; 
            cv::Mat grey_frame;
           
+           void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
+           void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
            void write_score(std::string file, int framenum, float score);
 
        private :
@@ -71,8 +73,8 @@ namespace bias
            //QQueue<FrameData> receiverImageQueue_;
 
            void run();
-           void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
-           void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
+           //void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
+           //void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
 
            void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
 

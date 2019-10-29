@@ -46,7 +46,8 @@ namespace bias
     }
 
 
-    void GrabDetectorPlugin::processFrames(QList<StampedImage> frameList)
+    //void GrabDetectorPlugin::processFrames(QList<StampedImage> frameList)
+    void GrabDetectorPlugin::processFrames()
     {
         // --------------------------------------------------------------
         // NOTE: called in separate thread.
@@ -59,13 +60,33 @@ namespace bias
         bool found = false;
         double signalMin; 
         double signalMax;
+        cv::Mat workingImage;
 
-        int frameListSize = frameList.size();
+        //int frameListSize = frameList.size();
 
-        StampedImage latestFrame = frameList.back();
-        frameList.clear();
+        //StampedImage latestFrame = frameList.back();
+        //frameList.clear();
 
-        cv::Mat workingImage = latestFrame.image.clone();
+        //cv::Mat workingImage = latestFrame.image.clone();
+        
+        pluginImageQueuePtr_ -> acquireLock();
+        pluginImageQueuePtr_ -> waitIfEmpty();
+        if (pluginImageQueuePtr_ -> empty())
+        {
+            pluginImageQueuePtr_ -> releaseLock();
+            //break;
+            return;
+        }
+
+        while ( !(pluginImageQueuePtr_ ->  empty()) )
+        {
+            StampedImage stampedImage = pluginImageQueuePtr_ -> front();
+            pluginImageQueuePtr_ -> pop();
+
+            workingImage = stampedImage.image;
+            timeStamp_ = stampedImage.timeStamp;
+            frameCount_ = stampedImage.frameCount;
+
         if ((workingImage.rows != 0) && (workingImage.cols != 0))
         {
             cv::Rect boxRect = getDetectionBoxCv();
@@ -97,16 +118,19 @@ namespace bias
             signalMin_ = signalMin;
             signalMax_ = signalMax;
             found_ = found;
-            frameCount_ = latestFrame.frameCount;
-            livePlotTimeVec_.append(latestFrame.timeStamp);
+            //frameCount_ = latestFrame.frameCount;
+            //livePlotTimeVec_.append(latestFrame.timeStamp);
+            livePlotTimeVec_.append(stampedImage.timeStamp);
             livePlotSignalVec_.append(signalMax);
             if (found && config_.triggerArmedState)
             {
                 if (config_.triggerEnabled)
                 {
                     TriggerData triggerData;
-                    triggerData.frameCount = latestFrame.frameCount;
-                    triggerData.timeStamp = latestFrame.timeStamp;
+                    //triggerData.frameCount = latestFrame.frameCount;
+                    //triggerData.timeStamp = latestFrame.timeStamp;
+                    triggerData.frameCount = stampedImage.frameCount;
+                    triggerData.timeStamp = stampedImage.timeStamp;
                     triggerData.threshold = double(threshold);
                     triggerData.signal = signalMax;
                     emit triggerFired(triggerData);
@@ -114,6 +138,9 @@ namespace bias
             }
             releaseLock();
         }
+        }
+        pluginImageQueuePtr_ -> releaseLock();
+
     }
 
     cv::Mat GrabDetectorPlugin::getCurrentImage()

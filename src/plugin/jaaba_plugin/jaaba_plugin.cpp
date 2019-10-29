@@ -53,19 +53,6 @@ namespace bias {
         return currentImageCopy;
     }
 
-    QObject JaabaPlugin::getObject()
-    {
-
-        /*if(processScoresPtr_ != nullptr)
-        {
-            return processScoresPtr_.data();
-        
-        } else {
-
-            return nullptr;
-        }*/
-
-    }
 
     bool JaabaPlugin::isSender() 
     {
@@ -138,7 +125,7 @@ namespace bias {
     void JaabaPlugin::reset()
     {
         
-        if (isReceiver())
+        /*if (isReceiver())
         {
             threadPoolPtr_ = new QThreadPool(this);
             threadPoolPtr_ -> setMaxThreadCount(1);
@@ -158,7 +145,7 @@ namespace bias {
             {
                 threadPoolPtr_ -> start(processScoresPtr_);
             }
-        }       
+        }*/      
 
     }
 
@@ -171,83 +158,100 @@ namespace bias {
         {
             QPointer<BiasPlugin> partnerPluginPtr = partnerCameraWindowPtr -> getPluginByName("jaabaPlugin");
             qRegisterMetaType<FrameData>("FrameData");
-            qRegisterMetaType<FrameData>("ShapeData");
+            qRegisterMetaType<ShapeData>("ShapeData");
+            qRegisterMetaType<std::shared_ptr<LockableQueue<StampedImage>>>("std::shared_ptr<LockableQueue<StampedImage>>");
             connect(partnerPluginPtr, SIGNAL(newFrameData(FrameData)), this, SLOT(onNewFrameData(FrameData)));
             connect(partnerPluginPtr, SIGNAL(newShapeData(ShapeData)), this, SLOT(onNewShapeData(ShapeData)));
+            connect(partnerPluginPtr, SIGNAL(partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>>)) , 
+                    this, SLOT(onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>>)));
 
         }
         //updateMessageLabels();*/
     }
 
 
-    void JaabaPlugin::processFrames(QList<StampedImage> frameList)
+    //void JaabaPlugin::processFrames(QList<StampedImage> frameList)
+    void JaabaPlugin::processFrames()
     {
-         
-        StampedImage latestFrame = frameList.back();
-        frameList.clear();
-        cv::Mat workingImage = latestFrame.image.clone();    
 
- 
-        if((workingImage.rows != 0) && (workingImage.cols != 0))
+        cv::Mat sideImage;
+        cv::Mat frontImage;
+
+        if(pluginImageQueuePtr_ != nullptr && isSender() && lastProcessedFrameCount==0)
+        {
+            emit(partnerImageQueue(pluginImageQueuePtr_)); 
+            lastProcessedFrameCount += 1;
+        }
+        
+        if(isReceiver() && pluginImageQueuePtr_ != nullptr && partnerPluginImageQueuePtr_ != nullptr)
         {
 
-            acquireLock();  
-            currentImage_ = workingImage; 
-            frameCount_ = latestFrame.frameCount;
-            releaseLock();
+            pluginImageQueuePtr_ -> acquireLock();
+            pluginImageQueuePtr_ -> waitIfEmpty();
+       
+            partnerPluginImageQueuePtr_ -> acquireLock();
+            partnerPluginImageQueuePtr_ -> waitIfEmpty();
 
-            FrameData frameData;
-            frameData.count = frameCount_;
-            frameData.image = currentImage_;
-
-            int sizeQueue0=0;
-            int sizeQueue1=0;
-
-            if(isSender())
+            if (pluginImageQueuePtr_ -> empty() || partnerPluginImageQueuePtr_ -> empty())
             {
-                acquireLock();
-                processScoresPtr_->enqueueFrameData(frameData);
-                if(processScoresPtr_-> isHOGHOFInitialised) 
-                {
-                    ShapeData shapeData;
-                    shapeData.shapex = processScoresPtr_->HOGHOF_frame->hog_shape.x;
-                    shapeData.shapey = processScoresPtr_->HOGHOF_frame->hog_shape.y;
-                    shapeData.bins = processScoresPtr_->HOGHOF_frame->hog_shape.bin;
-                    emit(newShapeData(shapeData));
-                }
-                releaseLock();
-
-                //emit(newFrameData(frameData)); 
-                //sendImageQueue.dequeue();
-                //sizeQueue0 = sendImageQueue.size();  
-                //processScoresPtr_ -> write_score("size0.csv", frameCount_,sizeQueue0);
+                pluginImageQueuePtr_ -> releaseLock();
+                partnerPluginImageQueuePtr_ -> releaseLock();
+                return;
             }
 
-
-            if(isReceiver())
+            while ( !(pluginImageQueuePtr_ ->  empty())  && !(partnerPluginImageQueuePtr_ ->  empty()))
             {
-  
-                acquireLock();
-                processScoresPtr_->enqueueFrameData(frameData);
-                if(processScoresPtr_-> isHOGHOFInitialised) 
+
+                StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
+                StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
+
+                sideImage = stampedImage0.image.clone();
+                frontImage = stampedImage1.image.clone();
+
+                if((sideImage.rows != 0) && (sideImage.cols != 0) 
+                   && (frontImage.rows != 0) && (frontImage.cols != 0))
                 {
-                    ShapeData shapeData;
-                    shapeData.shapex = processScoresPtr_->HOGHOF_frame->hog_shape.x;
-                    shapeData.shapey = processScoresPtr_->HOGHOF_frame->hog_shape.y;
-                    shapeData.bins = processScoresPtr_->HOGHOF_frame->hog_shape.bin;
-                    //emit(newShapeData(shapeData));
+
+                    //std::cout << "side plugin " << pluginImageQueuePtr_-> size() << std::endl;
+                    //std::cout << "front plugin " << partnerPluginImageQueuePtr_-> size() << std::endl;
+                
+                    acquireLock();  
+                    currentImage_ = sideImage; 
+                    frameCount_ = stampedImage0.frameCount;
+                    releaseLock();
+
+                    if(!processScoresPtr_->isHOGHOFInitialised)
+                    {
+                        if(!(processScoresPtr_-> HOGHOF_frame.isNull()) && !(processScoresPtr_-> HOGHOF_partner.isNull()))
+                        { 
+
+                            processScoresPtr_->initHOGHOF(processScoresPtr_ -> HOGHOF_frame, sideImage.rows, sideImage.cols);
+                            processScoresPtr_->initHOGHOF(processScoresPtr_ -> HOGHOF_partner, frontImage.rows, frontImage.cols);       
+                        }
+                    }
+
+                    // Test
+                    /*if(sideImage.ptr<float>(0) != nullptr)
+                    {
+                        imwrite("out_feat/side_" + std::to_string(frameCount_) + ".jpg", sideImage);
+                        imwrite("out_feat/front_" + std::to_string(frameCount_) + ".jpg", frontImage);
+                        //sideImage.convertTo(sideImage, CV_32FC1);
+                        //frontImage.convertTo(frontImage,CV_32FC1);
+                        //sideImage = sideImage / 255;
+                        //std::cout << sideImage.rows << " " << sideImage.cols << std::endl; 
+                        //write_output("out_feat/side" + std::to_string(frameCount_) + ".csv" , sideImage.ptr<float>(0), sideImage.rows, sideImage.cols);
+                        //write_output("out_feat/front" + std::to_string(frameCount_) + ".csv" , frontImage.ptr<float>(0), frontImage.rows , frontImage.cols);
+                    }*/ 
                 }
-                releaseLock();
-                 
-                //emit(newFrameData(frameData));
-                //receiveImageQueue.enqueue(frameData);
-                // do something
-                //receiveImageQueue.dequeue();
-                //sizeQueue1 = receiveImageQueue.size();
-                //processScoresPtr_->write_score("size1.csv", frameCount_,sizeQueue1);
+
+                pluginImageQueuePtr_ -> pop();
+                partnerPluginImageQueuePtr_ -> pop();
+
+            }
+       
+            pluginImageQueuePtr_ -> releaseLock();
+            partnerPluginImageQueuePtr_ -> releaseLock();
  
-            }
-
         }
         
     }
@@ -297,11 +301,9 @@ namespace bias {
         cameraNumber_ = cameraWindowPtr -> getCameraNumber();
         partnerCameraNumber_ = getPartnerCameraNumber();
         cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
-        QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
-        //QPointer<BiasPlugin> partnerPluginPtr = partnerCameraWindowPtr -> getPluginByName("jaabaPlugin"); 
         processScoresPtr_ = new ProcessScores();   
  
-        frameCount =0; 
+        lastProcessedFrameCount=0; 
         numMessageSent_=0;
         numMessageReceived_=0;
         frameCount_ = 0;
@@ -356,7 +358,7 @@ namespace bias {
     void JaabaPlugin::setupHOGHOF()
     {
      
-        if(sideRadioButtonPtr_->isChecked() and cameraNumber_ == 1)
+        if(sideRadioButtonPtr_->isChecked())
         {
              
             QString file_sde = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi";
@@ -377,7 +379,7 @@ namespace bias {
 
         }
 
-        if(frontRadioButtonPtr_->isChecked() and cameraNumber_ == 0) 
+        if(frontRadioButtonPtr_->isChecked()) 
         {
 
             QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";  
@@ -386,13 +388,13 @@ namespace bias {
 
             HOGHOF *hoghoffront = new HOGHOF(this);  
             acquireLock();
-            processScoresPtr_->HOGHOF_frame = hoghoffront;
-            processScoresPtr_->HOGHOF_frame->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-            processScoresPtr_->HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-            processScoresPtr_->HOGHOF_frame->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
-            processScoresPtr_->HOGHOF_frame->loadHOGParams();
-            processScoresPtr_->HOGHOF_frame->loadHOFParams();
-            processScoresPtr_->HOGHOF_frame->loadCropParams();
+            processScoresPtr_->HOGHOF_partner = hoghoffront;
+            processScoresPtr_->HOGHOF_partner->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+            processScoresPtr_->HOGHOF_partner->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+            processScoresPtr_->HOGHOF_partner->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
+            processScoresPtr_->HOGHOF_partner->loadHOGParams();
+            processScoresPtr_->HOGHOF_partner->loadHOFParams();
+            processScoresPtr_->HOGHOF_partner->loadCropParams();
             releaseLock();
  
         }
@@ -428,13 +430,19 @@ namespace bias {
     void JaabaPlugin::updateWidgetsOnLoad() 
     {
 
-        sideRadioButtonPtr_ -> setChecked(false);
-        frontRadioButtonPtr_ -> setChecked(false);
-        detectButtonPtr_ -> setEnabled(false);
-        saveButtonPtr_-> setEnabled(false);
-        save = false;
+        if( cameraNumber_ == 0 )
+        {
+            this -> setEnabled(false);   
 
-        if(cameraNumber_ == 0)
+        } else {
+
+            sideRadioButtonPtr_ -> setChecked(false);
+            frontRadioButtonPtr_ -> setChecked(false);
+            detectButtonPtr_ -> setEnabled(false);
+            saveButtonPtr_-> setEnabled(false);
+            save = false;        
+        }
+        /* if(cameraNumber_ == 0)
         {
             
             sideRadioButtonPtr_ ->setEnabled(false);            
@@ -443,7 +451,7 @@ namespace bias {
 
             frontRadioButtonPtr_->setEnabled(false);
 
-        }
+        }*/
         //checkviews();
 
     }
@@ -591,7 +599,7 @@ namespace bias {
 
         pathtodir_->setPlaceholderText(pathtodir_->displayText());
         // load side HOGHOFParams if side view checked
-        if(cameraNumber_== 1 && sideRadioButtonPtr_->isChecked())
+        if(sideRadioButtonPtr_->isChecked())
         {
             if(processScoresPtr_->HOGHOF_frame == nullptr) 
             {
@@ -609,9 +617,9 @@ namespace bias {
         }
 
         // load front HOGHOFParams if front view checked
-        if(cameraNumber_== 0 && frontRadioButtonPtr_->isChecked())
+        if(frontRadioButtonPtr_->isChecked())
         {
-            if(processScoresPtr_->HOGHOF_frame == nullptr)
+            if(processScoresPtr_->HOGHOF_partner == nullptr)
             {
 
                 setupHOGHOF();        
@@ -726,6 +734,39 @@ namespace bias {
         //}
         releaseLock();
     }
-    
+
+
+    void JaabaPlugin::onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr)
+    {
+
+        std::cout << "no no no " << std::endl; 
+        if(partnerPluginImageQueuePtr != nullptr)
+        { 
+            partnerPluginImageQueuePtr_ = partnerPluginImageQueuePtr;
+            std::cout << "ho ho ho " << std::endl;
+        }
+    }
+
+
+    // Test development
+
+    void JaabaPlugin::write_output(std::string file,float* out_img, unsigned w, unsigned h) {
+
+       std::ofstream x_out;
+       x_out.open(file.c_str());
+
+      
+       // write hist output to csv file
+       for(int i = 0;i < h;i++){
+           std::cout << " " << i << std::endl;
+           for(int j = 0; j < w;j++){
+               x_out << out_img[i*w + j];
+                  if(j != w-1 || i != h-1)
+                      x_out << ",";
+           }
+       }
+
+    }
+     
 }
 
