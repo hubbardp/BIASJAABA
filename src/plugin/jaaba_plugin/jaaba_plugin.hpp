@@ -37,6 +37,7 @@ namespace bias
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
             int lastProcessedFrameCount = 0;
+            int frameCount=0;
 
             JaabaPlugin(int numberOfCameras,QWidget *parent=0);
 
@@ -74,12 +75,7 @@ namespace bias
             
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
-         
-            videoBackend* vid_sde;
-            videoBackend* vid_front;
-            cv::VideoCapture capture_sde;
-            cv::VideoCapture capture_front;
-        
+          
             bool pluginReady();
             bool isSender();
             bool isReceiver(); 

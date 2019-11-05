@@ -14,7 +14,7 @@ namespace bias {
         save = false;
         isSide= false;
         isFront = false;
-        frameCount = 0;
+        processedFrameCount = -1;
         isHOGHOFInitialised = false;
 
         //partnerPluginPtr_ = partnerPluginPtr;
@@ -277,7 +277,7 @@ namespace bias {
                         }
 
 
-                        if(save && frameCount == 1000 && isSide) 
+                        if(save && processedFrameCount == 1000 && isSide) 
                         {
 
                             write_histoutput("./out_feat/hog_side_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_frame->hog_out.data(),
@@ -287,7 +287,7 @@ namespace bias {
                         }
 
 
-                        if(save && frameCount == 1000 && isFront)
+                        if(save && processedFrameCount == 1000 && isFront)
                         {
 
                             write_histoutput("./out_feat/hog_front_" + std::to_string(lastProcessedCount) + ".csv", HOGHOF_frame->hog_out.data()

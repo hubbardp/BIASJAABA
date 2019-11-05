@@ -176,11 +176,13 @@ namespace bias {
 
         cv::Mat sideImage;
         cv::Mat frontImage;
+        cv::Mat greySide;
+        cv::Mat greyFront;
 
-        if(pluginImageQueuePtr_ != nullptr && isSender() && lastProcessedFrameCount==0)
+        if(pluginImageQueuePtr_ != nullptr && isSender() && processScoresPtr_-> processedFrameCount==-1)
         {
-            emit(partnerImageQueue(pluginImageQueuePtr_)); 
-            lastProcessedFrameCount += 1;
+            emit(partnerImageQueue(pluginImageQueuePtr_));             
+            processScoresPtr_-> processedFrameCount += 1;
         }
         
         if(isReceiver() && pluginImageQueuePtr_ != nullptr && partnerPluginImageQueuePtr_ != nullptr)
@@ -199,7 +201,7 @@ namespace bias {
                 return;
             }
 
-            while ( !(pluginImageQueuePtr_ ->  empty())  && !(partnerPluginImageQueuePtr_ ->  empty()))
+            while ( !(pluginImageQueuePtr_ -> empty())  && !(partnerPluginImageQueuePtr_ ->  empty()))
             {
 
                 StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
@@ -208,13 +210,26 @@ namespace bias {
                 sideImage = stampedImage0.image.clone();
                 frontImage = stampedImage1.image.clone();
 
+                /*if(processScoresPtr_ -> capture_sde.isOpened())
+                {
+                    //std::cout << "set side" << std::endl;
+                    sideImage = processScoresPtr_ -> vid_sde -> getImage(processScoresPtr_ -> capture_sde);
+                    processScoresPtr_ -> vid_sde -> convertImagetoFloat(sideImage);
+                    greySide = sideImage;
+                }
+ 
+                if(processScoresPtr_ -> capture_front.isOpened())
+                {
+
+                    frontImage = processScoresPtr_-> vid_front-> getImage(processScoresPtr_ -> capture_front);
+                    processScoresPtr_ -> vid_front -> convertImagetoFloat(frontImage);
+                    greyFront = frontImage;
+                } */
+
                 if((sideImage.rows != 0) && (sideImage.cols != 0) 
                    && (frontImage.rows != 0) && (frontImage.cols != 0))
                 {
-
-                    //std::cout << "side plugin " << pluginImageQueuePtr_-> size() << std::endl;
-                    //std::cout << "front plugin " << partnerPluginImageQueuePtr_-> size() << std::endl;
-                
+ 
                     acquireLock();  
                     currentImage_ = sideImage; 
                     frameCount_ = stampedImage0.frameCount;
@@ -222,36 +237,128 @@ namespace bias {
 
                     if(!processScoresPtr_->isHOGHOFInitialised)
                     {
+                        std::cout << processScoresPtr_->isHOGHOFInitialised << std::endl;
                         if(!(processScoresPtr_-> HOGHOF_frame.isNull()) && !(processScoresPtr_-> HOGHOF_partner.isNull()))
-                        { 
-
+                        {
+ 
                             processScoresPtr_->initHOGHOF(processScoresPtr_ -> HOGHOF_frame, sideImage.rows, sideImage.cols);
-                            processScoresPtr_->initHOGHOF(processScoresPtr_ -> HOGHOF_partner, frontImage.rows, frontImage.cols);       
+                            processScoresPtr_->initHOGHOF(processScoresPtr_ -> HOGHOF_partner, frontImage.rows, frontImage.cols);   
+    
                         }
                     }
 
                     // Test
-                    /*if(sideImage.ptr<float>(0) != nullptr)
+                    /*if(sideImage.ptr<float>(0) != nullptr && frameCount == 1000)
                     {
-                        imwrite("out_feat/side_" + std::to_string(frameCount_) + ".jpg", sideImage);
-                        imwrite("out_feat/front_" + std::to_string(frameCount_) + ".jpg", frontImage);
+                        imwrite("out_feat/side_" + std::to_string(frameCount) + ".jpg", sideImage);
+                        imwrite("out_feat/front_" + std::to_string(frameCount) + ".jpg", frontImage);
                         //sideImage.convertTo(sideImage, CV_32FC1);
                         //frontImage.convertTo(frontImage,CV_32FC1);
                         //sideImage = sideImage / 255;
                         //std::cout << sideImage.rows << " " << sideImage.cols << std::endl; 
                         //write_output("out_feat/side" + std::to_string(frameCount_) + ".csv" , sideImage.ptr<float>(0), sideImage.rows, sideImage.cols);
                         //write_output("out_feat/front" + std::to_string(frameCount_) + ".csv" , frontImage.ptr<float>(0), frontImage.rows , frontImage.cols);
-                    }*/ 
+                    }*/
+                    
+
+                    if( stampedImage0.frameCount == stampedImage1.frameCount) 
+                    {
+
+                        if((processScoresPtr_ -> detectStarted_) && (frameCount_  == (processScoresPtr_ -> processedFrameCount+1)))
+                        {
+                             
+                            // preprocessing the frames
+                            // convert the frame into RGB2GRAY
+                            if(sideImage.channels() == 3)
+                            {
+                                cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
+                            }
+
+                            if(frontImage.channels() == 3)
+                            {
+                                cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
+                            }
+
+                            // convert the frame into float32
+                            sideImage.convertTo(greySide, CV_32FC1);
+                            frontImage.convertTo(greyFront, CV_32FC1);
+                            greySide = greySide / 255;
+                            greyFront = greyFront / 255;
+
+                            int nDevices;
+                            cudaError_t err = cudaGetDeviceCount(&nDevices);
+                            if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
+
+                            if(nDevices>=2)
+                            {
+
+                                if(processScoresPtr_ -> isSide)
+                                {
+                                    cudaSetDevice(0);
+                                    GpuTimer timer2;
+                                    timer2.Start();
+                                    processScoresPtr_ -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                    processScoresPtr_ -> genFeatures(processScoresPtr_ -> HOGHOF_frame, frameCount_);
+                                    timer2.Stop();
+                                    //write_score("timing_gpu1.csv", lastProcessedCount, timer2.Elapsed()/1000);
+                                }
+
+                                if(processScoresPtr_ -> isFront)
+                                {
+                                    cudaSetDevice(1);
+                                    GpuTimer timer1;
+                                    timer1.Start();
+                                    processScoresPtr_ -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                    processScoresPtr_ -> genFeatures(processScoresPtr_ -> HOGHOF_partner, frameCount_);
+                                    timer1.Stop();
+                                }
+                                //timer1.Stop();
+                                //write_score("timing_double.csv", lastProcessedCount, timer1.Elapsed()/1000);
+
+                            } else {
+
+                                GpuTimer timer1;
+                                timer1.Start();
+                                processScoresPtr_ -> HOGHOF_frame -> img.buf = greySide.ptr<float>(0);
+                                processScoresPtr_ -> genFeatures(processScoresPtr_ -> HOGHOF_frame, frameCount_);
+                                processScoresPtr_ -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
+                                processScoresPtr_ -> genFeatures(processScoresPtr_ -> HOGHOF_partner, frameCount_);
+                                timer1.Stop();
+
+                            }
+ 
+                    
+                            if(processScoresPtr_->save && frameCount_ == 2000)
+                            {
+
+                                QPointer<HOGHOF> HOGHOF_side = processScoresPtr_->HOGHOF_frame;
+                                processScoresPtr_ -> write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount_) + ".csv", HOGHOF_side->hog_out.data(),
+                                     HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
+                                processScoresPtr_ -> write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount_) + ".csv", HOGHOF_side->hof_out.data(),
+                                     HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
+                        
+
+                                QPointer<HOGHOF> HOGHOF_front = processScoresPtr_->HOGHOF_partner;
+                                processScoresPtr_ -> write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount_) + ".csv", HOGHOF_front->hog_out.data()
+                                         , HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, HOGHOF_front->hog_shape.bin);
+                                processScoresPtr_ -> write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount_) + ".csv", HOGHOF_front->hof_out.data()
+                                         , HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, HOGHOF_front->hof_shape.bin);
+                            }
+
+                            processScoresPtr_ -> processedFrameCount = frameCount_;
+                                        
+                        }
+
+                        pluginImageQueuePtr_ -> pop();
+                        partnerPluginImageQueuePtr_ -> pop();
+                    }
+
                 }
-
-                pluginImageQueuePtr_ -> pop();
-                partnerPluginImageQueuePtr_ -> pop();
-
+                
             }
        
             pluginImageQueuePtr_ -> releaseLock();
-            partnerPluginImageQueuePtr_ -> releaseLock();
- 
+            partnerPluginImageQueuePtr_ -> releaseLock(); 
         }
         
     }
@@ -303,10 +410,10 @@ namespace bias {
         cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
         processScoresPtr_ = new ProcessScores();   
  
-        lastProcessedFrameCount=0; 
         numMessageSent_=0;
         numMessageReceived_=0;
         frameCount_ = 0;
+        frameCount = 0;
 
         updateWidgetsOnLoad();
         setupHOGHOF();
@@ -362,8 +469,8 @@ namespace bias {
         {
              
             QString file_sde = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi";
-            processScoresPtr_ -> vid_ = new videoBackend(file_sde);
-            processScoresPtr_ -> capture_ = processScoresPtr_ -> vid_ -> videoCapObject();
+            processScoresPtr_ -> vid_sde = new videoBackend(file_sde);
+            processScoresPtr_ -> capture_sde = processScoresPtr_ -> vid_sde -> videoCapObject();
                  
   
             HOGHOF *hoghofside = new HOGHOF(this);
@@ -383,8 +490,8 @@ namespace bias {
         {
 
             QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";  
-            processScoresPtr_ -> vid_ = new videoBackend(file_frt); 
-            processScoresPtr_ -> capture_ = processScoresPtr_ -> vid_ -> videoCapObject(); 
+            processScoresPtr_ -> vid_front = new videoBackend(file_frt); 
+            processScoresPtr_ -> capture_front = processScoresPtr_ -> vid_front -> videoCapObject(); 
 
             HOGHOF *hoghoffront = new HOGHOF(this);  
             acquireLock();
@@ -581,8 +688,8 @@ namespace bias {
         if(frontRadioButtonPtr_->isChecked())
         {
 
-            if(processScoresPtr_->HOGHOF_frame->isHOGPathSet 
-               && processScoresPtr_->HOGHOF_frame->isHOFPathSet
+            if(processScoresPtr_->HOGHOF_partner->isHOGPathSet 
+               && processScoresPtr_->HOGHOF_partner->isHOFPathSet
                && processScoresPtr_->classifier->isClassifierPathSet)
             {
                 detectButtonPtr_->setEnabled(true);

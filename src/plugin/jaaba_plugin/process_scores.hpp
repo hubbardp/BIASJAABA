@@ -34,9 +34,11 @@ namespace bias
        public :
 
            bool save;
+           bool detectStarted_;
            bool isSide;
            bool isFront;
            bool isHOGHOFInitialised;
+           int processedFrameCount;
            //QPointer<HOGHOF> HOGHOF_side;
            //QPointer<HOGHOF> HOGHOF_front;
            QPointer<HOGHOF> HOGHOF_frame;
@@ -51,21 +53,23 @@ namespace bias
            void detectOn();
            void detectOff();
             
-           videoBackend* vid_;
-           cv::VideoCapture capture_;
+           videoBackend* vid_sde;
+           videoBackend* vid_front;
+           cv::VideoCapture capture_sde;
+           cv::VideoCapture capture_front;
+           
            cv::Mat curr_frame; 
            cv::Mat grey_frame;
           
            void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
            void write_score(std::string file, int framenum, float score);
+           void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
 
        private :
 
            bool stopped_;
            bool ready_;
-           bool detectStarted_;
-           int frameCount;
  
            QQueue<FrameData> frameQueue_;
            QPointer<BiasPlugin> partnerPluginPtr_;
@@ -75,8 +79,7 @@ namespace bias
            void run();
            //void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
            //void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
-
-           void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
+           //void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
 
         signals:
 
