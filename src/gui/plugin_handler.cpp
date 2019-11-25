@@ -43,13 +43,14 @@ namespace bias
 
     void PluginHandler::setCameraNumber(unsigned int cameraNumber)
     {
-       cameraNumber_ = cameraNumber;
+        cameraNumber_ = cameraNumber;
     } 
 
     void PluginHandler::setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr)
     {
         pluginImageQueuePtr_ = pluginImageQueuePtr;
         setReadyState();
+
     }
 
 
@@ -57,6 +58,13 @@ namespace bias
     {
         pluginPtr_ = pluginPtr;
         setReadyState();
+
+        // setImage queue for set pluginPtr
+        if(pluginImageQueuePtr_ != nullptr)
+        {
+            pluginPtr_->setImageQueue(pluginImageQueuePtr_);
+        }
+
     }
 
 
@@ -71,6 +79,7 @@ namespace bias
         setCameraNumber(cameraNumber);
         setImageQueue(pluginImageQueuePtr);
         setPlugin(pluginPtr);
+        //setImageQueue(pluginImageQueuePtr);
 
         // Plugin setup actions
         //std::cout << "plugin: setup" << std::endl;
@@ -153,10 +162,9 @@ namespace bias
             if (!pluginPtr_.isNull())
             { 
                 //pluginPtr_ -> processFrames(frameList);
-                pluginPtr_ -> setImageQueue(pluginImageQueuePtr_);
-                pluginPtr_ -> processFrames(); 
+                pluginPtr_ -> processFrames();
             }
-            
+
             acquireLock();
             done = stopped_;
             releaseLock();

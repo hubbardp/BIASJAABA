@@ -243,7 +243,7 @@ namespace bias {
     }
 
 
-    /*void beh_class::boost_classify(float &scr, std::vector<float> &hogs_features,
+    void beh_class::boost_classify(float &scr, std::vector<float> &hogs_features,
 			 std::vector<float> &hogf_features, std::vector<float> &hofs_features,
 			 std::vector<float> &hoff_features, struct HOGShape *shape_side,
 			 struct HOFShape *shape_front, int feat_len,
@@ -306,10 +306,10 @@ namespace bias {
 
 	}
 
-    }*/
+    }
 
 
-    void beh_class::boost_classify_side(float &scr, std::vector<float> &hogs_features,
+    /*void beh_class::boost_classify_side(float &scr, std::vector<float> &hogs_features,
                                         std::vector<float> &hofs_features, HOGShape *shape_side,
                                         int feat_len, int frame_id, boost_classifier& model)
     {
@@ -395,6 +395,6 @@ namespace bias {
 
             }
         }
-    }
+    }*/
 }
 

@@ -63,6 +63,11 @@ namespace bias {
     void ProcessScores::genFeatures(QPointer<HOGHOF> hoghof,int frame)
     {
 
+        //struct timespec start;
+        //clock_gettime(CLOCK_REALTIME, &start);
+
+        //std::cout << "secs" << start.tv_sec <<  " nsecs"  << start.tv_nsec << '\n';
+
         size_t hog_num_elements = hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin;
         size_t hof_num_elements = hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin;
 
@@ -181,12 +186,12 @@ namespace bias {
 
                     if(isSide)
                     {
-                        write_score("buf0.csv", lastProcessedCount, sizeQueue);
+                        //write_score("buf0.csv", lastProcessedCount, sizeQueue);
                     }
 
                     if(isFront)
                     {
-                        write_score("buf1.csv", lastProcessedCount, sizeQueue);
+                        //write_score("buf1.csv", lastProcessedCount, sizeQueue);
                     }
  
                 }
@@ -460,10 +465,29 @@ namespace bias {
         x_out.open(file.c_str(), std::ios_base::app);
 
         // write score to csv file
-        x_out << framenum << ","<< score << "\n";
+        //for(int frame_id = 0;frame_id < framenum;frame_id++)
+        x_out << framenum << "," << score << "\n";
+
         x_out.close();
 
     }
+
+   
+    void ProcessScores::write_time(std::string file, int framenum, std::vector<float> timeVec)
+    {
+
+        std::ofstream x_out;
+        x_out.open(file.c_str(), std::ios_base::app);
+
+        for(int frame_id= 0; frame_id < framenum; frame_id++)
+        {
+
+            x_out << frame_id << "," << timeVec[frame_id] << "\n";        
+
+        }
+
+    }
+
 
 }
 

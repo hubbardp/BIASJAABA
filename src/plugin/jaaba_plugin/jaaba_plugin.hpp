@@ -89,6 +89,9 @@ namespace bias
             void detectEnabled();
 
             // Test
+            std::vector<float>gpuSide;
+            std::vector<float>gpuFront;
+            std::vector<float>gpuOverall;
             void write_output(std::string file,float* out_img, unsigned w, unsigned h);
 
  

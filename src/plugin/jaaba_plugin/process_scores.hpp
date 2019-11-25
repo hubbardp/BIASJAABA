@@ -65,6 +65,8 @@ namespace bias
            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
            void write_score(std::string file, int framenum, float score);
            void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
+           void write_time(std::string file, int framenum, std::vector<float> timeVec);
+
 
        private :
 
