@@ -45,8 +45,21 @@ namespace bias
                 mutex_.unlock();
             }
 
+            /*void wait()
+            {
+                wait_to_process_.wait(&mutex_);             
+            }
+
+            void wakeAll()
+            {
+    
+                signal_to_process_.wakeAll();
+            }*/
+
         protected:
             QMutex mutex_;
+            //QWaitCondition wait_to_process_;
+            //QWaitCondition signal_to_process_;
             
     };
 

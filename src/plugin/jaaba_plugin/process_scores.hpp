@@ -37,13 +37,18 @@ namespace bias
            bool detectStarted_;
            bool isSide;
            bool isFront;
+           bool processSide;
+           bool processFront;
+          
+           bool isProcessed_side;
+           bool isProcessed_front; 
            bool isHOGHOFInitialised;
            int processedFrameCount;
            //QPointer<HOGHOF> HOGHOF_side;
            //QPointer<HOGHOF> HOGHOF_front;
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;
-           QPointer<beh_class> classifier; 
+           //QPointer<beh_class> classifier; 
 
            ProcessScores(QObject *parent=0);
            void stop();
@@ -60,7 +65,12 @@ namespace bias
            
            cv::Mat curr_frame; 
            cv::Mat grey_frame;
-          
+
+           QWaitCondition wait_to_process_;
+           QWaitCondition signal_to_process_;
+           QMutex mutex_;
+
+         
            void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
            void write_score(std::string file, int framenum, float score);
@@ -83,11 +93,13 @@ namespace bias
            //void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
            //void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
 
-        signals:
+       signals:
 
-            void newShapeData(ShapeData data); 
-       
-        private slots:
+           void newShapeData(ShapeData data);
+           void sideProcess(bool side);
+           void frontProcess(bool front);
+        
+       private slots:
 
             //void onNewShapeData(ShapeData data);
 

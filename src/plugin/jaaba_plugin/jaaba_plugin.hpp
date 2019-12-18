@@ -55,8 +55,13 @@ namespace bias
             unsigned int cameraNumber_;
             unsigned int partnerCameraNumber_ ;
  
-            QPointer<ProcessScores> processScoresPtr_;
-            QPointer<QThreadPool> threadPoolPtr_;
+            QPointer<ProcessScores> processScoresPtr_side;
+            QPointer<ProcessScores> processScoresPtr_front;
+            QPointer<beh_class> classifier;
+            QPointer<QThreadPool> threadPoolPtr_side;
+            QPointer<QThreadPool> threadPoolPtr_front;
+            QWaitCondition wait_to_process_;
+            QMutex mutex_;
 
             QQueue<FrameData> sendImageQueue;
             QQueue<FrameData> receiveImageQueue;
@@ -92,14 +97,17 @@ namespace bias
             std::vector<float>gpuSide;
             std::vector<float>gpuFront;
             std::vector<float>gpuOverall;
+            std::vector<float>classifier_score;
             void write_output(std::string file,float* out_img, unsigned w, unsigned h);
 
  
         signals:
 
-            void newFrameData(FrameData data);
-            void newShapeData(ShapeData data);
+            //void newFrameData(FrameData data);
+            //void newShapeData(ShapeData data);
             void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
+            void processSide(bool side);
+            void processFront(bool front);
 
         private slots:
 
@@ -108,10 +116,14 @@ namespace bias
             void reloadButtonPressed();
             void detectClicked();
             void saveClicked();
-            void onNewFrameData(FrameData data);
-            void onNewShapeData(ShapeData data);
+            //void onNewFrameData(FrameData data);
+            //void onNewShapeData(ShapeData data);
             void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
-    
+            void onProcessSide(bool side);
+            void onProcessFront(bool front);
+            void setProcess_side(bool set_side);
+            void setProcess_front(bool set_front);
+
     };
 
 }
