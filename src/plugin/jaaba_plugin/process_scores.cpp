@@ -127,7 +127,7 @@ namespace bias {
         while (!done)
         {
 
-            std::cout << "running front " << processSide << " " << processFront << std::endl;
+            /*std::cout << "running front " << processSide << " " << processFront << std::endl;
             if(processFront)
             {
 
@@ -146,7 +146,7 @@ namespace bias {
                 //timer2.Stop();
                 //gpuSide.push_back(timer2.Elapsed()/1000);
                  
-            }
+            }*/
 
         }
      

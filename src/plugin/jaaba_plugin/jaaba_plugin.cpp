@@ -136,7 +136,7 @@ namespace bias {
     void JaabaPlugin::reset()
     {
         
-        if (isReceiver())
+        /*if (isReceiver())
         {
             //threadPoolPtr_side = new QThreadPool(this);
             //threadPoolPtr_side -> setMaxThreadCount(1);
@@ -144,10 +144,10 @@ namespace bias {
             threadPoolPtr_front = new QThreadPool(this);
             threadPoolPtr_front -> setMaxThreadCount(1);
 
-            /*if ((threadPoolPtr_side != nullptr) && (processScoresPtr_side != nullptr))
+            if ((threadPoolPtr_side != nullptr) && (processScoresPtr_side != nullptr))
             {
                 threadPoolPtr_side -> start(processScoresPtr_side);
-            }*/
+            }
 
             if ((threadPoolPtr_front !=nullptr) && (processScoresPtr_front != nullptr))
             {
@@ -155,7 +155,7 @@ namespace bias {
                 threadPoolPtr_front -> start(processScoresPtr_front);
             }
 
-        }
+        }*/
 
         /*if (isSender())
         {
@@ -231,14 +231,11 @@ namespace bias {
                 return;
 
             }
-
-   
+ 
+ 
             if ( !(pluginImageQueuePtr_ -> empty())  && !(partnerPluginImageQueuePtr_ -> empty()))
             {
 
-                //timing info 
-                //struct timespec start, end;
-                //clock_gettime(CLOCK_REALTIME, &start);
                 
                 StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
                 StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
@@ -247,9 +244,9 @@ namespace bias {
                 frontImage = stampedImage1.image.clone();
 
                 // Test
-                if(processScoresPtr_side -> capture_sde.isOpened())
+                /*if(processScoresPtr_side -> capture_sde.isOpened())
                 {
-                    //std::cout << "set side" << std::endl;
+
                     sideImage = processScoresPtr_side-> vid_sde -> getImage(processScoresPtr_side -> capture_sde);
                     processScoresPtr_side -> vid_sde -> convertImagetoFloat(sideImage);
                     greySide = sideImage;
@@ -263,7 +260,11 @@ namespace bias {
                     processScoresPtr_front -> vid_front -> convertImagetoFloat(frontImage);
                     greyFront = frontImage;
 
-                }
+                }*/
+
+                // timing info
+                struct timespec start, end;
+                clock_gettime(CLOCK_REALTIME, &start);
 
 
                 if((sideImage.rows != 0) && (sideImage.cols != 0) 
@@ -335,7 +336,7 @@ namespace bias {
                              
                             // preprocessing the frames
                             // convert the frame into RGB2GRAY
-                            /*if(sideImage.channels() == 3)
+                            if(sideImage.channels() == 3)
                             {                    
                                 cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
                             }
@@ -349,7 +350,7 @@ namespace bias {
                             sideImage.convertTo(greySide, CV_32FC1);
                             frontImage.convertTo(greyFront, CV_32FC1);
                             greySide = greySide / 255;
-                            greyFront = greyFront / 255;*/
+                            greyFront = greyFront / 255;
 
                             int nDevices;
                             cudaError_t err = cudaGetDeviceCount(&nDevices);
@@ -358,74 +359,56 @@ namespace bias {
                             if(nDevices>=2)
                             {
 
-                                if(processScoresPtr_side -> isSide)
+                                if(processScoresPtr_side -> isSide && processScoresPtr_front -> isFront)
                                 {
                                     cudaSetDevice(0);
-                                    //GpuTimer timer2;
-                                    //timer2.Start();
-                                    std::cout << "launced" << std::endl;
                                     processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                    //emit(processSide(true));
-                                    processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
-                                    //timer2.Stop();
-                                    //gpuSide.push_back(timer2.Elapsed()/1000);
-
-                                }
-
-                                if(processScoresPtr_front -> isFront)
-                                {
-
+                                    HOFCompute(processScoresPtr_side -> HOGHOF_frame->hof_ctx, 
+                                               processScoresPtr_side -> HOGHOF_frame->img.buf, hof_f32); // call to compute and copy is asynchronous
                                     cudaSetDevice(1);
-                                    //GpuTimer timer1;
-                                    //timer1.Start();
                                     processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                    emit(processFront(true));
-                                    //processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
-                                    std::cout << "runnng front" << std::endl;
-                                    //timer1.Stop();
-                                    //gpuFront.push_back(timer1.Elapsed()/1000);
+                                    HOFCompute(processScoresPtr_front -> HOGHOF_partner->hof_ctx, 
+                                               processScoresPtr_front -> HOGHOF_partner->img.buf, hof_f32);
+                                    
+                                    cudaSetDevice(0);
+                                    HOFOutputCopy(processScoresPtr_side -> HOGHOF_frame->hof_ctx, 
+                                                  processScoresPtr_side -> HOGHOF_frame->hof_out.data(), 
+                                                  processScoresPtr_side -> HOGHOF_frame->hof_outputbytes);
+                                    cudaSetDevice(1);
+                                    HOFOutputCopy(processScoresPtr_front -> HOGHOF_partner->hof_ctx, 
+                                                  processScoresPtr_front -> HOGHOF_partner->hof_out.data(), 
+                                                  processScoresPtr_front -> HOGHOF_partner->hof_outputbytes); // should be called one after the other to get correct answer
+
+                                    cudaSetDevice(0);
+                                    HOGCompute(processScoresPtr_side -> HOGHOF_frame->hog_ctx, 
+                                               processScoresPtr_side -> HOGHOF_frame->img);
+                                      
+                                    cudaSetDevice(1);
+                                    HOGCompute(processScoresPtr_front -> HOGHOF_partner->hog_ctx, 
+                                               processScoresPtr_front -> HOGHOF_partner->img);
+
+                                    cudaSetDevice(0);
+                                    HOGOutputCopy(processScoresPtr_side -> HOGHOF_frame->hog_ctx, 
+                                                  processScoresPtr_side -> HOGHOF_frame->hog_out.data(), 
+                                                  processScoresPtr_side -> HOGHOF_frame->hog_outputbytes);
+                                    cudaSetDevice(1);
+                                    HOGOutputCopy(processScoresPtr_front -> HOGHOF_partner->hog_ctx, 
+                                                  processScoresPtr_front -> HOGHOF_partner->hog_out.data(), 
+                                                  processScoresPtr_front -> HOGHOF_partner->hog_outputbytes);
 
                                 }
-
-                                while(!processScoresPtr_side -> isProcessed_front ) //&& !processScoresPtr_front -> isProcessed_front)
-                                //while( !processScoresPtr_side -> isProcessed_front )
-                                {
-
-                                    //wait_to_process_.wait(&mutex_);       
-                                }
-
+ 
 
                             } else {
 
-                                //GpuTimer timer3;
-                                //timer3.Start();
-                                //cudaSetDevice(0);
                                 processScoresPtr_side -> HOGHOF_frame -> img.buf = greySide.ptr<float>(0);
                                 processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
                                 processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
                                 processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
-                                //timer3.Stop();
-                                //gpuSide.push_back(timer3.Elapsed()/1000);
 
                             }
 
-                            
-                            //mutex_.lock();
-                            /*if( !processScoresPtr_side -> isProcessed_side)
-                            {
-                                std::cout << "inside" << std::endl;
-                                wait_to_process_.wait();     
-                            }*/
-                            //mutex_.unlock(); 
-
-                            /*processScoresPtr_ -> mutex_.lock();
-                            if(processScoresPtr_side -> isProcessed_side  && processScoresPtr_front -> isProcessed_front )
-                            {
-                                signal_to_process_.wakeOne();
-                            }
-                            processScoresPtr_ -> mutex_.unlock();*/
-                                       
-    
+                                                                       
                             /*if(processScoresPtr_->save && frameCount_ == 2000)
                             {
 
@@ -456,37 +439,36 @@ namespace bias {
                                                            processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape, 
                                                            &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes, 
                                                            classifier -> model);
-                                processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score);
+                                //processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score);
 
                             }
 
-                            processScoresPtr_side -> isProcessed_side = false;
-                            processScoresPtr_front -> isProcessed_front = false;
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_;
                             //frameCount = frameCount + 1;
-                            
-                                        
+                                                                    
                         }
 
-                    }
+                    }                 
 
                 }
 
-                /*double time_taken;
+
+                double time_taken;
                 clock_gettime(CLOCK_REALTIME, &end);
                 time_taken = (end.tv_sec - start.tv_sec) * 1e9;
                 time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
                 gpuOverall.push_back(time_taken);
 
-                if(stampedImage0.frameCount==6000)
+
+                if(stampedImage0.frameCount==2000)
                 {
                    
-                    processScoresPtr_side->write_time("gpu_overall_double_2.csv", 6000, gpuOverall);
+                    processScoresPtr_side->write_time("gpu_overall_double.csv", 2000, gpuOverall);
                     //processScoresPtr_->write_time("timing_singlegpu.csv", 6000, gpuSide);
                     //processScoresPtr_->write_time("timing_gpu1.csv", 6000, gpuSide);
                     //processScoresPtr_->write_time("timing_gpu2.csv", 6000, gpuFront);
-                }*/
+                }
 
 
                 pluginImageQueuePtr_ -> pop();
@@ -494,16 +476,6 @@ namespace bias {
                                                 
             }
        
-            /****************************
-            //timer4.Stop();
-            //processScoresPtr_->write_score("gpu_execution_double.csv", 1, timer4.Elapsed()/1000);
-            *****************************/
-
-            /************
-            //end = clock();
-            //double time_taken = double(end-start)/double(CLOCKS_PER_SEC);
-            //processScoresPtr_->write_score("gpu_execution_double.csv", 1, time_taken);
-            ***************/
 
             pluginImageQueuePtr_ -> releaseLock();
             partnerPluginImageQueuePtr_ -> releaseLock();
