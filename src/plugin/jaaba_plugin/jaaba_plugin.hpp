@@ -37,7 +37,6 @@ namespace bias
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
             int lastProcessedFrameCount = 0;
-            int frameCount=0;
 
             JaabaPlugin(int numberOfCameras,QWidget *parent=0);
 
@@ -58,8 +57,7 @@ namespace bias
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;
             QPointer<beh_class> classifier;
-            QPointer<QThreadPool> threadPoolPtr_side;
-            QPointer<QThreadPool> threadPoolPtr_front;
+            QPointer<QThreadPool> threadPoolPtr;
             QWaitCondition wait_to_process_;
             QMutex mutex_;
 
@@ -74,6 +72,7 @@ namespace bias
         private:
 
             int nviews_;
+            int nDevices_;
             bool save;
             bool stop_save;
             bool detectStarted = false;
@@ -89,6 +88,7 @@ namespace bias
             void setupClassifier();
             void connectWidgets();
             int getNumberofViews();
+            int getNumberOfDevices();
             void updateWidgetsOnLoad();
             //void checkviews();
             void detectEnabled();
@@ -103,8 +103,6 @@ namespace bias
  
         signals:
 
-            //void newFrameData(FrameData data);
-            //void newShapeData(ShapeData data);
             void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
             void processSide(bool side);
             void processFront(bool front);
@@ -116,13 +114,7 @@ namespace bias
             void reloadButtonPressed();
             void detectClicked();
             void saveClicked();
-            //void onNewFrameData(FrameData data);
-            //void onNewShapeData(ShapeData data);
             void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
-            void onProcessSide(bool side);
-            void onProcessFront(bool front);
-            void setProcess_side(bool set_side);
-            void setProcess_front(bool set_front);
 
     };
 

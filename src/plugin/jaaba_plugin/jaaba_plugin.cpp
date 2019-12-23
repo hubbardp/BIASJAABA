@@ -28,6 +28,8 @@ namespace bias {
     {
 
         nviews_ = numberOfCameras;
+        cudaError_t err = cudaGetDeviceCount(&nDevices_);
+        if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
         setupUi(this);
         connectWidgets();
         initialize();
@@ -138,35 +140,16 @@ namespace bias {
         
         if (isReceiver())
         {
-            //threadPoolPtr_side = new QThreadPool(this);
-            //threadPoolPtr_side -> setMaxThreadCount(1);
+            threadPoolPtr = new QThreadPool(this);
+            threadPoolPtr -> setMaxThreadCount(1);
 
-            threadPoolPtr_front = new QThreadPool(this);
-            threadPoolPtr_front -> setMaxThreadCount(1);
 
-            /*if ((threadPoolPtr_side != nullptr) && (processScoresPtr_side != nullptr))
+            if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
             {
-                threadPoolPtr_side -> start(processScoresPtr_side);
-            }*/
-
-            if ((threadPoolPtr_front !=nullptr) && (processScoresPtr_front != nullptr))
-            {
-          
-                threadPoolPtr_front -> start(processScoresPtr_front);
+                threadPoolPtr -> start(processScoresPtr_side);
             }
 
         }
-
-        /*if (isSender())
-        {
-
-            threadPoolPtr_ = new QThreadPool(this);
-            threadPoolPtr_ -> setMaxThreadCount(1);
-            if ((threadPoolPtr_ != nullptr) && (processScoresPtr_ != nullptr))
-            {
-                threadPoolPtr_ -> start(processScoresPtr_);
-            }
-        }*/      
 
     }
 
@@ -178,23 +161,13 @@ namespace bias {
         if (partnerCameraWindowPtr)
         {
 
-            QPointer<BiasPlugin> partnerPluginPtr = partnerCameraWindowPtr -> getPluginByName("jaabaPlugin");
-            //qRegisterMetaType<FrameData>("FrameData");
-            //qRegisterMetaType<ShapeData>("ShapeData");
+            QPointer<BiasPlugin> partnerPluginPtr = partnerCameraWindowPtr -> getPluginByName("jaabaPlugin"); 
             qRegisterMetaType<std::shared_ptr<LockableQueue<StampedImage>>>("std::shared_ptr<LockableQueue<StampedImage>>");
-            //connect(partnerPluginPtr, SIGNAL(newFrameData(FrameData)), this, SLOT(onNewFrameData(FrameData)));
-            //connect(partnerPluginPtr, SIGNAL(newShapeData(ShapeData)), this, SLOT(onNewShapeData(ShapeData)));
             connect(partnerPluginPtr, SIGNAL(partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>>)) , 
                     this, SLOT(onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>>)));
-            //connect(processScoresPtr_side, SIGNAL(sideProcess(bool)) , this, SLOT(setProcess_side(bool)));
-            //connect(this->processScoresPtr_front, SIGNAL(processScoresPtr_front->frontProcess(bool)) , this, SLOT(setProcess_front(bool)));
 
         }
-        qRegisterMetaType<bool>("bool");
-        connect(this, SIGNAL(processSide(bool)) , this, SLOT(onProcessSide(bool)));
-        connect(this, SIGNAL(processFront(bool)) , this, SLOT(onProcessFront(bool)));
 
-        //updateMessageLabels();*/
     }
 
 
@@ -206,6 +179,7 @@ namespace bias {
         cv::Mat frontImage;
         cv::Mat greySide;
         cv::Mat greyFront;
+
 
         if(pluginImageQueuePtr_ != nullptr && isSender() && processScoresPtr_side -> processedFrameCount == -1)
         {
@@ -237,8 +211,8 @@ namespace bias {
             {
 
                 //timing info 
-                //struct timespec start, end;
-                //clock_gettime(CLOCK_REALTIME, &start);
+                struct timespec start, end;
+                clock_gettime(CLOCK_REALTIME, &start);
                 
                 StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
                 StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
@@ -249,7 +223,7 @@ namespace bias {
                 // Test
                 if(processScoresPtr_side -> capture_sde.isOpened())
                 {
-                    //std::cout << "set side" << std::endl;
+
                     sideImage = processScoresPtr_side-> vid_sde -> getImage(processScoresPtr_side -> capture_sde);
                     processScoresPtr_side -> vid_sde -> convertImagetoFloat(sideImage);
                     greySide = sideImage;
@@ -281,9 +255,17 @@ namespace bias {
                         if(!(processScoresPtr_side -> HOGHOF_frame.isNull()) )
                         {
                         
-                            cudaSetDevice(0);
-                            processScoresPtr_side -> initHOGHOF(processScoresPtr_side -> HOGHOF_frame, sideImage.rows, sideImage.cols);
+                            if(nDevices_>=2)
+                            {
 
+                                cudaSetDevice(0);
+                                processScoresPtr_side -> initHOGHOF(processScoresPtr_side -> HOGHOF_frame, sideImage.rows, sideImage.cols);
+
+                            }else{
+
+                                processScoresPtr_side -> initHOGHOF(processScoresPtr_side -> HOGHOF_frame, sideImage.rows, sideImage.cols);
+                           
+                            }
                         }
 
                     }
@@ -295,8 +277,16 @@ namespace bias {
                         if(!(processScoresPtr_front -> HOGHOF_partner.isNull()) )
                         {
                          
-                            cudaSetDevice(1);
-                            processScoresPtr_front -> initHOGHOF(processScoresPtr_front -> HOGHOF_partner, frontImage.rows, frontImage.cols);
+                            if(nDevices_>=2)
+                            {
+                                cudaSetDevice(1);
+                                processScoresPtr_front -> initHOGHOF(processScoresPtr_front -> HOGHOF_partner, frontImage.rows, frontImage.cols);
+
+                            } else {
+                                
+                                processScoresPtr_front -> initHOGHOF(processScoresPtr_front -> HOGHOF_partner, frontImage.rows, frontImage.cols);
+
+                            }
                          
                         }
 
@@ -351,24 +341,20 @@ namespace bias {
                             greySide = greySide / 255;
                             greyFront = greyFront / 255;*/
 
+
                             int nDevices;
                             cudaError_t err = cudaGetDeviceCount(&nDevices);
                             if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
 
-                            if(nDevices>=2)
+                            if(nDevices_>=2)
                             {
 
                                 if(processScoresPtr_side -> isSide)
                                 {
+
                                     cudaSetDevice(0);
-                                    //GpuTimer timer2;
-                                    //timer2.Start();
-                                    std::cout << "launced" << std::endl;
                                     processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                    //emit(processSide(true));
-                                    processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
-                                    //timer2.Stop();
-                                    //gpuSide.push_back(timer2.Elapsed()/1000);
+                                    processScoresPtr_side -> onProcessSide(); 
 
                                 }
 
@@ -376,56 +362,25 @@ namespace bias {
                                 {
 
                                     cudaSetDevice(1);
-                                    //GpuTimer timer1;
-                                    //timer1.Start();
                                     processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                    emit(processFront(true));
-                                    //processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
-                                    std::cout << "runnng front" << std::endl;
-                                    //timer1.Stop();
-                                    //gpuFront.push_back(timer1.Elapsed()/1000);
+                                    processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
 
                                 }
 
-                                while(!processScoresPtr_side -> isProcessed_front ) //&& !processScoresPtr_front -> isProcessed_front)
-                                //while( !processScoresPtr_side -> isProcessed_front )
-                                {
 
-                                    //wait_to_process_.wait(&mutex_);       
-                                }
+                                while(!processScoresPtr_side -> isProcessed_side) {}
 
 
                             } else {
 
-                                //GpuTimer timer3;
-                                //timer3.Start();
-                                //cudaSetDevice(0);
                                 processScoresPtr_side -> HOGHOF_frame -> img.buf = greySide.ptr<float>(0);
                                 processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
                                 processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
                                 processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
-                                //timer3.Stop();
-                                //gpuSide.push_back(timer3.Elapsed()/1000);
 
                             }
 
-                            
-                            //mutex_.lock();
-                            /*if( !processScoresPtr_side -> isProcessed_side)
-                            {
-                                std::cout << "inside" << std::endl;
-                                wait_to_process_.wait();     
-                            }*/
-                            //mutex_.unlock(); 
-
-                            /*processScoresPtr_ -> mutex_.lock();
-                            if(processScoresPtr_side -> isProcessed_side  && processScoresPtr_front -> isProcessed_front )
-                            {
-                                signal_to_process_.wakeOne();
-                            }
-                            processScoresPtr_ -> mutex_.unlock();*/
-                                       
-    
+                               
                             /*if(processScoresPtr_->save && frameCount_ == 2000)
                             {
 
@@ -446,10 +401,8 @@ namespace bias {
 
                             // compute scores
                             if(classifier -> isClassifierPathSet && processScoresPtr_side -> processedFrameCount >= 0)
-                               //&& processScoresPtr_side -> isProcessed_side  && processScoresPtr_front -> isProcessed_front)
                             {
                        
-                                //std::cout << "classify" << std::endl; 
                                 classifier->score = 0.0;
                                 classifier->boost_classify(classifier->score, processScoresPtr_side -> HOGHOF_frame -> hog_out, 
                                                            processScoresPtr_front -> HOGHOF_partner -> hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out,
@@ -464,47 +417,30 @@ namespace bias {
                             processScoresPtr_front -> isProcessed_front = false;
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_;
-                            //frameCount = frameCount + 1;
-                            
-                                        
+                                                                    
                         }
 
                     }
 
                 }
 
-                /*double time_taken;
+                // Test
+                double time_taken;
                 clock_gettime(CLOCK_REALTIME, &end);
                 time_taken = (end.tv_sec - start.tv_sec) * 1e9;
                 time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
                 gpuOverall.push_back(time_taken);
 
-                if(stampedImage0.frameCount==6000)
-                {
-                   
-                    processScoresPtr_side->write_time("gpu_overall_double_2.csv", 6000, gpuOverall);
-                    //processScoresPtr_->write_time("timing_singlegpu.csv", 6000, gpuSide);
-                    //processScoresPtr_->write_time("timing_gpu1.csv", 6000, gpuSide);
-                    //processScoresPtr_->write_time("timing_gpu2.csv", 6000, gpuFront);
-                }*/
-
+                if(stampedImage0.frameCount==10000)
+                {                   
+                    //processScoresPtr_side->write_time("gpu_overall_double.csv", 10000, gpuOverall);
+                }
 
                 pluginImageQueuePtr_ -> pop();
                 partnerPluginImageQueuePtr_ -> pop();
                                                 
             }
        
-            /****************************
-            //timer4.Stop();
-            //processScoresPtr_->write_score("gpu_execution_double.csv", 1, timer4.Elapsed()/1000);
-            *****************************/
-
-            /************
-            //end = clock();
-            //double time_taken = double(end-start)/double(CLOCKS_PER_SEC);
-            //processScoresPtr_->write_score("gpu_execution_double.csv", 1, time_taken);
-            ***************/
-
             pluginImageQueuePtr_ -> releaseLock();
             partnerPluginImageQueuePtr_ -> releaseLock();
  
@@ -553,17 +489,17 @@ namespace bias {
     void JaabaPlugin::initialize()
     {
 
+
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraNumber_ = cameraWindowPtr -> getCameraNumber();
         partnerCameraNumber_ = getPartnerCameraNumber();
         cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
-        processScoresPtr_side = new ProcessScores();   
-        processScoresPtr_front = new ProcessScores();    
+        processScoresPtr_side = new ProcessScores(this);   
+        processScoresPtr_front = new ProcessScores(this);    
  
         numMessageSent_=0;
         numMessageReceived_=0;
         frameCount_ = 0;
-        frameCount = 0;
 
         updateWidgetsOnLoad();
         setupHOGHOF();
@@ -683,6 +619,13 @@ namespace bias {
 
     }
 
+    int JaabaPlugin::getNumberOfDevices()
+    {
+  
+        return nDevices_;
+
+    }
+
    
     void JaabaPlugin::updateWidgetsOnLoad() 
     {
@@ -699,17 +642,6 @@ namespace bias {
             saveButtonPtr_-> setEnabled(false);
             save = false;        
         }
-        /* if(cameraNumber_ == 0)
-        {
-            
-            sideRadioButtonPtr_ ->setEnabled(false);            
-
-        } else {
-
-            frontRadioButtonPtr_->setEnabled(false);
-
-        }*/
-        //checkviews();
 
     }
    
@@ -949,53 +881,6 @@ namespace bias {
     }*/
 
     
-    // Private Slots
-    // ------------------------------------------------------------------------
-
-    /*void JaabaPlugin::onNewFrameData(FrameData data)
-    {
-
-        if(isReceiver()) 
-        {
-
-            //get frame from sender plugin
-            acquireLock();
-            processScoresPtr_->enqueueFrameData(data);
-            releaseLock();
-            
-            numMessageReceived_++;
-          
-        }
-
-
-        if(isSender())
-        {
-
-            //get frame from sender plugin
-            acquireLock();
-            processScoresPtr_->enqueueFrameData(data);
-            releaseLock();
-
-            numMessageReceived_++;
-
-        }
-        
-    }
-
-    void JaabaPlugin::onNewShapeData(ShapeData data)
-    {
-
-        acquireLock();
-        //if(processScoresPtr_-> isHOGHOFInitialised) {
-            //processScoresPtr_->HOGHOF_partner->hog_shape.x = data.shapex;  
-            //processScoresPtr_->HOGHOF_partner->hog_shape.y = data.shapey;
-            //processScoresPtr_->HOGHOF_partner->hog_shape.bin = data.bins; 
-            //processScoresPtr_-> isHOGHOFInitialised = false;    
-        //}
-        releaseLock();
-    }*/
-
-
     void JaabaPlugin::onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr)
     {
 
@@ -1006,60 +891,6 @@ namespace bias {
     }
 
 
-    void JaabaPlugin::onProcessSide(bool side)
-    {
-
-        if(processScoresPtr_side != nullptr)
-        {
-           acquireLock();
-           processScoresPtr_side -> processSide  = side;
-           releaseLock();
-           std::cout << processScoresPtr_side -> processSide  << "hello from within" << std::endl;
-        }
-    }
-
-
-    void JaabaPlugin::onProcessFront(bool front)
-    {
-
-        if(processScoresPtr_front != nullptr)
-        {
-           acquireLock();
-           processScoresPtr_front -> processFront  = front;
-           releaseLock();
-           std::cout << processScoresPtr_front -> processFront << "inside" << std::endl;
-        }
-    }
-
-
-    void JaabaPlugin::setProcess_side(bool set_side)
-    {
-
-        if(set_side)
-        {
-            //mutex_.lock();
-            //wait_to_process_.wakeAll();
-            //processScoresPtr_side->isProcessed_side  = false;
-            //std::cout << "false" << std::endl;
-            //mutex_.unlock();
-            
-        }
-    
-    }
-
-
-    void JaabaPlugin::setProcess_front(bool set_front)
-    {
-
-        if(set_front)
-        {
-
-            //wait_to_process_.wakeAll();
-            //processScoresPtr_front->isProcessed_front  = false;
-
-        }
-
-    }
 
 
     // Test development
