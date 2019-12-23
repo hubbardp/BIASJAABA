@@ -63,11 +63,6 @@ namespace bias {
     void ProcessScores::genFeatures(QPointer<HOGHOF> hoghof,int frame)
     {
 
-        //struct timespec start;
-        //clock_gettime(CLOCK_REALTIME, &start);
-
-        //std::cout << "secs" << start.tv_sec <<  " nsecs"  << start.tv_nsec << '\n';
-
         size_t hog_num_elements = hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin;
         size_t hof_num_elements = hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin;
 
@@ -78,6 +73,22 @@ namespace bias {
                                                            // the other to get correct answer
         HOGCompute(hoghof->hog_ctx, hoghof->img);
         HOGOutputCopy(hoghof->hog_ctx, hoghof->hog_out.data(), hoghof->hog_outputbytes);
+
+    }
+
+
+    void ProcessScores::onProcessSide()
+    {
+
+        processSide = true;      
+ 
+    }
+
+
+    void ProcessScores::onProcessFront()
+    {
+
+        processFront = true;
 
     }
 
@@ -106,7 +117,6 @@ namespace bias {
     }
     
           
-
     void ProcessScores::run()
     {
 
@@ -119,66 +129,35 @@ namespace bias {
         acquireLock();
         stopped_ = false;
         releaseLock();
-
-        long long lastProcessedCount = -1;
-        int sizeQueue = -1;
         
-
         while (!done)
         {
 
+<<<<<<< HEAD
             /*std::cout << "running front " << processSide << " " << processFront << std::endl;
             if(processFront)
+=======
+            if(processSide)
+>>>>>>> 2gpu_threading
             {
 
-                //std::cout << "running side " << processSide << std::endl;
-                cudaSetDevice(1);
-                //GpuTimer timer2;
-                //timer2.Start();
-                //HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                genFeatures(this -> HOGHOF_partner, this->processedFrameCount+1);
+                cudaSetDevice(0);
+                genFeatures(HOGHOF_frame, processedFrameCount+1);
                 acquireLock();
-                processFront = false;
+                processSide = false;
+                isProcessed_side = true;
                 releaseLock();
-                isProcessed_front = true; 
-                std::cout << "running front " << processSide << " " << processFront << std::endl;
-                //emit(sideProcess(isProcessed_side));
-                //timer2.Stop();
-                //gpuSide.push_back(timer2.Elapsed()/1000);
                  
             }*/
+
+            acquireLock();
+            done = stopped_;
+            releaseLock();
 
         }
      
     }
 
-
-    // Private slots
-    /*void ProcessScores::onNewShapeData(ShapeData data)
-    {
-        std::cout << "called" << std::endl; 
-        if(isSide)
-        {
-
-            //get frame from sender plugin
-            HOGHOF_partner->hog_shape.x = data.shapex;
-            HOGHOF_partner->hog_shape.y = data.shapey;
-            HOGHOF_partner->hog_shape.bin = data.bins;
-            std::cout << HOGHOF_partner->hog_shape.x << " " << HOGHOF_partner->hog_shape.bin << std::endl;
-        }
-
-
-        if(isFront)
-        {
-            //get frame from sender plugin
-            HOGHOF_partner->hog_shape.x = data.shapex;
-            HOGHOF_partner->hog_shape.y = data.shapey;
-            HOGHOF_partner->hog_shape.bin = data.bins;
-            std::cout << HOGHOF_partner->hog_shape.x << " " << HOGHOF_partner->hog_shape.bin << std::endl;
-
-        }
-
-    }*/
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

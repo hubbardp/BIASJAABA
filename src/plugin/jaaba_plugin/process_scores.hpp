@@ -29,9 +29,9 @@ namespace bias
     class ProcessScores : public QObject, public QRunnable, public Lockable<Empty>
     {
 
-       Q_OBJECT
+        Q_OBJECT
 
-       public :
+        public :
 
            bool save;
            bool detectStarted_;
@@ -44,16 +44,12 @@ namespace bias
            bool isProcessed_front; 
            bool isHOGHOFInitialised;
            int processedFrameCount;
-           //QPointer<HOGHOF> HOGHOF_side;
-           //QPointer<HOGHOF> HOGHOF_front;
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;
            //QPointer<beh_class> classifier; 
 
            ProcessScores(QObject *parent=0);
            void stop();
-           //void enqueueFrameDataSender(FrameData frameData);
-           //void enqueueFrameDataReceiver(FrameData frameData);
            void enqueueFrameData(FrameData frameData);
            void detectOn();
            void detectOff();
@@ -66,11 +62,9 @@ namespace bias
            cv::Mat curr_frame; 
            cv::Mat grey_frame;
 
-           QWaitCondition wait_to_process_;
-           QWaitCondition signal_to_process_;
-           QMutex mutex_;
-
          
+           void onProcessSide();
+           void onProcessFront();
            void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
            void write_score(std::string file, int framenum, float score);
@@ -78,7 +72,7 @@ namespace bias
            void write_time(std::string file, int framenum, std::vector<float> timeVec);
 
 
-       private :
+        private :
 
            bool stopped_;
            bool ready_;
@@ -89,22 +83,13 @@ namespace bias
            //QQueue<FrameData> receiverImageQueue_;
 
            void run();
-           //void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
-           //void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
-           //void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
 
-       signals:
+        signals:
 
            void newShapeData(ShapeData data);
            void sideProcess(bool side);
            void frontProcess(bool front);
         
-       private slots:
-
-            //void onNewShapeData(ShapeData data);
-
-
-
 
     };
 
