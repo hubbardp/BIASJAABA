@@ -58,8 +58,6 @@ namespace bias
             QPointer<ProcessScores> processScoresPtr_front;
             QPointer<beh_class> classifier;
             QPointer<QThreadPool> threadPoolPtr;
-            QWaitCondition wait_to_process_;
-            QMutex mutex_;
 
             QQueue<FrameData> sendImageQueue;
             QQueue<FrameData> receiveImageQueue;

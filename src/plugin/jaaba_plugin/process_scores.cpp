@@ -133,12 +133,7 @@ namespace bias {
         while (!done)
         {
 
-<<<<<<< HEAD
-            /*std::cout << "running front " << processSide << " " << processFront << std::endl;
-            if(processFront)
-=======
             if(processSide)
->>>>>>> 2gpu_threading
             {
 
                 cudaSetDevice(0);
@@ -148,7 +143,7 @@ namespace bias {
                 isProcessed_side = true;
                 releaseLock();
                  
-            }*/
+            }
 
             acquireLock();
             done = stopped_;

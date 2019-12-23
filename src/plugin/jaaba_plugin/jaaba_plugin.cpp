@@ -210,12 +210,9 @@ namespace bias {
             if ( !(pluginImageQueuePtr_ -> empty())  && !(partnerPluginImageQueuePtr_ -> empty()))
             {
 
-<<<<<<< HEAD
-=======
                 //timing info 
                 struct timespec start, end;
                 clock_gettime(CLOCK_REALTIME, &start);
->>>>>>> 2gpu_threading
                 
                 StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
                 StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
@@ -241,10 +238,6 @@ namespace bias {
                     greyFront = frontImage;
 
                 }*/
-
-                // timing info
-                struct timespec start, end;
-                clock_gettime(CLOCK_REALTIME, &start);
 
 
                 if((sideImage.rows != 0) && (sideImage.cols != 0) 
