@@ -48,9 +48,11 @@ namespace bias
             virtual void reset();
             virtual void stop();
             cv::Mat getCurrentImage();
+            int getLaserTrigger();
 
         protected:
-  
+ 
+            bool laserOn; 
             unsigned int cameraNumber_;
             unsigned int partnerCameraNumber_ ;
  
@@ -81,14 +83,14 @@ namespace bias
             bool pluginReady();
             bool isSender();
             bool isReceiver(); 
+            bool triggerLaser(float score);   
+            int getNumberofViews();
+            int getNumberOfDevices();
+            void updateWidgetsOnLoad();
             void initialize();
             void setupHOGHOF();
             void setupClassifier();
             void connectWidgets();
-            int getNumberofViews();
-            int getNumberOfDevices();
-            void updateWidgetsOnLoad();
-            //void checkviews();
             void detectEnabled();
 
             // Test
@@ -96,6 +98,7 @@ namespace bias
             std::vector<float>gpuFront;
             std::vector<float>gpuOverall;
             std::vector<float>classifier_score;
+            std::vector<float>laserRead;
             void write_output(std::string file,float* out_img, unsigned w, unsigned h);
 
  

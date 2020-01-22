@@ -14,16 +14,19 @@ namespace bias {
 
         hsize_t dims_out[2] = {0};
         H5::Exception::dontPrint();
-        std::cout << "kd" << std::endl;         
         try 
         {
-
+           
+            int rank, ndims;
 	    H5::H5File file(this->classifier_file.toStdString(), H5F_ACC_RDONLY);
-	    int rank, ndims;
-	    H5::DataSet dataset = file.openDataSet(this->model_params[0]);
+            H5::Group multbeh = file.openGroup("Lift");
+            H5::DataSet dataset = multbeh.openDataSet(this->model_params[0]);
 	    H5::DataSpace dataspace = dataset.getSpace();
-	    rank = dataspace.getSimpleExtentNdims();
 	    ndims = dataspace.getSimpleExtentDims(dims_out,NULL);
+            rank = dataspace.getSimpleExtentNdims();
+            this->model.resize(dims_out[0]);
+            std::cout << dims_out[0] << " " << dims_out[1] << "rank:" << rank << std::endl;
+            file.close();
 
         }
 
@@ -39,15 +42,15 @@ namespace bias {
                 
         }
 
-        this->model.cls_alpha.resize(dims_out[0]);
-        this->model.cls_dim.resize(dims_out[0]);
-        this->model.cls_dir.resize(dims_out[0]);
-        this->model.cls_error.resize(dims_out[0]);
-        this->model.cls_tr.resize(dims_out[0]);
+        //this->model.cls_alpha.resize(dims_out[0]);
+        //this->model.cls_dim.resize(dims_out[0]);
+        //this->model.cls_dir.resize(dims_out[0]);
+        //this->model.cls_error.resize(dims_out[0]);
+        //this->model.cls_tr.resize(dims_out[0]);
 
         //initialize other arrays
-        this->translated_index.resize(dims_out[0],0);
-        this->flag.resize(dims_out[0]);
+        //this->translated_index.resize(dims_out[0],0);
+        //this->flag.resize(dims_out[0]);
 
     }  
 
@@ -66,12 +69,12 @@ namespace bias {
 
     //https://support.hdfgroup.org/HDF5/doc/cpplus_RM/readdata_8cpp-example.html
     RtnStatus beh_class::readh5(std::string filename, std::vector<std::string> &model_params, 
-                                boost_classifier &data_out) 
+                                std::vector<boost_classifier> &data_out) 
     {
 
         RtnStatus rtnstatus;
-        int nparams = model_params.size();
-        std::vector<float*> model_data = { &data_out.cls_alpha.data()[0],
+        /*int nparams = model_params.size();
+        std::vector<std::vector<float*>> model_data = { &data_out.cls_alpha.data()[0],
                                            &data_out.cls_dim.data()[0],
                                            &data_out.cls_dir.data()[0],
                                            &data_out.cls_error.data()[0],
@@ -84,7 +87,8 @@ namespace bias {
             for(int paramid = 0; paramid < nparams; paramid++)
             {  
 		H5::H5File file(filename, H5F_ACC_RDONLY);
-		H5::DataSet dataset = file.openDataSet(model_params[paramid]);
+                H5::Group multbeh = file.openGroup("multiclassifier_stuff");
+		H5::DataSet dataset = multbeh.openDataSet(model_params[paramid]);
 		H5::DataSpace dataspace = dataset.getSpace();
 		rank = dataspace.getSimpleExtentNdims();
 		ndims = dataspace.getSimpleExtentDims(dims_out,NULL);
@@ -93,7 +97,7 @@ namespace bias {
 		file.close();
 		rtnstatus.success = true;
             } 
-
+        }
         }
 
         // catch failure caused by the H5File operations
@@ -105,7 +109,7 @@ namespace bias {
             QMessageBox::critical(this, errMsgTitle, errMsgText);
             rtnstatus.success = false;
             return rtnstatus;
-        }
+        }*/
         return rtnstatus;
 
     }
@@ -114,7 +118,7 @@ namespace bias {
     void beh_class::translate_mat2C(HOGShape *shape_side, HOGShape *shape_front) {
 
 	//shape of hist side
-	unsigned int side_x = shape_side->x;
+	/*unsigned int side_x = shape_side->x;
         unsigned int side_y = shape_side->y;
 	unsigned int side_bin = shape_side->bin;
 
@@ -199,7 +203,7 @@ namespace bias {
 
 	    } 
 
-	}
+	}*/
 
     }
 
@@ -247,11 +251,11 @@ namespace bias {
 			 std::vector<float> &hogf_features, std::vector<float> &hofs_features,
 			 std::vector<float> &hoff_features, struct HOGShape *shape_side,
 			 struct HOFShape *shape_front, int feat_len,
-			 boost_classifier& model) 
+			 std::vector<boost_classifier> &model) 
     {
 
 	//shape of hist side
-	unsigned int side_x = shape_side->x;
+	/*unsigned int side_x = shape_side->x;
 	unsigned int side_y = shape_side->y;
 	unsigned int side_bin = shape_side->bin;
 
@@ -304,7 +308,7 @@ namespace bias {
 
 	    }
 
-	}
+	}*/
 
     }
 

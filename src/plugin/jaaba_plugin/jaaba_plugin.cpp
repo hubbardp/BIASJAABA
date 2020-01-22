@@ -221,7 +221,7 @@ namespace bias {
                 frontImage = stampedImage1.image.clone();
 
                 // Test
-                /*if(processScoresPtr_side -> capture_sde.isOpened())
+                if(processScoresPtr_side -> capture_sde.isOpened())
                 {
 
                     sideImage = processScoresPtr_side-> vid_sde -> getImage(processScoresPtr_side -> capture_sde);
@@ -237,7 +237,7 @@ namespace bias {
                     processScoresPtr_front -> vid_front -> convertImagetoFloat(frontImage);
                     greyFront = frontImage;
 
-                }*/
+                }
 
 
                 if((sideImage.rows != 0) && (sideImage.cols != 0) 
@@ -325,7 +325,7 @@ namespace bias {
                              
                             // preprocessing the frames
                             // convert the frame into RGB2GRAY
-                            if(sideImage.channels() == 3)
+                            /*if(sideImage.channels() == 3)
                             {                    
                                 cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
                             }
@@ -339,12 +339,8 @@ namespace bias {
                             sideImage.convertTo(greySide, CV_32FC1);
                             frontImage.convertTo(greyFront, CV_32FC1);
                             greySide = greySide / 255;
-                            greyFront = greyFront / 255;
+                            greyFront = greyFront / 255;*/
 
-
-                            int nDevices;
-                            cudaError_t err = cudaGetDeviceCount(&nDevices);
-                            if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
 
                             if(nDevices_>=2)
                             {
@@ -407,7 +403,16 @@ namespace bias {
                                                            processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape, 
                                                            &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes, 
                                                            classifier -> model);
-                                //processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score);
+                                laserOn = triggerLaser(classifier->score);
+                                laserRead.push_back(laserOn);                    
+                                std::cout << "hi " << laserOn << std::endl;
+                                processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score);
+
+                            }
+                             
+                            if(frameCount_ == 2000)
+                            {
+                                processScoresPtr_side-> write_time("laserTrigger.csv",2000, laserRead);
 
                             }
 
@@ -499,6 +504,7 @@ namespace bias {
         numMessageSent_=0;
         numMessageReceived_=0;
         frameCount_ = 0;
+        laserOn = false;
 
         updateWidgetsOnLoad();
         setupHOGHOF();
@@ -604,7 +610,7 @@ namespace bias {
             classifier = cls;
             classifier -> classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
             classifier -> allocate_model();
-            classifier -> loadclassifier_model();
+            //classifier -> loadclassifier_model();
             
         }
       
@@ -622,6 +628,14 @@ namespace bias {
     {
   
         return nDevices_;
+
+    }
+
+   
+    int JaabaPlugin::getLaserTrigger()
+    {
+
+        return laserOn;
 
     }
 
@@ -837,11 +851,22 @@ namespace bias {
 
             classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
             classifier->allocate_model();
-            classifier->loadclassifier_model();
+            //classifier->loadclassifier_model();
 
         }
         detectEnabled();
        
+    }
+
+
+    bool JaabaPlugin::triggerLaser(float score)
+    {
+
+        if (score > 0)  
+            return true;
+        else
+            return false;
+
     }
 
 

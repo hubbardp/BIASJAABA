@@ -423,7 +423,7 @@
                    <item>
                     <widget class="QLineEdit" name="ClassFilePtr_">
                      <property name="placeholderText">
-                      <string>json_files/classifier_Lift.mat</string>
+                      <string>json_files/multiclassifier.mat</string>
                      </property>
                     </widget>
                    </item>
