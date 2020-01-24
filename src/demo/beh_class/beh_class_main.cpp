@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
 
     //Initialize and load classifier model
     beh_class classifier;
-    classifier.classifier_file = "/nrs/branson/jab_experiments/M277PSAMBpn/FinalJAB/cuda_jabs/classifier_Lift.mat";
+    classifier.classifier_file = "/nrs/branson/jab_experiments/M277PSAMBpn/FinalJAB/cuda_jabs/classifier_Handopen.mat";
     classifier.allocate_model();
     classifier.loadclassifier_model();
 
@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
         
     }
 
-    std::string out_scores = "test_Grab.h5";
+    std::string out_scores = "test_Handopen.h5";
     H5::H5File file_scr(out_scores.c_str(), H5F_ACC_TRUNC);
     create_dataset(file_scr,"scores", classifier.scores, 1, classifier.nframes);
     file_scr.close();

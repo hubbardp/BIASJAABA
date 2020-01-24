@@ -83,7 +83,7 @@ namespace bias
             bool pluginReady();
             bool isSender();
             bool isReceiver(); 
-            bool triggerLaser(float score);   
+            void triggerLaser();   
             int getNumberofViews();
             int getNumberOfDevices();
             void updateWidgetsOnLoad();
@@ -93,12 +93,13 @@ namespace bias
             void connectWidgets();
             void detectEnabled();
 
+            std::vector<float>classifier_score;
+            std::vector<float>laserRead = {0,0,0,0,0,0};
+
             // Test
             std::vector<float>gpuSide;
             std::vector<float>gpuFront;
             std::vector<float>gpuOverall;
-            std::vector<float>classifier_score;
-            std::vector<float>laserRead;
             void write_output(std::string file,float* out_img, unsigned w, unsigned h);
 
  

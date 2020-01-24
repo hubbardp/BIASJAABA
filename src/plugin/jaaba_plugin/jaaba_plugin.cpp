@@ -180,7 +180,7 @@ namespace bias {
         cv::Mat greySide;
         cv::Mat greyFront;
 
-
+        
         if(pluginImageQueuePtr_ != nullptr && isSender() && processScoresPtr_side -> processedFrameCount == -1)
         {
             emit(partnerImageQueue(pluginImageQueuePtr_));             
@@ -261,11 +261,12 @@ namespace bias {
                                 cudaSetDevice(0);
                                 processScoresPtr_side -> initHOGHOF(processScoresPtr_side -> HOGHOF_frame, sideImage.rows, sideImage.cols);
 
-                            }else{
+                            } else {
 
                                 processScoresPtr_side -> initHOGHOF(processScoresPtr_side -> HOGHOF_frame, sideImage.rows, sideImage.cols);
                            
                             }
+
                         }
 
                     }
@@ -361,7 +362,6 @@ namespace bias {
                                     processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
                                     processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
 
-
                                 }
  
                                 while(!processScoresPtr_side -> isProcessed_side) {}
@@ -397,24 +397,22 @@ namespace bias {
                             if(classifier -> isClassifierPathSet && processScoresPtr_side -> processedFrameCount >= 0)
                             {
                        
-                                classifier->score = 0.0;
+                                std::fill(laserRead.begin(), laserRead.end(), 0);                            
                                 classifier->boost_classify(classifier->score, processScoresPtr_side -> HOGHOF_frame -> hog_out, 
                                                            processScoresPtr_front -> HOGHOF_partner -> hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out,
                                                            processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape, 
                                                            &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes, 
                                                            classifier -> model);
-                                laserOn = triggerLaser(classifier->score);
-                                laserRead.push_back(laserOn);                    
-                                std::cout << "hi " << laserOn << std::endl;
-                                processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score);
+                                triggerLaser();
+                                processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[1]);
 
                             }
                              
-                            if(frameCount_ == 2000)
+                            /*if(frameCount_ == 2000)
                             {
                                 processScoresPtr_side-> write_time("laserTrigger.csv",2000, laserRead);
 
-                            }
+                            }*/
 
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_;
@@ -851,7 +849,7 @@ namespace bias {
 
             classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
             classifier->allocate_model();
-            //classifier->loadclassifier_model();
+            classifier->loadclassifier_model();
 
         }
         detectEnabled();
@@ -859,13 +857,17 @@ namespace bias {
     }
 
 
-    bool JaabaPlugin::triggerLaser(float score)
+    void JaabaPlugin::triggerLaser()
     {
 
-        if (score > 0)  
-            return true;
-        else
-            return false;
+        int num_beh = classifier->beh_present.size(); 
+        for(int nbeh =0;nbeh < num_beh;nbeh++)
+        {
+            if (classifier->score[nbeh] > 0)  
+                laserRead[nbeh] = 1;
+            else
+                laserRead[nbeh] = 0;
+        }
 
     }
 
