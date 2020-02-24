@@ -17,8 +17,7 @@ set(
     HOGHOF.hpp
     beh_class.hpp
     process_scores.hpp
-    frame_data.hpp
-    shape_data.hpp
+    vis_plots.hpp
     )
 
 set(
@@ -27,6 +26,7 @@ set(
     HOGHOF.cpp
     beh_class.cpp
     process_scores.cpp
+    vis_plots.cpp
     )
 
 qt5_wrap_ui(jaaba_plugin_FORMS_HEADERS ${jaaba_plugin_FORMS})

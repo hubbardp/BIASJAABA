@@ -76,6 +76,9 @@ class HOGHOF {
     int copyValueInt(QJsonObject& ob, QString subobj_key);
     void allocateCrop(int sz);
 
+    //TEST
+    void write_time(std::string file, int framenum, std::vector<float> timeVec);
+
 };
 
 #endif

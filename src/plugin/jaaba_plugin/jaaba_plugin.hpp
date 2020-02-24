@@ -1,5 +1,4 @@
 #ifndef JAABA_PLUGIN_WINDOW_HPP
-
 #define JAABA_PLUGIN_WINDOW_HPP
 
 #include "ui_jaaba_plugin.h"
@@ -9,11 +8,14 @@
 #include "HOGHOF.hpp"
 #include "beh_class.hpp"
 #include "process_scores.hpp"
+#include "vis_plots.hpp"
+
 #include "shape_data.hpp"
 #include <QMainWindow>
 #include <QPointer>
 #include <QThreadPool>
 #include <QThread>
+
 
 //test development
 //#include <fstream>
@@ -40,6 +42,8 @@ namespace bias
 
             JaabaPlugin(int numberOfCameras,QWidget *parent=0);
 
+            void resetTrigger();
+
             virtual void finalSetup();
             virtual QString getName();
             virtual QString getDisplayName();
@@ -54,12 +58,14 @@ namespace bias
  
             bool laserOn; 
             unsigned int cameraNumber_;
-            unsigned int partnerCameraNumber_ ;
+            unsigned int partnerCameraNumber_;
  
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;
             QPointer<beh_class> classifier;
+            QPointer<VisPlots> visplots;
             QPointer<QThreadPool> threadPoolPtr;
+            QThread thread_vis;
 
             QQueue<FrameData> sendImageQueue;
             QQueue<FrameData> receiveImageQueue;
@@ -68,6 +74,9 @@ namespace bias
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
             std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr_;
             unsigned int getPartnerCameraNumber();
+
+            void updateTrigStateInfo();
+            RtnStatus connectTriggerDev();
 
         private:
 
@@ -79,6 +88,12 @@ namespace bias
             
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
+                         
+
+            // Trigger parameters
+            bool triggerEnabled;
+            bool triggerArmedState;
+
           
             bool pluginReady();
             bool isSender();
@@ -117,6 +132,9 @@ namespace bias
             void detectClicked();
             void saveClicked();
             void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
+            void trigResetPushButtonClicked();
+            void trigEnabledCheckBoxStateChanged(int state);
+
 
     };
 

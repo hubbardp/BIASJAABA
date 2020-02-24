@@ -22,7 +22,6 @@ namespace bias {
     const QString JaabaPlugin::PLUGIN_NAME = QString("jaabaPlugin");
     const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
 
-
     // Public Methods
     JaabaPlugin::JaabaPlugin(int numberOfCameras, QWidget *parent) : BiasPlugin(parent)
     {
@@ -109,6 +108,7 @@ namespace bias {
             }
           
             processScoresPtr_side-> stop();
+            visplots -> stop();
 
         }
 
@@ -143,14 +143,17 @@ namespace bias {
             threadPoolPtr = new QThreadPool(this);
             threadPoolPtr -> setMaxThreadCount(1);
 
-
-            if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
+            /*if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
             {
                 threadPoolPtr -> start(processScoresPtr_side);
+            }*/
+
+            if((threadPoolPtr != nullptr) && (visplots != nullptr))
+            {
+            
+                threadPoolPtr -> start(visplots);    
             }
-
         }
-
     }
 
 
@@ -171,6 +174,36 @@ namespace bias {
     }
 
 
+
+    void JaabaPlugin::resetTrigger()
+    {
+        //triggerArmedState = true;
+        //updateTrigStateInfo();
+    }
+
+
+   
+    void JaabaPlugin::trigResetPushButtonClicked()
+    {
+        resetTrigger();
+    }
+
+
+
+    void JaabaPlugin::trigEnabledCheckBoxStateChanged(int state)
+    {
+        if (state == Qt::Unchecked)
+        {
+            triggerEnabled = false;
+        }
+        else
+        {
+            triggerEnabled= true;
+        }
+        updateTrigStateInfo();
+    }
+
+ 
     //void JaabaPlugin::processFrames(QList<StampedImage> frameList)
     void JaabaPlugin::processFrames()
     {
@@ -212,7 +245,7 @@ namespace bias {
 
                 //timing info 
                 struct timespec start, end;
-                clock_gettime(CLOCK_REALTIME, &start);
+                //clock_gettime(CLOCK_REALTIME, &start);
                 
                 StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
                 StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
@@ -221,7 +254,7 @@ namespace bias {
                 frontImage = stampedImage1.image.clone();
 
                 // Test
-                if(processScoresPtr_side -> capture_sde.isOpened())
+                /*if(processScoresPtr_side -> capture_sde.isOpened())
                 {
 
                     sideImage = processScoresPtr_side-> vid_sde -> getImage(processScoresPtr_side -> capture_sde);
@@ -237,7 +270,8 @@ namespace bias {
                     processScoresPtr_front -> vid_front -> convertImagetoFloat(frontImage);
                     greyFront = frontImage;
 
-                }
+                }*/
+                
 
 
                 if((sideImage.rows != 0) && (sideImage.cols != 0) 
@@ -326,7 +360,8 @@ namespace bias {
                              
                             // preprocessing the frames
                             // convert the frame into RGB2GRAY
-                            /*if(sideImage.channels() == 3)
+                            
+                            if(sideImage.channels() == 3)
                             {                    
                                 cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
                             }
@@ -340,7 +375,7 @@ namespace bias {
                             sideImage.convertTo(greySide, CV_32FC1);
                             frontImage.convertTo(greyFront, CV_32FC1);
                             greySide = greySide / 255;
-                            greyFront = greyFront / 255;*/
+                            greyFront = greyFront / 255;
 
 
                             if(nDevices_>=2)
@@ -352,6 +387,7 @@ namespace bias {
                                     cudaSetDevice(0);
                                     processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
                                     processScoresPtr_side -> onProcessSide(); 
+                                    //processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
 
                                 }
 
@@ -368,10 +404,18 @@ namespace bias {
 
                             } else {
 
+                                clock_gettime(CLOCK_REALTIME, &start);
                                 processScoresPtr_side -> HOGHOF_frame -> img.buf = greySide.ptr<float>(0);
                                 processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
                                 processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
                                 processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
+                                
+                                //Test
+                                double time_taken;
+                                clock_gettime(CLOCK_REALTIME, &end);
+                                time_taken = (end.tv_sec - start.tv_sec) * 1e9;
+                                time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
+                                gpuOverall.push_back(time_taken);
 
                             }
 
@@ -404,7 +448,14 @@ namespace bias {
                                                            &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes, 
                                                            classifier -> model);
                                 triggerLaser();
-                                processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[1]);
+                                visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
+                                visplots -> livePlotSignalVec_Lift.append(double(classifier->score[0]));
+                                visplots -> livePlotSignalVec_Handopen.append(double(classifier->score[1]));
+                                visplots -> livePlotSignalVec_Grab.append(double(classifier->score[2]));
+                                visplots -> livePlotSignalVec_Supinate.append(double(classifier->score[3]));
+                                visplots -> livePlotSignalVec_Chew.append(double(classifier->score[4]));
+                                visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
+                                //processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[0]);
 
                             }
                              
@@ -426,16 +477,17 @@ namespace bias {
 
 
                 //Test
-                double time_taken;
+                /*double time_taken;
                 clock_gettime(CLOCK_REALTIME, &end);
                 time_taken = (end.tv_sec - start.tv_sec) * 1e9;
                 time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
-                gpuOverall.push_back(time_taken);
+                gpuOverall.push_back(time_taken);*/
 
 
-                if(stampedImage0.frameCount==10000)
+                //if(stampedImage0.frameCount==10000)
+                if(gpuOverall.size()==10000)
                 {                   
-                    //processScoresPtr_side->write_time("gpu_overall_double.csv", 10000, gpuOverall);
+                    processScoresPtr_side->write_time("gpu_overall_double.csv", 10000, gpuOverall);
                 }
 
                 pluginImageQueuePtr_ -> pop();
@@ -498,6 +550,8 @@ namespace bias {
         cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
         processScoresPtr_side = new ProcessScores(this);   
         processScoresPtr_front = new ProcessScores(this);    
+        visplots = new VisPlots(livePlotPtr,this);
+
  
         numMessageSent_=0;
         numMessageReceived_=0;
@@ -548,6 +602,31 @@ namespace bias {
             SLOT(saveClicked())
            );
   
+ 
+         connect(
+             tabWidgetPtr,
+             SIGNAL(currentChanged(currentIndex())),
+             this,
+             SLOT(setCurrentIndex(currentIndex()))
+             );
+
+          
+
+        /*connect(
+            trigEnabledCheckBoxPtr,
+            SIGNAL(stateChanged(int)),
+            this,
+            SLOT(trigEnabledCheckBoxStateChanged(int))
+           );
+
+        connect(
+            trigResetPushButtonPtr,
+            SIGNAL(clicked()),
+            this,
+            SLOT(trigResetPushButtonClicked())
+           );*/
+
+
     }
 
     
@@ -608,7 +687,7 @@ namespace bias {
             classifier = cls;
             classifier -> classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
             classifier -> allocate_model();
-            //classifier -> loadclassifier_model();
+            classifier -> loadclassifier_model();
             
         }
       
@@ -652,6 +731,9 @@ namespace bias {
             detectButtonPtr_ -> setEnabled(false);
             saveButtonPtr_-> setEnabled(false);
             save = false;        
+
+            tabWidgetPtr -> setEnabled(true);
+            tabWidgetPtr -> repaint();        
         }
 
     }
@@ -870,6 +952,50 @@ namespace bias {
         }
 
     }
+
+
+    RtnStatus JaabaPlugin::connectTriggerDev()
+    {
+        RtnStatus rtnStatus;
+
+        tabWidgetPtr -> setEnabled(false);
+        tabWidgetPtr -> repaint();
+
+
+        tabWidgetPtr -> setEnabled(true);
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+
+
+    }
+
+    
+    void JaabaPlugin::updateTrigStateInfo()
+    {
+
+        /*if (triggerArmedState)
+        {
+            trigStateLabelPtr -> setText("State: Ready");
+        }
+        else
+        {
+            trigStateLabelPtr -> setText("State: Stopped");
+        }
+
+
+        if (trigEnabledCheckBoxPtr -> isChecked())
+        {
+            trigStateLabelPtr -> setEnabled(true);
+            trigResetPushButtonPtr -> setEnabled(true);
+        }
+        else
+        {
+            trigStateLabelPtr -> setEnabled(false);
+            trigResetPushButtonPtr -> setEnabled(false);
+        }*/
+    }
+ 
 
 
     /*void JaabaPlugin::checkviews() 

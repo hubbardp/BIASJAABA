@@ -1,24 +1,24 @@
 #ifndef PROCESS_SCORES_HPP
 #define PROCESS_SCORES_HPP
 
-#include "lockable.hpp"
+//#include "lockable.hpp"
 #include "stamped_image.hpp"
 #include "frame_data.hpp"
 #include "HOGHOF.hpp"
 #include "beh_class.hpp"
+#include "bias_plugin.hpp"
+#include "video_utils.hpp"
+#include <opencv2/highgui/highgui.hpp>
+#include <fstream>
+#include "timer.h"
+#include "shape_data.hpp"
+
 #include <opencv2/opencv.hpp>
 #include <QThreadPool>
 #include <QRunnable>
 #include <QPointer>
 #include <QQueue>
 #include <memory>
-#include "bias_plugin.hpp"
-#include "video_utils.hpp"
-#include <opencv2/highgui/highgui.hpp>
-#include <fstream>
-#include "timer.h"
-
-#include "shape_data.hpp"
 
 namespace bias 
 {

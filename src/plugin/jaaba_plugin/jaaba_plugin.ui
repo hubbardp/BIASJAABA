@@ -463,6 +463,23 @@
            </widget>
           </item>
          </layout> 
+        </widget>           
+        <widget class="QWidget" name="triggerTabPtr">
+         <attribute name="title">
+          <string>Trigger</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout">
+          <item>
+           <widget class="QCustomPlot" name="livePlotPtr" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </widget>
       </item>

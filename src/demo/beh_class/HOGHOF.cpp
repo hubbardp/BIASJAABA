@@ -3,6 +3,7 @@
 #include <opencv2/highgui/highgui.hpp>
 //#include <opencv2/opencv.h>
 #include <QDebug>
+#include <fstream>
 #include "timer.h"
 #include <iostream>
 
@@ -165,10 +166,12 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
     cv::Mat cur_frame;
     int frame = 0;
     GpuTimer timer1;
-    //timer1.Start();
+    std::vector<float>time_result;
+
     while(frame < num_frames) {
 
         //capture frame and convert to grey
+        //timer1.Start();
         cur_frame = vid.getImage(capture);
         //convert to Float and normalize
         vid.convertImagetoFloat(cur_frame);
@@ -177,16 +180,19 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
 
 
         //Compute and copy HOG/HOF     
-        //timer1.Start();
+
+        timer1.Start();
         HOFCompute(&hof_ctx, img.buf, hof_f32); // call to compute and copy is asynchronous
         HOFOutputCopy(&hof_ctx, tmp_hof, hof_outputbytes); // should be called one after 
                                                            // the other to get correct answer                                                             
         HOGCompute(&hog_ctx, img);
         HOGOutputCopy(&hog_ctx, tmp_hog, hog_outputbytes);
 
-        //timer1.Stop();
-        //std::cout << "time elapsed: " << timer1.Elapsed()/1000 << std::endl; 
       
+        timer1.Stop();
+        time_result.push_back(timer1.Elapsed()/1000);
+        //std::cout << "time elapsed: " << timer1.Elapsed()/1000 << std::endl;       
+
         //copy_features1d(frame, hog_num_elements, hog_out, tmp_hog);
         if(frame > 0) {
             copy_features1d(frame-1, hog_num_elements, hog_out, tmp_hog);
@@ -196,14 +202,8 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
         frame++;
 
     }
-    //timer1.Stop();
-    //std::cout << "time Elapsed " << timer1.Elapsed()/1000 << std::endl;
+    write_time("offline_time.csv",num_frames,time_result);
 
-    /*createh5("./hoghof_side", ".h5", num_frames, 
-             hog_num_elements, hof_num_elements,
-             hog_num_elements, hof_num_elements,
-             hog_out, hog_out,
-             hof_out, hof_out);*/  
     vid.releaseCapObject(capture) ;
     HOFTeardown(&hof_ctx);
     HOGTeardown(&hog_ctx);
@@ -333,6 +333,25 @@ float HOGHOF::copyValueFloat(QJsonObject& ob,
         return (value.toString().toFloat());
 
 }
+
+
+//Test
+
+void HOGHOF::write_time(std::string file, int framenum, std::vector<float> timeVec)
+{
+
+    std::ofstream x_out;
+    x_out.open(file.c_str(), std::ios_base::app);
+
+    for(int frame_id= 0; frame_id < framenum; frame_id++)
+    {
+
+        x_out << frame_id << "," << timeVec[frame_id] << "\n";
+
+    }
+
+}
+
 
 /*void HOGHOF::allocateHOGoutput(float* out, HOGContext* hog_init) {
 
