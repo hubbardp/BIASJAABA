@@ -85,6 +85,8 @@ namespace bias
             bool save;
             bool stop_save;
             bool detectStarted = false;
+            unsigned int numskippedFrames_=0;
+            float threshold_runtime = 0.00300000;
             
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;

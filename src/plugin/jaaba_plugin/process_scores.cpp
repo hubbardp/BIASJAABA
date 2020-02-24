@@ -27,11 +27,9 @@ namespace bias {
     void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
     {
 
-        //hoghof->loadImageParams(384, 260);
         int nDevices;
         cudaError_t err = cudaGetDeviceCount(&nDevices); 
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
-        std::cout << img_height << " " << img_width << " " << nDevices << std::endl;
         hoghof->loadImageParams(img_width, img_height);
         struct HOGContext hogctx = HOGInitialize(logger, hoghof->HOGParams, img_width, img_height, hoghof->Cropparams);
         struct HOFContext hofctx = HOFInitialize(logger, hoghof->HOFParams, hoghof->Cropparams);

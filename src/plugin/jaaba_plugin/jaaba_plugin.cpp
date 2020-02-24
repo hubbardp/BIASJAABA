@@ -141,12 +141,12 @@ namespace bias {
         if (isReceiver())
         {
             threadPoolPtr = new QThreadPool(this);
-            threadPoolPtr -> setMaxThreadCount(1);
+            threadPoolPtr -> setMaxThreadCount(2);
 
-            /*if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
+            if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
             {
                 threadPoolPtr -> start(processScoresPtr_side);
-            }*/
+            }
 
             if((threadPoolPtr != nullptr) && (visplots != nullptr))
             {
@@ -245,7 +245,7 @@ namespace bias {
 
                 //timing info 
                 struct timespec start, end;
-                //clock_gettime(CLOCK_REALTIME, &start);
+                clock_gettime(CLOCK_REALTIME, &start);
                 
                 StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
                 StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
@@ -329,7 +329,6 @@ namespace bias {
                         if(processScoresPtr_side -> isHOGHOFInitialised && processScoresPtr_front -> isHOGHOFInitialised)
                         {
 
-                            std::cout << "once" << std::endl;
                             classifier->translate_mat2C(&processScoresPtr_side -> HOGHOF_frame->hog_shape,
                                                     &processScoresPtr_front -> HOGHOF_partner->hog_shape);
 
@@ -381,7 +380,7 @@ namespace bias {
                             if(nDevices_>=2)
                             {
 
-                                if(processScoresPtr_side -> isSide && processScoresPtr_front -> isFront)
+                                if(processScoresPtr_side -> isSide)
                                 {
 
                                     cudaSetDevice(0);
@@ -419,6 +418,7 @@ namespace bias {
 
                             }
 
+                             // Test
                             /*if(processScoresPtr_->save && frameCount_ == 2000)
                             {
 
@@ -455,7 +455,7 @@ namespace bias {
                                 visplots -> livePlotSignalVec_Supinate.append(double(classifier->score[3]));
                                 visplots -> livePlotSignalVec_Chew.append(double(classifier->score[4]));
                                 visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
-                                //processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[0]);
+                                //processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[1]);
 
                             }
                              
@@ -464,6 +464,34 @@ namespace bias {
                                 processScoresPtr_side-> write_time("laserTrigger.csv",2000, laserRead);
 
                             }*/
+
+                            //Test
+                            double time_taken;
+                            clock_gettime(CLOCK_REALTIME, &end);
+                            time_taken = (end.tv_sec - start.tv_sec) * 1e9;
+                            time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
+
+                            // If classifier takes more time than threshold skip frame
+                            if(time_taken > threshold_runtime){
+
+                                numskippedFrames_ += 1;
+                                processScoresPtr_side -> processedFrameCount = frameCount_;
+                                processScoresPtr_front -> processedFrameCount = frameCount_;
+                                pluginImageQueuePtr_ -> pop();
+                                partnerPluginImageQueuePtr_ -> pop();
+                                pluginImageQueuePtr_ -> releaseLock();
+                                partnerPluginImageQueuePtr_ -> releaseLock();
+                                return;
+                            }
+                              
+                            gpuOverall.push_back(time_taken);
+
+                            if(gpuOverall.size()==10000)
+                            {
+                                processScoresPtr_side->write_time("gpu_overall_double.csv", 10000, gpuOverall);
+                                std::cout << "The frames skipped are: " << numskippedFrames_ << std::endl;
+                            }
+
 
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_;
@@ -475,20 +503,6 @@ namespace bias {
 
                 }
 
-
-                //Test
-                /*double time_taken;
-                clock_gettime(CLOCK_REALTIME, &end);
-                time_taken = (end.tv_sec - start.tv_sec) * 1e9;
-                time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
-                gpuOverall.push_back(time_taken);*/
-
-
-                //if(stampedImage0.frameCount==10000)
-                if(gpuOverall.size()==10000)
-                {                   
-                    processScoresPtr_side->write_time("gpu_overall_double.csv", 10000, gpuOverall);
-                }
 
                 pluginImageQueuePtr_ -> pop();
                 partnerPluginImageQueuePtr_ -> pop();
