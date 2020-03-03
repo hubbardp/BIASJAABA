@@ -127,7 +127,8 @@ namespace bias
         }
 
         QThread *thisThread = QThread::currentThread();
-        thisThread -> setPriority(QThread::NormalPriority);
+        //thisThread -> setPriority(QThread::NormalPriority);
+        thisThread -> setPriority(QThread::HighPriority);
         ThreadAffinityService::assignThreadAffinity(false,cameraNumber_);
 
         acquireLock();
@@ -154,7 +155,6 @@ namespace bias
                 frameList.append(stampedImage);
                 pluginImageQueuePtr_ -> pop();
             }
-
 
             pluginImageQueuePtr_ -> releaseLock();*/
 

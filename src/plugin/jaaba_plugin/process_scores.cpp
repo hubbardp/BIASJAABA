@@ -66,11 +66,11 @@ namespace bias {
 
         //Compute and copy HOG/HOF
 
-        HOFCompute(hoghof->hof_ctx, hoghof->img.buf, hof_f32); // call to compute and copy is asynchronous
-        HOFOutputCopy(hoghof->hof_ctx, hoghof->hof_out.data(), hoghof->hof_outputbytes); // should be called one after 
+        //HOFCompute(hoghof->hof_ctx, hoghof->img.buf, hof_f32); // call to compute and copy is asynchronous
+        //HOFOutputCopy(hoghof->hof_ctx, hoghof->hof_out.data(), hoghof->hof_outputbytes); // should be called one after 
                                                            // the other to get correct answer
         HOGCompute(hoghof->hog_ctx, hoghof->img);
-        HOGOutputCopy(hoghof->hog_ctx, hoghof->hog_out.data(), hoghof->hog_outputbytes);
+        //HOGOutputCopy(hoghof->hog_ctx, hoghof->hog_out.data(), hoghof->hog_outputbytes);
 
     }
 
@@ -192,7 +192,7 @@ namespace bias {
     }
 
    
-    void ProcessScores::write_time(std::string file, int framenum, std::vector<float> timeVec)
+    void ProcessScores::write_time(std::string file, int framenum, std::vector<float>& timeVec)
     {
 
         std::ofstream x_out;

@@ -57,18 +57,18 @@ int main(int argc, char* argv[]) {
  
     //compute Featues 
     //cudaSetDevice(0); 
-    GpuTimer timer1;
-    timer1.Start();
-    feat_side.genFeatures(vidFile[0], feat_side.CropParam_file);
-    timer1.Stop();
+    //GpuTimer timer1;
+    //timer1.Start();
+    //feat_side.genFeatures(vidFile[0], feat_side.CropParam_file);
+    //timer1.Stop();
 
     //cudaSetDevice(1);
     GpuTimer timer2 ;
     timer2.Start();
     feat_frt.genFeatures(vidFile[1], feat_frt.CropParam_file);
     timer2.Stop();
-    std::cout << timer1.Elapsed()/1000 << std::endl;
-    std::cout << timer2.Elapsed()/1000 << std::endl;
+    //std::cout << timer1.Elapsed()/1000 << std::endl;
+    //std::cout << timer2.Elapsed()/1000 << std::endl;
 
     /*createh5("./hoghof", ".h5", 2498, 
              2400, 2400,
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
              feat_side.hof_out, feat_frt.hof_out); */
 
     //predict scores
-    classifier.translate_mat2C(&feat_side.hog_shape, &feat_frt.hof_shape);
+    /*classifier.translate_mat2C(&feat_side.hog_shape, &feat_frt.hof_shape);
     classifier.scores.resize(classifier.nframes,0.0);
     
     for(int frame_id =1;frame_id < classifier.nframes; frame_id++) {
@@ -91,7 +91,7 @@ int main(int argc, char* argv[]) {
     std::string out_scores = "test_Handopen.h5";
     H5::H5File file_scr(out_scores.c_str(), H5F_ACC_TRUNC);
     create_dataset(file_scr,"scores", classifier.scores, 1, classifier.nframes);
-    file_scr.close();
+    file_scr.close();*/
     std::cout << "hi" << std::endl;
 
 }

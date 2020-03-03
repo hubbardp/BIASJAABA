@@ -109,7 +109,6 @@ namespace bias {
           
             processScoresPtr_side-> stop();
             visplots -> stop();
-
         }
 
 
@@ -141,12 +140,12 @@ namespace bias {
         if (isReceiver())
         {
             threadPoolPtr = new QThreadPool(this);
-            threadPoolPtr -> setMaxThreadCount(2);
+            threadPoolPtr -> setMaxThreadCount(1);
 
-            if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
+            /*if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
             {
                 threadPoolPtr -> start(processScoresPtr_side);
-            }
+            }*/
 
             if((threadPoolPtr != nullptr) && (visplots != nullptr))
             {
@@ -205,7 +204,7 @@ namespace bias {
 
  
     //void JaabaPlugin::processFrames(QList<StampedImage> frameList)
-    void JaabaPlugin::processFrames()
+    /*void JaabaPlugin::processFrames()
     {
 
         cv::Mat sideImage;
@@ -214,10 +213,10 @@ namespace bias {
         cv::Mat greyFront;
 
         
-        if(pluginImageQueuePtr_ != nullptr && isSender() && processScoresPtr_side -> processedFrameCount == -1)
+        if(pluginImageQueuePtr_ != nullptr && isSender() && processScoresPtr_front -> processedFrameCount == -1)
         {
             emit(partnerImageQueue(pluginImageQueuePtr_));             
-            processScoresPtr_side -> processedFrameCount += 1;
+            processScoresPtr_front -> processedFrameCount += 1;
         }
        
         
@@ -232,11 +231,9 @@ namespace bias {
 
             if (pluginImageQueuePtr_ -> empty() || partnerPluginImageQueuePtr_ -> empty())
             {
-
                 pluginImageQueuePtr_ -> releaseLock();
                 partnerPluginImageQueuePtr_ -> releaseLock();
                 return;
-
             }
  
  
@@ -251,7 +248,7 @@ namespace bias {
                 StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
 
                 sideImage = stampedImage0.image.clone();
-                frontImage = stampedImage1.image.clone();
+                frontImage = stampedImage1.image.clone();*/
 
                 // Test
                 /*if(processScoresPtr_side -> capture_sde.isOpened())
@@ -274,7 +271,7 @@ namespace bias {
                 
 
 
-                if((sideImage.rows != 0) && (sideImage.cols != 0) 
+                /*if((sideImage.rows != 0) && (sideImage.cols != 0) 
                    && (frontImage.rows != 0) && (frontImage.cols != 0))
                 {
  
@@ -334,7 +331,7 @@ namespace bias {
 
                         }
  
-                    }
+                    }*/
 
 
                     // Test
@@ -351,7 +348,7 @@ namespace bias {
                     }*/
                     
 
-                    if( stampedImage0.frameCount == stampedImage1.frameCount) 
+                    /*if( stampedImage0.frameCount == stampedImage1.frameCount) 
                     {
 
                         if((processScoresPtr_side -> detectStarted_) && (frameCount_  == (processScoresPtr_side -> processedFrameCount+1)))
@@ -416,7 +413,7 @@ namespace bias {
                                 time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
                                 gpuOverall.push_back(time_taken);
 
-                            }
+                            }*/
 
                              // Test
                             /*if(processScoresPtr_->save && frameCount_ == 2000)
@@ -438,7 +435,7 @@ namespace bias {
 
 
                             // compute scores
-                            if(classifier -> isClassifierPathSet && processScoresPtr_side -> processedFrameCount >= 0)
+                            /*if(classifier -> isClassifierPathSet && processScoresPtr_side -> processedFrameCount >= 0)
                             {
                        
                                 std::fill(laserRead.begin(), laserRead.end(), 0);                            
@@ -457,7 +454,7 @@ namespace bias {
                                 visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
                                 //processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[1]);
 
-                            }
+                            }*/
                              
                             /*if(frameCount_ == 2000)
                             {
@@ -466,7 +463,7 @@ namespace bias {
                             }*/
 
                             //Test
-                            double time_taken;
+                            /*double time_taken;
                             clock_gettime(CLOCK_REALTIME, &end);
                             time_taken = (end.tv_sec - start.tv_sec) * 1e9;
                             time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
@@ -503,7 +500,6 @@ namespace bias {
 
                 }
 
-
                 pluginImageQueuePtr_ -> pop();
                 partnerPluginImageQueuePtr_ -> pop();
                                                 
@@ -514,20 +510,272 @@ namespace bias {
  
         }
         
+    }*/
+
+
+    void JaabaPlugin::processFrames()
+    {
+
+        cv::Mat sideImage;
+        cv::Mat frontImage;
+        cv::Mat greySide;
+        cv::Mat greyFront;
+
+        if(pluginImageQueuePtr_ != nullptr)
+        {
+
+            pluginImageQueuePtr_ -> acquireLock();
+            pluginImageQueuePtr_ -> waitIfEmpty();
+
+            if(pluginImageQueuePtr_ -> empty()) 
+            {
+                pluginImageQueuePtr_ -> releaseLock();
+                std::cout << "Frame skipped" << std::endl;
+                return;
+            }
+
+             
+            if(!(pluginImageQueuePtr_ -> empty()))
+            {
+
+                //timing info 
+                //struct timespec start, end;
+                //clock_gettime(CLOCK_REALTIME, &start);
+                GpuTimer timer2,timer3;
+                timer2.Start();
+                timer3.Start();
+                StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
+                if(isSender()) 
+                {
+
+                    if(processScoresPtr_front -> capture_front.isOpened())
+                    {
+                        frontImage = processScoresPtr_front -> vid_front -> getImage(processScoresPtr_front -> capture_front);
+                        processScoresPtr_front -> vid_front -> convertImagetoFloat(frontImage);
+                        greyFront = frontImage;
+
+                    }else{
+                    
+                        frontImage = stampedImage0.image.clone();
+                    }
+
+                }
+
+
+                if(isReceiver()) 
+                {
+                    if(processScoresPtr_side -> capture_sde.isOpened())
+                    {                                             
+                        sideImage = processScoresPtr_side-> vid_sde -> getImage(processScoresPtr_side -> capture_sde);
+                        processScoresPtr_side -> vid_sde -> convertImagetoFloat(sideImage);
+                        greySide = sideImage;
+
+                    }else{
+                    
+                        sideImage = stampedImage0.image.clone();
+                    }  
+                }
+                
+                
+                if((sideImage.rows != 0) && (sideImage.cols != 0) 
+                   || (frontImage.rows != 0) && (frontImage.cols != 0))
+                {
+  
+ 
+                    if(isSender() && !processScoresPtr_front -> isHOGHOFInitialised && processScoresPtr_front != nullptr)
+                    {                                            
+
+                        acquireLock();
+                        currentImage_ = frontImage;
+                        frameCount_ = stampedImage0.frameCount;
+                        releaseLock();
+                         
+                                                 
+                        if(!(processScoresPtr_front -> HOGHOF_partner.isNull()) )
+                        {
+                        
+                            if(nDevices_>=2)
+                            {
+                                cudaSetDevice(0);
+                                processScoresPtr_front -> initHOGHOF(processScoresPtr_front -> HOGHOF_partner, frontImage.rows, frontImage.cols);
+
+                            } else {
+
+                                processScoresPtr_front -> initHOGHOF(processScoresPtr_front -> HOGHOF_partner, frontImage.rows, frontImage.cols);
+                           
+                            }
+
+                        }
+
+                    }
+
+
+                    if(isReceiver() && !processScoresPtr_side -> isHOGHOFInitialised && processScoresPtr_side != nullptr)
+                    {
+
+
+                        acquireLock();
+                        currentImage_ = sideImage;
+                        frameCount_ = stampedImage0.frameCount;
+                        releaseLock();
+
+
+                        if(!(processScoresPtr_side -> HOGHOF_frame.isNull()) )
+                        {
+                        
+                            if(nDevices_>=2)
+                            {
+
+                                cudaSetDevice(1);
+                                processScoresPtr_side -> initHOGHOF(processScoresPtr_side -> HOGHOF_frame, sideImage.rows, sideImage.cols);
+
+                            } else {
+
+                                processScoresPtr_side -> initHOGHOF(processScoresPtr_side -> HOGHOF_frame, sideImage.rows, sideImage.cols);
+                           
+                            }
+
+                        }
+
+                    }
+                    
+                    
+                    if(processScoresPtr_side != nullptr or processScoresPtr_front != nullptr) 
+                    {
+                             
+		        // preprocessing the frames
+		        // convert the frame into RGB2GRAY
+
+		        if(isSender() && detectStarted) 
+		        {
+
+                            if(!isVidInput)
+                            { 
+			        if(frontImage.channels() == 3)
+			        {
+				    cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
+			        }
+                            
+			        // convert the frame into float32
+			        frontImage.convertTo(greyFront, CV_32FC1);
+			        greyFront = greyFront / 255;
+                            
+                            }
+
+                            timer3.Stop();
+                            double time_taken2 = timer3.Elapsed()/1000;
+                            gpuSide.push_back(time_taken2);
+                            GpuTimer timer1;
+                            timer1.Start();  
+                            if(processScoresPtr_front -> isFront)
+                            {
+
+				if(nDevices_ >= 2)
+				{
+				    cudaSetDevice(0);
+				    processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+				    processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
+
+	                        } else {
+                                     
+                                    processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                    processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
+
+                                }
+
+                            }
+                            //clock_gettime(CLOCK_REALTIME, &end);
+                            //time_taken = (end.tv_sec - start.tv_sec) * 1e9;
+                            //time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;*/
+                            timer1.Stop();
+                            timer2.Stop();
+                            double time_taken = timer1.Elapsed()/1000;
+                            double time_taken1 = timer2.Elapsed()/1000;
+                            gpuOverall.push_back(time_taken);
+                            gpuFront.push_back(time_taken1);
+ 
+                            if(gpuOverall.size()==2000){
+                                processScoresPtr_front->write_time("gpu_front_compute.csv", 2000, gpuOverall);
+                                processScoresPtr_front->write_time("gpu_front_overall.csv", 2000, gpuFront);
+                                processScoresPtr_front->write_time("gpu_front_grab.csv", 2000, gpuSide);
+                            } 
+		       
+			}
+
+			if(isReceiver() && detectStarted) 
+			{
+ 
+                            if(!isVidInput)
+                            {
+
+			        if(sideImage.channels() == 3)
+			        {                    
+				    cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
+			        }
+
+			        // convert the frame into float32
+			        sideImage.convertTo(greySide, CV_32FC1);
+			        greySide = greySide / 255;
+                            }
+
+                            //struct timespec start, end;
+                            //clock_gettime(CLOCK_REALTIME, &start);
+                            GpuTimer timer1;
+                            timer1.Start();
+			    if(processScoresPtr_side -> isSide)
+                            {
+
+                                if(nDevices_>=2)
+				{
+				    cudaSetDevice(1);
+				    processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+				    processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
+
+				} else {
+
+                                    processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                    processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
+                                }
+                            }
+                            
+                            /*double time_taken;
+                            clock_gettime(CLOCK_REALTIME, &end);
+                            time_taken = (end.tv_sec - start.tv_sec) * 1e9;
+                            time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9*/
+                            /*timer1.Stop();
+                            double time_taken = timer1.Elapsed()/1000;
+                            gpuOverall.push_back(time_taken);
+
+                            if(gpuOverall.size()==10000){
+                                std::cout << "write receiver " << std::endl; 
+                                processScoresPtr_side->write_time("gpu_side.csv", 10000, gpuOverall);
+                            }*/
+                            
+                        }
+                   
+	            }
+
+                    pluginImageQueuePtr_->pop();
+                }
+              
+            } 
+
+            pluginImageQueuePtr_ -> releaseLock();
+        }     
     }
 
-    
+
     unsigned int JaabaPlugin::getPartnerCameraNumber()
     {
-        // Returns camera number of partner camera. For this example
-        // we just use camera 0 and 1. In another setting you might do
-        // this by GUID or something else.
-        if (cameraNumber_ == 0)
-        {
-            return 1;
-        }
-        else
-        {
+	// Returns camera number of partner camera. For this example
+	// we just use camera 0 and 1. In another setting you might do
+	// this by GUID or something else.
+	if (cameraNumber_ == 0)
+	{
+	    return 1;
+	}
+	else
+	{
             return 0;
         }
     }
@@ -557,20 +805,24 @@ namespace bias {
     void JaabaPlugin::initialize()
     {
 
-
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraNumber_ = cameraWindowPtr -> getCameraNumber();
         partnerCameraNumber_ = getPartnerCameraNumber();
         cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
-        processScoresPtr_side = new ProcessScores(this);   
-        processScoresPtr_front = new ProcessScores(this);    
-        visplots = new VisPlots(livePlotPtr,this);
 
- 
+        if(isSender()) 
+            processScoresPtr_front = new ProcessScores(this);
+
+        if(isReceiver()) {
+            processScoresPtr_side = new ProcessScores(this);    
+            visplots = new VisPlots(livePlotPtr,this);
+        } 
+
         numMessageSent_=0;
         numMessageReceived_=0;
         frameCount_ = 0;
         laserOn = false;
+        isVidInput = false;
 
         updateWidgetsOnLoad();
         setupHOGHOF();
@@ -649,11 +901,15 @@ namespace bias {
      
         if(sideRadioButtonPtr_->isChecked())
         {
-             
-            QString file_sde = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi";
-            processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
-            processScoresPtr_side -> capture_sde = processScoresPtr_side -> vid_sde -> videoCapObject();
-                 
+            
+
+            if(isVidInput) 
+            { 
+                QString file_sde = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi";
+                processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
+                processScoresPtr_side -> capture_sde = processScoresPtr_side -> vid_sde -> videoCapObject();
+            }             
+    
   
             HOGHOF *hoghofside = new HOGHOF(this);
             acquireLock();
@@ -671,9 +927,13 @@ namespace bias {
         if(frontRadioButtonPtr_->isChecked()) 
         {
 
-            QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";  
-            processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
-            processScoresPtr_front -> capture_front = processScoresPtr_front -> vid_front -> videoCapObject(); 
+
+            if(isVidInput)
+            {
+                QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";  
+                processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
+                processScoresPtr_front -> capture_front = processScoresPtr_front -> vid_front -> videoCapObject(); 
+            }
 
             HOGHOF *hoghoffront = new HOGHOF(this);  
             acquireLock();
@@ -734,11 +994,11 @@ namespace bias {
     void JaabaPlugin::updateWidgetsOnLoad() 
     {
 
-        if( cameraNumber_ == 0 )
+        /*if( cameraNumber_ == 0 )
         {
             this -> setEnabled(false);   
 
-        } else {
+        } else {*/
 
             sideRadioButtonPtr_ -> setChecked(false);
             frontRadioButtonPtr_ -> setChecked(false);
@@ -748,7 +1008,7 @@ namespace bias {
 
             tabWidgetPtr -> setEnabled(true);
             tabWidgetPtr -> repaint();        
-        }
+        //}
 
     }
    
@@ -800,31 +1060,26 @@ namespace bias {
             detectButtonPtr_->setText(QString("Stop Detecting"));
             detectStarted = true;
 
-            if (processScoresPtr_side != nullptr)
+
+            if(isSender() && processScoresPtr_front != nullptr)
             {
+                     
+                processScoresPtr_front -> acquireLock();
+                processScoresPtr_front -> isFront = true;
+                processScoresPtr_front -> releaseLock();    
+            }
+
+            if(isReceiver() && processScoresPtr_side != nullptr)
+            {
+                     
                 processScoresPtr_side -> acquireLock();
-                processScoresPtr_side -> detectOn();
+                processScoresPtr_side -> isSide = true;
                 processScoresPtr_side -> releaseLock();
 
-                /*if(isSender())
-                {
-                     processScoresPtr_ -> acquireLock();
-                     processScoresPtr_ -> isFront = true;
-                     processScoresPtr_ -> releaseLock();    
-                }*/
+                //processScoresPtr_front -> acquireLock();
+                //processScoresPtr_front -> isFront = true;
+                //processScoresPtr_front -> releaseLock();
 
-                if(isReceiver())
-                {
-                     processScoresPtr_side -> acquireLock();
-                     processScoresPtr_side -> isSide = true;
-                     processScoresPtr_side -> releaseLock();
-
-                     processScoresPtr_front -> acquireLock();
-                     processScoresPtr_front -> isFront = true;
-                     processScoresPtr_front -> releaseLock();
-                }
-
-               
             }
 
         } else {
@@ -832,7 +1087,15 @@ namespace bias {
             detectButtonPtr_->setText(QString("Detect"));
             detectStarted = false;
              
-            if (processScoresPtr_side != nullptr)
+            if(isSender() && processScoresPtr_front != nullptr)
+            {
+                processScoresPtr_front -> acquireLock();
+                processScoresPtr_front ->  detectOff();
+                processScoresPtr_front -> releaseLock();
+            }
+
+             
+            if(isReceiver() && processScoresPtr_side != nullptr)
             {
                 processScoresPtr_side -> acquireLock();
                 processScoresPtr_side ->  detectOff();
@@ -1055,8 +1318,6 @@ namespace bias {
             partnerPluginImageQueuePtr_ = partnerPluginImageQueuePtr;
         }
     }
-
-
 
 
     // Test development
