@@ -2,6 +2,7 @@
 #define BIAS_STAMPED_IMAGE_HPP 
 
 #include <opencv2/core/core.hpp>
+#include "basic_types.hpp"
 
 namespace bias
 {
@@ -9,6 +10,7 @@ namespace bias
     {
         cv::Mat image;
         double timeStamp;
+        TimeStamp timeStampInit;
         double dtEstimate;
         unsigned long frameCount;
     };

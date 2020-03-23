@@ -1309,6 +1309,12 @@ namespace bias
     }
 
 
+    std::shared_ptr<Lockable<Camera>> CameraWindow::getCameraPtr()
+    {
+        return cameraPtr_;   
+    }
+
+  
     RtnStatus CameraWindow::setVideoFile(QString videoFileString)
     {
         RtnStatus rtnStatus;
@@ -2590,6 +2596,7 @@ namespace bias
         numberOfCameras_ = numberOfCameras;
         cameraWindowPtrList_ = cameraWindowPtrList;
         cameraPtr_ = std::make_shared<Lockable<Camera>>(guid);
+
 
         threadPoolPtr_ = new QThreadPool(this);
         threadPoolPtr_ -> setMaxThreadCount(MAX_THREAD_COUNT);

@@ -179,4 +179,19 @@ namespace bias
         return std::string("model name not defined");
     }
 
+ 
+    TimeStamp CameraDevice::getDeviceTimeStamp()
+    {
+        TimeStamp ts;
+        ts.seconds = 0;
+        ts.microSeconds = 0;
+    }
+
+
+    void CameraDevice::initCounter()
+    {
+        int64_t counter=0 ;
+    }
+
+
 }

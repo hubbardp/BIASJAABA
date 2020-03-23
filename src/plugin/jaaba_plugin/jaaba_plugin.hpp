@@ -5,6 +5,7 @@
 #include "bias_plugin.hpp"
 #include "rtn_status.hpp"
 #include "frame_data.hpp"
+#include "camera_facade.hpp"
 #include "HOGHOF.hpp"
 #include "beh_class.hpp"
 #include "process_scores.hpp"
@@ -15,7 +16,11 @@
 #include <QPointer>
 #include <QThreadPool>
 #include <QThread>
+#include <sys/time.h>
 
+#ifdef WITH_SPIN
+#include "camera_device_spin.hpp"
+#endif
 
 //test development
 //#include <fstream>
@@ -71,6 +76,7 @@ namespace bias
             QQueue<FrameData> receiveImageQueue;
 
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
+            std::shared_ptr<Lockable<Camera>> cameraPtr_;
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
             std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr_;
             unsigned int getPartnerCameraNumber();
@@ -86,15 +92,23 @@ namespace bias
             bool stop_save;
             bool detectStarted = false;
             unsigned int numskippedFrames_=0;
+            int image_height=0;
+            int image_width=0;
             float threshold_runtime = 0.00300000;
+            double tStamp=0.0;
+            TimeStamp cam_ofs={0,0};
             
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
-                         
 
+                         
             // Trigger parameters
             bool triggerEnabled;
             bool triggerArmedState;
+
+
+            std::vector<float>classifier_score;
+            std::vector<float>laserRead = {0,0,0,0,0,0};
 
           
             bool pluginReady();
@@ -109,14 +123,20 @@ namespace bias
             void setupClassifier();
             void connectWidgets();
             void detectEnabled();
-
-            std::vector<float>classifier_score;
-            std::vector<float>laserRead = {0,0,0,0,0,0};
-
+            double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
+            void getFormatSettings();            
+            void gpuInit();
+            void cameraOffsetTime();
+            TimeStamp getPCtime();
+           
             // Test
-            std::vector<float>gpuSide;
-            std::vector<float>gpuFront;
-            std::vector<float>gpuOverall;
+            std::vector<double>gpuSide;
+            std::vector<double>gpuFront;
+            std::vector<double>gpuOverall;
+            std::vector<double>timediff;
+            std::vector<double>timeStamp1;
+            std::vector<double>timeofs;
+            
             void write_output(std::string file,float* out_img, unsigned w, unsigned h);
 
  

@@ -75,6 +75,8 @@ namespace bias
             virtual void printInfo() {};
             virtual void printGuid() {};
 
+            virtual TimeStamp getDeviceTimeStamp();
+            virtual void initCounter();
 
         protected:
             Guid guid_;

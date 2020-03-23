@@ -8,7 +8,7 @@
 #include <bitset>
 #include <fstream>
 
-#include "base_node_spin.hpp"
+/*#include "base_node_spin.hpp"
 #include "string_node_spin.hpp"
 #include "enum_node_spin.hpp"
 #include "entry_node_spin.hpp"
@@ -17,7 +17,8 @@
 #include "integer_node_spin.hpp"
 #include "bool_node_spin.hpp"
 #include "enum_node_spin.hpp"
-
+#include "command_node_spin.hpp"
+*/
 
 namespace bias {
 
@@ -1113,6 +1114,7 @@ namespace bias {
         }
 
         std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " end" << std::endl;
+ 
     }
 
 
@@ -1132,6 +1134,136 @@ namespace bias {
 
         timeStamp_.seconds = (unsigned long long)(seconds);
         timeStamp_.microSeconds = (unsigned int)(microSeconds);
+    }
+
+
+    void CameraDevice_spin::initCounter()
+    {
+
+        
+        EnumNode_spin CounterSelector = nodeMapCamera_.getNodeByName<EnumNode_spin>("CounterSelector");
+        if(CounterSelector.isAvailable() && CounterSelector.isWritable())
+        {
+            CounterSelector.setEntryBySymbolic("Counter0");        
+
+        }else{
+
+            std::cout << "DEBUG: CounterEventSource not available " << std::endl;
+
+        }
+
+        //source event to increment the counter
+        EnumNode_spin CounterEventSource = nodeMapCamera_.getNodeByName<EnumNode_spin>("CounterEventSource");
+        if(CounterEventSource.isAvailable() && CounterEventSource.isWritable())
+        {
+            CounterEventSource.setEntryBySymbolic("Line0");
+
+        }else{
+
+            std::cout << "DEBUG: CounterEventSource not available " << std::endl;
+
+        }
+
+
+        EnumNode_spin CounterEventActivation = nodeMapCamera_.getNodeByName<EnumNode_spin>("CounterEventActivation");
+        if(CounterEventActivation.isAvailable() && CounterEventActivation.isWritable())
+        {
+            CounterEventActivation.setEntryBySymbolic("RisingEdge");
+
+        }else{
+
+            std::cout << "DEBUG: CounterEventSource not available " << std::endl;
+
+        }
+
+
+        // source event to start the counter
+        EnumNode_spin CounterTriggerSource= nodeMapCamera_.getNodeByName<EnumNode_spin>("CounterTriggerSource");
+        if(CounterTriggerSource.isAvailable() && CounterTriggerSource.isWritable())
+        {
+            CounterTriggerSource.setEntryBySymbolic("Line0");
+
+        }else{
+
+            std::cout << "DEBUG: CounterTriggerSource not available " << std::endl;
+
+        }
+
+
+        EnumNode_spin CounterTriggerActivation = nodeMapCamera_.getNodeByName<EnumNode_spin>("CounterTriggerActivation");
+        if(CounterTriggerActivation.isAvailable() && CounterTriggerActivation.isWritable())
+        {
+            CounterTriggerActivation.setEntryBySymbolic("RisingEdge");
+
+        }else{
+
+            std::cout << "DEBUG: CounterEventSource not available " << std::endl;
+
+        }
+
+        //set the counter duration
+        IntegerNode_spin CounterDuration = nodeMapCamera_.getNodeByName<IntegerNode_spin>("CounterDuration");
+        if(CounterDuration.isAvailable())
+        {
+            CounterDuration.setValue(1000);
+
+        }else{
+
+            std::cout << "DEBUG: CounterDuration not available " << std::endl;
+
+        }
+  
+
+    }
+
+
+    TimeStamp CameraDevice_spin::getDeviceTimeStamp()
+    {
+         
+        TimeStamp ts; 
+        // Retrieve TimestampLatch 
+        CommandNode_spin hTimestampLatch = nodeMapCamera_.getNodeByName<CommandNode_spin>("TimestampLatch"); 
+        
+        //Execute Command
+        if(hTimestampLatch.isAvailable())
+        {
+            spinCommandExecute(hTimestampLatch.handle());
+
+        }else{
+
+            std::cout << "DEBUG: TimestampLatch not available " << std::endl;  
+        }
+
+        //Increment Timer 
+        IntegerNode_spin hTimestampIncrementValue = nodeMapCamera_.getNodeByName<IntegerNode_spin>("TimestampIncrement");
+        if(hTimestampIncrementValue.isAvailable())
+        {
+            timeStamp_inc = (int64_t)hTimestampIncrementValue.value(); 
+
+        }else{
+       
+            std::cout << "DEBUG: TimestamplatchValue not available " << std::endl;
+        }
+
+ 
+        //Get TimeStampLatch Value
+        IntegerNode_spin hTimestampLatchValue = nodeMapCamera_.getNodeByName<IntegerNode_spin>("TimestampLatchValue");
+        //IntegerNode_spin hTimestampLatchValue = nodeMapCamera_.getNodeByName<IntegerNode_spin>("DeviceUptime");
+        if(hTimestampLatchValue.isAvailable())
+        {
+            timeStamp_cam = (int64_t)hTimestampLatchValue.value();
+            ts.seconds = timeStamp_cam/INT64_C(1000000000); 
+            ts.microSeconds = timeStamp_cam/INT64_C(1000) - INT64_C(1000000)*ts.seconds;
+ 
+
+        }else{
+       
+            std::cout << "DEBUG: TimestamplatchValue not available " << std::endl;  
+        }
+
+
+        return ts;
+
     }
 
     // Get PropertyInfo methods

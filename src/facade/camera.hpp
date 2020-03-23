@@ -41,6 +41,8 @@ namespace bias {
             void grabImage(cv::Mat &image);
             cv::Mat grabImage();
             TimeStamp getImageTimeStamp();
+            TimeStamp getDeviceTimeStamp();
+            void initCounter();
 
             bool isConnected();
             bool isCapturing();

@@ -125,7 +125,7 @@ namespace bias
             unsigned int getCameraNumber();
             QString getCameraGuidString();
             QSharedPointer<QList<QPointer<CameraWindow>>> getCameraWindowPtrList();
-         
+            std::shared_ptr<Lockable<Camera>> getCameraPtr();
             QString getVideoFileFullPath(QString autoNamingString="");
             QString getVideoFileName();
             QDir getVideoFileDir();

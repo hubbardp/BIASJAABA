@@ -16,6 +16,7 @@ set(
     float_node_spin.cpp
     integer_node_spin.cpp
     bool_node_spin.cpp
+    command_node_spin.cpp
     )
 
 add_library(bias_backend_spin ${bias_backend_spin_SOURCE})

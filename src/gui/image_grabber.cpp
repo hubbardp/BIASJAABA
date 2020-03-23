@@ -196,6 +196,7 @@ namespace bias {
                 if ((startUpCount == 0) && (numStartUpSkip_ > 0))
                 {
                     timeStampInit = timeStamp;
+
                 }
                 timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
 
@@ -260,6 +261,7 @@ namespace bias {
                 
                 // Set image data timestamp, framecount and frame interval estimate
                 stampImg.timeStamp = timeStampDbl;
+                stampImg.timeStampInit = timeStampInit;
                 stampImg.frameCount = frameCount;
                 stampImg.dtEstimate = dtEstimate;
                 frameCount++;
@@ -315,7 +317,7 @@ namespace bias {
 
     double ImageGrabber::convertTimeStampToDouble(TimeStamp curr, TimeStamp init)
     {
-        double timeStampDbl = 0;  
+        double timeStampDbl = 0; 
         timeStampDbl  = double(curr.seconds);
         timeStampDbl -= double(init.seconds);
         timeStampDbl += (1.0e-6)*double(curr.microSeconds);

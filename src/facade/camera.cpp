@@ -113,6 +113,18 @@ namespace bias {
     }
 
 
+    TimeStamp Camera::getDeviceTimeStamp()
+    {
+ 
+        return cameraDevicePtr_ -> getDeviceTimeStamp();
+    }
+
+
+    void Camera::initCounter()
+    {
+        cameraDevicePtr_ ->initCounter(); 
+    }
+
     bool Camera::isConnected()
     {
         return cameraDevicePtr_ -> isConnected();

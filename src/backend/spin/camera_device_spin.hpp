@@ -12,7 +12,19 @@
 #include "camera_info_spin.hpp"
 #include "property.hpp"
 #include "SpinnakerC.h"
+
 #include "node_map_spin.hpp"
+#include "base_node_spin.hpp"
+#include "string_node_spin.hpp"
+#include "enum_node_spin.hpp"
+#include "entry_node_spin.hpp"
+#include "number_node_spin.hpp"
+#include "float_node_spin.hpp"
+#include "integer_node_spin.hpp"
+#include "bool_node_spin.hpp"
+#include "enum_node_spin.hpp"
+#include "command_node_spin.hpp"
+
 
 namespace bias {
 
@@ -80,6 +92,9 @@ namespace bias {
             
             virtual void printInfo();
 
+            virtual TimeStamp getDeviceTimeStamp();
+            virtual void initCounter();
+
             void develExpProps();
 
             // Constants
@@ -110,6 +125,10 @@ namespace bias {
 
             TimeStamp timeStamp_ = {0,0};
             int64_t timeStamp_ns_ = 0;
+            int64_t timeStamp_cam = 0;
+            int64_t timeStamp_inc = 0;
+            int64_t counter=0;
+            TimeStamp timeStampDevice_= {0,0};
 
             bool imageOK_ = false;
             spinImage hSpinImage_ = nullptr;

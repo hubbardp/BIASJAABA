@@ -27,6 +27,7 @@ namespace bias {
     void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
     {
 
+        std::cout << "inside" << std::endl;
         int nDevices;
         cudaError_t err = cudaGetDeviceCount(&nDevices); 
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
@@ -192,7 +193,7 @@ namespace bias {
     }
 
    
-    void ProcessScores::write_time(std::string file, int framenum, std::vector<float> timeVec)
+    void ProcessScores::write_time(std::string file, int framenum, std::vector<double> timeVec)
     {
 
         std::ofstream x_out;
