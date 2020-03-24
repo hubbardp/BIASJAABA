@@ -37,7 +37,7 @@ find_package( OpenCV 4 REQUIRED )
 if(${OpenCV_FOUND})
     message(STATUS "OpenCV found")
 else()
-    message(STATUS "OpenCV not found")
+   message(STATUS "OpenCV not found")
 endif()
 
 
