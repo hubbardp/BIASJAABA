@@ -53,32 +53,49 @@ endif()
 
 # Qt library
 # ------------------------------------------------------------------------------
-if(with_qt_gui)
-    #set(QT_BINARY_DIR "$ENV{QTDIR}/bin")
-    #message(STATUS "${QT_BINARY_DIR}")
-    set(Qt5_DIR "/opt/qt/5.12.3/gcc_64/lib/cmake/Qt5")
-    #set(Qt5Core_DIR "/groups/branson/home/patilr/anaconda3/lib")
-    #set(Qt5Widgets_DIR "/groups/branson/home/patilr/anaconda3/lib")
-    #set(Qt5Network_DIR "/groups/branson/home/patilr/anaconda3/lib")
-    #set(Qt5SerialPort_DIR "/groups/branson/home/patilr/anaconda3/lib")
+if(UNIX)
+    if(with_qt_gui)
+        #set(QT_BINARY_DIR "$ENV{QTDIR}/bin")
+        #message(STATUS "${QT_BINARY_DIR}")
+        set(Qt5_DIR "/opt/qt/5.12.3/gcc_64/lib/cmake/Qt5")
+        #set(Qt5Core_DIR "/groups/branson/home/patilr/anaconda3/lib")
+        #set(Qt5Widgets_DIR "/groups/branson/home/patilr/anaconda3/lib")
+        #set(Qt5Network_DIR "/groups/branson/home/patilr/anaconda3/lib")
+        #set(Qt5SerialPort_DIR "/groups/branson/home/patilr/anaconda3/lib")
 
 
  
-    # Old qt 4.8 build
-    # ------------------------------------------------------------
-    #find_package(Qt4 COMPONENTS QtCore QtGui QtNetwork REQUIRED)
-    # ------------------------------------------------------------
+        # Old qt 4.8 build
+        # ------------------------------------------------------------
+        #find_package(Qt4 COMPONENTS QtCore QtGui QtNetwork REQUIRED)
+        # ------------------------------------------------------------
 
-    #find_package(Qt5Core REQUIRED) 
-    #find_package(Qt5Widgets REQUIRED)
-    #find_package(Qt5Gui REQUIRED) 
-    #find_package(Qt5Network REQUIRED)
-    find_package(Qt5 COMPONENTS Core Gui Widgets Network SerialPort REQUIRED)
-
+        #find_package(Qt5Core REQUIRED)
+        #find_package(Qt5Widgets REQUIRED)
+        #find_package(Qt5Gui REQUIRED)
+        #find_package(Qt5Network REQUIRED)
+        find_package(Qt5 COMPONENTS Core Gui Widgets Network SerialPort REQUIRED)
+    endif()
 endif()
 
+if(WIN32)
+    find_package(Qt5 COMPONENTS Core Gui Widgets Network SerialPort REQUIRED)
+endif()
+
+
 find_package(CUDA)
+if(${CUDA_FOUND})
+    message(STATUS "Cuda found")
+else()
+   message(STATUS "Cuda not found")
+endif()
+
 find_package(HDF5 COMPONENTS CXX)
+if(${HDF5_FOUND})
+    message(STATUS "HDF5 Found")
+else()
+    message(STATUS "HDF5 Not Found")
+endif()
 
 # Compiler flags
 # -----------------------------------------------------------------------------
@@ -136,9 +153,17 @@ include_directories("./src/plugin/signal_slot_demo")
 include_directories("./src/plugin/jaaba_plugin")
 include_directories("./src/3rd_party/qcustomplot")
 
-set(HEFFALUMP_SRC_DIR /groups/branson/home/patilr/rutuja_heffalump/heffalump)
-include_directories(${HEFFALUMP_SRC_DIR}/gpu 
-                    ${HEFFALUMP_SRC_DIR}/src)
+if(UNIX)
+    set(HEFFALUMP_SRC_DIR /groups/branson/home/patilr/rutuja_heffalump/heffalump)
+    include_directories(${HEFFALUMP_SRC_DIR}/gpu
+                        ${HEFFALUMP_SRC_DIR}/src)
+endif()
+
+if(WIN32)
+    set(HEFFALUMP_SRC_DIR U:/rutuja_heffalump/heffalump)
+    include_directories(${HEFFALUMP_SRC_DIR}/gpu
+                        ${HEFFALUMP_SRC_DIR}/src)
+endif()
 
 if(with_demos) 
     include_directories(${CUDA_INCLUDE_DIRS} 
@@ -162,7 +187,7 @@ if(with_dc1394)
 endif()
 
 if(with_video)
-    include_directories("./src/backend/video")
+   include_directories("./src/backend/video")
 endif()
 
 
