@@ -136,7 +136,7 @@ include_directories("./src/plugin/signal_slot_demo")
 include_directories("./src/plugin/jaaba_plugin")
 include_directories("./src/3rd_party/qcustomplot")
 
-set(HEFFALUMP_SRC_DIR /groups/branson/home/patilr/rutuja_heffalump/heffalump)
+set(HEFFALUMP_SRC_DIR /home/patilr/rutuja_heffalump/heffalump)
 include_directories(${HEFFALUMP_SRC_DIR}/gpu 
                     ${HEFFALUMP_SRC_DIR}/src)
 

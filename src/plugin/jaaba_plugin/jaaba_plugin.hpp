@@ -97,7 +97,8 @@ namespace bias
             float threshold_runtime = 0.00300000;
             double tStamp=0.0;
             TimeStamp cam_ofs={0,0};
-            
+           
+ 
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
 
@@ -109,6 +110,10 @@ namespace bias
 
             std::vector<float>classifier_score;
             std::vector<float>laserRead = {0,0,0,0,0,0};
+            std::vector<double>timeofs;
+            std::vector<double>timestd;
+            std::vector<int64_t> time_seconds;
+            std::vector<int64_t> time_useconds;
 
           
             bool pluginReady();
@@ -126,17 +131,15 @@ namespace bias
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
             void getFormatSettings();            
             void gpuInit();
-            void cameraOffsetTime();
-            TimeStamp getPCtime();
+            //void cameraOffsetTime();
+            //TimeStamp getPCtime();
            
             // Test
             std::vector<double>gpuSide;
             std::vector<double>gpuFront;
             std::vector<double>gpuOverall;
             std::vector<double>timediff;
-            std::vector<double>timeStamp1;
-            std::vector<double>timeofs;
-            
+            std::vector<double>timeStamp1; 
             void write_output(std::string file,float* out_img, unsigned w, unsigned h);
 
  

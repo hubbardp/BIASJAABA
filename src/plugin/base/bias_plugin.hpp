@@ -6,8 +6,12 @@
 #include "lockable.hpp"
 #include "stamped_image.hpp"
 #include "rtn_status.hpp"
+#include "camera_facade.hpp"
 #include <QDir>
 #include <QTextStream>
+#include <sys/time.h>
+#include <fstream>
+#include <iomanip>
 
 namespace cv
 {
@@ -61,9 +65,13 @@ namespace bias
             virtual QString getLogFileFullPath(bool includeAutoNaming);
 
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr);
+            TimeStamp getPCtime();
+            TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
+            void write_time(std::string file, int framenum, std::vector<double> timeVec);
+            void write_delay(std::string file, int framenum, std::vector<int64_t> timeVec);
 
- 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
+            std::shared_ptr<Lockable<Camera>> cameraPtr_;
 
         signals:
 
@@ -73,6 +81,8 @@ namespace bias
 
             bool active_;
             bool requireTimer_;
+            bool ofs_isSet;
+
             cv::Mat currentImage_;
 
             double timeStamp_;
@@ -90,13 +100,11 @@ namespace bias
             void openLogFile();
             void closeLogFile();
 
-
-
+            
     };
 
 }
 
 
 #endif 
-
 

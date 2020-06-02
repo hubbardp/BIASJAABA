@@ -145,6 +145,20 @@ namespace bias
     };
 
 
+    // NodeMapTLStream_spin
+    // ---------------------------------------------------------------------------------------------
+
+    class NodeMapTLStream_spin : public NodeMap_spin
+    {
+
+        public:
+
+            NodeMapTLStream_spin();
+            NodeMapTLStream_spin(spinCamera &hCamera);
+
+
+    };
+
 } // namespace bias
 
 #endif

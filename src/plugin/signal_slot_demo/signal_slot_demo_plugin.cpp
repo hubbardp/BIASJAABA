@@ -48,33 +48,84 @@ namespace bias
 
     void SignalSlotDemoPlugin::stop()
     {
+
     }
 
 
-    void SignalSlotDemoPlugin::processFrames(QList<StampedImage> frameList)
+    //void SignalSlotDemoPlugin::processFrames(QList<StampedImage> frameList)
+    void SignalSlotDemoPlugin::processFrames()
     {
         // -------------------------------------------------------------------
         // NOTE: called in separate thread. Use lock to access data shared 
         // with other class methods. 
         // -------------------------------------------------------------------
-        
-        acquireLock();
-        StampedImage latestFrame = frameList.back();
-        frameList.clear();
-        currentImage_ = latestFrame.image;
-        timeStamp_ = latestFrame.timeStamp;
-        frameCount_ = latestFrame.frameCount;
-        releaseLock();
+ 
+        if(ofs_isSet){
 
-        FrameData frameData;
-        frameData.count = frameCount_;
-        frameData.image = currentImage_;
-        emit newFrameData(frameData);
-        numMessageSent_++;
+            cam_ofs = cameraOffsetTime(cameraPtr_);
+            std::cout << cam_ofs.seconds << " " << cam_ofs.microSeconds << std::endl;      
+        }
 
-        updateMessageLabels();
+        pluginImageQueuePtr_ -> acquireLock();
+        pluginImageQueuePtr_ -> waitIfEmpty();
+
+
+        if (pluginImageQueuePtr_ -> empty() ) 
+        {
+
+            pluginImageQueuePtr_ -> releaseLock();
+            return;
+
+        }
+
+        if(!pluginImageQueuePtr_ -> empty())
+        {
+ 
+            StampedImage latestFrame = pluginImageQueuePtr_ ->front();//frameList.back();
+            //frameList.clear();
+
+
+            //-------------------DEVEL----------------------------------------------------//
+
+            // get camera times wrt to stamped image times
+            TimeStamp pc_ts = getPCtime();
+            //std::cout << "PC plugin time " << pc_ts.seconds << " " << pc_ts.microSeconds << std::endl;
+            int64_t cam_ts, delay;
+
+            // subtract the offset to get camera time
+            cam_ts = ((pc_ts.seconds*1e6 + pc_ts.microSeconds)-(cam_ofs.seconds*1e6 + cam_ofs.microSeconds));
+            delay = cam_ts - int64_t(latestFrame.timeStampVal.seconds*1e6 + latestFrame.timeStampVal.microSeconds);
+            cam_delay.push_back(delay);
+            if(cam_delay.size()==1000){
+                std::string filecam = "delay_" + std::to_string(cameraNumber_) + ".csv"; 
+                write_delay(filecam , 1000, cam_delay);
+            }
+
+            //---------------------------------------------------------------------------//
+
+
+            acquireLock();
+            currentImage_ = latestFrame.image;
+            timeStamp_ = latestFrame.timeStamp;
+            frameCount_ = latestFrame.frameCount;
+            releaseLock();
+
+            FrameData frameData;
+            frameData.count = frameCount_;
+            frameData.image = currentImage_;
+            emit newFrameData(frameData);
+            numMessageSent_++;
+
+            updateMessageLabels();
+
+            pluginImageQueuePtr_->pop();
+
+        }
+
+        pluginImageQueuePtr_->releaseLock();
 
     }
+
 
     cv::Mat SignalSlotDemoPlugin::getCurrentImage()
     {
@@ -96,6 +147,84 @@ namespace bias
         return PLUGIN_DISPLAY_NAME;
     }
 
+
+    /*TimeStamp SignalSlotDemoPlugin::getPCtime()
+    {
+
+        unsigned long long int secs;
+        unsigned int usec;
+        time_t curr_time;
+        timeval tv;
+
+        //get computer local time since midnight
+        curr_time = time(NULL);
+        tm *tm_local = localtime(&curr_time);
+        gettimeofday(&tv, NULL);
+        secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
+        usec = (unsigned int)tv.tv_usec;
+        TimeStamp ts = {secs,usec};
+
+        return ts;
+
+    }
+
+
+    TimeStamp SignalSlotDemoPlugin::cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr)
+    {
+
+        TimeStamp cam_ofs = {0,0};   
+        TimeStamp pc_ts, cam_ts;
+        double pc_s, cam_s, offset_s;
+        std::vector<double> timeofs;
+
+        for(int ind=0;ind < 10;ind++)
+        {
+
+            //get computer local time since midnight
+            pc_ts = getPCtime();
+            pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
+
+            //calculate camera time
+            if(cameraPtr!=nullptr){
+                cam_ts = cameraPtr->getDeviceTimeStamp();
+                cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
+            }else{
+       
+                std::cout << " No camera found " << std::endl;
+            }
+
+            timeofs.push_back(pc_s-cam_s);
+            //printf("%0.06f \n" ,pc_s-cam_s); 
+            //printf("%0.06f  %0.06f pc_s-cam_us\n ", pc_s ,cam_s); 
+
+        }
+
+        //write_time("offset.csv",20,timeofs);
+
+        //calculate mean
+        offset_s = accumulate(timeofs.begin(),timeofs.end(),0.0)/timeofs.size();
+        cam_ofs.seconds = int(offset_s);
+        cam_ofs.microSeconds = (offset_s - cam_ofs.seconds)*1e6;
+        ofs_isSet = false;
+
+ 
+        //calculate std dev
+        double std_sum=0;
+        for(int k=0;k < timeofs.size() ;k++)
+        {
+           std_sum += (timeofs[k] - offset_s) * (timeofs[k] - offset_s);
+        }
+
+        std_sum = std_sum/timeofs.size();
+        std_sum = sqrt(std_sum);
+
+        //printf("%0.06f average offset \n" ,offset_s);
+        printf("%0.06f std deviation \n ",std_sum);
+        //printf("%ld seconds %d microseconds", cam_ofs.seconds, cam_ofs.microSeconds);
+        
+        return cam_ofs;
+
+    }*/
 
     // Protected Methods
     // ------------------------------------------------------------------------
@@ -144,6 +273,7 @@ namespace bias
         cameraNumber_ = cameraWindowPtr -> getCameraNumber();
         cameraGuidString_ = cameraWindowPtr ->  getCameraGuidString();
         cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
+        cameraPtr_ = cameraWindowPtr->getCameraPtr();
 
         QString labelStr = QString("Camera #: %0,     GUID: %2").arg(cameraNumber_).arg(cameraGuidString_);
         cameraNumberLabelPtr -> setText(labelStr);

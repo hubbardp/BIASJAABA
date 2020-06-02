@@ -9,6 +9,7 @@
 #include <QFileInfo>
 #include <opencv2/core/core.hpp>
 
+
 // TEMPOERARY
 // ----------------------------------------
 #include <opencv2/highgui/highgui.hpp>
@@ -166,9 +167,11 @@ namespace bias {
             cameraPtr_ -> acquireLock();
             try
             {
-                stampImg.image = cameraPtr_ -> grabImage();
-                timeStamp = cameraPtr_ -> getImageTimeStamp();
+        
+		        stampImg.image = cameraPtr_ -> grabImage();
+		        timeStamp = cameraPtr_ -> getImageTimeStamp();
                 error = false;
+
             }
             catch (RuntimeError &runtimeError)
             {
@@ -262,6 +265,7 @@ namespace bias {
                 // Set image data timestamp, framecount and frame interval estimate
                 stampImg.timeStamp = timeStampDbl;
                 stampImg.timeStampInit = timeStampInit;
+                stampImg.timeStampVal = timeStamp;
                 stampImg.frameCount = frameCount;
                 stampImg.dtEstimate = dtEstimate;
                 frameCount++;

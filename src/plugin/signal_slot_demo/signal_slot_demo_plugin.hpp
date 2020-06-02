@@ -36,11 +36,15 @@ namespace bias
             virtual void reset();
             virtual void stop();
 
-            virtual void processFrames(QList<StampedImage> frameList);
+            //virtual void processFrames(QList<StampedImage> frameList);
+            virtual void processFrames();
             virtual cv::Mat getCurrentImage();
 
             virtual QString getName();
             virtual QString getDisplayName();
+
+            //virtual TimeStamp getPCtime();
+            //virtual TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
 
         signals:
 
@@ -56,9 +60,12 @@ namespace bias
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
 
-
+            std::vector<int64_t>cam_delay;
+            TimeStamp cam_ofs={0,0};
+            
             QPointer<ImageLabel> imageLabelPtr_;
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
+            std::shared_ptr<Lockable<Camera>> cameraPtr_;
             
             void connectWidgets();
             void initialize();

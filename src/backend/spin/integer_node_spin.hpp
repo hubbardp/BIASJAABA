@@ -18,6 +18,8 @@ namespace bias
 
             virtual void print();
 
+            void setValueFromInt(unsigned int intValue);
+
         protected:
 
             void initialize();

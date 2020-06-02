@@ -402,4 +402,28 @@ namespace bias
     }
 
 
+ 
+    // --------------------------------------------------------------------------------------
+    //  NodeMapTLStream_spin
+    // --------------------------------------------------------------------------------------
+
+    NodeMapTLStream_spin::NodeMapTLStream_spin() {};
+
+
+    NodeMapTLStream_spin::NodeMapTLStream_spin(spinCamera &hCamera)
+    {
+
+        // Get TLStream node map 
+        spinError err = spinCameraGetTLStreamNodeMap(hCamera, &hNodeMap_); 
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            std::stringstream ssError;
+            ssError << __PRETTY_FUNCTION__;
+            ssError << ": unable to retrieve Spinnaker TL device node map, error = " << err;
+            throw RuntimeError(ERROR_SPIN_GET_TLSTREAM_NODE_MAP, ssError.str());
+        }
+
+
+    }    
+
 } // namespace bias

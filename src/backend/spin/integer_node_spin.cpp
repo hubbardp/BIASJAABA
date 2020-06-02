@@ -6,6 +6,7 @@
 
 namespace bias
 {
+
     spinNodeType IntegerNode_spin::ExpectedType()
     {
         return IntegerNode;
@@ -73,6 +74,13 @@ namespace bias
         std::cout << "writable  = " << isWritable() << std::endl;
         std::cout << std::endl;
     }
+
+
+    void IntegerNode_spin::setValueFromInt(unsigned int intValue)
+    {
+        setValue(intValue);
+    }
+
 
     // Protected methods
     // --------------------------------------------------------------------------------------------

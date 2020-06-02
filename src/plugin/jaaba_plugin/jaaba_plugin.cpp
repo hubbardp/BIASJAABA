@@ -11,8 +11,8 @@
 
 //
 
-//Camera 0 should always be front view
-//Camera 1 should always be side view
+//Camera 1 should always be front view
+//Camera 0 should always be side view
 //
 
 namespace bias {
@@ -70,7 +70,7 @@ namespace bias {
     bool JaabaPlugin::isSender() 
     {
 
-        if(cameraNumber_ ==0)
+        if(cameraNumber_ == 1)
         {
             return true;
 
@@ -85,7 +85,7 @@ namespace bias {
     bool JaabaPlugin::isReceiver() 
     {
 
-        if(cameraNumber_==1) 
+        if(cameraNumber_== 0) 
         {
             return true;
         
@@ -147,7 +147,6 @@ namespace bias {
 
     void JaabaPlugin::reset()
     {
-
         
         if (isReceiver())
         {
@@ -162,66 +161,14 @@ namespace bias {
             }
 
             if((threadPoolPtr != nullptr) && (visplots != nullptr))
-            {
-            
+            { 
                 threadPoolPtr -> start(visplots);    
             }
         } 
 
     }
-
-
-    TimeStamp JaabaPlugin::getPCtime()
-    {
-
-        long long unsigned int secs;
-        time_t curr_time, usec;
-        timeval tv;
-
-        //get computer local time since midnight
-        curr_time = time(NULL);
-        tm *tm_local = localtime(&curr_time);
-        gettimeofday(&tv, NULL);
-        secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
-        usec = (long int)tv.tv_usec;
-        TimeStamp ts = {secs,usec};
-        
-        return ts; 
-
-    }
-    
-
-    void JaabaPlugin::cameraOffsetTime()
-    {
-
-        //double offset,cam_ts, PC_ts;
-        TimeStamp pc_ts, cam_ts, offset;
-        double pc_s, cam_s, offset_s;
-
-        for(int i=0;i < 20; i++) 
-        { 
-            
-            //get computer local time since midnight
-            pc_ts = getPCtime();
-            pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
-          
-            //calculate camera time
-            cam_ts = cameraPtr_->getDeviceTimeStamp();
-            cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
-            
-            timeofs.push_back(pc_s-cam_s);
-            std::cout << pc_s-cam_s << "pc_us " << pc_s << "cam_us " << cam_s << std::endl; 
-
-        }
-
-        offset_s = accumulate(timeofs.begin(),timeofs.end(),0.0)/20.0;
-        std::cout << "offset us " << offset_s << std::endl;
-        cam_ofs.seconds = int(offset_s);
-        cam_ofs.microSeconds = (offset_s)*1e6 - cam_ofs.seconds;
-      
-    }
-
-    
+ 
+   
     void JaabaPlugin::gpuInit()
     {
 
@@ -333,60 +280,72 @@ namespace bias {
         cv::Mat greySide;
         cv::Mat greyFront;
 
-
         // initialize memory on the gpu 
-        if(isReceiver() && (!processScoresPtr_front -> isHOGHOFInitialised or !processScoresPtr_side -> isHOGHOFInitialised))
+        if(isReceiver() && (!processScoresPtr_side -> isHOGHOFInitialised ) ) //or !processScoresPtr_front -> isHOGHOFInitialised))
         {
             gpuInit();
-            cameraOffsetTime();
+            cam_ofs = cameraOffsetTime(cameraPtr_);
         }
 
         // Send frames from front plugin to side
-        if(pluginImageQueuePtr_ != nullptr && isSender() && processScoresPtr_side -> processedFrameCount == -1)
+        if(pluginImageQueuePtr_ != nullptr && isSender())
         {
             emit(partnerImageQueue(pluginImageQueuePtr_));             
             processScoresPtr_side -> processedFrameCount += 1;
         }
        
         
-        if(isReceiver() && pluginImageQueuePtr_ != nullptr && partnerPluginImageQueuePtr_ != nullptr)
+        if(isReceiver() && pluginImageQueuePtr_ != nullptr ) //&& partnerPluginImageQueuePtr_ != nullptr)
         {
 
             pluginImageQueuePtr_ -> acquireLock();
             pluginImageQueuePtr_ -> waitIfEmpty();
        
-            partnerPluginImageQueuePtr_ -> acquireLock();
-            partnerPluginImageQueuePtr_ -> waitIfEmpty();
+            //partnerPluginImageQueuePtr_ -> acquireLock();
+            //partnerPluginImageQueuePtr_ -> waitIfEmpty();
 
-            if (pluginImageQueuePtr_ -> empty() || partnerPluginImageQueuePtr_ -> empty())
+
+            if (pluginImageQueuePtr_ -> empty() ) //|| partnerPluginImageQueuePtr_ -> empty())
             {
 
                 pluginImageQueuePtr_ -> releaseLock();
-                partnerPluginImageQueuePtr_ -> releaseLock();
+                //partnerPluginImageQueuePtr_ -> releaseLock();
                 return;
 
             }
  
- 
-            if ( !(pluginImageQueuePtr_ -> empty()) && !(partnerPluginImageQueuePtr_ -> empty()))
+            if ( !(pluginImageQueuePtr_ -> empty()) ) //&& !(partnerPluginImageQueuePtr_ -> empty()))
             {
 
                 
                 StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
-                StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
+                //StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
 
 
                 sideImage = stampedImage0.image.clone();
-                frontImage = stampedImage1.image.clone();
-                TimeStamp ts = getPCtime();
-                int64_t ts_us = ts.seconds*1e6+ts.microSeconds;
+                //frontImage = stampedImage1.image.clone();
+
+
+                TimeStamp pc_ts = getPCtime();
+                int64_t cam_ts, delay;
+                        
+
                 // subtract the offset to get camera time
-                ts_us = ts_us-(cam_ofs.seconds*1e6+cam_ofs.microSeconds);
-                ts.seconds =  ts_us/INT64_C(1000000);
-                ts.microSeconds = ts_us - ts.seconds*INT64_C(1000000);
-                std::cout << "Bias "  << convertTimeStampToDouble(ts, stampedImage0.timeStampInit) << std::endl;
-                std::cout << "BIAS Grabbed Frame secs " << ts.seconds << "usecs " << ts.microSeconds << std::endl;
-                std::cout << "Camera Grabbed Frame secs " << stampedImage0.timeStampInit.seconds <<  " usec " << stampedImage0.timeStampInit.microSeconds  << std::endl;                
+                cam_ts = ((pc_ts.seconds*1e6 + pc_ts.microSeconds)-(cam_ofs.seconds*1e6 + cam_ofs.microSeconds));
+                //std::cout << "BIAS grabbed frame in us " << cam_ts << std::endl;
+                //std::cout << "Camer Grabbed Frame 1 secs " << int64_t(stampedImage0.timeStampInit.seconds*1e6 + stampedImage0.timeStampInit.microSeconds)  << std::endl; 
+                //std::cout << "Camera Grabed Frame 2 secs " << int64_t(stampedImage1.timeStampInit.seconds*1e6 + stampedImage1.timeStampInit.microSeconds) << std::endl;              
+
+                delay = cam_ts - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
+                //time_seconds.push_back(int64_t(stampedImage0.timeStampInit.seconds*1e6 + stampedImage0.timeStampInit.microSeconds));
+                //time_useconds.push_back(int64_t(stampedImage1.timeStampInit.seconds*1e6 + stampedImage1.timeStampInit.microSeconds));
+                time_seconds.push_back(delay);
+                if(time_seconds.size()==1000){
+                    write_delay("delay.csv", 1000, time_seconds);
+                  //processScoresPtr_side->write_delay("delay.csv", 1000, time_useconds);
+                }
+                //std::cout << "delay " << delay*1e-3 << std::endl;
+
                 
                 // Test
                 /*if(processScoresPtr_side -> capture_sde.isOpened())
@@ -408,14 +367,14 @@ namespace bias {
                 }*/
                 
 
-                if((sideImage.rows != 0) && (sideImage.cols != 0) 
-                   && (frontImage.rows != 0) && (frontImage.cols != 0))
+                /*if((sideImage.rows != 0) && (sideImage.cols != 0) )
+                   //&& (frontImage.rows != 0) && (frontImage.cols != 0))
                 {
  
                     acquireLock();  
                     currentImage_ = sideImage; 
                     frameCount_ = stampedImage0.frameCount;
-                    releaseLock();
+                    releaseLock();*/
 
                     
                     // Test
@@ -432,8 +391,9 @@ namespace bias {
                     }*/
                     
 
-                    if( stampedImage0.frameCount == stampedImage1.frameCount) 
+                    /*if( stampedImage0.frameCount == stampedImage1.frameCount) 
                     {
+
 
                         if((processScoresPtr_side -> detectStarted_) && (frameCount_  == (processScoresPtr_side -> processedFrameCount+1)))
                         {
@@ -441,7 +401,7 @@ namespace bias {
                             // preprocessing the frames
                             // convert the frame into RGB2GRAY
                             
-                        /*    if(sideImage.channels() == 3)
+                            if(sideImage.channels() == 3)
                             {                    
                                 cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
                             }
@@ -488,10 +448,10 @@ namespace bias {
                                 processScoresPtr_side -> HOGHOF_frame -> img.buf = greySide.ptr<float>(0);
                                 processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
                                 processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
-                                processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
+                                processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);*/
                                 
                                 //Test
-                                double time_taken;
+                                /*double time_taken;
                                 clock_gettime(CLOCK_REALTIME, &end);
                                 time_taken = (end.tv_sec - start.tv_sec) * 1e9;
                                 time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
@@ -579,7 +539,7 @@ namespace bias {
                                 processScoresPtr_side->write_time("stamp1.csv", 10000, timediff);
                                 //processScoresPtr_side->write_time("stamp2.csv", 10000, timeStamp2);
                                 //std::cout << "The frames skipped are: " << numskippedFrames_ << std::endl;
-                            }*/
+                            }
 
                              
                             processScoresPtr_side -> processedFrameCount = frameCount_;
@@ -590,16 +550,16 @@ namespace bias {
 
                     }                 
 
-                }
+                }*/
 
 
                 pluginImageQueuePtr_ -> pop();
-                partnerPluginImageQueuePtr_ -> pop();
+                //partnerPluginImageQueuePtr_ -> pop();
                                                 
             }
        
             pluginImageQueuePtr_ -> releaseLock();
-            partnerPluginImageQueuePtr_ -> releaseLock();
+            //partnerPluginImageQueuePtr_ -> releaseLock();
  
         }
         
@@ -646,16 +606,15 @@ namespace bias {
     void JaabaPlugin::initialize()
     {
 
-        std::cout << "before: " << std::endl;
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraNumber_ = cameraWindowPtr -> getCameraNumber();
         partnerCameraNumber_ = getPartnerCameraNumber();
         cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
-        cameraPtr_ = cameraWindowPtr->getCameraPtr();;
+        cameraPtr_ = cameraWindowPtr->getCameraPtr();
         processScoresPtr_side = new ProcessScores(this);   
         processScoresPtr_front = new ProcessScores(this);    
         visplots = new VisPlots(livePlotPtr,this);
-
+        std::cout << cameraNumber_ << std::endl;
  
         numMessageSent_=0;
         numMessageReceived_=0;
@@ -788,6 +747,7 @@ namespace bias {
             beh_class *cls = new beh_class(this);
             classifier = cls;
             classifier -> classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+            //qDebug()  << classifier->classifier_file;
             classifier -> allocate_model();
             classifier -> loadclassifier_model();
             
@@ -822,7 +782,7 @@ namespace bias {
     void JaabaPlugin::updateWidgetsOnLoad() 
     {
 
-        if( cameraNumber_ == 0 )
+        if( cameraNumber_ == 1 )
         {
             this -> setEnabled(false);   
 

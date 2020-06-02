@@ -11,6 +11,7 @@ namespace bias
         cv::Mat image;
         double timeStamp;
         TimeStamp timeStampInit;
+        TimeStamp timeStampVal;
         double dtEstimate;
         unsigned long frameCount;
     };

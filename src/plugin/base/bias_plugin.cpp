@@ -19,6 +19,7 @@ namespace bias
     { 
         active_ = false;
         setRequireTimer(false);
+        ofs_isSet = true;
     }
 
     void BiasPlugin::finalSetup() 
@@ -60,6 +61,7 @@ namespace bias
     //void BiasPlugin::processFrames(QList<StampedImage> frameList) 
     void BiasPlugin::processFrames()
     { 
+
 
         pluginImageQueuePtr_ -> acquireLock();
         pluginImageQueuePtr_ -> waitIfEmpty();
@@ -210,6 +212,117 @@ namespace bias
         pluginImageQueuePtr_ = pluginImageQueuePtr;
 
     }
+
+
+    TimeStamp BiasPlugin::getPCtime()
+    {
+
+        unsigned long long int secs=0;
+        unsigned int usec=0;
+        time_t curr_time;
+        timeval tv;
+
+        //get computer local time since midnight
+        curr_time = time(NULL);
+        tm *tm_local = localtime(&curr_time);
+        gettimeofday(&tv, NULL);
+        secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
+        usec = (unsigned int)tv.tv_usec;
+        TimeStamp ts = {secs,usec};
+
+        return ts;
+
+    }
+
+
+    TimeStamp BiasPlugin::cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr)
+    {
+
+        TimeStamp cam_ofs={0,0};
+        TimeStamp pc_ts, cam_ts;
+        double pc_s, cam_s, offset_s;
+        std::vector<double> timeofs;
+
+        for(int ind=0;ind < 10;ind++)
+        {
+
+            //get computer local time since midnight
+            pc_ts = getPCtime();
+            pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
+
+            //calculate camera time
+            if(cameraPtr!=nullptr){
+                cam_ts = cameraPtr->getDeviceTimeStamp();
+                cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
+            }else{
+       
+                std::cout << " No camera found " << std::endl;
+            }
+
+            timeofs.push_back(pc_s-cam_s);
+            //printf("%0.06f \n" ,pc_s-cam_s); 
+            //printf("%0.06f  %0.06f pc_s-cam_us\n ", pc_s ,cam_s); 
+
+        }
+
+        //write_time("offset.csv",20,timeofs);
+
+        //calculate mean
+        offset_s = accumulate(timeofs.begin(),timeofs.end(),0.0)/timeofs.size();
+        cam_ofs.seconds = int(offset_s);
+        cam_ofs.microSeconds = (offset_s - cam_ofs.seconds)*1e6;
+        ofs_isSet = false;
+
+ 
+        //calculate std dev
+        double std_sum=0;
+        for(int k=0;k < timeofs.size() ;k++)
+        {
+           std_sum += (timeofs[k] - offset_s) * (timeofs[k] - offset_s);
+        }
+
+        std_sum = std_sum/timeofs.size();
+        std_sum = sqrt(std_sum);
+
+        //printf("%0.06f average offset \n" ,offset_s);
+        printf("%0.06f std deviation \n ",std_sum);
+        //printf("%d seconds %d microseconds", cam_ofs.seconds, cam_ofs.microSeconds);
+
+        return cam_ofs;
+
+    }
+
+
+    void BiasPlugin::write_time(std::string file, int framenum, std::vector<double> timeVec)
+    {
+
+        std::ofstream x_out;
+        x_out.open(file.c_str(), std::ios_base::app);
+
+        for(int frame_id= 0; frame_id < framenum; frame_id++)
+        {
+
+            x_out << frame_id << "," << std::setprecision(12) << timeVec[frame_id] << "\n";
+
+        }
+
+    }
+
+
+    void BiasPlugin::write_delay(std::string file, int framenum, std::vector<int64_t> timeVec)
+    {
+
+        std::ofstream x_out;
+        x_out.open(file.c_str(), std::ios_base::app);
+
+        for(int frame_id= 0; frame_id < framenum; frame_id++)
+        {
+
+            x_out << frame_id << "," << timeVec[frame_id] << "\n";
+
+        }
+    }
+
 
     // Protected methods
     // ------------------------------------------------------------------------

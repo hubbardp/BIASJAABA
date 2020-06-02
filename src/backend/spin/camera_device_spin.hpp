@@ -120,6 +120,7 @@ namespace bias {
 
             NodeMapCamera_spin nodeMapCamera_;
             NodeMapTLDevice_spin nodeMapTLDevice_;
+            NodeMapTLStream_spin nodeMapTLStream_;
             
             CameraInfo_spin cameraInfo_;
 

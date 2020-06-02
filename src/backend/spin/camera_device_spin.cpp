@@ -8,6 +8,8 @@
 #include <bitset>
 #include <fstream>
 
+
+#include <sys/time.h>
 /*#include "base_node_spin.hpp"
 #include "string_node_spin.hpp"
 #include "enum_node_spin.hpp"
@@ -63,7 +65,7 @@ namespace bias {
     }
 
 
-    CameraLib CameraDevice_spin::getCameraLib() 
+    CameraLib CameraDevice_spin::getCameraLib()     
     { 
         return guid_.getCameraLib(); 
     }
@@ -140,6 +142,7 @@ namespace bias {
             // Setup node maps for TLDevice and camera and get camera info
             nodeMapTLDevice_ = NodeMapTLDevice_spin(hCamera_);
             nodeMapCamera_ = NodeMapCamera_spin(hCamera_);
+            nodeMapTLStream_ = NodeMapTLStream_spin(hCamera_);
 
             // Get Camera info
             cameraInfo_ = nodeMapTLDevice_.cameraInfo();
@@ -179,8 +182,10 @@ namespace bias {
             EnumNode_spin gainAutoNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("GainAuto");
             if (gainAutoNode.isAvailable() && gainAutoNode.isWritable())
             {
+        
                 gainAutoNode.setEntryBySymbolic("Off");
             }
+
 
             // Trigger defaults
             EnumNode_spin triggerSelectorNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("TriggerSelector");
@@ -204,6 +209,33 @@ namespace bias {
             {
                 frameRateEnableNode.setValue(true);
             }
+
+            // system Level defaults
+            /*IntegerNode_spin transferMode = nodeMapTLStream_.getNodeByName<IntegerNode_spin>("StreamDefaultBufferCountMax");
+            if (transferMode.isAvailable() && transferMode.isWritable())
+            {
+                transferMode.setValue(0);
+
+            }*/
+
+
+            /*EnumNode_spin transferMode = nodeMapTLStream_.getNodeByName<EnumNode_spin>("StreamBufferHandlingMode");
+            EntryNode_spin transferModeVal  = transferMode.currentEntry();
+
+            if (transferModeVal.isAvailable() && transferModeVal.isReadable())
+            {
+
+                std::cout << transferModeVal.value() << std::endl;
+
+            } else {
+
+                std::stringstream ssError;
+                ssError << __PRETTY_FUNCTION__;
+                ssError << ": triggerModeNode current entryNode is not available or readable";
+                throw RuntimeError(ERROR_SPIN_GET_TRIGGER_TYPE, ssError.str());
+
+            }*/
+
 
             // DEVEL
             // ----------------------------------------------------------------------------------------------
@@ -258,7 +290,7 @@ namespace bias {
 
     void CameraDevice_spin::startCapture()
     {
-        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " begin" << std::endl;
+        //std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " begin" << std::endl;
 
         if (!connected_) 
         { 
@@ -279,13 +311,13 @@ namespace bias {
 
             
             // Set acquisition mode 
-            std::cout << "DEBUG: set AcquisitionMode begin" << std::endl;
+            //std::cout << "DEBUG: set AcquisitionMode begin" << std::endl;
             EnumNode_spin acqModeNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("AcquisitionMode");
             if (acqModeNode.isAvailable())
             {
                 acqModeNode.setEntryBySymbolic("Continuous");
             }
-            std::cout << "DEBUG: set AcquisitionMode end" << std::endl;
+            //std::cout << "DEBUG: set AcquisitionMode end" << std::endl;
             
             ///////////////////////////////////////
             // WBD DEBUG
@@ -307,7 +339,7 @@ namespace bias {
             //
         }
 
-        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " end" << std::endl; 
+        //std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " end" << std::endl; 
 
     }
 
@@ -341,6 +373,7 @@ namespace bias {
 
     cv::Mat CameraDevice_spin::grabImage()
     {
+
         cv::Mat image;  
         grabImage(image);
         return image;
@@ -349,18 +382,17 @@ namespace bias {
 
     void CameraDevice_spin::grabImage(cv::Mat &image)
     {
-
-    //    bool resize = false;
+     
+        //bool resize = false;
 
         std::string errMsg;
+        bool ok = grabImageCommon(errMsg); 
 
-        bool ok = grabImageCommon(errMsg);
         if (!ok)
         {
             image.release();
             return;
         }
-
 
         spinError err = SPINNAKER_ERR_SUCCESS;
         spinImage hSpinImageConv = nullptr; 
@@ -399,6 +431,7 @@ namespace bias {
                 );
 
         imageTmp.copyTo(image);
+
 
         // ----------------------------------------------------------------------------
 
@@ -646,7 +679,7 @@ namespace bias {
 
         }
 
-        //std::cout << __PRETTY_FUNCTION__ << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
         //format7Info.print();
 
         return format7Info;
@@ -728,7 +761,7 @@ namespace bias {
         IntegerNode_spin offsetYNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("OffsetY");
         offsetYNode.setValue(int64_t(settings.offsetY));
 
-        //std::cout << __PRETTY_FUNCTION__ << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
         //settings.print();
 
     }
@@ -976,13 +1009,15 @@ namespace bias {
         if (triggerType_ == TRIGGER_INTERNAL) 
         {
             err = spinCameraGetNextImage(hCamera_, &hSpinImage_); // This fixes memory leak ??? why??
+
         }
         else 
         { 
             // Note, 2nd arg > 0 to help reduce effect of slow memory leak
             err = spinCameraGetNextImageEx(hCamera_, 1, &hSpinImage_); 
         }
-		if (err != SPINNAKER_ERR_SUCCESS)
+		
+        if (err != SPINNAKER_ERR_SUCCESS)
         {
             //std::cout << "fail, " << (hSpinImage_ == nullptr) << std::endl;
             std::stringstream ssError;
@@ -993,9 +1028,9 @@ namespace bias {
         }
 
         // Check to see if image is incomplete
-		bool8_t isIncomplete = False;
-		err = spinImageIsIncomplete(hSpinImage_, &isIncomplete);
-		if (err != SPINNAKER_ERR_SUCCESS)
+	    bool8_t isIncomplete = False;
+	    err = spinImageIsIncomplete(hSpinImage_, &isIncomplete);
+	    if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
             ssError << __PRETTY_FUNCTION__;
@@ -1067,7 +1102,7 @@ namespace bias {
 
     void CameraDevice_spin::setupTimeStamping()
     {
-        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << std::endl;
+        //std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << std::endl;
 
         // Enable chunk mode 
         BoolNode_spin chunkModeActiveNode = nodeMapCamera_.getNodeByName<BoolNode_spin>("ChunkModeActive");
@@ -1077,20 +1112,20 @@ namespace bias {
         }
 
         // Get chunk mode selector and  set entry to Timestamp 
-        std::cout << "DEBUG: set ChunkSelector begin " << std::endl;
+        //std::cout << "DEBUG: set ChunkSelector begin " << std::endl;
 
-        std::cout << "DEBUG: get ChunkSelector node " << std::endl;
+        //std::cout << "DEBUG: get ChunkSelector node " << std::endl;
 
         EnumNode_spin chunkSelectorNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("ChunkSelector");
 
-        std::cout << "DEBUG: have ChunkSelector node " << std::endl;
+        //std::cout << "DEBUG: have ChunkSelector node " << std::endl;
 
         if (chunkSelectorNode.isAvailable())
         {
-            std::cout << "DEBUG: ChunkSelector available " << std::endl;
+            //std::cout << "DEBUG: ChunkSelector available " << std::endl;
             std::ofstream entries_file;
             entries_file.open("chuckselector_entries.txt");
-            entries_file << "DEBUG: ChunkSelector entries begin " << std::endl << std::endl;
+            entries_file << "DEBUG: ChunkSelector entries begin " << std::endl;
             for (auto entry : chunkSelectorNode.entries())
             {
                 entries_file << entry.toString();
@@ -1104,7 +1139,7 @@ namespace bias {
             std::cout << "DEBUG: ChunkSelector not available " << std::endl;
         }
 
-        std::cout << "DEBUG: set ChunkSelector end " << std::endl;
+        //std::cout << "DEBUG: set ChunkSelector end " << std::endl;
 
         // Enable timestamping
         BoolNode_spin timeStampEnableNode = nodeMapCamera_.getNodeByName<BoolNode_spin>("ChunkEnable");
@@ -1113,7 +1148,7 @@ namespace bias {
             timeStampEnableNode.setValue(true);
         }
 
-        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " end" << std::endl;
+        //std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " end" << std::endl;
  
     }
 
@@ -1219,7 +1254,14 @@ namespace bias {
 
     TimeStamp CameraDevice_spin::getDeviceTimeStamp()
     {
-         
+
+        //Bandwidth
+        //IntegerNode_spin hDeviceThroughput = nodeMapCamera_.getNodeByName<IntegerNode_spin>("DeviceMaxThorughput");
+        //std::cout << hDeviceThroughput.value() << std::endl;
+        //IntegerNode_spin hLinkThroughput = nodeMapCamera_.getNodeByName<IntegerNode_spin>("DeviceLinkThroughputLimit");
+        //std::cout << hLinkThroughput.value() << std::endl; 
+    
+     
         TimeStamp ts; 
         // Retrieve TimestampLatch 
         CommandNode_spin hTimestampLatch = nodeMapCamera_.getNodeByName<CommandNode_spin>("TimestampLatch"); 
@@ -1235,7 +1277,7 @@ namespace bias {
         }
 
         //Increment Timer 
-        IntegerNode_spin hTimestampIncrementValue = nodeMapCamera_.getNodeByName<IntegerNode_spin>("TimestampIncrement");
+        /*IntegerNode_spin hTimestampIncrementValue = nodeMapCamera_.getNodeByName<IntegerNode_spin>("TimestampIncrement");
         if(hTimestampIncrementValue.isAvailable())
         {
             timeStamp_inc = (int64_t)hTimestampIncrementValue.value(); 
@@ -1243,12 +1285,11 @@ namespace bias {
         }else{
        
             std::cout << "DEBUG: TimestamplatchValue not available " << std::endl;
-        }
+        }*/
 
  
         //Get TimeStampLatch Value
         IntegerNode_spin hTimestampLatchValue = nodeMapCamera_.getNodeByName<IntegerNode_spin>("TimestampLatchValue");
-        //IntegerNode_spin hTimestampLatchValue = nodeMapCamera_.getNodeByName<IntegerNode_spin>("DeviceUptime");
         if(hTimestampLatchValue.isAvailable())
         {
             timeStamp_cam = (int64_t)hTimestampLatchValue.value();
