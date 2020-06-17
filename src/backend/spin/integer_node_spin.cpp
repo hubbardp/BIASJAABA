@@ -28,7 +28,7 @@ namespace bias
         if (!isOfType(ExpectedType()))
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": incorrect node type";
             throw RuntimeError(ERROR_SPIN_INCORRECT_NODE_TYPE, ssError.str());
         }
@@ -52,7 +52,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get " << typeid(int64_t).name() << " node increment, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NUMBER_UNIT, ssError.str());
         }

@@ -24,6 +24,14 @@ namespace bias
     }
 
 
+    CameraLib CameraDevice::getCameraLib()
+    {
+
+	return CAMERA_LIB_UNDEFINED;
+
+    }
+
+
     cv::Mat CameraDevice::grabImage() 
     {   
         return cv::Mat(); 
@@ -159,6 +167,7 @@ namespace bias
         TimeStamp ts;
         ts.seconds = 0;
         ts.microSeconds = 0;
+	return ts;
     }
 
 
@@ -185,6 +194,7 @@ namespace bias
         TimeStamp ts;
         ts.seconds = 0;
         ts.microSeconds = 0;
+	return ts;
     }
 
 

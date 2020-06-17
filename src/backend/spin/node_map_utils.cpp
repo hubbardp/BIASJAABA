@@ -33,7 +33,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get vendor name readability, error=" << err;
             throw RuntimeError(ERROR_SPIN_GET_VENDOR_NAME, ssError.str());
         }
@@ -205,7 +205,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node handle, error=" << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_HANDLE, ssError.str());
         }
@@ -215,7 +215,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node type, error=" << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_TYPE, ssError.str());
         }
@@ -223,7 +223,7 @@ namespace bias
         if (nodeType  != EnumerationNode)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": incorrect node type, error =" << err;
             throw RuntimeError(ERROR_SPIN_INCORRECT_NODE_TYPE, ssError.str());
         }
@@ -233,7 +233,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get number of entries, error =" << err;
             throw RuntimeError(ERROR_SPIN_GET_NUM_ENTRIES, ssError.str());
         }
@@ -246,7 +246,7 @@ namespace bias
             if (err != SPINNAKER_ERR_SUCCESS) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get enumeration node entry, error = " << err;
                 throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_NODE, ssError.str());
             }
@@ -257,7 +257,7 @@ namespace bias
             if (err != SPINNAKER_ERR_SUCCESS) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get enumeration entry symbolic name, error = " << err;
                 throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_NODE, ssError.str());
             }

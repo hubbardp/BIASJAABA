@@ -1,6 +1,8 @@
 #ifndef BLOB_DATA_HPP
 #define BLOB_DATA_HPP
 
+#define _USE_MATH_DEFINES
+
 #include <vector>
 #include <list>
 #include <opencv2/core/core.hpp>

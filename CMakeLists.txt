@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR) 
 project(bais)
 
+if (WIN32)
+    set (CMAKE_SYSTEM_VERSION 10 CACHE TYPE INTERNAL FORCE)
+endif()
+
 if (POLICY CMP0020) 
     cmake_policy(SET CMP0020 NEW)
 endif()
@@ -32,6 +36,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Mod
 
 # Opencv library
 # -----------------------------------------------------------------------------
+
 find_package( OpenCV 4 REQUIRED )
 
 if(${OpenCV_FOUND})
@@ -90,6 +95,7 @@ else()
    message(STATUS "Cuda not found")
 endif()
 
+set(HDF5_USE_STATIC_LIBRARIES ON)
 find_package(HDF5 COMPONENTS CXX)
 if(${HDF5_FOUND})
     message(STATUS "HDF5 Found")
@@ -104,12 +110,15 @@ endif()
 #set(CMAKE_CXX_FLAGS "-std=gnu++0x -mwindows -O2")
 #set(CMAKE_CXX_FLAGS "-std=c++11 ")
 
-CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS Auto)
-list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+#CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 6.1)
+#list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+set(CMAKE_CUDA_ARCH 3.5 5 6 7.5) 
+set(CMAKE_CUDA_CODE 3.5 5 6 7.5)
+
+message(STATUS "${CMAKE_CUDA_ARCH}")
 
 set(CUDA_NVCC_FLAGS_DEBUG          -Xcompiler -fPIC;-std=c++11;-g;-G CACHE STRING "" FORCE)
-set(CUDA_NVCC_FLAGS_RELEASE        -Xcompiler -fPIC;-std=c++11;--use_fast_math CACHE STRING "" FORCE)
-set(CUDA_NVCC_FLAGS_RELWITHDEBINFO -Xcompiler -fPIC;-std=c++11;--use_fast_math;-g;-lineinfo CACHE STRING "" FORCE)
+set(CUDA_NVCC_FLAGS_RELEASE        -Xcompiler -fPIC;-u-std=c++11;--use_fast_math;-g;-lineinfo CACHE STRING "" FORCE)
 set(CUDA_NVCC_FLAGS_MINSIZEREL     -Xcompiler -fPIC;--std=c++11;-use_fast_math CACHE STRING "" FORCE)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -155,14 +164,14 @@ include_directories("./src/3rd_party/qcustomplot")
 
 if(UNIX)
     set(HEFFALUMP_SRC_DIR /groups/branson/home/patilr/rutuja_heffalump/heffalump)
-    include_directories(${HEFFALUMP_SRC_DIR}/gpu
-                        ${HEFFALUMP_SRC_DIR}/src)
+    include_directories(${HEFFALUMP_SRC_DIR}/src/gpu)
+                        #${HEFFALUMP_SRC_DIR}/src)
 endif()
 
 if(WIN32)
     set(HEFFALUMP_SRC_DIR U:/rutuja_heffalump/heffalump)
-    include_directories(${HEFFALUMP_SRC_DIR}/gpu
-                        ${HEFFALUMP_SRC_DIR}/src)
+    include_directories(${HEFFALUMP_SRC_DIR}/src/gpu)
+                        #${HEFFALUMP_SRC_DIR}/src)
 endif()
 
 if(with_demos) 
@@ -194,6 +203,8 @@ endif()
 # External link libraries
 # -----------------------------------------------------------------------------
 set(bias_ext_link_LIBS ${OpenCV_LIBS})
+message(STATUS "${OPENCV_LIBS}")
+
 
 if(with_fc2)
     set(bias_ext_link_LIBS ${bias_ext_link_LIBS} ${FlyCapture2_LIBRARIES})
@@ -216,6 +227,7 @@ if(with_demos)
 endif()
 
 set(bias_ext_link_LIBS ${bias_ext_link_LIBS})
+message(STATUS "${bias_ext_link_LIBS}")
 
 
 # Output directory for executables - puts executables in build directory

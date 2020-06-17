@@ -4,6 +4,8 @@
 #include <limits>
 #include <iostream>
 
+#pragma warning(default:4716)
+
 namespace bias
 {
 

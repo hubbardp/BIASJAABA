@@ -1,5 +1,8 @@
 #ifndef HOG_POSITION_FITTER
 #define HOG_POSITION_FITTER
+
+#define _USE_MATH_DEFINES 
+
 #include "parameters.hpp"
 #include "fly_segmenter.hpp"
 #include <vector>

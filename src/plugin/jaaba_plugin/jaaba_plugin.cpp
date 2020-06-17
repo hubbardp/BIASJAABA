@@ -1,13 +1,9 @@
 #include "jaaba_plugin.hpp"
-#include "image_label.hpp"
-#include "camera_window.hpp"
-#include <QMessageBox>
 #include <iostream>
 #include <QDebug>
 #include <cuda_runtime.h>
 #include <string>
-#include <QThread>
-#include <ctime>
+
 
 //
 
@@ -172,20 +168,30 @@ namespace bias {
 
 
     TimeStamp JaabaPlugin::getPCtime()
-    {
+	{
 
-        long long unsigned int secs;
-        time_t curr_time, usec;
-        timeval tv;
 
+#ifdef WIN32
+
+		GetTime* getTime = new GetTime(0,0);
         //get computer local time since midnight
-        curr_time = time(NULL);
-        tm *tm_local = localtime(&curr_time);
-        gettimeofday(&tv, NULL);
-        secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
-        usec = (long int)tv.tv_usec;
-        TimeStamp ts = {secs,usec};
-        
+        getTime->curr_time = time(NULL);
+        tm *tm_local = localtime(&getTime->curr_time);
+        getTime->getdaytime(&getTime->tv, NULL);
+        getTime->secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
+        getTime->usec = (long long unsigned int)getTime->tv.tv_usec;
+        TimeStamp ts = {getTime->secs, getTime->usec};
+
+#endif
+
+#ifdef linux
+
+
+
+
+
+#endif
+
         return ts; 
 
     }
@@ -335,7 +341,7 @@ namespace bias {
 
 
         // initialize memory on the gpu 
-        if(isReceiver() && (!processScoresPtr_front -> isHOGHOFInitialised or !processScoresPtr_side -> isHOGHOFInitialised))
+        if(isReceiver() && (!processScoresPtr_front -> isHOGHOFInitialised || !processScoresPtr_side -> isHOGHOFInitialised))
         {
             gpuInit();
             cameraOffsetTime();

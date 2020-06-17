@@ -26,7 +26,7 @@ namespace bias
         if (!isOfType(ExpectedType()))
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": incorrect node type";
             throw RuntimeError(ERROR_SPIN_INCORRECT_NODE_TYPE, ssError.str());
         }
@@ -50,7 +50,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get number of entries for enumeration node, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NUM_ENTRIES, ssError.str());
         }
@@ -72,7 +72,7 @@ namespace bias
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to set enum node integer value, error = " << err;
                 throw RuntimeError(ERROR_SPIN_SET_ENUM_INT_VALUE, ssError.str());
             }
@@ -107,7 +107,7 @@ namespace bias
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to enum node integer value, error = " << err;
                 throw RuntimeError(ERROR_SPIN_SET_ENUM_VALUE, ssError.str());
             }
@@ -146,7 +146,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get current enumeration entry node, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_NODE, ssError.str());
         }
@@ -170,12 +170,12 @@ namespace bias
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get enumeration entry node, error = " << err;
                 throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_NODE, ssError.str());
             }
             EntryNode_spin entryNode(hEntryNode);
-            if (entryNode.isAvailable() and entryNode.isReadable())
+            if (entryNode.isAvailable() && entryNode.isReadable())
             {
                 entryNodeVec.push_back(hEntryNode);
             }
@@ -203,7 +203,7 @@ namespace bias
         if (!found)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get enumeration entry node by name";
             throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_BY_NAME, ssError.str());
         }
@@ -228,7 +228,7 @@ namespace bias
         if (!found)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get enumeration entry node by symbolic";
             throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_BY_SYMBOLIC, ssError.str());
         }

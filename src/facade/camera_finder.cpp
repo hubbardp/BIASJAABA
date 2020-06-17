@@ -64,7 +64,7 @@ namespace bias {
     {
         if (index >= guidSet_.size()) {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get FlyCapture2 guid by index";
             throw RuntimeError(ERROR_FC2_GET_GUID, ssError.str());
         }
@@ -262,7 +262,7 @@ namespace bias {
         if (error != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to create Spinnaker query context";
             throw RuntimeError(ERROR_SPIN_CREATE_CONTEXT, ssError.str());
         }
@@ -276,7 +276,7 @@ namespace bias {
         if (error != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to create Spinnaker query context, error=" << error;
             throw RuntimeError(ERROR_SPIN_DESTROY_CONTEXT, ssError.str());
         }
@@ -293,7 +293,7 @@ namespace bias {
         if (error != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to create Spinnaker empty camera list, error=" << error;
             throw RuntimeError(ERROR_SPIN_CREATE_CAMERA_LIST, ssError.str());
         }
@@ -303,7 +303,7 @@ namespace bias {
         if (error != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to enumerate Spinnaker cameras, error=" << error;
             throw RuntimeError(ERROR_SPIN_ENUMERATE_CAMERAS, ssError.str());
         }
@@ -313,7 +313,7 @@ namespace bias {
         if (error != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get number of Spinnaker cameras list, error=" << error;
             throw RuntimeError(ERROR_SPIN_CAMERA_LIST_SIZE, ssError.str());
         }
@@ -326,7 +326,7 @@ namespace bias {
             if (error != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get Spinnaker camera, error=" << error;
                 throw RuntimeError(ERROR_SPIN_GET_CAMERA, ssError.str());
             }
@@ -338,7 +338,7 @@ namespace bias {
             if (error != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get GUID for Spinnaker camera, error=" << error;
                 throw RuntimeError(ERROR_SPIN_GET_CAMERA_GUID, ssError.str());
             }
@@ -350,7 +350,7 @@ namespace bias {
             if (error != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get Spinnaker camera, error=" << error;
                 throw RuntimeError(ERROR_SPIN_RELEASE_CAMERA, ssError.str());
             }
@@ -362,7 +362,7 @@ namespace bias {
         if (error != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to clear Spinnaker camera list, error=" << error;
             throw RuntimeError(ERROR_SPIN_CLEAR_CAMERA_LIST, ssError.str());
         }
@@ -372,7 +372,7 @@ namespace bias {
         if (error != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to destroy Spinnaker camera list, error=" << error;
             throw RuntimeError(ERROR_SPIN_DESTROY_CAMERA_LIST, ssError.str());
         }
