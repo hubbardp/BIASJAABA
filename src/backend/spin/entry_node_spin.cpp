@@ -26,7 +26,7 @@ namespace bias
         if (!isOfType(ExpectedType()))
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": incorrect node type";
             throw RuntimeError(ERROR_SPIN_INCORRECT_NODE_TYPE, ssError.str());
         }
@@ -50,7 +50,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get current enumeration entry value, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_VALUE, ssError.str());
         }
@@ -69,7 +69,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get current enumeration entry int value, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_INT_VALUE, ssError.str());
         }
@@ -82,14 +82,15 @@ namespace bias
         checkAvailable();
         checkReadable();
 
-        char buffer[MAX_BUF_LEN];
+        //char buffer[MAX_BUF_LEN];
+		char* buffer = new char[MAX_BUF_LEN];
         size_t bufferLen = MAX_BUF_LEN;
 
         spinError err = spinEnumerationEntryGetSymbolic(hNode_,buffer,&bufferLen);
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get entry node symbolic, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_SYMBOLIC, ssError.str());
         }

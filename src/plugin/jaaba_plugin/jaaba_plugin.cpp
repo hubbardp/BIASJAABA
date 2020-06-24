@@ -1,13 +1,9 @@
 #include "jaaba_plugin.hpp"
-#include "image_label.hpp"
-#include "camera_window.hpp"
-#include <QMessageBox>
 #include <iostream>
 #include <QDebug>
 #include <cuda_runtime.h>
 #include <string>
-#include <QThread>
-#include <ctime>
+
 
 //
 
@@ -168,7 +164,38 @@ namespace bias {
 
     }
  
-   
+
+    void JaabaPlugin::cameraOffsetTime()
+    {
+
+        //double offset,cam_ts, PC_ts;
+        TimeStamp pc_ts, cam_ts, offset;
+        double pc_s, cam_s, offset_s;
+
+        for(int i=0;i < 20; i++) 
+        { 
+            
+            //get computer local time since midnight
+            pc_ts = getPCtime();
+            pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
+          
+            //calculate camera time
+            cam_ts = cameraPtr_->getDeviceTimeStamp();
+            cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
+            
+            timeofs.push_back(pc_s-cam_s);
+            std::cout << pc_s-cam_s << "pc_us " << pc_s << "cam_us " << cam_s << std::endl; 
+
+        }
+
+        offset_s = accumulate(timeofs.begin(),timeofs.end(),0.0)/20.0;
+        std::cout << "offset us " << offset_s << std::endl;
+        cam_ofs.seconds = int(offset_s);
+        cam_ofs.microSeconds = (offset_s)*1e6 - cam_ofs.seconds;
+      
+    }
+
+    
     void JaabaPlugin::gpuInit()
     {
 

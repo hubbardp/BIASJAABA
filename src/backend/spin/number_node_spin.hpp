@@ -49,7 +49,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get " << typeid(T).name() << " node value, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NUMBER_VALUE, ssError.str());
         }
@@ -71,7 +71,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to set " << typeid(T).name() << " node value, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NUMBER_VALUE, ssError.str());
         }
@@ -89,7 +89,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get " << typeid(float).name() << " node min value, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NUMBER_MIN_VALUE, ssError.str());
         }
@@ -109,7 +109,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get " << typeid(float).name() << " node max value, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NUMBER_MAX_VALUE, ssError.str());
         }

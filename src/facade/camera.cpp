@@ -42,13 +42,13 @@ namespace bias {
                 break;
 
             case CAMERA_LIB_UNDEFINED:
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": camera library is not defined";
                 throw RuntimeError(ERROR_CAMERA_LIB_UNDEFINED, ssError.str()); 
                 break;
 
             default:
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": camera library unknown";
                 throw RuntimeError(ERROR_CAMERA_LIB_UNKNOWN, ssError.str());
                 break;
@@ -508,7 +508,7 @@ namespace bias {
             if (frmRateList.empty()) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to set Video mode, no allowed FrameRate";
                 throw RuntimeError(ERROR_NO_FRAMERATE_FOR_VIDEOMODE, ssError.str());
             }
@@ -755,7 +755,7 @@ namespace bias {
 
     void Camera::createCameraDevice_fc2(Guid guid)
     {
-        throw_ERROR_NO_FC2(std::string(__PRETTY_FUNCTION__));
+        throw_ERROR_NO_FC2(std::string(__FUNCTION__));
     }
 
 #endif
@@ -776,7 +776,7 @@ namespace bias {
 
     void Camera::createCameraDevice_dc1394(Guid guid)
     {
-        throw_ERROR_NO_DC1394(std::string(__PRETTY_FUNCTION__));
+        throw_ERROR_NO_DC1394(std::string(__FUNCTION__));
     }
 
 #endif

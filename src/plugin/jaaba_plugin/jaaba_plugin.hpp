@@ -2,7 +2,8 @@
 #define JAABA_PLUGIN_WINDOW_HPP
 
 #include "ui_jaaba_plugin.h"
-#include "bias_plugin.hpp"
+#include "camera_window.hpp"
+//#include "bias_plugin.hpp"
 #include "rtn_status.hpp"
 #include "frame_data.hpp"
 #include "camera_facade.hpp"
@@ -10,13 +11,27 @@
 #include "beh_class.hpp"
 #include "process_scores.hpp"
 #include "vis_plots.hpp"
-
+#include "image_label.hpp"
 #include "shape_data.hpp"
+
 #include <QMainWindow>
+#include <QMessageBox>
 #include <QPointer>
 #include <QThreadPool>
 #include <QThread>
+
+#include<ctime>
+
+#ifdef linux
 #include <sys/time.h>
+#endif
+
+#ifdef WIN32
+#include "win_time.hpp"
+#endif
+
+
+
 
 #ifdef WITH_SPIN
 #include "camera_device_spin.hpp"

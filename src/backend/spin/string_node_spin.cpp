@@ -27,7 +27,7 @@ namespace bias
         if (!isOfType(ExpectedType()))
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": incorrect node type";
             throw RuntimeError(ERROR_SPIN_INCORRECT_NODE_TYPE, ssError.str());
         }
@@ -46,14 +46,15 @@ namespace bias
         checkAvailable();
         checkReadable();
 
-        char buffer[MAX_BUF_LEN];
+        //char buffer[MAX_BUF_LEN];
+		char* buffer = new char[MAX_BUF_LEN];
         size_t bufferLen = MAX_BUF_LEN;
 
         spinError err = spinStringGetValue(hNode_,buffer,&bufferLen);
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get string node value, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_STRING_VALUE, ssError.str());
         }

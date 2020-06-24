@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
     feat_frt.CropParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/Cropfrt_param.json";
 
     // Video Capture
-    int nviews = 2;
+    const int nviews = 2;
     QString vidFile[nviews] = {//"/groups/branson/home/patilr/bias_video_cam_0_date_2019_06_13_time_14_45_56_v001/image_%d.bmp"}; 
                                "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi",
                                "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi"};

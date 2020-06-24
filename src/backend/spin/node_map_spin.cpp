@@ -28,7 +28,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get number of nodes, error=" << err;
             throw RuntimeError(ERROR_SPIN_GET_VENDOR_NAME, ssError.str());
         }
@@ -315,7 +315,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node handle, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_HANDLE, ssError.str());
         }
@@ -329,7 +329,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node handle, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_HANDLE, ssError.str());
         }
@@ -352,7 +352,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to retrieve Spinnaker GenICam node map, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_CAMERA_NODE_MAP, ssError.str());
         }
@@ -373,7 +373,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to retrieve Spinnaker TL device node map, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_TLDEVICE_NODE_MAP, ssError.str());
         }

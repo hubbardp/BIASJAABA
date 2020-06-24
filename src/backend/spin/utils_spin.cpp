@@ -21,7 +21,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get spinImage pixel format, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_GET_PIXEL_FORMAT, ssError.str());
         }
@@ -38,7 +38,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get spinImage x padding, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_GET_PADDING_X, ssError.str());
         }
@@ -47,7 +47,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get spinImage y padding, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_GET_PADDING_Y, ssError.str());
         }
@@ -56,7 +56,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get spinImage width, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_GET_WIDTH, ssError.str());
         }
@@ -65,7 +65,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get spinImage width, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_GET_HEIGHT, ssError.str());
         }
@@ -74,7 +74,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get spinImage stride, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_GET_STRIDE, ssError.str());
         }
@@ -83,7 +83,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get image size, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_GET_SIZE, ssError.str());
         }
@@ -92,7 +92,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get spinImage data pointer, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_GET_DATA_PTR, ssError.str());
         }
@@ -101,7 +101,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get spinImage pixel format, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_GET_PIXEL_FORMAT, ssError.str());
         }
@@ -336,7 +336,7 @@ namespace bias
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert pixel format to Spinnaker ";
             ssError << "imaging mode";
             throw RuntimeError(ERROR_SPIN_CONVERT_PIXEL_FORMAT, ssError.str());
@@ -370,7 +370,7 @@ namespace bias
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert pixel format from Spinnaker";
             throw RuntimeError(ERROR_SPIN_CONVERT_PIXEL_FORMAT, ssError.str());
         }

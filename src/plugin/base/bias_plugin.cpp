@@ -126,7 +126,7 @@ namespace bias
 
     RtnStatus BiasPlugin::runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg)
     {
-        qDebug() << __PRETTY_FUNCTION__;
+        qDebug() << __FUNCTION__;
         RtnStatus rtnStatus;
         return rtnStatus;
     }
@@ -217,6 +217,19 @@ namespace bias
     TimeStamp BiasPlugin::getPCtime()
     {
 
+#ifdef WIN32
+
+	GetTime* getTime = new GetTime(0,0);
+        //get computer local time since midnight
+        getTime->curr_time = time(NULL);
+        tm *tm_local = localtime(&getTime->curr_time);
+        getTime->getdaytime(&getTime->tv, NULL);
+        getTime->secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
+        getTime->usec = (long long unsigned int)getTime->tv.tv_usec;
+        TimeStamp ts = {getTime->secs, getTime->usec};
+#endif
+	    
+#ifdef linux	    
         unsigned long long int secs=0;
         unsigned int usec=0;
         time_t curr_time;
@@ -229,7 +242,7 @@ namespace bias
         secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
         usec = (unsigned int)tv.tv_usec;
         TimeStamp ts = {secs,usec};
-
+#endif
         return ts;
 
     }
