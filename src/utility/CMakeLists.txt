@@ -22,7 +22,7 @@ if(with_qt_gui)
         lockable.hpp
         timer.h
         tictoc.h
-        win_time.hpp
+	win_time.hpp
         )
     
     set(
@@ -39,21 +39,27 @@ if(with_qt_gui)
         tictoc.c
 	win_time.cpp
         )
-    
-    qt5_wrap_cpp(bias_utility_HEADERS_MOC ${bias_utility_HEADERS})
-    
+ 
+    if(WIN32)
+	    set(bias_utility_HEADERS_WIN win_time.hpp)
+	    set(bias_utility_SOURCES_WIN win_time.cpp)
+    endif() 
+
+    qt5_wrap_cpp(bias_utility_HEADERS_MOC ${bias_utility_HEADERS} ${bias_utility_HEADERS_WIN})
+
     add_library(
         bias_utility
         ${bias_utility_HEADERS_MOC}
-        ${bias_utility_SOURCES} 
+        ${bias_utility_SOURCES}
+	${bias_utility_SOURCES_WIN} 
         )
-    
+
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
     include_directories(.)
     target_link_libraries(
-        bias_utility 
-        ${QT_LIBRARIES} 
-        ${bias_ext_link_LIBS} 
+        bias_utility
+        ${QT_LIBRARIES}
+        ${bias_ext_link_LIBS}
         bias_camera_facade
         )
 
