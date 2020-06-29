@@ -23,28 +23,30 @@ namespace bias
 
 	    public:
 
-			long long unsigned int secs;
-			long long unsigned int usec;
-			time_t curr_time;
-			timeval tv;
+	        long long unsigned int secs;
+		long long unsigned int usec;
+		time_t curr_time;
+		timeval tv;
 
 
-			GetTime(long long unsigned int secs, long long unsigned int usec);
+		GetTime(long long unsigned int secs, long long unsigned int usec);
 			
 
-		    struct timezone
-		    {
-			    int  tz_minuteswest; /* minutes W of Greenwich */
-			    int  tz_dsttime;     /* type of dst correction */
-	  	    };
+		struct timezone
+		{
+		    int  tz_minuteswest; /* minutes W of Greenwich */
+	            int  tz_dsttime;     /* type of dst correction */
+	        };
 
 	     	// Definition of a gettimeofday function
-			int getdaytime(struct timeval *tv, struct timezone *tz);
+		int getdaytime(struct timeval *tv, struct timezone *tz);
 
 	};
 
 }
 #endif
+
+
 //Example usage to for interval timing:
 
 // Test routine for calculating a time difference

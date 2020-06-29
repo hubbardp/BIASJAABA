@@ -26,7 +26,7 @@
 #include "ext_ctl_http_server.hpp"
 #include "plugin_handler.hpp"
 
-//#include <cstdlib>
+#include <cstdlib>
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -5601,10 +5601,16 @@ namespace bias
             newProp.valueB = propValueMap["valueBlue"].toUInt();
 
             newProp.valueA = std::max(newProp.valueA, propInfo.minValue);
-            newProp.valueA = std::min(newProp.valueA, propInfo.maxValue);
             newProp.valueB = std::max(newProp.valueB, propInfo.minValue);
+#ifdef linux	    
+	    newProp.valueA = std::min(newProp.valueA, propInfo.maxValue);
             newProp.valueB = std::min(newProp.valueB, propInfo.maxValue);
+#endif
 
+#ifdef WIN32
+	    newProp.valueA = min(newProp.valueA, propInfo.maxValue);
+            newProp.valueB = min(newProp.valueB, propInfo.maxValue);
+#endif	    
             //if (newProp.valueA < propInfo.minValue)
             //{ 
             //    QString errMsgText = QString(
@@ -5690,7 +5696,14 @@ namespace bias
             newProp.value = propValueMap["value"].toUInt();
 
             newProp.value = std::max(newProp.value, propInfo.minValue);
-            newProp.value = std::min(newProp.value, propInfo.maxValue);
+
+#ifdef WIN32
+            newProp.value = min(newProp.value, propInfo.maxValue);
+#endif
+
+#ifdef linux 
+	    newProp.value = std::min(newProp.value, propInfo.maxValue);
+#endif	    
 
             //if (!newProp.absoluteControl) 
             //{
@@ -5754,7 +5767,13 @@ namespace bias
         if (newProp.absoluteControl)
         {
             newProp.absoluteValue = std::max(newProp.absoluteValue, propInfo.minAbsoluteValue);
+#ifdef WIN32
+            newProp.absoluteValue = min(newProp.absoluteValue, propInfo.maxAbsoluteValue);
+#endif
+
+#ifdef linux
             newProp.absoluteValue = std::min(newProp.absoluteValue, propInfo.maxAbsoluteValue);
+#endif	    
 
             //if (newProp.absoluteValue < propInfo.minAbsoluteValue)
             //{

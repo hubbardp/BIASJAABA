@@ -418,7 +418,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to retrieve Spinnaker TL device node map, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_TLSTREAM_NODE_MAP, ssError.str());
         }

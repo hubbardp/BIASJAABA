@@ -1,9 +1,6 @@
 #ifdef WITH_VIDEO
 #include "video_utils.hpp"
 #include <opencv2/videoio.hpp>
-//#include <opencv2/core/core.hpp>
-//#include <opencv2/highgui/highgui.hpp>
-//#include <QDebug>
 #include <iostream>
 //#include "stampedImage.hpp"
 

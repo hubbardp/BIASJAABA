@@ -30,7 +30,7 @@ namespace bias
     VideoWriterParams_jpg::VideoWriterParams_jpg()
     {
         frameSkip = VideoWriter_jpg::DEFAULT_FRAME_SKIP;
-        quality = VideoWriter_jpg::DEFAULT_QUALITY;
+        quality = VideoWriter_jpg::DEF_QUALITY;
         numberOfCompressors = VideoWriter_jpg::DEFAULT_NUMBER_OF_COMPRESSORS;
         mjpgFlag = VideoWriter_jpg::DEFAULT_MJPG_FLAG;
         mjpgMaxFramePerFileFlag = VideoWriter_jpg::DEFAULT_MJPG_MAX_FRAME_PER_FILE_FLAG;

@@ -9,7 +9,7 @@ namespace bias
     // Constants
     // -------------------------------------------------------------------------------------------------------
     const QString CompressedFrame_jpg::DEFAULT_FILENAME = "default_filename.jpg";
-    const unsigned int CompressedFrame_jpg::DEFAULT_QUALITY = 90;
+    const unsigned int CompressedFrame_jpg::DEF_QUALITY = 90;
     const bool CompressedFrame_jpg::DEFAULT_MJPG_FLAG = false;
 
     // Public methods
@@ -17,7 +17,7 @@ namespace bias
 
     CompressedFrame_jpg::CompressedFrame_jpg()
     {
-        quality_ = DEFAULT_QUALITY;
+        quality_ = DEF_QUALITY;
         fileName_ = DEFAULT_FILENAME;
         mjpgFlag_ = DEFAULT_MJPG_FLAG;
         haveFileName_= false;

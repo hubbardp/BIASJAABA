@@ -9,9 +9,17 @@
 #include "camera_facade.hpp"
 #include <QDir>
 #include <QTextStream>
-#include <sys/time.h>
+
 #include <fstream>
 #include <iomanip>
+
+#ifdef UNIX
+#include<sys/time.h>
+#endif
+
+#ifdef WIN32
+#include "win_time.hpp"
+#endif
 
 namespace cv
 {

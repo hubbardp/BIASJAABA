@@ -31,8 +31,6 @@
 #endif
 
 
-
-
 #ifdef WITH_SPIN
 #include "camera_device_spin.hpp"
 #endif

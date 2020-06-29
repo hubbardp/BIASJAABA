@@ -25,7 +25,7 @@ namespace bias
     const unsigned int VideoWriter_jpg::FRAMES_TODO_MAX_QUEUE_SIZE = 250;
     const unsigned int VideoWriter_jpg::FRAMES_FINISHED_MAX_SET_SIZE = 250;
     const unsigned int VideoWriter_jpg::DEFAULT_FRAME_SKIP = 1;
-    const unsigned int VideoWriter_jpg::DEFAULT_QUALITY = 90;
+    const unsigned int VideoWriter_jpg::DEF_QUALITY = 90;
     const unsigned int VideoWriter_jpg::MIN_QUALITY = 0;
     const unsigned int VideoWriter_jpg::MAX_QUALITY = 100;
     const unsigned int VideoWriter_jpg::DEFAULT_NUMBER_OF_COMPRESSORS = 10;

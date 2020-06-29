@@ -47,7 +47,7 @@ namespace bias
             void encode();
 
             static const QString DEFAULT_FILENAME;
-            static const unsigned int DEFAULT_QUALITY;
+            static const unsigned int DEF_QUALITY;
             static const bool DEFAULT_MJPG_FLAG;
 
         protected:

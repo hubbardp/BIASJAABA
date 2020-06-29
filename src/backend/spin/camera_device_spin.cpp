@@ -8,8 +8,10 @@
 #include <bitset>
 #include <fstream>
 
-
+#ifdef linux 
 #include <sys/time.h>
+#endif
+
 /*#include "base_node_spin.hpp"
 #include "string_node_spin.hpp"
 #include "enum_node_spin.hpp"
@@ -680,7 +682,7 @@ namespace bias {
 
         }
 
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
+        std::cout << __FUNCTION__ << std::endl;
         //format7Info.print();
 
         return format7Info;
@@ -762,7 +764,7 @@ namespace bias {
         IntegerNode_spin offsetYNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("OffsetY");
         offsetYNode.setValue(int64_t(settings.offsetY));
 
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
+        std::cout << __FUNCTION__ << std::endl;
         //settings.print();
 
     }

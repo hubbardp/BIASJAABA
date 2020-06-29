@@ -165,7 +165,7 @@ namespace bias {
     }
  
 
-    void JaabaPlugin::cameraOffsetTime()
+    /*void JaabaPlugin::cameraOffsetTime()
     {
 
         //double offset,cam_ts, PC_ts;
@@ -193,7 +193,7 @@ namespace bias {
         cam_ofs.seconds = int(offset_s);
         cam_ofs.microSeconds = (offset_s)*1e6 - cam_ofs.seconds;
       
-    }
+    }*/
 
     
     void JaabaPlugin::gpuInit()

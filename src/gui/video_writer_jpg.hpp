@@ -48,7 +48,7 @@ namespace bias
             static const unsigned int FRAMES_TODO_MAX_QUEUE_SIZE;
             static const unsigned int FRAMES_FINISHED_MAX_SET_SIZE;
             static const unsigned int DEFAULT_FRAME_SKIP;
-            static const unsigned int DEFAULT_QUALITY;
+            static const unsigned int DEF_QUALITY;
             static const unsigned int MIN_QUALITY;
             static const unsigned int MAX_QUALITY;
             static const unsigned int DEFAULT_NUMBER_OF_COMPRESSORS;
