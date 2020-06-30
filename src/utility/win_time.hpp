@@ -3,9 +3,8 @@
 
 //#include "stdafx.h"
 #include <time.h>
-#include <windows.h>
 #include <ctime>
-//#include <iostream>
+#include <windows.h>
 
 //using namespace System;
 using namespace std;
@@ -21,25 +20,25 @@ namespace bias
 	class GetTime
 	{
 
-	    public:
+	    public:                 
 
 	        long long unsigned int secs;
-		long long unsigned int usec;
-		time_t curr_time;
-		timeval tv;
+		    long long unsigned int usec;
+		    time_t curr_time;
+		    timeval tv;
 
 
-		GetTime(long long unsigned int secs, long long unsigned int usec);
+		    GetTime(long long unsigned int secs, long long unsigned int usec);
 			
 
-		struct timezone
-		{
-		    int  tz_minuteswest; /* minutes W of Greenwich */
+		    struct timezone
+		    {
+		        int  tz_minuteswest; /* minutes W of Greenwich */
 	            int  tz_dsttime;     /* type of dst correction */
 	        };
 
-	     	// Definition of a gettimeofday function
-		int getdaytime(struct timeval *tv, struct timezone *tz);
+	       // Definition of a gettimeofday function
+		   int getdaytime(struct timeval *tv, struct timezone *tz);
 
 	};
 

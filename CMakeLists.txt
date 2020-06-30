@@ -62,13 +62,12 @@ if(UNIX)
     if(with_qt_gui)
         #set(QT_BINARY_DIR "$ENV{QTDIR}/bin")
         #message(STATUS "${QT_BINARY_DIR}")
-        set(Qt5_DIR "/opt/qt/5.12.3/gcc_64/lib/cmake/Qt5")
         #set(Qt5Core_DIR "/groups/branson/home/patilr/anaconda3/lib")
         #set(Qt5Widgets_DIR "/groups/branson/home/patilr/anaconda3/lib")
         #set(Qt5Network_DIR "/groups/branson/home/patilr/anaconda3/lib")
         #set(Qt5SerialPort_DIR "/groups/branson/home/patilr/anaconda3/lib")
-
-
+       
+        set(Qt5_DIR "/opt/qt/5.12.3/gcc_64/lib/cmake/Qt5")
  
         # Old qt 4.8 build
         # ------------------------------------------------------------

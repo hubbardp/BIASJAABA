@@ -22,7 +22,7 @@ if(with_qt_gui)
         lockable.hpp
         timer.h
         tictoc.h
-	win_time.hpp
+	    #win_time.hpp
         )
     
     set(
@@ -37,7 +37,7 @@ if(with_qt_gui)
         basic_http_server.cpp
         image_label.cpp
         tictoc.c
-	win_time.cpp
+	    #win_time.cpp
         )
  
     if(WIN32)
@@ -51,7 +51,7 @@ if(with_qt_gui)
         bias_utility
         ${bias_utility_HEADERS_MOC}
         ${bias_utility_SOURCES}
-	${bias_utility_SOURCES_WIN} 
+	    ${bias_utility_SOURCES_WIN} 
         )
 
     include_directories(${CMAKE_CURRENT_BINARY_DIR})

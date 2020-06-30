@@ -13,7 +13,7 @@
 #include <fstream>
 #include <iomanip>
 
-#ifdef UNIX
+#ifdef linux
 #include<sys/time.h>
 #endif
 
