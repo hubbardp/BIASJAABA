@@ -605,7 +605,7 @@ namespace bias {
 
     ImageModeList Camera::getListOfSupportedImageModes()
     {
-        unsigned int numberOfImageModes = cameraDevicePtr_ -> getNumberOfImageMode();
+        unsigned int numberOfImageModes = static_cast<unsigned int>(cameraDevicePtr_ -> getNumberOfImageMode());
         ImageModeList modeList = getListOfImageModes(numberOfImageModes);
         ImageModeList supportedModeList;
 

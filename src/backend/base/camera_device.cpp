@@ -67,7 +67,7 @@ namespace bias
         return false;
     }
 
-    unsigned int CameraDevice::getNumberOfImageMode()
+    size_t CameraDevice::getNumberOfImageMode()
     {
         return 0;
     }

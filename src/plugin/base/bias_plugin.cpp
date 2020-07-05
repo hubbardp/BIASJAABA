@@ -220,13 +220,13 @@ namespace bias
 #ifdef WIN32
 
 	GetTime* getTime = new GetTime(0,0);
-        //get computer local time since midnight
-        getTime->curr_time = time(NULL);
-        tm *tm_local = localtime(&getTime->curr_time);
-        getTime->getdaytime(&getTime->tv, NULL);
-        getTime->secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
-        getTime->usec = (long long unsigned int)getTime->tv.tv_usec;
-        TimeStamp ts = {getTime->secs, getTime->usec};
+     //get computer local time since midnight
+     getTime->curr_time = time(NULL);
+     tm *tm_local = localtime(&getTime->curr_time);
+     getTime->getdaytime(&getTime->tv, NULL);
+     getTime->secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
+     getTime->usec = (unsigned int)getTime->tv.tv_usec;
+     TimeStamp ts = {getTime->secs, unsigned int(getTime->usec)};
 #endif
 	    
 #ifdef linux	    

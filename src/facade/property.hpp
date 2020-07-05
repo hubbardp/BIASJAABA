@@ -6,8 +6,11 @@
 
 namespace bias 
 {
-    struct Property
-    { 
+    class Property
+    {
+     
+	public:
+
         PropertyType type;
         bool present;
         bool absoluteControl;
@@ -24,9 +27,10 @@ namespace bias
         void print();
     };
 
-    struct PropertyInfo 
+    class PropertyInfo 
     {
 
+	public:
         PropertyType type;
         bool present;
         bool autoCapable;

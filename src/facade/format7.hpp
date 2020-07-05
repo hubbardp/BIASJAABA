@@ -7,8 +7,9 @@
 
 namespace bias
 {
-    struct Format7Settings
+    class Format7Settings
     {
+	public:
         ImageMode mode;
         unsigned int offsetX;
         unsigned int offsetY;
@@ -21,8 +22,9 @@ namespace bias
         void print();
     };
 
-    struct Format7Info
+    class Format7Info
     {
+	public:
         ImageMode mode;
         bool supported;
         unsigned int maxWidth;

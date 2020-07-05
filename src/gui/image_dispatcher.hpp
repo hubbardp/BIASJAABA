@@ -12,7 +12,7 @@
 namespace bias
 {
 
-    struct StampedImage;
+    class StampedImage;
 
     class ImageDispatcher : public QObject, public QRunnable, public Lockable<Empty>
     {

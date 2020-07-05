@@ -14,7 +14,7 @@ namespace bias
         unsigned int indent = 0;
         bool isInnerList = false;
 
-        while (pos < jsonArray.size()) 
+        while (pos < unsigned int(jsonArray.size())) 
         {
             bool isSpecialChar = false;
             if (jsonArray[pos] == '}')
@@ -49,7 +49,7 @@ namespace bias
             else if (jsonArray[pos] == '[')
             {
                 jsonArrayNew.append(jsonArray[pos]);
-                for (unsigned int tempPos=pos+1; tempPos<jsonArray.size(); tempPos++)
+                for (unsigned int tempPos=pos+1; tempPos < unsigned int(jsonArray.size()); tempPos++)
                 {
                     isInnerList = false;
                     if (jsonArray[tempPos] == ']')

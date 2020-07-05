@@ -6,8 +6,11 @@
 
 namespace bias
 {
-    struct StampedImage
+    class StampedImage
     {
+
+	public:
+
         cv::Mat image;
         double timeStamp;
         TimeStamp timeStampInit;

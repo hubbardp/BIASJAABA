@@ -218,7 +218,7 @@ bool Hungarian::check_solution(const vector<int>& row_dec, const vector<int>& co
 bool Hungarian::assign_solution(const vector<int>& row_dec,const vector<int>&  col_inc, const vector<int>&  col_vertex)
 {
 	  // End Hungarian algorithm 18
-	int i, j, k, l, m, n;
+	int i, k, l, m, n;
 
 	m = m_rows;
 	n = m_cols;
@@ -404,7 +404,7 @@ bool Hungarian::solve()
 			fprintf(stderr, "Matched %d rows.\n",m-t);
 		}
 		q=0;
-		bool try_matching;
+		//bool try_matching;
 		while (1)
 		{
 			while (q<t)

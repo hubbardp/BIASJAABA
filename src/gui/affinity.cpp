@@ -48,10 +48,10 @@ namespace bias
 
         for (unsigned int i=0; i<sizeof(DWORD_PTR); i++)
         {
-            if ( ((1<<i) & availProcMask) != 0)
+            if ( ((1i64 << i) & availProcMask) != 0)
             {
-                cameraNumToProcMask[cameraCnt] =  DWORD_PTR(1<<i);
-                allGrabberProcMask |= DWORD_PTR(1 << i);
+                cameraNumToProcMask[cameraCnt] =  DWORD_PTR(1i64<<i);
+                allGrabberProcMask |= DWORD_PTR(1i64 << i);
                 cameraCnt++;
                 if (cameraCnt>=numberOfCameras_)
                 {

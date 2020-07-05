@@ -11,25 +11,25 @@ namespace bias {
     void beh_class::allocate_model() 
     {
 
-
         hsize_t dims_out[2] = {0};
         H5::Exception::dontPrint();
         try 
         {
            
             // open classfier file
-            int rank, ndims;
-	    H5::H5File file(this->classifier_file.toStdString(), H5F_ACC_RDONLY);
+			//int rank;
+			int ndims;
+			H5::H5File file(this->classifier_file.toStdString(), H5F_ACC_RDONLY);
 
             // check the number of behaviors present
-            int num_beh = beh.size();
+            size_t num_beh = beh.size();
 
             //initialize other arrays
             this->translated_index.resize(num_beh);
             this->flag.resize(num_beh);
             this->score.resize(num_beh,0);
 
-            for(int nbeh =0;nbeh < num_beh;nbeh++)
+            for(unsigned int nbeh =0;nbeh < num_beh;nbeh++)
             {
                 if(pathExists(file.getId(), beh[nbeh]))
                 {
@@ -90,7 +90,7 @@ namespace bias {
  
         RtnStatus rtnstatus; 
         std::string class_file = this->classifier_file.toStdString();
-        int num_beh = beh_present.size();
+        size_t num_beh = beh_present.size();
         for(int ncls = 0;ncls < num_beh;ncls++)
         {
 
@@ -112,7 +112,7 @@ namespace bias {
     {
 
         RtnStatus rtnstatus;
-        int nparams = model_params.size();
+        size_t nparams = model_params.size();
         std::vector<float*> model_data = {&data_out.cls_alpha.data()[0],
                                            &data_out.cls_dim.data()[0],
                                            &data_out.cls_dir.data()[0],
@@ -126,16 +126,16 @@ namespace bias {
             // load model params into the model
             for(int paramid = 0; paramid < nparams; paramid++)
             {  
-		H5::H5File file(filename, H5F_ACC_RDONLY);
+				H5::H5File file(filename, H5F_ACC_RDONLY);
                 H5::Group multbeh = file.openGroup(beh[beh_id]);
-		H5::DataSet dataset = multbeh.openDataSet(model_params[paramid]);
-		H5::DataSpace dataspace = dataset.getSpace();
-		rank = dataspace.getSimpleExtentNdims();
-		ndims = dataspace.getSimpleExtentDims(dims_out,NULL);
-		H5::DataSpace memspace(rank,dims_out);
-		dataset.read(model_data[paramid], H5::PredType::IEEE_F32LE, memspace, dataspace);
-		file.close();
-		rtnstatus.success = true;
+				H5::DataSet dataset = multbeh.openDataSet(model_params[paramid]);
+				H5::DataSpace dataspace = dataset.getSpace();
+				rank = dataspace.getSimpleExtentNdims();
+				ndims = dataspace.getSimpleExtentDims(dims_out,NULL);
+				H5::DataSpace memspace(rank,dims_out);
+				dataset.read(model_data[paramid], H5::PredType::IEEE_F32LE, memspace, dataspace);
+				file.close();
+				rtnstatus.success = true;
             } 
         }
         
@@ -159,100 +159,100 @@ namespace bias {
     {
 
 
-	//shape of hist side
-	unsigned int side_x = shape_side->x;
+		//shape of hist side
+		unsigned int side_x = shape_side->x;
         unsigned int side_y = shape_side->y;
-	unsigned int side_bin = shape_side->bin;
+		unsigned int side_bin = shape_side->bin;
 
-	//shape of hist front 
-	unsigned int front_x = shape_front->x;
-	unsigned int front_y = shape_front->y;
-	unsigned int front_bin = shape_front->bin;
+		//shape of hist front 
+		unsigned int front_x = shape_front->x;
+		unsigned int front_y = shape_front->y;
+		unsigned int front_bin = shape_front->bin;
 
-	// translate index from matlab to C indexing  
-	unsigned int rollout_index, rem;
-	unsigned int ind_k, ind_j, ind_i;
-	unsigned int index;
-	int dim;
-	rem = 0;
-	int flag = 0;
-	int numWkCls = model[0].cls_alpha.size();
+		// translate index from matlab to C indexing  
+		unsigned int rollout_index, rem;
+		unsigned int ind_k, ind_j, ind_i;
+		unsigned int index;
+		unsigned int dim;
+		rem = 0;
+		int flag = 0;
+		size_t numWkCls = model[0].cls_alpha.size();
 
-        int num_beh = beh_present.size();
+        size_t num_beh = beh_present.size();
         for(int ncls = 0;ncls < num_beh;ncls++)
         {
            
             if(beh_present[ncls])
             {
 
-		for(int midx = 0; midx < numWkCls; midx ++) {
+				for(int midx = 0; midx < numWkCls; midx ++) {
 
-		    dim = this->model[ncls].cls_dim[midx];
-		    flag = 0;
+					dim = this->model[ncls].cls_dim[midx];
+					flag = 0;
 
-		    if(dim > ((side_x+front_x) * side_y * side_bin) ) { // checking if feature is hog/hof
+					if(dim > ((side_x+front_x) * side_y * side_bin) ) { // checking if feature is hog/hof
 
-			rollout_index = dim - ( (side_x + front_x) * side_y * side_bin) - 1;
-			flag = 3;
+						rollout_index = dim - ( (side_x + front_x) * side_y * side_bin) - 1;
+						flag = 3;
 
-		    } else {
+					} else {
 
-			rollout_index = dim - 1;
-			flag = 1;
+						rollout_index = dim - 1;
+						flag = 1;
 
-		    }
+					}
 
-		    ind_k = rollout_index / ((side_x + front_x) * side_y); // calculate index for bin
-		    rem = rollout_index % ((side_x + front_x) * side_y); // remainder index for patch index
+					ind_k = rollout_index / ((side_x + front_x) * side_y); // calculate index for bin
+					rem = rollout_index % ((side_x + front_x) * side_y); // remainder index for patch index
 
-		    if(rem > 0) {
+					if(rem > 0) {
 
-			ind_i = (rem) / side_y; // divide by second dim because that is first dim for matlab. This gives 
-				     // index for first dim.
-			ind_j = (rem) % side_y;
+						ind_i = (rem) / side_y; // divide by second dim because that is first dim for matlab. This gives 
+						// index for first dim.
+						ind_j = (rem) % side_y;
 
-		    } else {
+					} else {
 
-			ind_i = 0;
+						ind_i = 0;
 
-			ind_j = 0;
+						ind_j = 0;
 
-		    }
+					}
 
-		    if(ind_i >= side_x) { // check view by comparing with size of first dim of the view
+					if(ind_i >= side_x) { // check view by comparing with size of first dim of the view
 
-			ind_i = ind_i - side_x;
-			flag = flag + 1;
+					ind_i = ind_i - side_x;
+					flag = flag + 1;
 
-		    }
+					}
 
-		    if(flag == 1) {  // book keeping to check which feature to choose
+					if(flag == 1) {  // book keeping to check which feature to choose
 
-			index = ind_k*side_x*side_y + ind_j*side_x + ind_i;
-			this->translated_index[ncls][midx] = index;
-			this->flag[ncls][midx] = flag;
+						index = ind_k*side_x*side_y + ind_j*side_x + ind_i;
+						this->translated_index[ncls][midx] = index;
+						this->flag[ncls][midx] = flag;
 
-		    } else if(flag == 2) {
+					} else if(flag == 2) {
 
-			index = ind_k*front_x*front_y + ind_j*front_x + ind_i;
-			this->translated_index[ncls][midx] = index;
-			this->flag[ncls][midx] = flag;
+						index = ind_k*front_x*front_y + ind_j*front_x + ind_i;
+						this->translated_index[ncls][midx] = index;
+						this->flag[ncls][midx] = flag;
 
-		    } else if(flag == 3) {
+					} else if(flag == 3) {
 
-			index = ind_k*side_x*side_y + ind_j*side_x + ind_i;
-			this->translated_index[ncls][midx] = index;
-			this->flag[ncls][midx] = flag;
+						index = ind_k*side_x*side_y + ind_j*side_x + ind_i;
+						this->translated_index[ncls][midx] = index;
+						this->flag[ncls][midx] = flag;
 
-		    } else if(flag == 4) {
+					} else if(flag == 4) {
 
-			index = ind_k*front_x*front_y + ind_j*front_x + ind_i;
-			this->translated_index[ncls][midx] = index;
-			this->flag[ncls][midx] = flag;
+						index = ind_k*front_x*front_y + ind_j*front_x + ind_i;
+						this->translated_index[ncls][midx] = index;
+						this->flag[ncls][midx] = flag;
 
-	            }
-                } 
-	    }
+					}
+				} 
+			}
         }
     }
 
@@ -262,36 +262,36 @@ namespace bias {
 			   int num_feat, int feat_len, int dir, float tr, float alpha) 
     {
 
-	float addscores = 0.0;
-	if(dir > 0) {
+		float addscores = 0.0;
+		if(dir > 0) {
 
-	    if(features[ind] > tr) {
+			if(features[ind] > tr) {
 
-	        addscores = 1;
+				addscores = 1;
 
-	    } else {
+			} else {
 
-		addscores = -1;
-	    }
+				addscores = -1;
+			}
 
-	    addscores = addscores * alpha;
-	    scr = scr + addscores;
+			addscores = addscores * alpha;
+			scr = scr + addscores;
 
-	} else {
+		} else {
 
-	    if(features[ind] <= tr) {
+			if(features[ind] <= tr) {
 
-	       addscores = 1;
+				addscores = 1;
 
-	    } else {
+			} else {
 
-	       addscores = -1;
-	    }
+				addscores = -1;
+			}
 
-	    addscores = addscores * alpha;
-	    scr = scr + addscores;
+			addscores = addscores * alpha;
+			scr = scr + addscores;
 
-	}
+		}
 
     }
 
@@ -303,28 +303,28 @@ namespace bias {
 			 std::vector<boost_classifier> &model) 
     {
 
-	//shape of hist side
-	unsigned int side_x = shape_side->x;
-	unsigned int side_y = shape_side->y;
-	unsigned int side_bin = shape_side->bin;
+		//shape of hist side
+		unsigned int side_x = shape_side->x;
+		unsigned int side_y = shape_side->y;
+		unsigned int side_bin = shape_side->bin;
 
-	//shape of hist front 
-	unsigned int front_x = shape_front->x;
-	unsigned int front_y = shape_front->y;
-	unsigned int front_bin = shape_front->bin;
+		//shape of hist front 
+		unsigned int front_x = shape_front->x;
+		unsigned int front_y = shape_front->y;
+		unsigned int front_bin = shape_front->bin;
 
-	//index variables
-	unsigned int rollout_index, rem;
-	unsigned int ind_k, ind_j, ind_i;
-	unsigned int num_feat, index;
-	int dir, dim;
-	float alpha, tr;
+		//index variables
+		//unsigned int rollout_index, rem;
+		//unsigned int ind_k, ind_j, ind_i;
+		unsigned int num_feat, index;
+		int dir, dim;
+		float alpha, tr;
 
-	//rem = 0;
-	//int flag = 0;
+		//rem = 0;
+		//int flag = 0;
 
-	int numWkCls = model[0].cls_alpha.size();
-        int num_beh = beh_present.size();
+		size_t numWkCls = model[0].cls_alpha.size();
+        size_t num_beh = beh_present.size();
         std::fill(scr.begin(), scr.end(), 0.0);
 
         for(int ncls = 0;ncls < num_beh;ncls++)
@@ -333,42 +333,42 @@ namespace bias {
             if(beh_present[ncls])
             {
 
-	        // translate index from matlab to C indexing
-		for(int midx = 0; midx < numWkCls; midx ++) {
+				// translate index from matlab to C indexing
+				for(int midx = 0; midx < numWkCls; midx ++) {
 
-		    dim = model[ncls].cls_dim[midx];
-		    dir = model[ncls].cls_dir[midx];
-		    alpha = model[ncls].cls_alpha[midx];
-		    tr = model[ncls].cls_tr[midx];
+					dim = model[ncls].cls_dim[midx];
+					dir = model[ncls].cls_dir[midx];
+					alpha = model[ncls].cls_alpha[midx];
+					tr = model[ncls].cls_tr[midx];
 
-		    if(this->flag[ncls][midx] == 1) {  // book keeping to check which feature to choose
+					if(this->flag[ncls][midx] == 1) {  // book keeping to check which feature to choose
 
-			index = this->translated_index[ncls][midx];
-			num_feat = side_x * side_y * side_bin;
-			boost_compute(scr[ncls], hofs_features, index, num_feat, feat_len, dir, tr, alpha);
+						index = this->translated_index[ncls][midx];
+						num_feat = side_x * side_y * side_bin;
+						boost_compute(scr[ncls], hofs_features, index, num_feat, feat_len, dir, tr, alpha);
 
-		    } else if(this->flag[ncls][midx] == 2) {
+					} else if(this->flag[ncls][midx] == 2) {
 
-			index = this->translated_index[ncls][midx];
-			num_feat = front_x * front_y * front_bin;
-			boost_compute(scr[ncls], hoff_features, index, num_feat, feat_len, dir, tr, alpha);
+						index = this->translated_index[ncls][midx];
+						num_feat = front_x * front_y * front_bin;
+						boost_compute(scr[ncls], hoff_features, index, num_feat, feat_len, dir, tr, alpha);
 
-		    } else if(this->flag[ncls][midx] == 3) {
+					} else if(this->flag[ncls][midx] == 3) {
 
-		        index = this->translated_index[ncls][midx];
-		        num_feat = side_x * side_y * side_bin;
-		        boost_compute(scr[ncls], hogs_features, index, num_feat, feat_len, dir, tr, alpha);
+						index = this->translated_index[ncls][midx];
+						num_feat = side_x * side_y * side_bin;
+						boost_compute(scr[ncls], hogs_features, index, num_feat, feat_len, dir, tr, alpha);
 
-		    } else if(this->flag[ncls][midx] == 4) {
+					} else if(this->flag[ncls][midx] == 4) {
 
-			index = this->translated_index[ncls][midx];
-			num_feat = front_x * front_y * front_bin;
-			boost_compute(scr[ncls], hogf_features, index, num_feat, feat_len, dir, tr, alpha);
+						index = this->translated_index[ncls][midx];
+						num_feat = front_x * front_y * front_bin;
+						boost_compute(scr[ncls], hogf_features, index, num_feat, feat_len, dir, tr, alpha);
                     }
 
-	        }
+				}
 
-	    }
+			}
 
         }
  

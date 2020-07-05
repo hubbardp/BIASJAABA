@@ -55,7 +55,7 @@ namespace bias {
         return ss.str();
     }
 
-    unsigned int CameraFinder::numberOfCameras() 
+    size_t CameraFinder::numberOfCameras() 
     {
         return guidSet_.size();
     }

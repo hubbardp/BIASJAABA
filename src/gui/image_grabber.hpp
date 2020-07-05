@@ -13,7 +13,7 @@
 namespace bias
 {
 
-    struct StampedImage;
+    class StampedImage;
 
     class ImageGrabber : public QObject, public QRunnable, public Lockable<Empty>
     {

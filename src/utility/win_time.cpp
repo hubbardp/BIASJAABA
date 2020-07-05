@@ -5,7 +5,7 @@ namespace bias
 {
 
 
-	GetTime::GetTime(long long unsigned int sec, long long unsigned int usec)
+	GetTime::GetTime(long long unsigned int sec,long long unsigned int usec)
 	{
 		secs = secs;
 		usec = usec;
@@ -56,7 +56,7 @@ namespace bias
 
 			// Adjust for the timezone west of Greenwich
 			tz->tz_minuteswest = _timezone / 60;
-			tz->tz_dsttime = _daylight;
+			tz->tz_dsttime =_daylight;
 		}
 
 		return 0;

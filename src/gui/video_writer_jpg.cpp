@@ -113,7 +113,7 @@ namespace bias
         if (frameCount_%frameSkip_==0) 
         {
             framesToDoQueuePtr_ -> acquireLock();
-            unsigned int framesToDoQueueSize = framesToDoQueuePtr_ -> size();
+            size_t framesToDoQueueSize = framesToDoQueuePtr_ -> size();
             if (framesToDoQueueSize < FRAMES_TODO_MAX_QUEUE_SIZE)
             {
                 CompressedFrame_jpg compressedFrame(fullPathName, stampedImg, quality_, mjpgFlag_);
@@ -135,7 +135,7 @@ namespace bias
         }
 
         framesSkippedIndexListPtr_ -> acquireLock();
-        unsigned int framesSkippedIndexListSize = framesSkippedIndexListPtr_ -> size();
+        size_t framesSkippedIndexListSize = framesSkippedIndexListPtr_ -> size();
         framesSkippedIndexListPtr_ -> releaseLock();
 
         if ((skipFrame) && (!skipReported_))
@@ -436,7 +436,7 @@ namespace bias
         } // if (!(framesFinishedSetPtr_ 
 
         framesFinishedSetPtr_ -> acquireLock();
-        unsigned int framesFinishedSetSize = framesFinishedSetPtr_ -> size();
+        unsigned int framesFinishedSetSize = static_cast<unsigned int>(framesFinishedSetPtr_ -> size());
         framesFinishedSetPtr_ -> releaseLock();
         return framesFinishedSetSize;
     }

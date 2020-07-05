@@ -67,7 +67,7 @@ namespace bias
         bool done = false;
         bool errorFlag = false;
         StampedImage newStampedImage;
-        unsigned int logQueueSize;
+        size_t logQueueSize;
 
         if (!ready_) 
         { 
@@ -137,7 +137,7 @@ namespace bias
 
             acquireLock();
             done = stopped_;
-            logQueueSize_ = logQueueSize;
+            logQueueSize_ = static_cast<unsigned int>(logQueueSize);
             releaseLock();
 
         } // while (!done)

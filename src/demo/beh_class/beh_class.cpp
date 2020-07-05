@@ -51,10 +51,10 @@ void beh_class::translate_mat2C(struct HOGShape *shape_side, HOFShape *shape_fro
     unsigned int rollout_index, rem;
     unsigned int ind_k, ind_j, ind_i;
     unsigned int index;
-    int dim;
+    unsigned dim;
     rem = 0; 
     int flag = 0;
-    int numWkCls = model.cls_alpha.size();
+    int numWkCls = static_cast<int>(model.cls_alpha.size());
  
     for(int midx = 0; midx < numWkCls; midx ++) {
 
@@ -185,14 +185,14 @@ void beh_class::boost_classify(std::vector<float> &scr, std::vector<float> &hogs
     unsigned int front_bin = shape_front->bin;
 
     //index variables
-    unsigned int rollout_index, rem;
-    unsigned int ind_k, ind_j, ind_i;
+	//unsigned int rollout_index, rem;
+    //unsigned int ind_k, ind_j, ind_i;
     unsigned int num_feat, index;
     int dir, dim;
     float alpha, tr;
     //rem = 0;
     //int flag = 0;
-    int numWkCls = model.cls_alpha.size();
+    int numWkCls = static_cast<int>(model.cls_alpha.size());
 
     // translate index from matlab to C indexing  
     for(int midx = 0; midx < numWkCls; midx ++) {

@@ -104,7 +104,7 @@ namespace bias
 
         // avi tabi - codec
         QStringList allowedCodecList = VideoWriter_avi::getListOfAllowedCodecs();
-        for (unsigned int i=0; i<allowedCodecList.size(); i++)
+        for (int i=0; i<allowedCodecList.size(); i++)
         {
             QString codecString = allowedCodecList.at(i);
             aviCodecComboBoxPtr_ -> addItem(codecString);

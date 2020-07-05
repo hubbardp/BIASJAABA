@@ -187,6 +187,7 @@ RtnStatus ClassifierParam::loadFromFile(QString dirName)
 
     rtnStatus.message = QString("");
     rtnStatus.success = true;
+	return rtnStatus;
 }
 
 
@@ -331,11 +332,11 @@ std::vector<float> PixelFeatureVectorParam::createDefaultGradMagEdgeVector()
 {
     std::vector<float> gradMagEdgeVector;
     gradMagEdgeVector.push_back(0.0 );
-    gradMagEdgeVector.push_back(0.0999999493360519);
-    gradMagEdgeVector.push_back(0.447888605296612);
-    gradMagEdgeVector.push_back(0.717480659484863);
-    gradMagEdgeVector.push_back(1.08998268842697);
-    gradMagEdgeVector.push_back(100.0);
+    gradMagEdgeVector.push_back(float(0.0999999493360519));
+    gradMagEdgeVector.push_back(float(0.447888605296612));
+    gradMagEdgeVector.push_back(float(0.717480659484863));
+	gradMagEdgeVector.push_back(float(1.08998268842697));
+    gradMagEdgeVector.push_back(float(100.0));
     return gradMagEdgeVector;
 }
 const std::vector<float> PixelFeatureVectorParam::DEFAULT_GRAD_MAG_EDGE_VECTOR = 
@@ -345,9 +346,9 @@ createDefaultGradMagEdgeVector();
 std::vector<float> PixelFeatureVectorParam::createDefaultGradOriCentVector()
 {
     std::vector<float> gradOriCentVector;
-    gradOriCentVector.push_back(0.523598775598299);
-    gradOriCentVector.push_back(1.5707963267949);
-    gradOriCentVector.push_back(2.61799387799149);
+    gradOriCentVector.push_back(float(0.523598775598299));
+    gradOriCentVector.push_back(float(1.5707963267949));
+    gradOriCentVector.push_back(float(2.61799387799149));
     return gradOriCentVector;
 }
 const std::vector<float> PixelFeatureVectorParam::DEFAULT_GRAD_ORI_CENT_VECTOR = 
@@ -1101,7 +1102,7 @@ const float ImageGrabberParam::MINIMUM_GAIN = 0.0;
 const float ImageGrabberParam::MAXIMUM_GAIN = 24.0;
 
 const float ImageGrabberParam::DEFAULT_SHUTTER = 20.0;
-const float ImageGrabberParam::MINIMUM_SHUTTER = 0.01;
+const float ImageGrabberParam::MINIMUM_SHUTTER = float(0.01);
 const float ImageGrabberParam::MAXIMUM_SHUTTER = 99.0;
 
 const unsigned int ImageGrabberParam::DEFAULT_BRIGHTNESS = 16;
@@ -1561,11 +1562,11 @@ const float IdentityTrackerParam::DEFAULT_MEAN_DX = 0.000000;
 const float IdentityTrackerParam::DEFAULT_MEAN_DY = 542.500000;
 const float IdentityTrackerParam::DEFAULT_MEAN_WIDTH = 6.000000;
 const float IdentityTrackerParam::DEFAULT_MEAN_HEIGHT = 6.000000;
-const float IdentityTrackerParam::DEFAULT_STD_DX = 3.605022;
-const float IdentityTrackerParam::DEFAULT_STD_DY = 8.652053;
-const float IdentityTrackerParam::DEFAULT_STD_WIDTH = 5.768036;
-const float IdentityTrackerParam::DEFAULT_STD_HEIGHT = 10.094062;
-const float IdentityTrackerParam::DEFAULT_MAX_COST = 8.921086;
+const float IdentityTrackerParam::DEFAULT_STD_DX = static_cast<float>(3.605022);
+const float IdentityTrackerParam::DEFAULT_STD_DY = static_cast<float>(8.652053);
+const float IdentityTrackerParam::DEFAULT_STD_WIDTH = static_cast<float>(5.768036);
+const float IdentityTrackerParam::DEFAULT_STD_HEIGHT = static_cast<float>(10.094062);
+const float IdentityTrackerParam::DEFAULT_MAX_COST = static_cast<float>(8.921086);
 const MotionDirection IdentityTrackerParam::DEFAULT_MOTION_DIRECTION = MOTION_DIRECTION_Y;
 
 IdentityTrackerParam::IdentityTrackerParam()

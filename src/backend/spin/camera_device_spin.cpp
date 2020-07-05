@@ -807,7 +807,7 @@ namespace bias {
     }
 
 
-    unsigned int CameraDevice_spin::getNumberOfImageMode()
+    size_t CameraDevice_spin::getNumberOfImageMode()
     {
         return getAllowedImageModes().size();
     }
@@ -1298,7 +1298,7 @@ namespace bias {
         {
             timeStamp_cam = (int64_t)hTimestampLatchValue.value();
             ts.seconds = timeStamp_cam/INT64_C(1000000000); 
-            ts.microSeconds = timeStamp_cam/INT64_C(1000) - INT64_C(1000000)*ts.seconds;
+            ts.microSeconds = unsigned int(timeStamp_cam/INT64_C(1000) - INT64_C(1000000)*ts.seconds);
  
 
         }else{
@@ -1332,8 +1332,8 @@ namespace bias {
             propInfo.readOutCapable = false;
             propInfo.minValue = blackLevelNode.minIntValue();
             propInfo.maxValue = blackLevelNode.maxIntValue();
-            propInfo.minAbsoluteValue = blackLevelNode.minValue();
-            propInfo.maxAbsoluteValue = blackLevelNode.maxValue();
+            propInfo.minAbsoluteValue = static_cast<float>(blackLevelNode.minValue());
+            propInfo.maxAbsoluteValue = static_cast<float>(blackLevelNode.maxValue());
             propInfo.haveUnits = !blackLevelNode.unit().empty();
             propInfo.units = blackLevelNode.unit();
             propInfo.unitsAbbr = blackLevelNode.unit();
@@ -1363,8 +1363,8 @@ namespace bias {
             {
                 propInfo.minValue = gammaNode.minIntValue();
                 propInfo.maxValue = gammaNode.maxIntValue();
-                propInfo.minAbsoluteValue = gammaNode.minValue();
-                propInfo.maxAbsoluteValue = gammaNode.maxValue();
+                propInfo.minAbsoluteValue = static_cast<float>(gammaNode.minValue());
+                propInfo.maxAbsoluteValue = static_cast<float>(gammaNode.maxValue());
                 propInfo.haveUnits = !gammaNode.unit().empty();
                 propInfo.units =  gammaNode.unit();
                 propInfo.unitsAbbr = gammaNode.unit();
@@ -1401,8 +1401,8 @@ namespace bias {
             {
                 propInfo.minValue = exposureTimeNode.minIntValue();
                 propInfo.maxValue = exposureTimeNode.maxIntValue();
-                propInfo.minAbsoluteValue = std::max(exposureTimeNode.minValue(), CameraDevice_spin::MinAllowedShutterUs);
-                propInfo.maxAbsoluteValue = std::min(exposureTimeNode.maxValue(), CameraDevice_spin::MaxAllowedShutterUs);
+                propInfo.minAbsoluteValue = static_cast<float>(std::max(exposureTimeNode.minValue(), CameraDevice_spin::MinAllowedShutterUs));
+                propInfo.maxAbsoluteValue = static_cast<float>(std::min(exposureTimeNode.maxValue(), CameraDevice_spin::MaxAllowedShutterUs));
                 propInfo.haveUnits = !exposureTimeNode.unit().empty();
                 propInfo.units =  exposureTimeNode.unit();
                 propInfo.unitsAbbr = exposureTimeNode.unit();
@@ -1438,8 +1438,8 @@ namespace bias {
             {
                 propInfo.minValue = gainNode.minIntValue();
                 propInfo.maxValue = gainNode.maxIntValue();
-                propInfo.minAbsoluteValue = gainNode.minValue();
-                propInfo.maxAbsoluteValue = gainNode.maxValue();
+                propInfo.minAbsoluteValue = static_cast<float>(gainNode.minValue());
+                propInfo.maxAbsoluteValue = static_cast<float>(gainNode.maxValue());
                 propInfo.haveUnits = !gainNode.unit().empty();
                 propInfo.units =  gainNode.unit();
                 propInfo.unitsAbbr = gainNode.unit();
@@ -1468,8 +1468,8 @@ namespace bias {
             propInfo.readOutCapable = false;
             propInfo.minValue = triggerDelayNode.minIntValue();
             propInfo.maxValue = triggerDelayNode.maxIntValue();
-            propInfo.minAbsoluteValue = triggerDelayNode.minValue();
-            propInfo.maxAbsoluteValue = triggerDelayNode.maxValue();
+            propInfo.minAbsoluteValue = static_cast<float>(triggerDelayNode.minValue());
+            propInfo.maxAbsoluteValue = static_cast<float>(triggerDelayNode.maxValue());
             propInfo.haveUnits = !triggerDelayNode.unit().empty();
             propInfo.units =  triggerDelayNode.unit();
             propInfo.unitsAbbr = triggerDelayNode.unit();
@@ -1497,8 +1497,8 @@ namespace bias {
             propInfo.readOutCapable = false;
             propInfo.minValue = frameRateNode.minIntValue();
             propInfo.maxValue = frameRateNode.maxIntValue();
-            propInfo.minAbsoluteValue = frameRateNode.minValue();
-            propInfo.maxAbsoluteValue = frameRateNode.maxValue();
+            propInfo.minAbsoluteValue =  static_cast<float>(frameRateNode.minValue());
+            propInfo.maxAbsoluteValue = static_cast<float>(frameRateNode.maxValue());
             propInfo.haveUnits = !frameRateNode.unit().empty();
             propInfo.units =  frameRateNode.unit();
             propInfo.unitsAbbr = frameRateNode.unit();
@@ -1527,8 +1527,8 @@ namespace bias {
             propInfo.readOutCapable = false;
             propInfo.minValue = tempNode.minIntValue();
             propInfo.maxValue = tempNode.maxIntValue();
-            propInfo.minAbsoluteValue = tempNode.minValue();
-            propInfo.maxAbsoluteValue = tempNode.maxValue();
+            propInfo.minAbsoluteValue = static_cast<float>(tempNode.minValue());
+            propInfo.maxAbsoluteValue = static_cast<float>(tempNode.maxValue());
             propInfo.haveUnits = !tempNode.unit().empty();
             propInfo.units =  tempNode.unit();
             propInfo.unitsAbbr = tempNode.unit();
@@ -1568,7 +1568,7 @@ namespace bias {
             prop.value = blackLevelNode.intValue();
             prop.valueA = 0;
             prop.valueB = 0;
-            prop.absoluteValue = blackLevelNode.value();
+            prop.absoluteValue = float(blackLevelNode.value());
         }
 
         return prop;
@@ -1593,7 +1593,7 @@ namespace bias {
             if (gammaNode.isAvailable())
             {
                 prop.value = gammaNode.intValue();
-                prop.absoluteValue = gammaNode.value();
+                prop.absoluteValue = static_cast<float>(gammaNode.value());
             }
         }
 
@@ -1623,7 +1623,7 @@ namespace bias {
             if (exposureTimeNode.isAvailable() && exposureTimeNode.isReadable())
             {
                 prop.value = exposureTimeNode.intValueWithLimits(MinAllowedShutterUs, MaxAllowedShutterUs);
-                prop.absoluteValue = exposureTimeNode.value();
+                prop.absoluteValue = static_cast<float>(exposureTimeNode.value());
             }
         }
 
@@ -1653,7 +1653,7 @@ namespace bias {
             if (gainNode.isAvailable() && gainNode.isReadable())
             {
                 prop.value = gainNode.intValue();
-                prop.absoluteValue = gainNode.value();
+                prop.absoluteValue = static_cast<float>(gainNode.value());
             }
 
         }
@@ -1678,7 +1678,7 @@ namespace bias {
             prop.value = triggerDelayNode.intValue();
             prop.valueA = 0;
             prop.valueB = 0;
-            prop.absoluteValue = triggerDelayNode.value();
+            prop.absoluteValue = static_cast<float>(triggerDelayNode.value());
         }
 
         return prop;
@@ -1702,7 +1702,7 @@ namespace bias {
             prop.value = frameRateNode.intValue();
             prop.valueA = 0;
             prop.valueB = 0;
-            prop.absoluteValue = frameRateNode.value();
+            prop.absoluteValue = static_cast<float>(frameRateNode.value());
         }
 
         return prop;
@@ -1727,7 +1727,7 @@ namespace bias {
             prop.value = tempNode.intValue();
             prop.valueA = 0;
             prop.valueB = 0;
-            prop.absoluteValue = tempNode.value();
+            prop.absoluteValue = static_cast<float>(tempNode.value());
         }
 
         return prop;

@@ -107,7 +107,7 @@ namespace bias
             unsigned int numskippedFrames_=0;
             int image_height=0;
             int image_width=0;
-            float threshold_runtime = 0.00300000;
+            float threshold_runtime = static_cast<float>(0.00300000);
             double tStamp=0.0;
             TimeStamp cam_ofs={0,0};
            

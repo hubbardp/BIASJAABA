@@ -165,9 +165,9 @@ namespace bias {
         x_out.open(file.c_str());
 
         // write hist output to csv file
-        for(int k=0;k < nbins;k++){
-            for(int i = 0;i < h;i++){
-                for(int j = 0; j < w;j++){
+        for(unsigned int k = 0;k < nbins; k++){
+            for(unsigned int i = 0;i < h; i++){
+                for(unsigned int j = 0; j < w; j++){
                     x_out << out_img[k*w*h +i*w + j]; // i*h +j
                     if(j != w-1 || i != h-1 || k != nbins -1)
                         x_out << ",";

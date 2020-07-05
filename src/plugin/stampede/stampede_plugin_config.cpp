@@ -104,6 +104,8 @@ namespace bias
         RtnStatus rtnStatus;
         rtnStatus.success = true;
         rtnStatus.message = QString("");
+
+		return rtnStatus;
     }
 
 
@@ -118,6 +120,8 @@ namespace bias
         RtnStatus rtnStatus;
         rtnStatus.success = true;
         rtnStatus.message = QString("");
+
+		return rtnStatus;
     }
 
 

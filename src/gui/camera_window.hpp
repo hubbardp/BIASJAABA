@@ -32,7 +32,7 @@ namespace cv   { class Mat; }
 namespace bias 
 {
     // BIAS forward declarations
-    struct StampedImage;
+    class StampedImage;
     class ImageLabel;
     class ImageGrabber;
     class ImageDispatcher;

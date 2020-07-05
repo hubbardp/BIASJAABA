@@ -44,7 +44,7 @@ namespace bias
         checkNodeHandle();
         checkAvailable();
         checkReadable();
-        T value = 0.0;
+        T value = static_cast<T>(0.0);
         spinError err = getValFunc_(hNode_,&value);
         if (err != SPINNAKER_ERR_SUCCESS)
         {
@@ -84,7 +84,7 @@ namespace bias
         checkAvailable();
         checkReadable();
 
-        T minValue = 0.0;
+        T minValue = static_cast<T>(0.0);
         spinError err = getMinFunc_(hNode_,&minValue);
         if (err != SPINNAKER_ERR_SUCCESS)
         {
@@ -104,7 +104,7 @@ namespace bias
         checkAvailable();
         checkReadable();
 
-        T maxValue = 0.0;
+        T maxValue = static_cast<T>(0.0);
         spinError err = getMaxFunc_(hNode_,&maxValue);
         if (err != SPINNAKER_ERR_SUCCESS)
         {

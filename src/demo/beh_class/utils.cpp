@@ -33,9 +33,9 @@ void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,un
      x_out.open(file.c_str());
 
      // write hist output to csv file
-     for(int k=0;k < nbins;k++){
-         for(int i = 0;i < h;i++){
-             for(int j = 0; j < w;j++){
+     for(unsigned k=0;k < nbins;k++){
+         for(unsigned i = 0;i < h;i++){
+             for(unsigned j = 0; j < w;j++){
                  x_out << out_img[k*w*h +i*w + j]; // i*h +j
                  if(j != w-1 || i != h-1 || k != nbins -1)
                      x_out << ",";
@@ -75,9 +75,9 @@ void write_output(std::string file,float* out_img, unsigned w, unsigned h) {
     x_out.open(file.c_str());
 
     // write hist output to csv file
-    for(int i = 0;i < h; i++) {
+    for(unsigned i = 0;i < h; i++) {
 
-        for(int j = 0; j < w;j++) {
+        for(unsigned j = 0; j < w;j++) {
  
             x_out << out_img[i*w + j];
 

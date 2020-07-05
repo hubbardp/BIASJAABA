@@ -4,8 +4,9 @@
 //#include <opencv2/opencv.h>
 #include <QDebug>
 #include <fstream>
-#include "timer.h"
 #include <iostream>
+#include "timer.h"
+#include "exception.hpp"
 
 using namespace bias; 
 
@@ -319,8 +320,17 @@ int HOGHOF::copyValueInt(QJsonObject& ob,
                             QString subobj_key) {
 
     QJsonValue value = ob.value(subobj_key);
-    if(value.isString())
-        return (value.toString().toInt());
+    try{
+		if(value.isString())
+            return (value.toString().toInt());
+
+    }catch (RuntimeError &runtimeError) {
+
+		runtimeError.what();
+	    printf("Not a String Value");
+    }
+
+	return 0;
                         
 }
 
@@ -329,9 +339,17 @@ float HOGHOF::copyValueFloat(QJsonObject& ob,
                             QString subobj_key) {
 
     QJsonValue value = ob.value(subobj_key);
-    if(value.isString())
-        return (value.toString().toFloat());
+	try{
+		if(value.isString())
+		    return (value.toString().toFloat());
 
+	}catch(RuntimeError &runtimeError) {
+	
+		runtimeError.what();
+		printf( "Not a String Value");
+	}
+	 
+	return 0.0;
 }
 
 

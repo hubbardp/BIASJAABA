@@ -11,13 +11,13 @@ const int BgrToLuvConverter::LOOKUP_TABLE_SIZE = 1025;
 std::vector<float> BgrToLuvConverter::createLookupTable()
 {
     std::vector<float> table;
-    const float y0 = ((6.0/29)*(6.0/29)*(6.0/29));
-    const float a = ((29.0/3)*(29.0/3)*(29.0/3));
+    const float y0 = static_cast<float>((6.0/29)*(6.0/29)*(6.0/29));
+    const float a = static_cast<float>(((29.0/3)*(29.0/3)*(29.0/3)));
     for (int i=0; i<LOOKUP_TABLE_SIZE; i++)
     {
         float y = float(i)/float(LOOKUP_TABLE_SIZE);
-        float value = y > y0 ? 116.0*pow(y,1.0/3.0)-16.0 : y*a;
-        value *= (1.0/270.0);
+        float value = static_cast<float>(y > y0 ? 116.0*pow(y,1.0/3.0)-16.0 : y*a);
+        value *= static_cast<float>((1.0/270.0));
         table.push_back(value);
     }
     return table;
@@ -40,10 +40,10 @@ const cv::Matx33f BgrToLuvConverter::BGR_TO_LUV_MATRIX_8U =
 
 cv::Mat BgrToLuvConverter::convert(cv::Mat bgrImg)
 {
-    const float minu = -88.0/270.0; 
-    const float minv = -134.0/270.0;
-    const float un = 0.197833; 
-    const float vn = 0.468331;
+    const float minu = static_cast<float>(-88.0/270.0); 
+    const float minv = static_cast<float>(-134.0/270.0);
+    const float un = static_cast<float>(0.197833); 
+    const float vn = static_cast<float>(0.468331);
     const int bgrImgDepth = bgrImg.depth();
     cv::Mat luvImg = cv::Mat(bgrImg.size(),CV_32FC3,cv::Scalar(0.0,0.0,0.0));
     assert(
@@ -103,9 +103,9 @@ cv::Mat BgrToLuvConverter::convert(cv::Mat bgrImg)
             }
 
             // Calculate u and v values
-            float temp = 1.0/(x + 15.0*y + 3.0*z + 1.0e-35);
-            float uVal = lVal*(13.0*4.0*x*temp - 13.0*un) - minu;
-            float vVal = lVal*(13.0*9.0*y*temp - 13.0*vn) - minv;
+            float temp = static_cast<float>(1.0/(x + 15.0*y + 3.0*z + 1.0e-35));
+            float uVal = static_cast<float>(lVal*(13.0*4.0*x*temp - 13.0*un) - minu);
+            float vVal = static_cast<float>(lVal*(13.0*9.0*y*temp - 13.0*vn) - minv);
 
             // Assign to matrix
             cv::Vec3f luvElem = cv::Vec3f(lVal,uVal,vVal);

@@ -89,8 +89,8 @@ void IdentityTracker::assignBlobsGreedy(BlobFinderData &blobFinderData)
             blobFinderData
             );
 
-    int numCurr = indexToCurrMap.size();
-    int numPrev = indexToPrevMap.size();
+    size_t numCurr = indexToCurrMap.size();
+    size_t numPrev = indexToPrevMap.size();
 
     // DEBUG
     // ---------------------------------------------------------------------------------

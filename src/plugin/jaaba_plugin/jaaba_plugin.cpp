@@ -724,15 +724,18 @@ namespace bias {
         if(sideRadioButtonPtr_->isChecked())
         {
              
-            QString file_sde = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi";
-            processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
+            //QString file_sde = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi";
+#ifdef WIN32           
+			QString file_sde = "C:/Users/patilr/BIAS/BIASJAABA_movies/movie_sde.avi";
+#endif
+			processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
             processScoresPtr_side -> capture_sde = processScoresPtr_side -> vid_sde -> videoCapObject();
                  
   
             HOGHOF *hoghofside = new HOGHOF(this);
             acquireLock();
             processScoresPtr_side -> HOGHOF_frame = hoghofside;
-	    processScoresPtr_side -> HOGHOF_frame -> HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+			processScoresPtr_side -> HOGHOF_frame -> HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
             processScoresPtr_side -> HOGHOF_frame -> HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
             processScoresPtr_side -> HOGHOF_frame -> CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
             processScoresPtr_side -> HOGHOF_frame -> loadHOGParams();
@@ -745,8 +748,11 @@ namespace bias {
         if(frontRadioButtonPtr_->isChecked()) 
         {
 
-            QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";  
-            processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
+#ifdef WIN32		
+            //QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";
+			QString file_frt = "C:/Users/patilr/BIAS/BIASJAABA_movies/movie_frt.avi"; 
+#endif
+			processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
             processScoresPtr_front -> capture_front = processScoresPtr_front -> vid_front -> videoCapObject(); 
 
             HOGHOF *hoghoffront = new HOGHOF(this);  
@@ -1031,7 +1037,7 @@ namespace bias {
     void JaabaPlugin::triggerLaser()
     {
 
-        int num_beh = classifier->beh_present.size(); 
+        int num_beh = static_cast<int>(classifier->beh_present.size()); 
         for(int nbeh =0;nbeh < num_beh;nbeh++)
         {
             if (classifier->score[nbeh] > 0)  
@@ -1152,10 +1158,10 @@ namespace bias {
        x_out.open(file.c_str());
       
        // write hist output to csv file
-       for(int i = 0;i < h;i++)
+       for(unsigned i = 0;i < h;i++)
        {
            std::cout << " " << i << std::endl;
-           for(int j = 0; j < w;j++) 
+           for(unsigned j = 0; j < w;j++) 
            {
                x_out << out_img[i*w + j];
                   if(j != w-1 || i != h-1)

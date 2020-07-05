@@ -24,7 +24,7 @@ namespace bias {
             CameraFinder();
             ~CameraFinder();
 
-            unsigned int numberOfCameras();
+            size_t numberOfCameras();
             Guid getGuidByIndex(unsigned int index);
 
             GuidSet getGuidSet();

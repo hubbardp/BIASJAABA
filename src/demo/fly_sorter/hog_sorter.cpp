@@ -132,9 +132,9 @@ std::string HogSorter::ClassificationToString(SorterData::Classification classif
 std::string HogSorter::ClassificationToLabel(SorterData::Classification classification)
 {
     std::string labelString;
-    switch (classification)
+    /*switch (classification)
     {
 
-    }
+    }*/
     return labelString;
 }

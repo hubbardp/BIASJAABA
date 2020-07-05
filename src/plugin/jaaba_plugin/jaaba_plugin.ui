@@ -205,7 +205,7 @@
                    <item>
                     <widget class="QLineEdit" name="HOGParamFilePtr_">
                      <property name="placeholderText">
-                      <string>json_files/HOGparam.json</string>
+                      <string>json_files\HOGparam.json</string>
                      </property>                 
                     </widget>
                    </item>
@@ -249,7 +249,7 @@
                    <item>
                     <widget class="QLineEdit" name="HOFParamFilePtr_">
                      <property name="placeholderText">
-                      <string>json_files/HOFparam.json</string>
+                      <string>json_files\HOFparam.json</string>
                      </property>
                     </widget>
                    </item>
@@ -314,7 +314,7 @@
                    <item>
                     <widget class="QLineEdit" name="CropSideParamFilePtr_">
                      <property name="placeholderText">
-                      <string>json_files/Cropsde_param.json</string>
+                      <string>json_files\Cropsde_param.json</string>
                      </property>
                     </widget>
                    </item>
@@ -358,7 +358,7 @@
                    <item>
                     <widget class="QLineEdit" name="CropFrontParamFilePtr_">
                      <property name="placeholderText">
-                      <string>json_files/Cropfrt_param.json</string>
+                      <string>json_files\Cropfrt_param.json</string>
                      </property>
                     </widget>
                    </item>
@@ -423,7 +423,7 @@
                    <item>
                     <widget class="QLineEdit" name="ClassFilePtr_">
                      <property name="placeholderText">
-                      <string>json_files/multiclassifier.mat</string>
+                      <string>json_files\multiclassifier.mat</string>
                      </property>
                     </widget>
                    </item>
@@ -468,7 +468,7 @@
          <attribute name="title">
           <string>Trigger</string>
          </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout">
+         <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
            <widget class="QCustomPlot" name="livePlotPtr" native="true">
             <property name="sizePolicy">

@@ -42,7 +42,7 @@ namespace bias
     ImageModeList getListOfImageModes(unsigned int number)
     {
         ImageModeList list;
-        for (int i=0; i < number; i++)
+        for (unsigned int i=0; i < number; i++)
         {
             list.push_back(ImageMode(i));
         }

@@ -50,6 +50,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
 
@@ -63,6 +64,7 @@ namespace bias
                 }
                 catch (RuntimeError &runtimeError)
                 {
+					runtimeError.what();
                     continue;
                 }
                 if (!test)
@@ -78,6 +80,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
 
@@ -102,6 +105,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             BaseNode_spin node(hNode);
@@ -113,6 +117,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
 
@@ -123,6 +128,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             nameToType[nodeName] = nodeType;
@@ -143,6 +149,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             BaseNode_spin node(hNode);
@@ -156,6 +163,7 @@ namespace bias
                 }
                 catch (RuntimeError &runtimeError)
                 {
+					runtimeError.what();
                     continue;
                 }
                 if (!test)
@@ -171,6 +179,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             
@@ -181,6 +190,7 @@ namespace bias
             } 
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
 
@@ -202,6 +212,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             BaseNode_spin node(hNode);
@@ -215,6 +226,7 @@ namespace bias
                 }
                 catch (RuntimeError &runtimeError)
                 {
+					runtimeError.what();
                     continue;
                 }
                 if (!test)
@@ -230,6 +242,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             
@@ -240,6 +253,7 @@ namespace bias
             } 
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             nameToToolTip[nodeName] = toolTip;
@@ -260,6 +274,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             BaseNode_spin node(hNode);
@@ -273,6 +288,7 @@ namespace bias
                 }
                 catch (RuntimeError &runtimeError)
                 {
+					runtimeError.what();
                     continue;
                 }
                 if (!test)
@@ -287,6 +303,7 @@ namespace bias
             }
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             
@@ -297,6 +314,7 @@ namespace bias
             } 
             catch (RuntimeError &runtimeError)
             {
+				runtimeError.what();
                 continue;
             }
             nameToDescMap[nodeName] = nodeDesc; 

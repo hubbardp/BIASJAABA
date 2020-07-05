@@ -317,46 +317,47 @@ namespace bias
 
     void HOGHOF::copytoCropParams(QJsonObject& obj) {
 
-	QJsonValue value;
-	foreach(const QString& key, obj.keys()) {
+		QJsonValue value;
+		foreach(const QString& key, obj.keys()) {
 
-	    value = obj.value(key);
-	    if(value.isString() && key == "crop_flag")
-		Cropparams.crop_flag = value.toString().toInt();
+			 value = obj.value(key);
+			if(value.isString() && key == "crop_flag")
+				Cropparams.crop_flag = value.toString().toInt();
 	    
-	    if(value.isString() && key == "ncells")
-		Cropparams.ncells = value.toString().toInt();
+			if(value.isString() && key == "ncells")
+				Cropparams.ncells = value.toString().toInt();
      
-	    if(value.isString() && key == "npatches")
-		Cropparams.npatches = value.toString().toInt();
+			if(value.isString() && key == "npatches")
+				Cropparams.npatches = value.toString().toInt();
 
-	    if(value.isArray() && key == "interest_pnts") {
+			if(value.isArray() && key == "interest_pnts") {
 
-		QJsonArray arr = value.toArray();
-		allocateCrop(arr.size());
-		int idx = 0;
-		foreach(const QJsonValue& id, arr) {       
+				QJsonArray arr = value.toArray();
+				allocateCrop(arr.size());
+				int idx = 0;
+				foreach(const QJsonValue& id, arr) {       
 		
-		    QJsonArray ips = id.toArray();
-		    Cropparams.interest_pnts[idx*2+ 0] = ips[0].toInt();
-		    Cropparams.interest_pnts[idx*2 + 1] = ips[1].toInt();
-		    idx = idx + 1;
+					QJsonArray ips = id.toArray();
+					Cropparams.interest_pnts[idx*2+ 0] = ips[0].toInt();
+					Cropparams.interest_pnts[idx*2 + 1] = ips[1].toInt();
+					idx = idx + 1;
+				}
+			}
 		}
-	    }
-	}
-	if(!Cropparams.crop_flag) 
-	{  // if croping is not enabled
-	    Cropparams.interest_pnts = nullptr;
-	    Cropparams.ncells = 0; 
-	    Cropparams.npatches = 0;      
-	}
+		if(!Cropparams.crop_flag) 
+		{  
+			// if croping is not enabled
+			Cropparams.interest_pnts = nullptr;
+			Cropparams.ncells = 0; 
+			Cropparams.npatches = 0;      
+		}
     }
 
 
     void HOGHOF::allocateCrop(int sz) 
     {
 
-	Cropparams.interest_pnts = (int*)malloc(2*sz*sizeof(int));
+		Cropparams.interest_pnts = (int*)malloc(2*sz*sizeof(int));
 
     }
 
@@ -365,10 +366,11 @@ namespace bias
 				QString subobj_key) 
     {
 
-	QJsonValue value = ob.value(subobj_key);
-	if(value.isString())
-	    return (value.toString().toInt());
-			    
+		QJsonValue value = ob.value(subobj_key);
+		if (value.isString())
+			return (value.toString().toInt());
+		else
+			return 0;
     }
 
 
@@ -376,10 +378,11 @@ namespace bias
 				QString subobj_key) 
     {
 
-	QJsonValue value = ob.value(subobj_key);
-	if(value.isString())
-	    return (value.toString().toFloat());
-
+		QJsonValue value = ob.value(subobj_key);
+		if(value.isString())
+			return (value.toString().toFloat());
+		else
+			return 0.0;
     }
 
 

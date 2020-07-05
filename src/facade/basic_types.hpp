@@ -421,7 +421,7 @@ namespace bias {
 
     struct TimeStamp
     {
-        unsigned long long seconds;
+        unsigned long long int seconds;
         unsigned int microSeconds;
     };
 

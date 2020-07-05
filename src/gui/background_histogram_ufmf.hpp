@@ -7,7 +7,7 @@
 
 namespace bias
 {
-    struct StampedImage;
+    class StampedImage;
     class BackgroundData_ufmf;
 
     class BackgroundHistogram_ufmf 

@@ -214,7 +214,7 @@ namespace bias
                     );
 
             framesToDoQueuePtr_ -> acquireLock();
-            unsigned int framesToDoQueueSize = framesToDoQueuePtr_ -> size();
+            size_t framesToDoQueueSize = framesToDoQueuePtr_ -> size();
             if (framesToDoQueueSize < FRAMES_TODO_MAX_QUEUE_SIZE)
             {
                 // Insert new (uncalculated) compressed frame into "to do" queue.
@@ -245,10 +245,10 @@ namespace bias
         frameCount_++;
 
         // Cull framesWaitQueue if it starts to grow too large
-        unsigned int framesWaitQueueSize = framesWaitQueuePtr_ -> size();
+        size_t framesWaitQueueSize = framesWaitQueuePtr_ -> size();
         if ( framesWaitQueueSize >  FRAMES_WAIT_MAX_QUEUE_SIZE )
         {
-            unsigned int numToCull = framesWaitQueueSize - FRAMES_WAIT_MAX_QUEUE_SIZE/2;
+            unsigned int numToCull = static_cast<unsigned int>(framesWaitQueueSize - FRAMES_WAIT_MAX_QUEUE_SIZE/2);
             for (unsigned int i=0; i<numToCull; i++)
             {
                 framesWaitQueuePtr_ -> pop();
@@ -344,7 +344,7 @@ namespace bias
         } // if (!(framesFinishedSetPtr_ 
 
         framesFinishedSetPtr_ -> acquireLock();
-        unsigned int framesFinishedSetSize = framesFinishedSetPtr_ -> size();
+        unsigned int framesFinishedSetSize = static_cast<unsigned int>(framesFinishedSetPtr_ -> size());
         framesFinishedSetPtr_ -> releaseLock();
         return framesFinishedSetSize;
     }

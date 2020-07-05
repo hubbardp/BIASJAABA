@@ -87,8 +87,8 @@ namespace bias
             double area = cv::contourArea(contours[i]);
             if (area > maxArea)
             {
-                maxArea = area;
-                maxAreaInd = i;
+                maxArea = static_cast<unsigned int>(area);
+                maxAreaInd = static_cast<unsigned int>(i);
             }
         }
 

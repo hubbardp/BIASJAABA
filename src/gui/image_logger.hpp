@@ -20,7 +20,7 @@ namespace bias
 
     class VideoWriter;
 
-    struct StampedImage;
+    class StampedImage;
 
     class ImageLogger : public QObject, public QRunnable, public Lockable<Empty>
     {

@@ -121,7 +121,7 @@ namespace bias
         // Handle requests
         QVariantList respList;
         QVariantMap cmdMap;
-        for (unsigned int i=0; i<paramsList.size(); i++)
+        for (unsigned int i=0; i < unsigned int(paramsList.size()); i++)
         {
             QString name;
             QString value;

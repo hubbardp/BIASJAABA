@@ -72,7 +72,7 @@ namespace bias
         stopped_ = false;
         releaseLock();
 
-        unsigned int framesFinishedSetSize = framesFinishedSetPtr_ -> size();
+        size_t framesFinishedSetSize = framesFinishedSetPtr_ -> size();
 
         while (!done)
         {

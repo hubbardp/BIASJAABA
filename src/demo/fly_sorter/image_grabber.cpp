@@ -144,6 +144,7 @@ void ImageGrabber::runCaptureFromCamera()
         }
         catch (RuntimeError &runtimeError)
         {
+			runtimeError.what();
             continue;
         }
         imageData.frameCount++; 

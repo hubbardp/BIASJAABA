@@ -69,8 +69,8 @@ namespace bias
 
     void StampedePlugin::processFrames(QList<StampedImage> frameList)
     {
-        double timeStamp;
-        unsigned long frameCount;
+        //double timeStamp;
+        //unsigned long frameCount;
 
         // -----------------------------------------------
         // Note: called by separate thread (from main gui)

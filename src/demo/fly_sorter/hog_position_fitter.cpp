@@ -382,10 +382,10 @@ std::vector<double> HogPositionFitter::getPixelFeatureVector(cv::Mat image)
         double binHeight = double(image.rows)/double(numY);
 
         // Loop over spacial bins
-        for (int indX=0; indX < numX; indX++)
+        for (unsigned int indX=0; indX < numX; indX++)
         //for (int indX=numX-1; indX >= 0; indX--)
         {
-            for (int indY=0; indY < numY; indY++) 
+            for (unsigned int indY=0; indY < numY; indY++) 
             //for (int indY=numY-1; indY >=0; indY--) // Reverse order to match matlab
             {
                 int x = int(std::round(indX*binWidth));
@@ -943,7 +943,7 @@ void HogPositionFitter::writePixelFeatureVector(
         )
 {
     std::ofstream outStream; 
-    int numElements = pixVector.size();
+    size_t numElements = pixVector.size();
     outStream.open(fileName);
     outStream << std::scientific;
     outStream << std::setprecision(10);
