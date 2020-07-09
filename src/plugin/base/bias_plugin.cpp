@@ -306,7 +306,7 @@ namespace bias
     }
 
 
-    void BiasPlugin::write_time(std::string file, int framenum, std::vector<double> timeVec)
+    /*void BiasPlugin::write_time(std::string file, int framenum, std::vector<double> timeVec)
     {
 
         std::ofstream x_out;
@@ -334,6 +334,22 @@ namespace bias
             x_out << frame_id << "," << timeVec[frame_id] << "\n";
 
         }
+    }*/
+
+    template <typename T>
+    void write_delay(std::string filename, int framenum, std::vector<T> timeVec) 
+    {
+        
+        std::ofstream x_out;
+        x_out.open(file.c_str(), std::ios_base::app);
+
+        for(int frame_id= 0; frame_id < framenum; frame_id++)
+        {
+
+            x_out << frame_id << "," << timeVec[frame_id] << "\n";
+
+        }
+     
     }
 
 

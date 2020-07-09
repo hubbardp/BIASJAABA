@@ -75,8 +75,10 @@ namespace bias
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr);
             TimeStamp getPCtime();
             TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
-            void write_time(std::string file, int framenum, std::vector<double> timeVec);
-            void write_delay(std::string file, int framenum, std::vector<int64_t> timeVec);
+            template <typename T> 
+            void write_time(std::String file, int framenum, std::vector<T> timeVec);
+            //void write_time(std::string file, int framenum, std::vector<double> timeVec);
+            //void write_delay(std::string file, int framenum, std::vector<int64_t> timeVec);
 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
