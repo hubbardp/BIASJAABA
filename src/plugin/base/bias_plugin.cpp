@@ -266,6 +266,7 @@ namespace bias
             //calculate camera time
             if(cameraPtr!=nullptr){
                 cam_ts = cameraPtr->getDeviceTimeStamp();
+                printf("%0.06f \n" ,cam_ts);
                 cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
             }else{
        
@@ -336,21 +337,7 @@ namespace bias
         }
     }*/
 
-    template <typename T>
-    void write_delay(std::string filename, int framenum, std::vector<T> timeVec) 
-    {
-        
-        std::ofstream x_out;
-        x_out.open(file.c_str(), std::ios_base::app);
-
-        for(int frame_id= 0; frame_id < framenum; frame_id++)
-        {
-
-            x_out << frame_id << "," << timeVec[frame_id] << "\n";
-
-        }
-     
-    }
+    
 
 
     // Protected methods

@@ -167,7 +167,7 @@ namespace bias
         TimeStamp ts;
         ts.seconds = 0;
         ts.microSeconds = 0;
-	return ts;
+        return ts;
     }
 
 
@@ -194,7 +194,7 @@ namespace bias
         TimeStamp ts;
         ts.seconds = 0;
         ts.microSeconds = 0;
-	return ts;
+        return ts;
     }
 
 

@@ -64,7 +64,7 @@ int main(int argc, char** argv)
         windowNames[cnt] = ssName.str();
         cv::namedWindow(
                 windowNames[cnt],
-                CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED
+                cv::WINDOW_AUTOSIZE | cv::WINDOW_KEEPRATIO | cv::WINDOW_GUI_EXPANDED
                 );
     }
 

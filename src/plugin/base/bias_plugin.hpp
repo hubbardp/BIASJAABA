@@ -36,6 +36,7 @@ namespace bias
         Q_OBJECT
 
         public:
+			
 
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
@@ -75,8 +76,24 @@ namespace bias
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr);
             TimeStamp getPCtime();
             TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
-            template <typename T> 
-            void write_time(std::String file, int framenum, std::vector<T> timeVec);
+
+		    // this is a hack to avoid linker errors in VS2017
+
+			template <typename T>
+			void write_time(std::string filename, int framenum, std::vector<T> timeVec)
+			{
+
+				std::ofstream x_out;
+				x_out.open(filename.c_str(), std::ios_base::app);
+
+				for (int frame_id = 0; frame_id < framenum; frame_id++)
+				{
+
+					x_out << frame_id << "," << timeVec[frame_id] << "\n";
+
+				}
+
+			}
             //void write_time(std::string file, int framenum, std::vector<double> timeVec);
             //void write_delay(std::string file, int framenum, std::vector<int64_t> timeVec);
 
@@ -116,5 +133,4 @@ namespace bias
 }
 
 
-#endif 
-
+#endif

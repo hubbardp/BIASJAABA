@@ -796,7 +796,7 @@ namespace bias {
 
     void Camera::createCameraDevice_spin(Guid guid)
     {
-        throw_ERROR_NO_SPIN(std::string(__PRETTY_FUNCTION__));
+        throw_ERROR_NO_SPIN(std::string(__FUNCTION__));
     }
 
 #endif

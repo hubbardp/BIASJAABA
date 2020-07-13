@@ -123,14 +123,14 @@ namespace bias {
                 {
 
                     if (processScoresPtr_side->HOGHOF_partner->isHOGPathSet
-			&& processScoresPtr_side->HOGHOF_partner->isHOFPathSet
-			&& classifier->isClassifierPathSet)
+                        && processScoresPtr_side->HOGHOF_partner->isHOFPathSet
+                        && classifier->isClassifierPathSet)
                     {
 
                         HOFTeardown(processScoresPtr_front->HOGHOF_partner->hof_ctx);
                         HOGTeardown(processScoresPtr_front->HOGHOF_partner->hog_ctx);
                     }
-		}
+                }
 
                 processScoresPtr_front->stop();
             }
@@ -148,10 +148,10 @@ namespace bias {
                 threadPoolPtr = new QThreadPool(this);
                 threadPoolPtr->setMaxThreadCount(2);
  
-                if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
+                /*if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
                 {
                     threadPoolPtr -> start(processScoresPtr_side);
-                }
+                }*/
 
                 if((threadPoolPtr != nullptr) && (visplots != nullptr))
                 {
@@ -206,17 +206,17 @@ namespace bias {
                 if (!(processScoresPtr_side->HOGHOF_frame.isNull()))
                 {
 
-                    if (nDevices_ >= 2)
+                    /*if (nDevices_ >= 2)
 		    {
 
                         cudaSetDevice(0);
                         processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
 
-                    }else {
+                    }else {*/
 
                         processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
 
-                    }
+                    //}
 
                 }
 
@@ -227,17 +227,17 @@ namespace bias {
             {
 
                 if (!(processScoresPtr_front->HOGHOF_partner.isNull()))
-		{
+                {
 
-                    if (nDevices_ >= 2)
+                    /*if (nDevices_ >= 2)
                     {
                         cudaSetDevice(1);
                         processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
 
-                    }else {
+                    }else {*/
 
                         processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
-                    }
+                    //}
 
 
                     if (processScoresPtr_side->isHOGHOFInitialised && processScoresPtr_front->isHOGHOFInitialised)
@@ -313,7 +313,7 @@ namespace bias {
             cv::Mat greyFront;
 
 	    // initialize memory on the gpu 
-	    if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
+            if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
             {
                 gpuInit();
                 cam_ofs = cameraOffsetTime(cameraPtr_);
@@ -360,14 +360,14 @@ namespace bias {
                     StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
 
 
-                    tcam0.push_back((abs(int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds 
-                                     - int64_t(stampedImage1.timeStampVal.seconds*1e6 + stampedImage1.timeStampVal.microSeconds)))*1e-3);
+                    /*tcam0.push_back((abs(int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds 
+                                     - int64_t(stampedImage1.timeStampVal.seconds*1e6 + stampedImage1.timeStampVal.microSeconds)))*1e-3));
 				
                     if (tcam0.size() == 1000) {
 	
-                        write_delay("delay_cam0.csv", 1000, tcam0);
+                        write_time("delay_cam0.csv", 1000, tcam0);
 					
-                    }
+                    }*/
 
                     TimeStamp pc_ts = getPCtime();
                     int64_t cam_ts, delay;
@@ -375,49 +375,48 @@ namespace bias {
 
                     // subtract the offset to get camera time
                     cam_ts = ((pc_ts.seconds*1e6 + pc_ts.microSeconds)-(cam_ofs.seconds*1e6 + cam_ofs.microSeconds));
-		    //std::cout << "BIAS grabbed frame in us " << cam_ts << std::endl;
-		    //std::cout << "Camer Grabbed Frame 1 secs " << int64_t(stampedImage0.timeStampInit.seconds*1e6 + stampedImage0.timeStampInit.microSeconds)  << std::endl;
-		    //std::cout << "Camera Grabed Frame 2 secs " << int64_t(stampedImage1.timeStampInit.seconds*1e6 + stampedImage1.timeStampInit.microSeconds) << std::endl;
+                    //std::cout << "BIAS grabbed frame in us " << cam_ts << std::endl;
 
                     delay = cam_ts - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
-                    //time_seconds.push_back(int64_t(stampedImage0.timeStampInit.seconds*1e6 + stampedImage0.timeStampInit.microSeconds));
-                    //time_useconds.push_back(int64_t(stampedImage1.timeStampInit.seconds*1e6 + stampedImage1.timeStampInit.microSeconds));
-
-                    if (delay > threshold_runtime)
-		    {
+                    while (delay > threshold_runtime)
+                    {
 			
                         //time_seconds.push_back(stampedImage0.frameCount);
                         pluginImageQueuePtr_->pop();
-			partnerPluginImageQueuePtr_->pop();
-                        if (!pluginImageQueuePtr_ -> empty())
-                        {
-						
-                            stampedImage0 = pluginImageQueuePtr_->front();
+                        partnerPluginImageQueuePtr_->pop();
 
-                        } else {
-
-                            pluginImageQueuePtr_->releaseLock();
-                            partnerPluginImageQueuePtr_->releaseLock();
-                            return;
-			}
-					
-					
-                        if (!partnerPluginImageQueuePtr_->empty())
-			{
-			
-                            stampedImage1 = partnerPluginImageQueuePtr_->front();
-
-                        } else {
+                        if(pluginImageQueuePtr_ ->empty() || partnerPluginImageQueuePtr_->empty())
+                        {	
+                            processScoresPtr_side -> processedFrameCount = stampedImage0.frameCount;
+                            processScoresPtr_front -> processedFrameCount = stampedImage1.frameCount;
+                            processScoresPtr_side -> isProcessed_side = false;
 
                             pluginImageQueuePtr_->releaseLock();
                             partnerPluginImageQueuePtr_->releaseLock();
                             return;
                         }
+
+                        if (!pluginImageQueuePtr_ -> empty())
+                        {
+						
+                            stampedImage0 = pluginImageQueuePtr_->front();
+
+                        } 		
 					
+                        if (!partnerPluginImageQueuePtr_->empty())
+                        {
+			
+                            stampedImage1 = partnerPluginImageQueuePtr_->front();
+
+                        }
+
+                        delay = cam_ts - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
                     }
 
-                    //time_seconds.push_back(delay);
-				
+                    /*time_seconds.push_back(delay);
+                    if(time_seconds.size()==2000)
+                        write_time("delay.csv", 2000, time_seconds);*/ 
+
                     sideImage = stampedImage0.image.clone();
                     frontImage = stampedImage1.image.clone();
 
@@ -468,11 +467,11 @@ namespace bias {
                         if( stampedImage0.frameCount == stampedImage1.frameCount)
                         {
 
-                            /*if((processScoresPtr_side -> detectStarted_) && (frameCount_  == (processScoresPtr_side -> processedFrameCount+1)))
+                            if((processScoresPtr_side -> detectStarted_) && (frameCount_  == (processScoresPtr_side -> processedFrameCount+1)))
                             {
 
-			        // preprocessing the frames
-			        // convert the frame into RGB2GRAY
+                                // preprocessing the frames
+                                // convert the frame into RGB2GRAY
 
                                 if(sideImage.channels() == 3)
                                 {
@@ -486,14 +485,14 @@ namespace bias {
                                     cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
                                 }
 
-				// convert the frame into float32
+                                // convert the frame into float32
                                 sideImage.convertTo(greySide, CV_32FC1);
                                 frontImage.convertTo(greyFront, CV_32FC1);
                                 greySide = greySide / 255;
                                 greyFront = greyFront / 255;
 
 
-                                if(nDevices_>=2)
+                                /*if(nDevices_>=2)
                                 {
 
                                     if(processScoresPtr_side -> isSide)
@@ -517,22 +516,16 @@ namespace bias {
 
                                     while(!processScoresPtr_side -> isProcessed_side) {}
 
-                                } else {
+                                } else {*/
 
                                     //clock_gettime(CLOCK_REALTIME, &start);
                                     processScoresPtr_side -> HOGHOF_frame -> img.buf = greySide.ptr<float>(0);
                                     processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
                                     processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
-                                    processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);*/
+                                    processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
 
-                                    //Test
-                                    /*double time_taken;
-                                    clock_gettime(CLOCK_REALTIME, &end);
-                                    time_taken = (end.tv_sec - start.tv_sec) * 1e9;
-                                    time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
-                                    gpuOverall.push_back(time_taken);
 
-                                }*/
+                                //}
 
                                 // Test
                                 /*if(processScoresPtr_->save && frameCount_ == 2000)
@@ -553,7 +546,7 @@ namespace bias {
                                     processScoresPtr_ -> write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount_) 
                                     + ".csv", HOGHOF_front->hof_out.data(), HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, 
                                     HOGHOF_front->hof_shape.bin);
-			        }*/
+                                }*/
 
 
                                 // compute scores
@@ -562,9 +555,9 @@ namespace bias {
 
                                     std::fill(laserRead.begin(), laserRead.end(), 0);
                                     classifier->boost_classify(classifier->score, processScoresPtr_side -> HOGHOF_frame -> hog_out,
-				    processScoresPtr_front -> HOGHOF_partner -> hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out,
-				    processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape,
-				    &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes,classifier -> model);
+                                    processScoresPtr_front -> HOGHOF_partner -> hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out,
+                                    processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape,
+                                    &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes,classifier -> model);
 							   
 
                                     triggerLaser();
@@ -577,23 +570,6 @@ namespace bias {
                                     visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
                                     //processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[1]);
 
-                                }*/
-
-				//TimeStamp timeStamp_ = cameraPtr_->getImageTimeStamp();
-                                //tStamp = convertTimeStampToDouble(timeStamp_, stampedImage0.timeStampInit);
-                                //std::cout << "processTime " <<  timeStamp_.microSeconds << std::endl;
-
-                                //Test
-                                /*double time_taken;
-                                clock_gettime(CLOCK_REALTIME, &end);
-                                time_taken = (end.tv_sec - start.tv_sec) * 1e9;
-                                time_taken = (time_taken + (end.tv_nsec - start.tv_nsec)) * 1e-9;
-
-                                gpuOverall.push_back(time_taken);
-
-				if(gpuOverall.size()==10000)
-                                {
-                                    //processScoresPtr_side->write_time("gpu_overall_double.csv", 10000, gpuOverall);
                                 }*/
 
 
@@ -613,20 +589,21 @@ namespace bias {
                                 } */
 
 
-				/*timediff.push_back(tStamp-stampedImage0.timeStamp);
-				if(timediff.size()==10000)
-				{
-					
-				    processScoresPtr_side->write_time("stamp1.csv", 10000, timediff);
-				    //processScoresPtr_side->write_time("stamp2.csv", 10000, timeStamp2);
-				    //std::cout << "The frames skipped are: " << numskippedFrames_ << std::endl;
-				}
+                                pc_ts = getPCtime();
+                      
+                                // subtract the offset to get camera time
+                                cam_ts = ((pc_ts.seconds*1e6 + pc_ts.microSeconds)-(cam_ofs.seconds*1e6 + cam_ofs.microSeconds));
+                                delay = cam_ts - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
+                                time_seconds.push_back(delay);
+	                        
+                                if(time_seconds.size() == 1000)
+                                    write_time("process_time.csv", 1000, time_seconds);	
 
                                 processScoresPtr_side -> processedFrameCount = frameCount_;
                                 processScoresPtr_front -> processedFrameCount = frameCount_; 
                                 processScoresPtr_side -> isProcessed_side = false;
 
-			    }*/
+                            }
 
                         }
 
@@ -635,7 +612,7 @@ namespace bias {
                     pluginImageQueuePtr_->pop();
                     partnerPluginImageQueuePtr_ -> pop();
 
-		}
+                }
 
                 pluginImageQueuePtr_->releaseLock();
                 partnerPluginImageQueuePtr_ -> releaseLock();

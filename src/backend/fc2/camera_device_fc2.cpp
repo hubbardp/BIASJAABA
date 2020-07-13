@@ -31,7 +31,7 @@ namespace bias {
         {
             // TODO ... shouldn't throw exception in construction change this
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to create FlyCapture2 context"; 
             throw RuntimeError(ERROR_FC2_CREATE_CONTEXT, ssError.str());
         }
@@ -64,7 +64,7 @@ namespace bias {
         if ( error != FC2_ERROR_OK ) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to destroy FlyCapture2 context";
             throw RuntimeError(ERROR_FC2_DESTROY_CONTEXT, ssError.str());
         }
@@ -87,7 +87,7 @@ namespace bias {
             if (error != FC2_ERROR_OK) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unabled to connect to FlyCapture2 device";
                 throw RuntimeError(ERROR_FC2_CONNECT, ssError.str());
             }
@@ -98,7 +98,7 @@ namespace bias {
             if (error != FC2_ERROR_OK) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unabled to get FlyCapture2 camera info";
                 throw RuntimeError(ERROR_FC2_GET_CAMERA_INFO, ssError.str());
             }
@@ -129,7 +129,7 @@ namespace bias {
             if (error != FC2_ERROR_OK)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unabled to get FlyCapture2 camera GPIO strobe info";
                 throw RuntimeError(ERROR_FC2_GET_STROBE_INFO, ssError.str());
             }
@@ -157,7 +157,7 @@ namespace bias {
             if (error != FC2_ERROR_OK)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unabled to set FlyCapture2 camera GPIO strobe control";
                 throw RuntimeError(ERROR_FC2_SET_STROBE_CONTROL, ssError.str());
             }
@@ -166,7 +166,7 @@ namespace bias {
             if (error != FC2_ERROR_OK)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unabled to get FlyCapture2 camera GPIO strobe control";
                 throw RuntimeError(ERROR_FC2_GET_STROBE_CONTROL, ssError.str());
             }
@@ -194,7 +194,7 @@ namespace bias {
             if (error != FC2_ERROR_OK) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to disconnect from FlyCapture2 device";
                 throw RuntimeError(ERROR_FC2_DISCONNECT, ssError.str());
             }
@@ -208,7 +208,7 @@ namespace bias {
         if (!connected_) 
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to start FlyCapture2 capture - not connected";
             throw RuntimeError(ERROR_FC2_START_CAPTURE, ssError.str());
         }
@@ -228,7 +228,7 @@ namespace bias {
             if (error != FC2_ERROR_OK) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to start FlyCapture2 capture";
                 throw RuntimeError(ERROR_FC2_START_CAPTURE, ssError.str());
             }
@@ -246,7 +246,7 @@ namespace bias {
             if (error != FC2_ERROR_OK) 
             { 
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError <<": unable to stop FlyCapture2 capture";
                 throw RuntimeError(ERROR_FC2_STOP_CAPTURE, ssError.str());
 
@@ -383,7 +383,8 @@ namespace bias {
                 {
                     // Device query can sometimes fail for some combinations of 
                     // vidMode and frmRate - handle failure gracefully by
-                    // continuing to examine vidMode and frmRate combinations.                      
+                    // continuing to examine vidMode and frmRate combinations.
+                    int errorId = runtimeError.id();
                     continue;
                 }
             } 
@@ -409,7 +410,8 @@ namespace bias {
             catch (RuntimeError &runtimeError)
             {
                 // Fail gracefully in cases where the query for information
-                // from the device fails.  
+                // from the device fails. 
+                int errorId = runtimeError.id();
                 continue;
             }
             if (supported) 
@@ -446,6 +448,7 @@ namespace bias {
                 catch (RuntimeError &runtimeError)
                 {
                     // Continue checking even in case where device query fails
+                    int errorId = runtimeError.id();
                     continue;
                 }
                 if (supported) 
@@ -475,6 +478,7 @@ namespace bias {
             catch (RuntimeError &runtimeError)
             {
                 // Continue checking even is case where device query fails.
+                int errorId = runtimeError.id();
                 continue;
             }
             if (supported)
@@ -578,7 +582,7 @@ namespace bias {
         if (error_fc2 != FC2_ERROR_OK)
         { 
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to get FlyCapture2 format 7 configuration"; 
             throw RuntimeError(ERROR_FC2_GET_FORMAT7_CONFIGURATION, ssError.str());
         }
@@ -604,7 +608,7 @@ namespace bias {
         if (error_fc2 != FC2_ERROR_OK) 
         {
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to get FlyCapture2 format7 information"; 
             throw RuntimeError(ERROR_FC2_GET_FORMAT7_INFO, ssError.str());
         }
@@ -647,7 +651,7 @@ namespace bias {
         if (error_fc2 != FC2_ERROR_OK)
         {
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to validate FlyCapture2 format 7 settings"; 
             throw RuntimeError(ERROR_FC2_VALIDATE_FORMAT7_SETTINGS, ssError.str());
         }
@@ -662,7 +666,7 @@ namespace bias {
         if (error_fc2 != FC2_ERROR_OK)
         {
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to set FlyCapture2 format 7 configuration"; 
             throw RuntimeError(ERROR_FC2_SET_FORMAT7_CONFIGURATION, ssError.str());
         }
@@ -715,6 +719,7 @@ namespace bias {
         catch (RuntimeError &runtimeError)
         {
             // Conversion failed - combination not supported
+            int errorId = runtimeError.id();
             return false;
         }
 
@@ -728,7 +733,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get FlyCapture2 VideoMode and ";
             ssError << "FrameRate information";
             throw RuntimeError(ERROR_FC2_GET_VIDEOMODE_FRAMERATE_INFO, ssError.str());
@@ -753,6 +758,7 @@ namespace bias {
         catch (RuntimeError &runtimeError)
         {
             // If conversion failed - mode not supported
+            int errorId = runtimeError.id();
             return false;
         }
 
@@ -761,14 +767,14 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {   
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get format7 information for given mode";
             throw RuntimeError(ERROR_FC2_GET_FORMAT7_INFO, ssError.str());
         }
         return (supported==TRUE ? true : false);
     }
 
-    unsigned int CameraDevice_fc2::getNumberOfImageMode()
+    size_t CameraDevice_fc2::getNumberOfImageMode()
     {
         return NUMBER_OF_FC2_IMAGEMODE;
     }
@@ -789,7 +795,7 @@ namespace bias {
             if (error != FC2_ERROR_OK)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to set VideoMode and frame rate";
                 throw RuntimeError(
                         ERROR_FC2_SET_VIDEOMODE_AND_FRAMERATE, 
@@ -807,7 +813,7 @@ namespace bias {
             if (allowedImageModes.empty())
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to set Format7 video mode not support imageModes";
                 throw RuntimeError(ERROR_FC2_SET_VIDEOMODE_FORMAT7, ssError.str());
             }
@@ -847,7 +853,7 @@ namespace bias {
         if (error != FC2_ERROR_OK) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to set GPIO direction";
             throw RuntimeError(ERROR_FC2_CREATE_IMAGE, ssError.str());
         }
@@ -891,7 +897,7 @@ namespace bias {
 
     std::string CameraDevice_fc2::toString()
     {
-        fc2Error error;
+        //fc2Error error;
         std::stringstream ss; 
 
         ss << std::endl;
@@ -954,7 +960,7 @@ namespace bias {
         if (error != FC2_ERROR_OK) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to create FlyCapture2 image";
             throw RuntimeError(ERROR_FC2_CREATE_IMAGE, ssError.str());
         }
@@ -972,7 +978,7 @@ namespace bias {
         if (error != FC2_ERROR_OK) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to create FlyCapture2 image";
             throw RuntimeError(ERROR_FC2_CREATE_IMAGE, ssError.str());
         }
@@ -990,7 +996,7 @@ namespace bias {
             if (error != FC2_ERROR_OK) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to destroy FlyCapture2 image";
                 throw RuntimeError(ERROR_FC2_DESTROY_IMAGE, ssError.str());
             }
@@ -1009,7 +1015,7 @@ namespace bias {
             if (error != FC2_ERROR_OK) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to destroy FlyCapture2 image";
                 throw RuntimeError(ERROR_FC2_DESTROY_IMAGE, ssError.str());
             }
@@ -1026,7 +1032,7 @@ namespace bias {
         if (!capturing_) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to grab Image - not capturing";
             //throw RuntimeError(ERROR_FC2_GRAB_IMAGE, ssError.str());
             errMsg = ssError.str();
@@ -1038,7 +1044,7 @@ namespace bias {
         if ( error != FC2_ERROR_OK ) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to retrieve image from buffer";
             //throw RuntimeError(ERROR_FC2_RETRIEVE_BUFFER, ssError.str());
             errMsg = ssError.str();
@@ -1062,7 +1068,7 @@ namespace bias {
             if ( error != FC2_ERROR_OK ) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to convert image";
                 //throw RuntimeError(ERROR_FC2_CONVERT_IMAGE, ssError.str());
                 errMsg = ssError.str();
@@ -1086,7 +1092,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get FlyCapture2 embedded image info";
             throw RuntimeError(ERROR_FC2_GET_EMBEDDED_IMAGE_INFO, ssError.str());
         }
@@ -1107,7 +1113,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to set FlyCapture2 embedded image info";
             throw RuntimeError(ERROR_FC2_SET_EMBEDDED_IMAGE_INFO, ssError.str());
         }
@@ -1184,6 +1190,7 @@ namespace bias {
             timeStamp_.seconds = (unsigned long long)(timeStamp_fc2.seconds);
             timeStamp_.microSeconds = timeStamp_fc2.microSeconds;
         }
+	//std::cout << timeStamp_.seconds*1e6 + timeStamp_.microSeconds << std::endl;
     }
 
 
@@ -1199,7 +1206,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get FlyCapture2 VideoMode and FrameRate";
             throw RuntimeError(ERROR_FC2_GET_VIDEOMODE_AND_FRAMERATE, ssError.str());
         }
@@ -1216,8 +1223,8 @@ namespace bias {
         if (error != FC2_ERROR_OK)  
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
-            ssError < ": unable to get FlyCapture2 properyInfo";
+            ssError << __FUNCTION__;
+            ssError << ": unable to get FlyCapture2 properyInfo";
             throw RuntimeError(ERROR_FC2_GET_PROPERTY_INFO, ssError.str());
         }
         return propInfo;
@@ -1234,7 +1241,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get FlyCapture2 property";
             throw RuntimeError(ERROR_FC2_GET_PROPERTY, ssError.str());
         }
@@ -1255,7 +1262,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         { 
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to get FlyCapture2 format 7 configuration"; 
             throw RuntimeError(ERROR_FC2_GET_FORMAT7_CONFIGURATION, ssError.str());
         }
@@ -1271,7 +1278,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get FlyCapture2 TriggerMode";
             throw RuntimeError(ERROR_FC2_GET_TRIGGER_MODE, ssError.str());
         }
@@ -1287,10 +1294,11 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get FlyCapture2 TriggerModeInfo";
             throw RuntimeError(ERROR_FC2_GET_TRIGGER_MODE_INFO, ssError.str());
         }
+		return triggerModeInfo;
     }
 
 
@@ -1303,7 +1311,7 @@ namespace bias {
         if (error != FC2_ERROR_OK) 
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to set FlyCapture2 prop";
             throw RuntimeError(ERROR_FC2_SET_PROPERTY, ssError.str());
         }
@@ -1316,7 +1324,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to set FlyCapture2 TriggerMode";
             throw RuntimeError(ERROR_FC2_SET_TRIGGER_MODE, ssError.str());
         }
@@ -1332,7 +1340,7 @@ namespace bias {
             if (error != FC2_ERROR_OK)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get FlyCapture2 config - error";
                 throw RuntimeError(ERROR_FC2_GET_CONFIG, ssError.str());
             }
@@ -1340,7 +1348,7 @@ namespace bias {
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get FlyCapture2 config - not connected";
             throw RuntimeError(ERROR_FC2_GET_CONFIG, ssError.str());
         }
@@ -1356,7 +1364,7 @@ namespace bias {
             if (error != FC2_ERROR_OK)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to set FlyCapture2 config - error";
                 throw RuntimeError(ERROR_FC2_GET_CONFIG, ssError.str());
             }
@@ -1364,7 +1372,7 @@ namespace bias {
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to set FlyCapture2 config - not connected";
             throw RuntimeError(ERROR_FC2_SET_CONFIG, ssError.str());
         }
@@ -1391,7 +1399,7 @@ namespace bias {
         fc2Format7Info format7Info;
         fc2Format7ImageSettings imageSettings;
         fc2Format7PacketInfo packetInfo;
-        fc2PixelFormat defaultPixelFormat;
+        //fc2PixelFormat defaultPixelFormat;
         unsigned int packetSize;
         float percentage; 
         BOOL supported;
@@ -1403,14 +1411,14 @@ namespace bias {
         if (error != FC2_ERROR_OK) 
         {
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to get FlyCapture2 format7 information"; 
             throw RuntimeError(ERROR_FC2_GET_FORMAT7_INFO, ssError.str());
         }
         if ( !supported )
         {
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unsupported FlyCapture2 video mode, "; 
             ssError << getModeString_fc2(format7Info.mode);
             throw RuntimeError(ERROR_FC2_UNSUPPORTED_VIDEO_MODE, ssError.str());
@@ -1549,7 +1557,7 @@ namespace bias {
             else
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": no supported pixel formats";
                 throw RuntimeError(ERROR_FC2_NO_SUPPORTED_PIXEL_FORMAT, ssError.str());
             }
@@ -1573,14 +1581,14 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to validate FlyCapture2 format 7 settings"; 
             throw RuntimeError(ERROR_FC2_VALIDATE_FORMAT7_SETTINGS, ssError.str());
         }
         if (!settingsAreValid)
         {
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": FlyCapture2 format 7 settings invalid"; 
             throw RuntimeError(ERROR_FC2_INVALID_FORMAT7_SETTINGS, ssError.str());
         }
@@ -1597,7 +1605,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         {
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to sete FlyCapture2 format 7 configuration"; 
             throw RuntimeError(ERROR_FC2_SET_FORMAT7_CONFIGURATION, ssError.str());
         }
@@ -1612,7 +1620,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         { 
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to get FlyCapture2 format 7 configuration"; 
             throw RuntimeError(ERROR_FC2_GET_FORMAT7_CONFIGURATION, ssError.str());
         }
@@ -1644,7 +1652,7 @@ namespace bias {
         if (error != FC2_ERROR_OK)
         { 
             std::stringstream ssError; 
-            ssError << __PRETTY_FUNCTION__; 
+            ssError << __FUNCTION__; 
             ssError << ": unable to get FlyCapture2 format 7 configuration"; 
             throw RuntimeError(ERROR_FC2_GET_FORMAT7_CONFIGURATION, ssError.str());
         }

@@ -107,7 +107,7 @@ namespace bias
             unsigned int numskippedFrames_=0;
             int image_height=0;
             int image_width=0;
-            float threshold_runtime = static_cast<float>(0.00300000);
+            float threshold_runtime = static_cast<float>(3000);
             double tStamp=0.0;
             TimeStamp cam_ofs={0,0};
            
@@ -125,8 +125,11 @@ namespace bias
             std::vector<float>laserRead = {0,0,0,0,0,0};
             std::vector<double>timeofs;
             std::vector<double>timestd;
+			//DEVEL
             std::vector<int64_t> time_seconds;
             std::vector<int64_t> time_useconds;
+            std::vector<int64_t> tcam0;
+            std::vector<int64_t> tcam1;
 
           
             bool pluginReady();

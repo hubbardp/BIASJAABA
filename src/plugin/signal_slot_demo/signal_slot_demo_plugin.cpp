@@ -59,7 +59,7 @@ namespace bias
         // NOTE: called in separate thread. Use lock to access data shared 
         // with other class methods. 
         // -------------------------------------------------------------------
- 
+
         if(ofs_isSet){
 
             cam_ofs = cameraOffsetTime(cameraPtr_);
@@ -89,7 +89,6 @@ namespace bias
 
             // get camera times wrt to stamped image times
             TimeStamp pc_ts = getPCtime();
-            //std::cout << "PC plugin time " << pc_ts.seconds << " " << pc_ts.microSeconds << std::endl;
             int64_t cam_ts, delay;
 
             // subtract the offset to get camera time
@@ -97,8 +96,9 @@ namespace bias
             delay = cam_ts - int64_t(latestFrame.timeStampVal.seconds*1e6 + latestFrame.timeStampVal.microSeconds);
             cam_delay.push_back(delay);
             if(cam_delay.size()==1000){
-                std::string filecam = "delay_" + std::to_string(cameraNumber_) + ".csv"; 
-                write_delay(filecam , 1000, cam_delay);
+                std::string filecam = "delay_" + std::to_string(cameraNumber_) + ".csv";
+                std::cout << delay << std::endl;
+                write_time<int64_t>(filecam , 1000, cam_delay);
             }
 
             //---------------------------------------------------------------------------//

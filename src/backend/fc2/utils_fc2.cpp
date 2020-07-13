@@ -130,7 +130,7 @@ namespace bias
         else
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert property to FlyCaptuer2 property";
             throw RuntimeError(ERROR_FC2_CONVERT_PROPERTY_TYPE, ssError.str());
         }
@@ -164,7 +164,7 @@ namespace bias
         else
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert framerate to fc2 frame rate";
             throw RuntimeError(ERROR_FC2_CONVERT_FRAMERATE, ssError.str());
         }
@@ -212,7 +212,7 @@ namespace bias
         else
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert video mode to FlyCapture2 video mode";
             throw RuntimeError(ERROR_FC2_CONVERT_VIDEOMODE, ssError.str());
         }
@@ -268,7 +268,7 @@ namespace bias
         else
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert image mode to FlyCapture2 ";
             ssError << "imaging mode";
             throw RuntimeError(ERROR_FC2_CONVERT_IMAGEMODE, ssError.str());
@@ -339,7 +339,7 @@ namespace bias
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert pixel format to FlyCapture2 ";
             ssError << "imaging mode";
             throw RuntimeError(ERROR_FC2_CONVERT_PIXEL_FORMAT, ssError.str());
@@ -399,7 +399,7 @@ namespace bias
         else
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert FlyCapture2 PropertyType";
             throw RuntimeError(ERROR_FC2_CONVERT_PROPERTY_TYPE, ssError.str());
         }
@@ -447,7 +447,7 @@ namespace bias
         else
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert FlyCapture2 VideoMode";
             throw RuntimeError(ERROR_FC2_CONVERT_VIDEOMODE, ssError.str());
         }
@@ -480,7 +480,7 @@ namespace bias
         else
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert FlyCapture2 FrameRate";
             throw RuntimeError(ERROR_FC2_CONVERT_VIDEOMODE, ssError.str());
         }
@@ -536,7 +536,7 @@ namespace bias
         else
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert FlyCapture2 Mode";
             throw RuntimeError(ERROR_FC2_CONVERT_VIDEOMODE, ssError.str());
         }
@@ -624,7 +624,7 @@ namespace bias
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert pixel format from FlyCaptuer2";
             throw RuntimeError(ERROR_FC2_CONVERT_PROPERTY_TYPE, ssError.str());
         }

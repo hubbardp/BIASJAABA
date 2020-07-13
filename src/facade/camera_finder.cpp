@@ -120,7 +120,7 @@ namespace bias {
         if (error != FC2_ERROR_OK) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to create FlyCapture2 context";
             throw RuntimeError(ERROR_FC2_CREATE_CONTEXT, ssError.str());
         }
@@ -132,7 +132,7 @@ namespace bias {
         if (error != FC2_ERROR_OK) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to destroy FlyCapture2 context";
             throw RuntimeError(ERROR_FC2_DESTROY_CONTEXT, ssError.str());
         }
@@ -149,19 +149,19 @@ namespace bias {
         if (error != FC2_ERROR_OK) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to enumerate FlyCapture2 cameras";
             throw RuntimeError(ERROR_FC2_ENUMERATE_CAMERAS, ssError.str());
         }
 
         // Get attached camera guids - add to guid set 
-        for (int i=0; i<numCameras; i++) 
+        for (unsigned int i=0; i<numCameras; i++) 
         {
             error = fc2GetCameraFromIndex(queryContext_fc2_, i, &guid_fc2);
             if (error != FC2_ERROR_OK) 
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get FlyCapture2 camera guid from index";
                 throw RuntimeError(ERROR_FC2_GET_CAMERA_FROM_INDEX, ssError.str());
             }

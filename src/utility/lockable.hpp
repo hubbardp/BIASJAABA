@@ -3,6 +3,7 @@
 
 #include <QMutex>
 #include <QWaitCondition>
+//#include <deque>
 #include <queue>
 #include <set>
 
@@ -98,6 +99,15 @@ namespace bias
             {
                 emptyWaitCond_.wakeOne();
             }
+
+			void erase()
+			{
+				
+				while (!(this->empty()) && this->size() != 1)
+				{
+				     this-> pop();
+				}
+			}
 
         protected:
             QWaitCondition emptyWaitCond_;
