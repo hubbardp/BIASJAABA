@@ -214,19 +214,28 @@ namespace bias
     }
 
 
-    TimeStamp BiasPlugin::getPCtime()
+    /*TimeStamp BiasPlugin::getPCtime()
     {
 
 #ifdef WIN32
 
-	GetTime* getTime = new GetTime(0,0);
-     //get computer local time since midnight
-     getTime->curr_time = time(NULL);
-     tm *tm_local = localtime(&getTime->curr_time);
-     getTime->getdaytime(&getTime->tv, NULL);
-     getTime->secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
-     getTime->usec = (unsigned int)getTime->tv.tv_usec;
-     TimeStamp ts = {getTime->secs, unsigned int(getTime->usec)};
+        GetTime* getTime = new GetTime(0,0);
+        //get computer local time since midnight
+
+        auto since_midnight = getTime->duration_since_midnight();
+
+        auto hours = std::chrono::duration_cast<std::chrono::hours>(since_midnight);
+        auto minutes = std::chrono::duration_cast<std::chrono::minutes>(since_midnight - hours);
+        auto seconds = std::chrono::duration_cast<std::chrono::seconds>(since_midnight - hours - minutes);
+        auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(since_midnight - hours - minutes - seconds);
+        auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(since_midnight - hours - minutes - seconds - milliseconds);
+        auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(since_midnight - hours - minutes - seconds - milliseconds - microseconds);
+
+        getTime->secs = (hours.count()*3600 + minutes.count()*60 + seconds.count());
+        getTime->usec = (milliseconds.count()*1000 + microseconds.count() + nanoseconds.count()/1000);
+        TimeStamp ts = {getTime->secs, unsigned int(getTime->usec)};
+
+
 #endif
 	    
 #ifdef linux	    
@@ -245,7 +254,7 @@ namespace bias
 #endif
         return ts;
 
-    }
+    }*/
 
 
     TimeStamp BiasPlugin::cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr)
@@ -260,13 +269,13 @@ namespace bias
         {
 
             //get computer local time since midnight
-            pc_ts = getPCtime();
+	    GetTime* gettime = new GetTime(0,0);
+            pc_ts = gettime->getPCtime();
             pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
 
             //calculate camera time
             if(cameraPtr!=nullptr){
                 cam_ts = cameraPtr->getDeviceTimeStamp();
-                printf("%0.06f \n" ,cam_ts);
                 cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
             }else{
        
@@ -276,7 +285,7 @@ namespace bias
             timeofs.push_back(pc_s-cam_s);
             //printf("%0.06f \n" ,pc_s-cam_s); 
             //printf("%0.06f  %0.06f pc_s-cam_us\n ", pc_s ,cam_s); 
-
+            //printf("%0.06f \n", pc_s);
         }
 
         //write_time("offset.csv",20,timeofs);
@@ -299,7 +308,7 @@ namespace bias
         std_sum = sqrt(std_sum);
 
         //printf("%0.06f average offset \n" ,offset_s);
-        printf("%0.06f std deviation \n ",std_sum);
+        //printf("%0.06f std deviation \n ",std_sum);
         //printf("%d seconds %d microseconds", cam_ofs.seconds, cam_ofs.microSeconds);
 
         return cam_ofs;
@@ -336,8 +345,6 @@ namespace bias
 
         }
     }*/
-
-    
 
 
     // Protected methods

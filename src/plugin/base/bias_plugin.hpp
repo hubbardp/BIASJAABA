@@ -10,8 +10,8 @@
 #include <QDir>
 #include <QTextStream>
 
-#include <fstream>
-#include <iomanip>
+//#include <fstream>
+//#include <iomanip>
 
 #ifdef linux
 #include<sys/time.h>
@@ -74,26 +74,26 @@ namespace bias
             virtual QString getLogFileFullPath(bool includeAutoNaming);
 
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr);
-            TimeStamp getPCtime();
+            //TimeStamp getPCtime();
             TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
 
-		    // this is a hack to avoid linker errors in VS2017
+            // this is a hack to avoid linker errors in VS2017
 
-			template <typename T>
-			void write_time(std::string filename, int framenum, std::vector<T> timeVec)
-			{
+            /*template <typename T>
+            void write_time(std::string filename, int framenum, std::vector<T> timeVec)
+            {
 
-				std::ofstream x_out;
-				x_out.open(filename.c_str(), std::ios_base::app);
+                std::ofstream x_out;
+                x_out.open(filename.c_str(), std::ios_base::app);
 
-				for (int frame_id = 0; frame_id < framenum; frame_id++)
-				{
+                for (int frame_id = 0; frame_id < framenum; frame_id++)
+                {
 
-					x_out << frame_id << "," << timeVec[frame_id] << "\n";
+		    x_out << frame_id << "," << timeVec[frame_id] << "\n";
 
-				}
+	        }
 
-			}
+            }*/
             //void write_time(std::string file, int framenum, std::vector<double> timeVec);
             //void write_delay(std::string file, int framenum, std::vector<int64_t> timeVec);
 
