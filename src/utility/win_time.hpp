@@ -5,6 +5,11 @@
 #include <time.h>
 #include <ctime>
 #include <windows.h>
+#include <chrono>
+#include "stamped_image.hpp"
+
+#include <fstream>
+//#include <iomanip>
 
 //using namespace System;
 using namespace std;
@@ -14,33 +19,52 @@ using namespace std;
 #else
   #define DELTA_EPOCH_IN_MICROSECS  11644473600000000ULL
 #endif
+
 namespace bias 
 {
 
-	class GetTime
-	{
+     class GetTime
+     {
 
-	    public:                 
+         public:                 
 
-	        long long unsigned int secs;
-		    long long unsigned int usec;
-		    time_t curr_time;
-		    timeval tv;
+         unsigned long long secs;
+         unsigned long long usec;
+         time_t curr_time;
+         timeval tv;
 
-
-		    GetTime(long long unsigned int secs, long long unsigned int usec);
+         GetTime(long long unsigned int secs, long long unsigned int usec);
 			
+         struct timezone
+         {
+             int  tz_minuteswest; /* minutes W of Greenwich */
+             int  tz_dsttime;     /* type of dst correction */
+         };
 
-		    struct timezone
-		    {
-		        int  tz_minuteswest; /* minutes W of Greenwich */
-	            int  tz_dsttime;     /* type of dst correction */
-	        };
+         // Definition of a gettimeofday function
+         int getdaytime(struct timeval *tv, struct timezone *tz);
+         std::chrono::system_clock::duration GetTime::duration_since_midnight();
+         TimeStamp getPCtime();
 
-	       // Definition of a gettimeofday function
-		   int getdaytime(struct timeval *tv, struct timezone *tz);
+         // this is a hack to avoid linker errors in VS2017
 
-	};
+         template <typename T>
+         void write_time(std::string filename, int framenum, std::vector<T> timeVec)
+         {
+
+             std::ofstream x_out;
+             x_out.open(filename.c_str(), std::ios_base::app);
+
+             for (int frame_id = 0; frame_id < framenum; frame_id++)
+             {
+
+                 x_out << frame_id << "," << timeVec[frame_id] << "\n";
+             }
+
+         }
+
+
+     };
 
 }
 #endif
