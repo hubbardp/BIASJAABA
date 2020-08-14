@@ -294,7 +294,7 @@ namespace bias {
     {
         
 	std::cout << "DEBUG: " << __FUNCTION__ << " begin" << std::endl;
-
+        
         if (!connected_) 
         { 
             std::stringstream ssError;
@@ -1007,12 +1007,19 @@ namespace bias {
         }
 
         imageOK_ = false;
-    
+       
+        //GetTime* gettime = new GetTime(0,0);
+        TimeStamp pc_1, pc_2;
+        int64_t pc_ts, cam_ts;
+
+        //pc_1 = gettime->getPCtime();
+        //pc_ts = (pc_1.seconds*1e6 + pc_1.microSeconds);
+	
         // Get next image from camera
         if (triggerType_ == TRIGGER_INTERNAL) 
         {
             err = spinCameraGetNextImage(hCamera_, &hSpinImage_); // This fixes memory leak ??? why??
-
+			
         }
         else 
         { 
@@ -1020,6 +1027,8 @@ namespace bias {
             err = spinCameraGetNextImageEx(hCamera_, 1, &hSpinImage_); 
         }
 		
+		
+
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             //std::cout << "fail, " << (hSpinImage_ == nullptr) << std::endl;
@@ -1054,11 +1063,20 @@ namespace bias {
         imageOK_ = true;
 
         updateTimeStamp();
-
+	     
+		
+        /*pc_2 = gettime->getPCtime();
+        pc_ts = (pc_2.seconds*1e6 + pc_2.microSeconds);// -(cam_ofs.seconds*1e6 + cam_ofs.microSeconds) - (timeStamp_.seconds*1e6 + timeStamp_.microSeconds);
+        time_stamp1.push_back(pc_ts);
+        if (time_stamp1.size() == 5000)
+        {
+            std::string filename = "imagegrab_" + std::to_string(1) + ".csv";
+            gettime->write_time<int64_t>(filename, 5000, time_stamp1);
+        }*/
+        //std::cout << cam_ofs.seconds*1e6 + cam_ofs.microSeconds << std::endl;
         //std::cout << "timeStamp_ns_           = " << timeStamp_ns_ << std::endl;
         //std::cout << "timeStamp_.seconds      = " << timeStamp_.seconds << std::endl;
         //std::cout << "timeStamp_.microSeconds = " << timeStamp_.microSeconds << std::endl;
-
         return true;
     }
 
@@ -1116,17 +1134,17 @@ namespace bias {
         }
 
         // Get chunk mode selector and  set entry to Timestamp 
-        //std::cout << "DEBUG: set ChunkSelector begin " << std::endl;
+        std::cout << "DEBUG: set ChunkSelector begin " << std::endl;
 
-        //std::cout << "DEBUG: get ChunkSelector node " << std::endl;
+        std::cout << "DEBUG: get ChunkSelector node " << std::endl;
 
         EnumNode_spin chunkSelectorNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("ChunkSelector");
 
-        //std::cout << "DEBUG: have ChunkSelector node " << std::endl;
+        std::cout << "DEBUG: have ChunkSelector node " << std::endl;
 
         if (chunkSelectorNode.isAvailable())
         {
-            //std::cout << "DEBUG: ChunkSelector available " << std::endl;
+            std::cout << "DEBUG: ChunkSelector available " << std::endl;
             std::ofstream entries_file;
             entries_file.open("chuckselector_entries.txt");
             entries_file << "DEBUG: ChunkSelector entries begin " << std::endl;
@@ -1143,7 +1161,7 @@ namespace bias {
             std::cout << "DEBUG: ChunkSelector not available " << std::endl;
         }
 
-        //std::cout << "DEBUG: set ChunkSelector end " << std::endl;
+        std::cout << "DEBUG: set ChunkSelector end " << std::endl;
 
         // Enable timestamping
         BoolNode_spin timeStampEnableNode = nodeMapCamera_.getNodeByName<BoolNode_spin>("ChunkEnable");
@@ -1401,8 +1419,8 @@ namespace bias {
             {
                 propInfo.minValue = exposureTimeNode.minIntValue();
                 propInfo.maxValue = exposureTimeNode.maxIntValue();
-                propInfo.minAbsoluteValue = static_cast<float>(std::max(exposureTimeNode.minValue(), CameraDevice_spin::MinAllowedShutterUs));
-                propInfo.maxAbsoluteValue = static_cast<float>(std::min(exposureTimeNode.maxValue(), CameraDevice_spin::MaxAllowedShutterUs));
+                //propInfo.minAbsoluteValue = static_cast<float>(std::max(exposureTimeNode.minValue(), CameraDevice_spin::MinAllowedShutterUs));
+                //propInfo.maxAbsoluteValue = static_cast<float>(std::min(exposureTimeNode.maxValue(), CameraDevice_spin::MaxAllowedShutterUs));
                 propInfo.haveUnits = !exposureTimeNode.unit().empty();
                 propInfo.units =  exposureTimeNode.unit();
                 propInfo.unitsAbbr = exposureTimeNode.unit();
@@ -2174,6 +2192,57 @@ namespace bias {
         //
         //fout.close();
         //// --------------------------------------------------------------------------------------------------------
+
+    }
+
+
+    TimeStamp CameraDevice_spin::cameraOffsetTime()
+    {
+		
+        TimeStamp pc_ts, cam_ts;
+        double pc_s, cam_s, offset_s;
+        std::vector<double> timeofs;
+
+        for (int ind = 0; ind < 10; ind++)
+        {
+
+            //get computer local time since midnight
+            GetTime* gettime = new GetTime(0, 0);
+            pc_ts = gettime->getPCtime();
+            pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
+
+            //calculate camera time
+            cam_ts = getDeviceTimeStamp();
+            cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
+
+            timeofs.push_back(pc_s - cam_s);
+            //printf("%0.06f \n" ,pc_s-cam_s); 
+            //printf("%0.06f  %0.06f pc_s-cam_us\n ", pc_s ,cam_s); 
+            //printf("%0.06f \n", pc_s);
+        }
+
+        //write_time("offset.csv",20,timeofs);
+
+        //calculate mean
+        offset_s = accumulate(timeofs.begin(), timeofs.end(), 0.0) / timeofs.size();
+        cam_ofs.seconds = int(offset_s);
+        cam_ofs.microSeconds = (offset_s - cam_ofs.seconds)*1e6;
+        //ofs_isSet = false;
+
+        //calculate std dev
+        double std_sum = 0;
+        for (int k = 0; k < timeofs.size(); k++)
+        {
+            std_sum += (timeofs[k] - offset_s) * (timeofs[k] - offset_s);
+        }
+
+        std_sum = std_sum / timeofs.size();
+        std_sum = sqrt(std_sum);
+
+        //printf("%0.06f average offset \n" ,offset_s);
+        //printf("%0.06f std deviation \n ",std_sum);
+        printf("%d seconds %d microseconds", cam_ofs.seconds, cam_ofs.microSeconds);
+        return cam_ofs;
 
     }
 }

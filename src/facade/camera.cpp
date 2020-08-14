@@ -738,6 +738,14 @@ namespace bias {
         std::cout << getImageInfoString(imgInfo);
     }
 
+    void Camera::cameraOffsetTime()
+    {
+	
+        cam_ofs = cameraDevicePtr_ -> cameraOffsetTime();    
+		
+		       
+    }
+    
 
     // FlyCapture2 specific methods
     // ------------------------------------------------------------------------

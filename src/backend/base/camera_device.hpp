@@ -1,6 +1,8 @@
 #ifndef BIAS_CAMERA_DEVICE_HPP
 #define BIAS_CAMERA_DEVICE_HPP
 
+#include "win_time.hpp"
+
 #include <string>
 #include <memory>
 #include <opencv2/core/core.hpp>
@@ -8,6 +10,10 @@
 #include "property.hpp"
 #include "guid.hpp"
 #include "format7.hpp"
+
+#include <numeric>
+
+
 
 namespace bias 
 {
@@ -77,6 +83,10 @@ namespace bias
 
             virtual TimeStamp getDeviceTimeStamp();
             virtual void initCounter();
+
+            TimeStamp cam_ofs = { 0,0 };
+            virtual TimeStamp cameraOffsetTime();
+			
 
         protected:
             Guid guid_;

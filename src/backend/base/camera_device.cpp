@@ -1,6 +1,7 @@
 #include "camera_device.hpp"
 #include "exception.hpp"
 
+
 namespace bias 
 {
     CameraDevice::CameraDevice() 
@@ -203,5 +204,10 @@ namespace bias
         int64_t counter=0 ;
     }
 
+  
+    TimeStamp CameraDevice::cameraOffsetTime()
+    {
+        return cam_ofs;
+    }
 
 }

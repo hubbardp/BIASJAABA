@@ -109,6 +109,7 @@ namespace bias
             int image_width=0;
             float threshold_runtime = static_cast<float>(3000);
             double tStamp=0.0;
+			int64_t process_time=0;
             TimeStamp cam_ofs={0,0};
            
  

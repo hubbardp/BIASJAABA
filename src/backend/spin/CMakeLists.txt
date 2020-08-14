@@ -26,4 +26,5 @@ target_link_libraries(
     ${bias_ext_link_LIBS} 
     bias_backend_base 
     bias_camera_facade
+    bias_utility
     )

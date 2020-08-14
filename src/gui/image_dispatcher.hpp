@@ -9,6 +9,7 @@
 #include "fps_estimator.hpp"
 #include "lockable.hpp"
 
+
 namespace bias
 {
 
@@ -57,6 +58,8 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
+         
+            std::vector<int64_t> time_stamps;
 
             // use lock when setting these values
             // -----------------------------------

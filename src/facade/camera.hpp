@@ -42,6 +42,8 @@ namespace bias {
             cv::Mat grabImage();
             TimeStamp getImageTimeStamp();
             TimeStamp getDeviceTimeStamp();
+            void cameraOffsetTime();
+            TimeStamp cam_ofs = {0,0};
             void initCounter();
 
             bool isConnected();
@@ -141,7 +143,7 @@ namespace bias {
             void printImageInfo();
 
             friend std::ostream& operator<< (std::ostream &out, Camera &camera);
-
+			
         private:
             CameraDevicePtr cameraDevicePtr_;
             void createCameraDevice_fc2(Guid guid);

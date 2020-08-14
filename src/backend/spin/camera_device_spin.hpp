@@ -25,7 +25,10 @@
 #include "enum_node_spin.hpp"
 #include "command_node_spin.hpp"
 
-
+//test
+#include "win_time.hpp"
+#include "stamped_image.hpp"
+#include <QPointer>
 namespace bias {
 
 
@@ -107,6 +110,9 @@ namespace bias {
             // more than once  in order to reach a stable value.
             static constexpr int AutoOnePushSetCount = 10;
 
+            //test
+            virtual TimeStamp cameraOffsetTime();
+            TimeStamp cam_ofs = { 0,0 };
 
         private:
 
@@ -133,6 +139,7 @@ namespace bias {
 
             bool imageOK_ = false;
             spinImage hSpinImage_ = nullptr;
+			 
 
             TriggerType triggerType_ =  TRIGGER_TYPE_UNSPECIFIED;
 
@@ -188,6 +195,10 @@ namespace bias {
             // ---------------
             std::vector<spinPixelFormatEnums> getSupportedPixelFormats_spin();
             spinPixelFormatEnums getPixelFormat_spin();
+
+	    //test
+            std::vector<int64_t> time_stamp1;	
+			
 
 
     };

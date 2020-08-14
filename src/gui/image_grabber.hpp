@@ -10,6 +10,8 @@
 #include "camera_fwd.hpp"
 #include "lockable.hpp"
 
+#include "win_time.hpp"
+
 namespace bias
 {
 
@@ -59,6 +61,8 @@ namespace bias
 
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
+
+            std::vector<int64_t> time_stamps;
 
             void run();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);

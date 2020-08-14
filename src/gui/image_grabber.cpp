@@ -14,6 +14,9 @@
 // ----------------------------------------
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+
+#include "win_time.hpp"
+#include "camera_device.hpp"
 // ----------------------------------------
 
 namespace bias {
@@ -154,8 +157,13 @@ namespace bias {
         //    }
         //}
         //// -------------------------------------------------------------------------------
-        
 
+	
+        GetTime* gettime = new GetTime(0,0);
+        TimeStamp pc_time;
+        int64 pc_ts, cam_ts;
+        cameraPtr_ -> cameraOffsetTime();
+	//std::cout << "image grabber" << cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds << std::endl;
         // Grab images from camera until the done signal is given
         while (!done)
         {
@@ -168,8 +176,8 @@ namespace bias {
             try
             {
         
-		        stampImg.image = cameraPtr_ -> grabImage();
-		        timeStamp = cameraPtr_ -> getImageTimeStamp();
+                stampImg.image = cameraPtr_ -> grabImage();
+                timeStamp = cameraPtr_ -> getImageTimeStamp();
                 error = false;
 
             }
@@ -181,6 +189,7 @@ namespace bias {
                 error = true;
             }
             cameraPtr_ -> releaseLock();
+
 
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty()) 
@@ -292,6 +301,18 @@ namespace bias {
                         }
                     }
                 }
+            }
+
+            pc_time = gettime->getPCtime();
+            pc_ts = (pc_time.seconds*1e6 + pc_time.microSeconds) - (cameraPtr_->cam_ofs.seconds*1e6 
+                    + cameraPtr_->cam_ofs.microSeconds);
+            cam_ts = timeStamp.seconds*1e6 + timeStamp.microSeconds;
+            time_stamps.push_back(frameCount);
+
+            if (time_stamps.size() == 5000)
+            {
+                std::string filename = "imagegrab_" + std::to_string(cameraNumber_) + ".csv";
+                gettime->write_time<int64_t>(filename, 5000, time_stamps);
             }
 
         } // while (!done) 

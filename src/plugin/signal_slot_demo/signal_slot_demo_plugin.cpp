@@ -60,11 +60,11 @@ namespace bias
         // with other class methods. 
         // -------------------------------------------------------------------
 
-        if(ofs_isSet){
+        /*if(ofs_isSet){
 
             cam_ofs = cameraOffsetTime(cameraPtr_);
             std::cout << cam_ofs.seconds << " " << cam_ofs.microSeconds << std::endl;      
-        }
+        }*/
 
         pluginImageQueuePtr_ -> acquireLock();
         pluginImageQueuePtr_ -> waitIfEmpty();
@@ -88,17 +88,18 @@ namespace bias
             //-------------------DEVEL----------------------------------------------------//
 
             // get camera times wrt to stamped image times
-            TimeStamp pc_ts = getPCtime();
+            GetTime* gettime = new GetTime(0, 0);
+            TimeStamp pc_ts = gettime->getPCtime(); 
             int64_t cam_ts, delay;
-
+			
             // subtract the offset to get camera time
-            cam_ts = ((pc_ts.seconds*1e6 + pc_ts.microSeconds)-(cam_ofs.seconds*1e6 + cam_ofs.microSeconds));
+            cam_ts = ((pc_ts.seconds*1e6 + pc_ts.microSeconds)-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
             delay = cam_ts - int64_t(latestFrame.timeStampVal.seconds*1e6 + latestFrame.timeStampVal.microSeconds);
-            cam_delay.push_back(delay);
-            if(cam_delay.size()==1000){
-                std::string filecam = "delay_" + std::to_string(cameraNumber_) + ".csv";
-                std::cout << delay << std::endl;
-                write_time<int64_t>(filecam , 1000, cam_delay);
+            cam_delay.push_back(frameCount_);
+            //std::cout << "frame: "  << <<  std::endl;
+            if(cam_delay.size()==5000){
+                std::string filecam = "signal_slot_" + std::to_string(cameraNumber_) + ".csv"; 
+                gettime->write_time<int64_t>(filecam , 5000, cam_delay);
             }
 
             //---------------------------------------------------------------------------//
