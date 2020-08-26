@@ -85,8 +85,9 @@ namespace bias
             virtual void initCounter();
 
             TimeStamp cam_ofs = { 0,0 };
+            TimeStamp cpu_time = { 0,0 };
             virtual TimeStamp cameraOffsetTime();
-			
+            virtual TimeStamp getCPUtime();			
 
         protected:
             Guid guid_;

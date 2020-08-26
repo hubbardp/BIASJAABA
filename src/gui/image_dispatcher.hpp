@@ -8,7 +8,7 @@
 #include <opencv2/core/core.hpp>
 #include "fps_estimator.hpp"
 #include "lockable.hpp"
-
+#include "camera_fwd.hpp"
 
 namespace bias
 {
@@ -26,6 +26,7 @@ namespace bias
                     bool logging,
                     bool pluginEnabled,
                     unsigned int cameraNumber,
+                    std::shared_ptr<Lockable<Camera>> cameraPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
@@ -36,6 +37,7 @@ namespace bias
                     bool logging,
                     bool pluginEnabled,
                     unsigned int cameraNumber,
+                    std::shared_ptr<Lockable<Camera>> cameraPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr ,
                     std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr
@@ -55,11 +57,12 @@ namespace bias
             bool logging_;
             bool pluginEnabled_;
             unsigned int cameraNumber_;
+            std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
          
-            std::vector<int64_t> time_stamps;
+            std::vector<std::vector<int64_t>> time_stamps;
 
             // use lock when setting these values
             // -----------------------------------

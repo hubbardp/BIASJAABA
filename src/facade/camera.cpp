@@ -741,9 +741,13 @@ namespace bias {
     void Camera::cameraOffsetTime()
     {
 	
-        cam_ofs = cameraDevicePtr_ -> cameraOffsetTime();    
-		
+        cam_ofs = cameraDevicePtr_ -> cameraOffsetTime();    		
 		       
+    }
+
+    TimeStamp Camera::getCPUtime()
+    {
+        return cameraDevicePtr_ -> getCPUtime();
     }
     
 

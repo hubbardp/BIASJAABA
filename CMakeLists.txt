@@ -106,7 +106,7 @@ endif()
 # -----------------------------------------------------------------------------
 #set(CMAKE_CXX_FLAGS "-std=gnu++0x -O2 -Wall")
 #set(CMAKE_CXX_FLAGS "-std=gnu++0x -O2")
-#set(CMAKE_CXX_FLAGS "-std=gnu++0x -mwindows -O2")
+#set(CMAKE_CXX_FLAGS "-std=gnu++0x -mwindows -O3")
 #set(CMAKE_CXX_FLAGS "-std=c++11 ")
 
 if(UNIX)
@@ -129,7 +129,7 @@ endif()
 	
 if(WIN32)
     set(CUDA_NVCC_FLAGS_DEBUG      -g;-G CACHE STRING "" FORCE)
-    set(CUDA_NVCC_FLAGS_RELEASE    --use_fast_math;-g;-lineinfo CACHE STRING "" FORCE)
+    set(CUDA_NVCC_FLAGS_RELEASE    --use_fast_math;-g;-GA;-lineinfo CACHE STRING "" FORCE)
     set(CUDA_NVCC_FLAGS_MINSIZEREL --use_fast_math CACHE STRING "" FORCE)
 endif()
 

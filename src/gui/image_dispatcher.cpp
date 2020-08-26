@@ -18,13 +18,14 @@ namespace bias
 
     ImageDispatcher::ImageDispatcher(QObject *parent) : QObject(parent)
     {
-        initialize(false,false,0,NULL,NULL,NULL);
+        initialize(false,false,0,NULL,NULL,NULL,NULL);
     }
 
     ImageDispatcher::ImageDispatcher( 
             bool logging,
             bool pluginEnabled,
             unsigned int cameraNumber,
+            std::shared_ptr<Lockable<Camera>> cameraPtr,
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
@@ -35,6 +36,7 @@ namespace bias
                 logging,
                 pluginEnabled,
                 cameraNumber,
+                cameraPtr,
                 newImageQueuePtr,
                 logImageQueuePtr,
                 pluginImageQueuePtr
@@ -45,6 +47,7 @@ namespace bias
             bool logging,
             bool pluginEnabled,
             unsigned int cameraNumber,
+            std::shared_ptr<Lockable<Camera>> cameraPtr,
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr
@@ -70,6 +73,7 @@ namespace bias
         stopped_ = true;
         logging_ = logging;
         cameraNumber_ = cameraNumber;
+        cameraPtr_ = cameraPtr;
         pluginEnabled_ = pluginEnabled;
 
         frameCount_ = 0;
@@ -135,6 +139,11 @@ namespace bias
         std::ofstream stampOutStream;
         stampOutStream.open(stampFileName);
         // ---------------------------------------------------------------------------
+		
+        GetTime* gettime = new GetTime(0, 0);
+        TimeStamp pc_time;
+        int64_t pc_ts, cam_ts;
+        cameraPtr_->cameraOffsetTime();
 
         while (!done) 
         {
@@ -149,7 +158,18 @@ namespace bias
             newStampImage = newImageQueuePtr_ -> front();
             newImageQueuePtr_ -> pop();
             newImageQueuePtr_ -> releaseLock();
+	    
+            /*pc_time = gettime->getPCtime();
+            pc_ts = (pc_time.seconds*1e6 + pc_time.microSeconds) - (cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds);
+            cam_ts = int64_t(newStampImage.timeStampVal.seconds*1e6 + newStampImage.timeStampVal.microSeconds);	
+            time_stamps.push_back({ cam_ts,  cam_ts});
 
+            if (time_stamps.size() == 50000)
+            {
+                std::string filename = "imagedispatch_" + std::to_string(cameraNumber_) + ".csv";
+                gettime->write_time(filename, 50000, time_stamps);
+            }*/
+			
             if (logging_ )
             {
                 logImageQueuePtr_ -> acquireLock();

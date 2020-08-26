@@ -210,4 +210,9 @@ namespace bias
         return cam_ofs;
     }
 
+    TimeStamp CameraDevice::getCPUtime()
+    {
+        return cpu_time;     
+    }
+
 }

@@ -1008,12 +1008,11 @@ namespace bias {
 
         imageOK_ = false;
        
-        //GetTime* gettime = new GetTime(0,0);
-        TimeStamp pc_1, pc_2;
-        int64_t pc_ts, cam_ts;
+        GetTime* gettime = new GetTime(0,0);
+        //TimeStamp pc_1, pc_2;
+        //int64_t pc_ts, cam_ts;
 
         //pc_1 = gettime->getPCtime();
-        //pc_ts = (pc_1.seconds*1e6 + pc_1.microSeconds);
 	
         // Get next image from camera
         if (triggerType_ == TRIGGER_INTERNAL) 
@@ -1028,6 +1027,15 @@ namespace bias {
         }
 		
 		
+        cpu_time = gettime->getPCtime();
+        /*pc_ts = (pc_2.seconds*1e6 + pc_2.microSeconds);// -(cam_ofs.seconds*1e6 + cam_ofs.microSeconds) 
+        time_stamp1.push_back({ 0, pc_ts });
+        if (time_stamp1.size() == 5000)
+        {
+            std::string filename = "imagespin_" + std::to_string(1) + ".csv";
+            gettime->write_time<int64_t>(filename, 5000, time_stamp1);
+        }*/
+        
 
         if (err != SPINNAKER_ERR_SUCCESS)
         {
@@ -1065,14 +1073,7 @@ namespace bias {
         updateTimeStamp();
 	     
 		
-        /*pc_2 = gettime->getPCtime();
-        pc_ts = (pc_2.seconds*1e6 + pc_2.microSeconds);// -(cam_ofs.seconds*1e6 + cam_ofs.microSeconds) - (timeStamp_.seconds*1e6 + timeStamp_.microSeconds);
-        time_stamp1.push_back(pc_ts);
-        if (time_stamp1.size() == 5000)
-        {
-            std::string filename = "imagegrab_" + std::to_string(1) + ".csv";
-            gettime->write_time<int64_t>(filename, 5000, time_stamp1);
-        }*/
+        
         //std::cout << cam_ofs.seconds*1e6 + cam_ofs.microSeconds << std::endl;
         //std::cout << "timeStamp_ns_           = " << timeStamp_ns_ << std::endl;
         //std::cout << "timeStamp_.seconds      = " << timeStamp_.seconds << std::endl;
@@ -2245,6 +2246,12 @@ namespace bias {
         return cam_ofs;
 
     }
+
+    TimeStamp CameraDevice_spin::getCPUtime()
+    {
+        return cpu_time; 
+    }	  
+    
 }
 #endif
 

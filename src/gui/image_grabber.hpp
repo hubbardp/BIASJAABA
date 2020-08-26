@@ -62,7 +62,7 @@ namespace bias
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
 
-            std::vector<int64_t> time_stamps;
+            std::vector<std::vector<int64_t>> time_stamps;
 
             void run();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);

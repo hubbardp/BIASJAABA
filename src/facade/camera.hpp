@@ -43,7 +43,9 @@ namespace bias {
             TimeStamp getImageTimeStamp();
             TimeStamp getDeviceTimeStamp();
             void cameraOffsetTime();
+	    TimeStamp getCPUtime();
             TimeStamp cam_ofs = {0,0};
+	    TimeStamp cpu_time = {0,0};
             void initCounter();
 
             bool isConnected();

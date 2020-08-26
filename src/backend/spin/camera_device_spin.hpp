@@ -112,7 +112,9 @@ namespace bias {
 
             //test
             virtual TimeStamp cameraOffsetTime();
+            virtual TimeStamp getCPUtime();
             TimeStamp cam_ofs = { 0,0 };
+            TimeStamp cpu_time = { 0,0 };
 
         private:
 
@@ -197,7 +199,7 @@ namespace bias {
             spinPixelFormatEnums getPixelFormat_spin();
 
 	    //test
-            std::vector<int64_t> time_stamp1;	
+            std::vector<std::vector<int64_t>> time_stamp1;	
 			
 
 
