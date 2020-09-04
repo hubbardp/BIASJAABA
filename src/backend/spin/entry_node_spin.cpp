@@ -134,4 +134,23 @@ namespace bias
         return ss.str();
     }
 
+
+    void EntryNode_spin::setEntryByInt(int64_t val)
+    {
+        checkNodeHandle();
+        checkAvailable();
+        checkWritable();
+     
+        spinError err =  spinEnumerationSetIntValue(hNode_, val); 
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            std::stringstream ssError;
+            ssError << __FUNCTION__;
+            ssError << ": unable to get entry node symbolic, error = " << err;
+            throw RuntimeError(ERROR_SPIN_SET_ENUM_ENTRY_BY_INT_VALUE,ssError.str());
+        }
+
+    }
+
+    
 } // namespace bias

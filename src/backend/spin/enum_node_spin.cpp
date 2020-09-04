@@ -132,8 +132,15 @@ namespace bias
     {
         EntryNode_spin node = getEntryBySymbolic(symbolic);
         setEntryByValue(node.value());
+		
     }
 
+
+	void EnumNode_spin::setEnumEntry(std::string sym)
+	{
+		EntryNode_spin node = getEntryBySymbolic(sym);
+		setEntryByInt(node.intValue());
+	}
 
     EntryNode_spin EnumNode_spin::currentEntry()
     {
@@ -183,6 +190,29 @@ namespace bias
         return entryNodeVec;
     }
 
+
+    EntryNode_spin EnumNode_spin::GetEntryByName(std::string name)
+    {
+
+        checkNodeHandle();
+        checkAvailable();
+        checkReadable();
+
+        spinNodeHandle hNodeEntrySpin;
+
+        spinError err = spinEnumerationGetEntryByName(hNode_, name.c_str() , &hNodeEntrySpin);
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            std::stringstream ssError;
+            ssError << __FUNCTION__;
+            ssError << ": unable to get enumeration entry node, error = " << err;
+            throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_BY_NAME, ssError.str());
+        }
+
+        return EntryNode_spin(hNodeEntrySpin);
+
+    }
+        
 
     EntryNode_spin EnumNode_spin::getEntryByName(std::string name)
     {

@@ -21,7 +21,8 @@ namespace bias
             std::string symbolic();
 
             bool isSymbolicValueEqualTo(std::string value);
-
+          
+            void setEntryByInt(int64_t val);	    
             virtual void print();
             std::string toString();
 

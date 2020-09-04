@@ -212,30 +212,29 @@ namespace bias {
                 frameRateEnableNode.setValue(true);
             }
 
-            // system Level defaults
-            /*IntegerNode_spin transferMode = nodeMapTLStream_.getNodeByName<IntegerNode_spin>("StreamDefaultBufferCountMax");
+
+            EnumNode_spin transferMode = nodeMapTLStream_.getNodeByName<EnumNode_spin>("StreamBufferHandlingMode");
+            EntryNode_spin transferModeVal; 
+			
             if (transferMode.isAvailable() && transferMode.isWritable())
             {
-                transferMode.setValue(0);
-
-            }*/
-
-
-            /*EnumNode_spin transferMode = nodeMapTLStream_.getNodeByName<EnumNode_spin>("StreamBufferHandlingMode");
-            EntryNode_spin transferModeVal  = transferMode.currentEntry();
-
-            if (transferModeVal.isAvailable() && transferModeVal.isReadable())
-            {
-
-                std::cout << transferModeVal.value() << std::endl;
+				transferMode.setEnumEntry("NewestOnly");
 
             } else {
 
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
-                ssError << ": triggerModeNode current entryNode is not available or readable";
-                throw RuntimeError(ERROR_SPIN_GET_TRIGGER_TYPE, ssError.str());
+                ssError << __FUNCTION__;
+                ssError << ": ";
+                throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_INT_VALUE, ssError.str());
 
+            }
+
+            // system Level defaults
+            /*IntegerNode_spin transferModeVal = nodeMapTLStream_.getNodeByName<IntegerNode_spin>("ManualStreamBufferCount");
+            if (transferModeVal.isAvailable() && transferModeVal.isWritable())
+            {
+                transferModeVal.setValue(1);
+                std::cout << " hiiii11 " << std::endl;
             }*/
 
 
@@ -389,7 +388,23 @@ namespace bias {
         //bool resize = false;
 
         std::string errMsg;
+        GetTime* gettime = new GetTime(0,0);
+        TimeStamp pc_1, pc_2;
+        int64_t pc_ts, cam_ts;
+
+        //pc_1 = gettime->getPCtime();
+
         bool ok = grabImageCommon(errMsg); 
+
+        /*pc_2 = gettime->getPCtime();
+        pc_ts = (pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds);
+		time_stamp2.push_back({ 0, pc_ts});// int64_t(timeStamp_.seconds * 1000000 + timeStamp_.microSeconds), pc_ts});
+
+        if (time_stamp2.size() == 50000)
+        {
+            std::string filename = "grabImageCommon_" + std::to_string(1) + ".csv";
+            gettime->write_time<int64_t>(filename, 50000, time_stamp2);
+        }*/
 
         if (!ok)
         {
@@ -1009,11 +1024,11 @@ namespace bias {
         imageOK_ = false;
        
         GetTime* gettime = new GetTime(0,0);
-        //TimeStamp pc_1, pc_2;
-        //int64_t pc_ts, cam_ts;
+        TimeStamp pc_1, pc_2;
+        int64_t pc_ts1, pc_ts2, cam_ts;
 
-        //pc_1 = gettime->getPCtime();
-	
+        pc_1 = gettime->getPCtime();
+		
         // Get next image from camera
         if (triggerType_ == TRIGGER_INTERNAL) 
         {
@@ -1023,20 +1038,16 @@ namespace bias {
         else 
         { 
             // Note, 2nd arg > 0 to help reduce effect of slow memory leak
-            err = spinCameraGetNextImageEx(hCamera_, 1, &hSpinImage_); 
+            err = spinCameraGetNextImageEx(hCamera_, 10, &hSpinImage_); 
         }
 		
+		//cpu_time = gettime->getPCtime();
+        pc_2 = gettime->getPCtime();
+		pc_ts2 = (pc_2.seconds*1e6 + pc_2.microSeconds) - (cam_ofs.seconds*1e6 + cam_ofs.microSeconds);
+        pc_ts1 = (pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds);
+        time_stamp1.push_back({ 0, pc_ts1 });
 		
-        cpu_time = gettime->getPCtime();
-        /*pc_ts = (pc_2.seconds*1e6 + pc_2.microSeconds);// -(cam_ofs.seconds*1e6 + cam_ofs.microSeconds) 
-        time_stamp1.push_back({ 0, pc_ts });
-        if (time_stamp1.size() == 5000)
-        {
-            std::string filename = "imagespin_" + std::to_string(1) + ".csv";
-            gettime->write_time<int64_t>(filename, 5000, time_stamp1);
-        }*/
-        
-
+       
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             //std::cout << "fail, " << (hSpinImage_ == nullptr) << std::endl;
@@ -1071,8 +1082,19 @@ namespace bias {
         imageOK_ = true;
 
         updateTimeStamp();
-	     
-		
+		cam_ts = timeStamp_.seconds * 1000000 + timeStamp_.microSeconds;
+		time_stamp2.push_back({ 0, pc_ts2 - cam_ts });
+		if (time_stamp1.size() == 50000)
+		{
+			std::string filename = "spinImage_" + std::to_string(1) + ".csv";
+			gettime->write_time<int64_t>(filename, 50000, time_stamp1);
+		}
+
+		if (time_stamp2.size() == 50000)
+		{
+			std::string filename = "spinImage_latency" + std::to_string(1) + ".csv";
+			gettime->write_time<int64_t>(filename, 50000, time_stamp2);
+		}
         
         //std::cout << cam_ofs.seconds*1e6 + cam_ofs.microSeconds << std::endl;
         //std::cout << "timeStamp_ns_           = " << timeStamp_ns_ << std::endl;

@@ -162,7 +162,7 @@ namespace bias
             /*pc_time = gettime->getPCtime();
             pc_ts = (pc_time.seconds*1e6 + pc_time.microSeconds) - (cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds);
             cam_ts = int64_t(newStampImage.timeStampVal.seconds*1e6 + newStampImage.timeStampVal.microSeconds);	
-            time_stamps.push_back({ cam_ts,  cam_ts});
+            time_stamps.push_back({ cam_ts,  (pc_ts-cam_ts)});
 
             if (time_stamps.size() == 50000)
             {

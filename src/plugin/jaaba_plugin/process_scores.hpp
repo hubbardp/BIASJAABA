@@ -49,6 +49,15 @@ namespace bias
            //QPointer<beh_class> classifier; 
 
            ProcessScores(QObject *parent=0);
+           ProcessScores( 
+                    bool logging,
+                    bool pluginEnabled,
+                    unsigned int cameraNumber,
+                    std::shared_ptr<Lockable<Camera>> cameraPtr,
+                    std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+                    QObject *parent = 0
+                    );
+
            void stop();
            void enqueueFrameData(FrameData frameData);
            void detectOn();

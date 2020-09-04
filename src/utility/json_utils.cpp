@@ -14,7 +14,7 @@ namespace bias
         unsigned int indent = 0;
         bool isInnerList = false;
 
-        while (pos < unsigned int(jsonArray.size())) 
+        while (pos < uint64_t(jsonArray.size())) 
         {
             bool isSpecialChar = false;
             if (jsonArray[pos] == '}')

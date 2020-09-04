@@ -160,8 +160,8 @@ namespace bias {
 
 	
         GetTime* gettime = new GetTime(0,0);
-        TimeStamp pc_time;
-        int64_t pc_ts, cam_ts;
+        TimeStamp pc_time, pc_1, pc_2;
+        int64_t pc_ts1, pc_ts2, cam_ts1, cam_ts2;
         cameraPtr_ -> cameraOffsetTime();
 	    
         // Grab images from camera until the done signal is given
@@ -172,10 +172,11 @@ namespace bias {
             releaseLock();
 
             // Grab an image
+            //pc_1 = gettime->getPCtime();
             cameraPtr_ -> acquireLock();
             try
             {
-        
+          
                 stampImg.image = cameraPtr_ -> grabImage();
                 timeStamp = cameraPtr_->getImageTimeStamp();
 				
@@ -190,7 +191,7 @@ namespace bias {
                 error = true;
             }
             cameraPtr_ -> releaseLock();
-
+            
 
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty()) 
@@ -198,7 +199,7 @@ namespace bias {
                 QThread::yieldCurrentThread();
                 continue; 
             }
-            
+			
             // Push image into new image queue
             if (!error) 
             {
@@ -271,7 +272,7 @@ namespace bias {
                 //    stampImg.image = camSizeImage;
                 //}
                 //// ---------------------------------------------------------------------
-                
+				
                 // Set image data timestamp, framecount and frame interval estimate
                 stampImg.timeStamp = timeStampDbl;
                 stampImg.timeStampInit = timeStampInit;
@@ -285,17 +286,24 @@ namespace bias {
                 newImageQueuePtr_ -> signalNotEmpty(); 
                 newImageQueuePtr_ -> releaseLock();
 
-                pc_time = cameraPtr_->getCPUtime();
-                //pc_time = gettime->getPCtime();
-                pc_ts = (pc_time.seconds*1e6 + pc_time.microSeconds )- (cameraPtr_->cam_ofs.seconds*1e6
+                /*pc_1 = cameraPtr_->getCPUtime();
+                pc_2 = gettime->getPCtime();
+                pc_ts2 = (pc_2.seconds*1e6 + pc_2.microSeconds )- (cameraPtr_->cam_ofs.seconds*1e6
 			    + cameraPtr_->cam_ofs.microSeconds);
-                cam_ts = timeStamp.seconds * 1e6 + timeStamp.microSeconds;
-                time_stamps.push_back({ cam_ts, pc_ts - cam_ts });
+				pc_ts1 = (pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds);
+                cam_ts2 = timeStamp.seconds * 1e6 + timeStamp.microSeconds;
+				time_stamps1.push_back({cam_ts2, pc_ts1});
+                time_stamps2.push_back({ cam_ts2, pc_ts2 - cam_ts2 });
 
-                /*if (time_stamps.size() == 10000)
+				if (time_stamps2.size() == 50000)
+				{
+					std::string filename = "imagegrab_" + std::to_string(cameraNumber_) + ".csv";
+					gettime->write_time<int64_t>(filename, 50000, time_stamps1);
+				}
+                if (time_stamps2.size() == 50000)
                 {
-                    std::string filename = "imagegrab_" + std::to_string(cameraNumber_) + ".csv";
-                    gettime->write_time<int64_t>(filename, 10000, time_stamps);
+                    std::string filename = "imagegrab_latency" + std::to_string(cameraNumber_) + ".csv";
+                    gettime->write_time<int64_t>(filename, 50000, time_stamps2);
                 }*/
 
             }

@@ -26,11 +26,13 @@ namespace bias
             void setEntryByNode(EntryNode_spin entryNode);
             void setEntryByName(std::string nodeName);
             void setEntryBySymbolic(std::string symbolic);
+			void setEnumEntry(std::string sym);
 
             std::vector<EntryNode_spin> entries();
             EntryNode_spin getEntryByName(std::string name);
             EntryNode_spin getEntryBySymbolic(std::string symbolic);
-
+            EntryNode_spin GetEntryByName(std::string name);
+			
             bool hasEntryName(std::string name);
             bool hasEntrySymbolic(std::string symbolic); 
 

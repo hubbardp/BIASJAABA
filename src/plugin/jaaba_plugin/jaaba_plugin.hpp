@@ -58,7 +58,7 @@ namespace bias
             static const QString PLUGIN_DISPLAY_NAME;
             int lastProcessedFrameCount = 0;
 
-            JaabaPlugin(int numberOfCameras,QWidget *parent=0);
+            JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, QWidget *parent=0);
 
             void resetTrigger();
 
@@ -82,7 +82,7 @@ namespace bias
             QPointer<ProcessScores> processScoresPtr_front;
             QPointer<beh_class> classifier;
             QPointer<VisPlots> visplots;
-            QPointer<QThreadPool> threadPoolPtr;
+            QPointer<QThreadPool> threadPoolPtr_;
             QThread thread_vis;
 
             QQueue<FrameData> sendImageQueue;
@@ -109,7 +109,7 @@ namespace bias
             int image_width=0;
             float threshold_runtime = static_cast<float>(3000);
             double tStamp=0.0;
-			int64_t process_time=0;
+            int64_t process_time=0;
             TimeStamp cam_ofs={0,0};
            
  
@@ -126,8 +126,8 @@ namespace bias
             std::vector<float>laserRead = {0,0,0,0,0,0};
             std::vector<double>timeofs;
             std::vector<double>timestd;
-			//DEVEL
-            std::vector<int64_t> time_seconds;
+            //DEVEL
+            std::vector<std::vector<int64_t>> time_seconds;
             std::vector<int64_t> time_useconds;
             std::vector<int64_t> tcam0;
             std::vector<int64_t> tcam1;

@@ -89,17 +89,19 @@ namespace bias
 
             // get camera times wrt to stamped image times
             GetTime* gettime = new GetTime(0, 0);
-            TimeStamp pc_ts = gettime->getPCtime(); 
-            int64_t cam_ts, delay;
+            TimeStamp pc_time = gettime->getPCtime(); 
+            int64_t pc_ts, cam_ts, delay;
 			
             // subtract the offset to get camera time
-            cam_ts = ((pc_ts.seconds*1e6 + pc_ts.microSeconds)-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
-            delay = cam_ts - int64_t(latestFrame.timeStampVal.seconds*1e6 + latestFrame.timeStampVal.microSeconds);
-            cam_delay.push_back(frameCount_);
+            pc_ts = ((pc_time.seconds*1e6 + pc_time.microSeconds)-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
+            cam_ts = int64_t(latestFrame.timeStampVal.seconds*1e6 + latestFrame.timeStampVal.microSeconds);
+            delay = pc_ts - cam_ts;
+            cam_delay.push_back({ cam_ts, delay});
+
             //std::cout << "frame: "  << <<  std::endl;
-            if(cam_delay.size()==5000){
+            if(cam_delay.size()==10000){
                 std::string filecam = "signal_slot_" + std::to_string(cameraNumber_) + ".csv"; 
-                gettime->write_time<int64_t>(filecam , 5000, cam_delay);
+                gettime->write_time<int64_t>(filecam , 10000, cam_delay);
             }
 
             //---------------------------------------------------------------------------//

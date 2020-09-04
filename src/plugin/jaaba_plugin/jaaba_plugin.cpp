@@ -18,10 +18,12 @@ namespace bias {
 	const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
 
 	// Public Methods
-        JaabaPlugin::JaabaPlugin(int numberOfCameras, QWidget *parent) : BiasPlugin(parent)
+        JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
+                                 QWidget *parent) : BiasPlugin(parent)
 	{
 
             nviews_ = numberOfCameras;
+	    threadPoolPtr_ = threadPoolPtr;
             cudaError_t err = cudaGetDeviceCount(&nDevices_);
             if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
             setupUi(this);
@@ -145,18 +147,19 @@ namespace bias {
             {
 
 		// create threads for side plugin processing and plots visualisation
-                threadPoolPtr = new QThreadPool(this);
-                threadPoolPtr->setMaxThreadCount(2);
+                //threadPoolPtr = new QThreadPool(this);
+                //threadPoolPtr->setMaxThreadCount(2);
  
-                if ((threadPoolPtr != nullptr) && (processScoresPtr_side != nullptr))
+                /*if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
                 {
-                    threadPoolPtr -> start(processScoresPtr_side);
-                }
+                    threadPoolPtr_ -> start(processScoresPtr_side);
+                }*/
 
-                if((threadPoolPtr != nullptr) && (visplots != nullptr))
+                // this thread adds latencyF to process frames
+                /*if((threadPoolPtr != nullptr) && (visplots != nullptr))
                 {
                     threadPoolPtr -> start(visplots);
-                }
+                }*/
             }
 
         }
@@ -361,20 +364,23 @@ namespace bias {
                     StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
                     StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
 
-                    //pluginImageQueuePtr_->pop();
-                    //partnerPluginImageQueuePtr_ -> pop();
+                    pluginImageQueuePtr_->pop();
+                    partnerPluginImageQueuePtr_ -> pop();
 
                     //pluginImageQueuePtr_->releaseLock();
                     //partnerPluginImageQueuePtr_ -> releaseLock();
 
 					GetTime* gettime = new GetTime(0, 0);
-                    TimeStamp pc_ts = gettime->getPCtime();
-                    int64_t cam_ts1,cam_ts2, delay;
+                    TimeStamp pc_time = gettime->getPCtime();
+                    int64_t cam_ts1,cam_ts2, delay, pc_ts;
 
 
                     // subtract the offset to get camera time
-                    cam_ts1 = ((pc_ts.seconds*1e6 + pc_ts.microSeconds)-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
-                    delay = cam_ts1 - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);// -process_time;
+                    pc_ts = ((pc_time.seconds*1e6 + pc_time.microSeconds)-
+                            (cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
+                    cam_ts1 = int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
+                    delay = pc_ts - cam_ts1;
+                    
                     /*while (delay > threshold_runtime)
                     {
                         numskippedFrames_ += 1;
@@ -412,9 +418,9 @@ namespace bias {
                         delay = cam_ts1 - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
                     }*/
 					
-                    time_seconds.push_back(delay);
+                    time_seconds.push_back({ cam_ts1 , delay });
                     //time_useconds.push_back(delay);
-                    if (time_seconds.size()  == 5000) {
+                    if (time_seconds.size()  == 10000) {
 
                         gettime->write_time<int64_t>("delay.csv", time_seconds.size(), time_seconds);
                         
@@ -608,8 +614,8 @@ namespace bias {
                      
                     }else { std::cout << "skipped 3" << frameCount_ << std::endl;}*/
                     
-                    pluginImageQueuePtr_->pop();
-                    partnerPluginImageQueuePtr_ -> pop();
+                    //pluginImageQueuePtr_->pop();
+                    //partnerPluginImageQueuePtr_ -> pop();
              
                 }else { std::cout << "skipped 4 " << frameCount_ << std::endl; }
 

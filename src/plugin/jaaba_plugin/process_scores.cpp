@@ -22,8 +22,26 @@ namespace bias {
         isHOGHOFInitialised = false;
 
     }
+
+    /*ProcessScores::ProcessScores( 
+            bool logging,
+            bool pluginEnabled,
+            unsigned int cameraNumber,
+            std::shared_ptr<Lockable<Camera>> cameraPtr,
+            std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+            QObject *parent
+            ) : QObject(parent)
+    {
+        initialize(
+                logging,
+                pluginEnabled,
+                cameraNumber,
+                cameraPtr,
+                pluginImageQueuePtr
+                );
+    }*/
+
    
- 
     void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
     {
 

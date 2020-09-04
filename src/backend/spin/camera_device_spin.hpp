@@ -199,7 +199,9 @@ namespace bias {
             spinPixelFormatEnums getPixelFormat_spin();
 
 	    //test
-            std::vector<std::vector<int64_t>> time_stamp1;	
+            std::vector<std::vector<int64_t>> time_stamp1;
+            std::vector<std::vector<int64_t>> time_stamp2; 
+            std::vector<std::vector<int64_t>> time_stamp3;
 			
 
 

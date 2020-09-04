@@ -60,7 +60,7 @@ namespace bias
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
 
-            std::vector<int64_t>cam_delay;
+            std::vector<std::vector<int64_t>>cam_delay;
             TimeStamp cam_ofs={0,0};
             
             QPointer<ImageLabel> imageLabelPtr_;
