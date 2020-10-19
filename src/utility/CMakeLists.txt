@@ -22,7 +22,7 @@ if(with_qt_gui)
         lockable.hpp
         timer.h
         tictoc.h
-	    #win_time.hpp
+	    win_time.hpp
         )
     
     set(
@@ -37,13 +37,13 @@ if(with_qt_gui)
         basic_http_server.cpp
         image_label.cpp
         tictoc.c
-	    #win_time.cpp
+	    win_time.cpp
         )
  
-    if(WIN32)
-	    set(bias_utility_HEADERS_WIN win_time.hpp)
-	    set(bias_utility_SOURCES_WIN win_time.cpp)
-    endif() 
+    #if(WIN32)
+	#    set(bias_utility_HEADERS_WIN win_time.hpp)
+	#    set(bias_utility_SOURCES_WIN win_time.cpp)
+    #endif() 
 
     qt5_wrap_cpp(bias_utility_HEADERS_MOC ${bias_utility_HEADERS} ${bias_utility_HEADERS_WIN})
 

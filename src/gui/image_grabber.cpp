@@ -286,21 +286,22 @@ namespace bias {
                 newImageQueuePtr_ -> signalNotEmpty(); 
                 newImageQueuePtr_ -> releaseLock();
 
-                /*pc_1 = cameraPtr_->getCPUtime();
+                //pc_1 = cameraPtr_->getCPUtime();
                 pc_2 = gettime->getPCtime();
-                pc_ts2 = (pc_2.seconds*1e6 + pc_2.microSeconds )- (cameraPtr_->cam_ofs.seconds*1e6
-			    + cameraPtr_->cam_ofs.microSeconds);
-				pc_ts1 = (pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds);
+                //pc_ts2 = (pc_2.seconds*1e6 + pc_2.microSeconds )- (cameraPtr_->cam_ofs.seconds*1e6
+			    //+ cameraPtr_->cam_ofs.microSeconds);
+				pc_ts1 = (pc_2.seconds*1e6 + pc_2.microSeconds) ;//- (pc_1.seconds*1e6 + pc_1.microSeconds);
                 cam_ts2 = timeStamp.seconds * 1e6 + timeStamp.microSeconds;
 				time_stamps1.push_back({cam_ts2, pc_ts1});
-                time_stamps2.push_back({ cam_ts2, pc_ts2 - cam_ts2 });
+                //time_stamps2.push_back({ cam_ts2, pc_ts2 - cam_ts2 });
 
-				if (time_stamps2.size() == 50000)
+				/*if (time_stamps1.size() == 200000)
 				{
 					std::string filename = "imagegrab_" + std::to_string(cameraNumber_) + ".csv";
-					gettime->write_time<int64_t>(filename, 50000, time_stamps1);
-				}
-                if (time_stamps2.size() == 50000)
+					gettime->write_time<int64_t>(filename, 200000, time_stamps1);
+				} */
+
+                /*if (time_stamps2.size() == 50000)
                 {
                     std::string filename = "imagegrab_latency" + std::to_string(cameraNumber_) + ".csv";
                     gettime->write_time<int64_t>(filename, 50000, time_stamps2);

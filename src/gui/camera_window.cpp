@@ -467,6 +467,7 @@ namespace bias
                 logging_, 
                 isPluginEnabled(),
                 cameraNumber_,
+                cameraPtr_,
                 newImageQueuePtr_,
                 logImageQueuePtr_,
                 pluginImageQueuePtr_,
@@ -2616,7 +2617,7 @@ namespace bias
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
         pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_,this);
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, this);
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_,this);
         //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------

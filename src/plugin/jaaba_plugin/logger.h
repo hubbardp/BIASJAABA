@@ -9,12 +9,20 @@ static void logger(int is_error,const char *file,int line,const char* function,c
     char buf1[1024]={0},buf2[1024]={0};
     va_list ap;
     va_start(ap,fmt);
+#if WIN32
     vsprintf_s(buf1,fmt,ap);
+#else
+    vsprintf(buf1,fmt,ap);
+#endif
     va_end(ap);
 #if 0
     sprintf_s(buf2,"%s(%d): %s()\n\t - %s\n",file,line,function,buf1);
 #else
-    sprintf_s(buf2,"%s\n",buf1);
+    #if WIN32
+        sprintf_s(buf2,"%s\n",buf1);
+    #else
+        sprintf(buf2, "%s\n",buf1);
+    #endif
 #endif
     
 }

@@ -12,7 +12,7 @@ namespace bias
 	}
 
 
-	int GetTime::getdaytime(struct timeval *tv, struct timezone *tz)
+	/*int GetTime::getdaytime(struct timeval *tv, struct timezone *tz)
 	{
 
             FILETIME ft;
@@ -61,22 +61,22 @@ namespace bias
 
             return 0;
 
-	}
+	}*/
 
 
-        std::chrono::system_clock::duration GetTime::duration_since_midnight()  
-        {
+    std::chrono::system_clock::duration GetTime::duration_since_midnight()  
+    {
 
-            auto now = std::chrono::system_clock::now();
-            time_t tnow = std::chrono::system_clock::to_time_t(now);
-            tm *date = std::localtime(&tnow);
-            date->tm_hour = 0;
-            date->tm_min = 0;
-            date->tm_sec = 0;
-            auto midnight = std::chrono::system_clock::from_time_t(std::mktime(date));
-            return now-midnight;
+        auto now = std::chrono::system_clock::now();
+        time_t tnow = std::chrono::system_clock::to_time_t(now);
+        tm *date = std::localtime(&tnow);
+        date->tm_hour = 0;
+        date->tm_min = 0;
+        date->tm_sec = 0;
+        auto midnight = std::chrono::system_clock::from_time_t(std::mktime(date));
+        return now-midnight;
 
-        }
+    }
 
 
 	TimeStamp GetTime::getPCtime()
@@ -102,7 +102,7 @@ namespace bias
 
             this->secs = (hours.count()*3600 + minutes.count()*60 + seconds.count());
             this->usec = (milliseconds.count()*1000 + microseconds.count() + nanoseconds.count()/1000);
-            TimeStamp ts = {this->secs, unsigned int(this->usec)};
+            TimeStamp ts = {this->secs, uint64_t(this->usec)};
 
             return ts;
 	}

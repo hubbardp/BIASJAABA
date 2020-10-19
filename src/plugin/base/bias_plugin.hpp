@@ -13,13 +13,13 @@
 //#include <fstream>
 //#include <iomanip>
 
-#ifdef linux
+/*#ifdef linux
 #include<sys/time.h>
-#endif
+#endif*/
 
-#ifdef WIN32
+//#ifdef WIN32
 #include "win_time.hpp"
-#endif
+//#endif
 
 namespace cv
 {

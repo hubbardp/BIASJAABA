@@ -26,7 +26,9 @@
 #include "command_node_spin.hpp"
 
 //test
+//#ifdef WIN32
 #include "win_time.hpp"
+//#endif
 #include "stamped_image.hpp"
 #include <QPointer>
 namespace bias {

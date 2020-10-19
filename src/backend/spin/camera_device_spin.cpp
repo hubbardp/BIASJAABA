@@ -8,7 +8,7 @@
 #include <bitset>
 #include <fstream>
 
-#ifdef linux 
+#ifdef linux
 #include <sys/time.h>
 #endif
 
@@ -34,30 +34,30 @@ namespace bias {
     CameraDevice_spin::CameraDevice_spin(Guid guid) : CameraDevice(guid)
     {
         spinError err = spinSystemGetInstance(&hSystem_);
-        if (err != SPINNAKER_ERR_SUCCESS) 
+        if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
             ssError << __FUNCTION__;
-            ssError << ": unable to create Spinnaker context, error = " << err; 
+            ssError << ": unable to create Spinnaker context, error = " << err;
             throw RuntimeError(ERROR_SPIN_CREATE_CONTEXT, ssError.str());
         }
     }
 
-    CameraDevice_spin::~CameraDevice_spin() 
+    CameraDevice_spin::~CameraDevice_spin()
     {
 
-        if (capturing_) 
-        { 
-            stopCapture(); 
+        if (capturing_)
+        {
+            stopCapture();
         }
 
-        if (connected_) 
-        { 
-            disconnect(); 
+        if (connected_)
+        {
+            disconnect();
         }
 
         spinError err = spinSystemReleaseInstance(hSystem_);
-        if ( err != SPINNAKER_ERR_SUCCESS ) 
+        if ( err != SPINNAKER_ERR_SUCCESS )
         {
             std::stringstream ssError;
             ssError << __FUNCTION__;
@@ -67,15 +67,15 @@ namespace bias {
     }
 
 
-    CameraLib CameraDevice_spin::getCameraLib()     
-    { 
-        return guid_.getCameraLib(); 
+    CameraLib CameraDevice_spin::getCameraLib()
+    {
+        return guid_.getCameraLib();
     }
 
 
-    void CameraDevice_spin::connect() 
+    void CameraDevice_spin::connect()
     {
-        if (!connected_) 
+        if (!connected_)
         {
             spinError err = SPINNAKER_ERR_SUCCESS;
             spinCameraList hCameraList = nullptr;
@@ -154,7 +154,7 @@ namespace bias {
             // Default settings - may want to test for availability before setting.
             // ----------------------------------------------------------------------------------------------
 
-            // Exposure defaults 
+            // Exposure defaults
             EnumNode_spin exposureModeNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("ExposureMode");
             if (exposureModeNode.isAvailable() && exposureModeNode.isWritable())
             {
@@ -184,7 +184,7 @@ namespace bias {
             EnumNode_spin gainAutoNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("GainAuto");
             if (gainAutoNode.isAvailable() && gainAutoNode.isWritable())
             {
-        
+
                 gainAutoNode.setEntryBySymbolic("Off");
             }
 
@@ -198,7 +198,7 @@ namespace bias {
 
             EnumNode_spin triggerOverlapNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("TriggerOverlap");
             if (triggerOverlapNode.isAvailable() && triggerOverlapNode.isWritable())
-            { 
+            {
                 triggerOverlapNode.setEntryBySymbolic("Off");
             }
 
@@ -213,12 +213,12 @@ namespace bias {
             }
 
 
-            EnumNode_spin transferMode = nodeMapTLStream_.getNodeByName<EnumNode_spin>("StreamBufferHandlingMode");
-            EntryNode_spin transferModeVal; 
-			
+            /*EnumNode_spin transferMode = nodeMapTLStream_.getNodeByName<EnumNode_spin>("StreamBufferHandlingMode");
+            EntryNode_spin transferModeVal;
+
             if (transferMode.isAvailable() && transferMode.isWritable())
             {
-				transferMode.setEnumEntry("NewestOnly");
+				        transferMode.setEnumEntry("NewestOnly");
 
             } else {
 
@@ -227,7 +227,7 @@ namespace bias {
                 ssError << ": ";
                 throw RuntimeError(ERROR_SPIN_GET_ENUM_ENTRY_INT_VALUE, ssError.str());
 
-            }
+            }*/
 
             // system Level defaults
             /*IntegerNode_spin transferModeVal = nodeMapTLStream_.getNodeByName<IntegerNode_spin>("ManualStreamBufferCount");
@@ -256,12 +256,12 @@ namespace bias {
 
     void CameraDevice_spin::disconnect()
     {
-        if (capturing_) 
-        { 
-            stopCapture(); 
+        if (capturing_)
+        {
+            stopCapture();
         }
 
-        if (connected_) 
+        if (connected_)
         {
 
             // Deinitialize camera
@@ -291,28 +291,28 @@ namespace bias {
 
     void CameraDevice_spin::startCapture()
     {
-        
-	std::cout << "DEBUG: " << __FUNCTION__ << " begin" << std::endl;
-        
-        if (!connected_) 
-        { 
+
+	    std::cout << "DEBUG: " << __FUNCTION__ << " begin" << std::endl;
+
+        if (!connected_)
+        {
             std::stringstream ssError;
             ssError << __FUNCTION__;
             ssError << ": unable to start Spinnaker capture - not connected";
             throw RuntimeError(ERROR_SPIN_START_CAPTURE, ssError.str());
         }
 
-        // DEBUG 
+        // DEBUG
         // ----------------------------
         //printFormat7Configuration();
         // ----------------------------
 
 
-        if (!capturing_) 
+        if (!capturing_)
         {
 
-            
-            // Set acquisition mode 
+
+            // Set acquisition mode
             //std::cout << "DEBUG: set AcquisitionMode begin" << std::endl;
             EnumNode_spin acqModeNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("AcquisitionMode");
             if (acqModeNode.isAvailable())
@@ -320,7 +320,7 @@ namespace bias {
                 acqModeNode.setEntryBySymbolic("Continuous");
             }
             //std::cout << "DEBUG: set AcquisitionMode end" << std::endl;
-            
+
             ///////////////////////////////////////
             // WBD DEBUG
             ///////////////////////////////////////
@@ -332,7 +332,7 @@ namespace bias {
             {
                 std::stringstream ssError;
                 ssError << __FUNCTION__;
-                ssError << ": unable to begin camera acquisition, error = " << err; 
+                ssError << ": unable to begin camera acquisition, error = " << err;
                 throw RuntimeError(ERROR_SPIN_START_CAPTURE, ssError.str());
             }
 
@@ -341,14 +341,14 @@ namespace bias {
             //
         }
 
-        std::cout << "DEBUG: " << __FUNCTION__ << " end" << std::endl; 
+        std::cout << "DEBUG: " << __FUNCTION__ << " end" << std::endl;
 
     }
 
 
     void CameraDevice_spin::stopCapture()
     {
-        if (capturing_) 
+        if (capturing_)
         {
             destroySpinImage(hSpinImage_);
 
@@ -376,7 +376,7 @@ namespace bias {
     cv::Mat CameraDevice_spin::grabImage()
     {
 
-        cv::Mat image;  
+        cv::Mat image;
         grabImage(image);
         return image;
     }
@@ -384,7 +384,7 @@ namespace bias {
 
     void CameraDevice_spin::grabImage(cv::Mat &image)
     {
-     
+
         //bool resize = false;
 
         std::string errMsg;
@@ -394,7 +394,7 @@ namespace bias {
 
         //pc_1 = gettime->getPCtime();
 
-        bool ok = grabImageCommon(errMsg); 
+        bool ok = grabImageCommon(errMsg);
 
         /*pc_2 = gettime->getPCtime();
         pc_ts = (pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds);
@@ -413,26 +413,26 @@ namespace bias {
         }
 
         spinError err = SPINNAKER_ERR_SUCCESS;
-        spinImage hSpinImageConv = nullptr; 
+        spinImage hSpinImageConv = nullptr;
 
         err = spinImageCreateEmpty(&hSpinImageConv);
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
             ssError << __FUNCTION__;
-            ssError << ": unable to create empty spinImage, error = " << err; 
+            ssError << ": unable to create empty spinImage, error = " << err;
             throw RuntimeError(ERROR_SPIN_IMAGE_CREATE_EMPTY, ssError.str());
         }
-        
+
         spinPixelFormatEnums origPixelFormat = getImagePixelFormat_spin(hSpinImage_);
         spinPixelFormatEnums convPixelFormat = getSuitablePixelFormat(origPixelFormat);
-        
+
         err = spinImageConvert(hSpinImage_, convPixelFormat, hSpinImageConv);
-        if (err != SPINNAKER_ERR_SUCCESS) 
+        if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
             ssError << __FUNCTION__;
-            ssError << ": unable to convert spinImage, error = " << err; 
+            ssError << ": unable to convert spinImage, error = " << err;
             throw RuntimeError(ERROR_SPIN_IMAGE_CONVERT, ssError.str());
         }
 
@@ -440,11 +440,11 @@ namespace bias {
 
         int opencvPixelFormat = getCompatibleOpencvFormat(convPixelFormat);
 
-        cv::Mat imageTmp = cv::Mat( 
-                imageInfo.rows+imageInfo.ypad, 
-                imageInfo.cols+imageInfo.xpad, 
-                opencvPixelFormat, 
-                imageInfo.dataPtr, 
+        cv::Mat imageTmp = cv::Mat(
+                imageInfo.rows+imageInfo.ypad,
+                imageInfo.cols+imageInfo.xpad,
+                opencvPixelFormat,
+                imageInfo.dataPtr,
                 imageInfo.stride
                 );
 
@@ -466,7 +466,7 @@ namespace bias {
     bool CameraDevice_spin::isColor()
     {
         std::vector<spinPixelFormatEnums> cameraPixelFormats = getSupportedPixelFormats_spin();
-        std::vector<spinPixelFormatEnums> colorFormats = getAllowedColorPixelFormats_spin(); 
+        std::vector<spinPixelFormatEnums> colorFormats = getAllowedColorPixelFormats_spin();
 
         bool test = false;
         for (auto format : cameraPixelFormats)
@@ -478,10 +478,10 @@ namespace bias {
             }
         }
         return test;
-    } 
+    }
 
-    
-    VideoMode CameraDevice_spin::getVideoMode() 
+
+    VideoMode CameraDevice_spin::getVideoMode()
     {
         VideoModeList allowedVideoModes = getAllowedVideoModes();
         if (allowedVideoModes.size() != 1)
@@ -492,11 +492,11 @@ namespace bias {
             throw RuntimeError(ERROR_SPIN_VIDEOMODE_SUPPORT, ssError.str());
         }
         VideoMode videoMode = allowedVideoModes.front();
-        return videoMode; 
-    } 
+        return videoMode;
+    }
 
 
-    FrameRate CameraDevice_spin::getFrameRate() 
+    FrameRate CameraDevice_spin::getFrameRate()
     {
         VideoMode videoMode = getVideoMode();
         FrameRateList allowedFrameRates = getAllowedFrameRates(videoMode);
@@ -513,7 +513,7 @@ namespace bias {
 
 
     ImageMode CameraDevice_spin::getImageMode()
-    { 
+    {
         ImageModeList allowedModeList = getAllowedImageModes();
         if (allowedModeList.size() != 1)
         {
@@ -534,15 +534,15 @@ namespace bias {
         // Spinnaker SDK doesn't really have the same concept of VideoModes as
         // FlyCapture2 and libdc1394 so we fake it.
         // --------------------------------------------------------------------
-        
-        VideoModeList allowedVideoModes = {VIDEOMODE_FORMAT7}; 
+
+        VideoModeList allowedVideoModes = {VIDEOMODE_FORMAT7};
         return allowedVideoModes;
 
     }
 
 
     FrameRateList CameraDevice_spin::getAllowedFrameRates(VideoMode vidMode)
-    { 
+    {
         FrameRateList allowedFrameRates = {};
         if (vidMode == VIDEOMODE_FORMAT7)
         {
@@ -557,7 +557,7 @@ namespace bias {
     {
         // Note:
         // -------------------------------------------------------------------
-        // Spinnaker SDK doesn't really have ImageModes like FlyCapture2 and 
+        // Spinnaker SDK doesn't really have ImageModes like FlyCapture2 and
         // libdc1394 so we fake it. Current only support IMAGEMODE_0, but we
         // can add synthetic image modes using binning.
         // -------------------------------------------------------------------
@@ -576,7 +576,7 @@ namespace bias {
             if (getPropertyInfoDispatchMap_.count(propType) > 0)
             {
                 propInfo = getPropertyInfoDispatchMap_[propType](this);
-            } 
+            }
         }
 
         return propInfo;
@@ -613,7 +613,7 @@ namespace bias {
         setPropertyDispatchMap_[prop.type](this,prop);
     }
 
-   
+
 
     bool CameraDevice_spin::isPropertySettable(PropertyType propType, std::string &msg)
     {
@@ -629,7 +629,7 @@ namespace bias {
             msg = std::string("PropertyType is not is setter dispatch map");
             return false;
         }
-        
+
         PropertyInfo propInfo = getPropertyInfo(propType);
         // -------------------------------------
         // DEBUG
@@ -762,7 +762,7 @@ namespace bias {
         // -----------------------------
         // NOT IMPLEMENTED set ImageMode
         // -----------------------------
-       
+
         EnumNode_spin pixelFormatNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("PixelFormat");
         spinPixelFormatEnums pixelFormat_spin = convertPixelFormat_to_spin(settings.pixelFormat);
         pixelFormatNode.setEntryByValue(pixelFormat_spin);
@@ -828,7 +828,7 @@ namespace bias {
     }
 
 
-    //void CameraDevice_spin::setFormat7ImageMode(ImageMode imgMode) 
+    //void CameraDevice_spin::setFormat7ImageMode(ImageMode imgMode)
     //{
     //    // -------------------------------------------------
     //    // TO DO ...
@@ -866,7 +866,7 @@ namespace bias {
             throw RuntimeError(ERROR_SPIN_SET_TRIGGER_INTERNAL, ssError.str());
         }
     }
-    
+
 
     void CameraDevice_spin::setTriggerExternal()
     {
@@ -968,7 +968,7 @@ namespace bias {
         return cameraInfo_.vendorName();
     }
 
-    
+
     std::string CameraDevice_spin::getModelName()
     {
        return cameraInfo_.modelName();
@@ -981,9 +981,9 @@ namespace bias {
     }
 
 
-    void CameraDevice_spin::printGuid() 
-    { 
-        guid_.printValue(); 
+    void CameraDevice_spin::printGuid()
+    {
+        guid_.printValue();
     }
 
 
@@ -993,7 +993,7 @@ namespace bias {
     }
 
 
-    //   
+    //
     //// Private methods
     //// -------------------------------------------------------------------------
 
@@ -1003,7 +1003,7 @@ namespace bias {
 
         spinError err = SPINNAKER_ERR_SUCCESS;
 
-        if (!capturing_) 
+        if (!capturing_)
         {
             std::stringstream ssError;
             ssError << __FUNCTION__;
@@ -1022,32 +1022,34 @@ namespace bias {
         }
 
         imageOK_ = false;
-       
+
         GetTime* gettime = new GetTime(0,0);
         TimeStamp pc_1, pc_2;
         int64_t pc_ts1, pc_ts2, cam_ts;
 
-        pc_1 = gettime->getPCtime();
-		
+        //pc_1 = gettime->getPCtime();
         // Get next image from camera
-        if (triggerType_ == TRIGGER_INTERNAL) 
+        if (triggerType_ == TRIGGER_INTERNAL)
         {
             err = spinCameraGetNextImage(hCamera_, &hSpinImage_); // This fixes memory leak ??? why??
-			
+
         }
-        else 
-        { 
+        else
+        {
             // Note, 2nd arg > 0 to help reduce effect of slow memory leak
-            err = spinCameraGetNextImageEx(hCamera_, 10, &hSpinImage_); 
+            err = spinCameraGetNextImageEx(hCamera_, 1, &hSpinImage_);
         }
-		
-		//cpu_time = gettime->getPCtime();
+
+		    //cpu_time = gettime->getPCtime();
         pc_2 = gettime->getPCtime();
 		pc_ts2 = (pc_2.seconds*1e6 + pc_2.microSeconds) - (cam_ofs.seconds*1e6 + cam_ofs.microSeconds);
-        pc_ts1 = (pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds);
+        pc_ts1 = (pc_2.seconds*1e6 + pc_2.microSeconds);// - (pc_1.seconds*1e6 + pc_1.microSeconds);
+        //if(pc_ts1 == 0) {
+        //    std::cout << "pc_2 " << pc_2.seconds*1e6 + pc_2.microSeconds
+        //    << "pc_1 " << pc_1.seconds*1e6 + pc_1.microSeconds << std::endl;}
         time_stamp1.push_back({ 0, pc_ts1 });
-		
-       
+
+
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             //std::cout << "fail, " << (hSpinImage_ == nullptr) << std::endl;
@@ -1084,18 +1086,18 @@ namespace bias {
         updateTimeStamp();
 		cam_ts = timeStamp_.seconds * 1000000 + timeStamp_.microSeconds;
 		time_stamp2.push_back({ 0, pc_ts2 - cam_ts });
-		if (time_stamp1.size() == 50000)
+		/*if (time_stamp1.size() == 200000)
 		{
 			std::string filename = "spinImage_" + std::to_string(1) + ".csv";
-			gettime->write_time<int64_t>(filename, 50000, time_stamp1);
-		}
+			gettime->write_time<int64_t>(filename, 200000, time_stamp1);
+		} */
 
-		if (time_stamp2.size() == 50000)
+		/*if (time_stamp2.size() == 50000)
 		{
 			std::string filename = "spinImage_latency" + std::to_string(1) + ".csv";
 			gettime->write_time<int64_t>(filename, 50000, time_stamp2);
-		}
-        
+		}*/
+
         //std::cout << cam_ofs.seconds*1e6 + cam_ofs.microSeconds << std::endl;
         //std::cout << "timeStamp_ns_           = " << timeStamp_ns_ << std::endl;
         //std::cout << "timeStamp_.seconds      = " << timeStamp_.seconds << std::endl;
@@ -1149,14 +1151,14 @@ namespace bias {
 
         std::cout << "DEBUG: " << __FUNCTION__ << std::endl;
 
-        // Enable chunk mode 
+        // Enable chunk mode
         BoolNode_spin chunkModeActiveNode = nodeMapCamera_.getNodeByName<BoolNode_spin>("ChunkModeActive");
-        if (chunkModeActiveNode.isAvailable()) 
+        if (chunkModeActiveNode.isAvailable())
         {
             chunkModeActiveNode.setValue(true);
         }
 
-        // Get chunk mode selector and  set entry to Timestamp 
+        // Get chunk mode selector and  set entry to Timestamp
         std::cout << "DEBUG: set ChunkSelector begin " << std::endl;
 
         std::cout << "DEBUG: get ChunkSelector node " << std::endl;
@@ -1194,7 +1196,7 @@ namespace bias {
         }
 
         std::cout << "DEBUG: " << __FUNCTION__ << " end" << std::endl;
- 
+
     }
 
 
@@ -1205,12 +1207,12 @@ namespace bias {
         {
             std::stringstream ssError;
             ssError << __FUNCTION__;
-            ssError << ": unable to timestamp from image chunk data, error = " << err; 
+            ssError << ": unable to timestamp from image chunk data, error = " << err;
             throw RuntimeError(ERROR_SPIN_CHUNKDATA_TIMESTAMP, ssError.str());
         }
 
         int64_t seconds = timeStamp_ns_/INT64_C(1000000000);
-        int64_t microSeconds = timeStamp_ns_/INT64_C(1000) - INT64_C(1000000)*seconds; 
+        int64_t microSeconds = timeStamp_ns_/INT64_C(1000) - INT64_C(1000000)*seconds;
 
         timeStamp_.seconds = (unsigned long long)(seconds);
         timeStamp_.microSeconds = (unsigned int)(microSeconds);
@@ -1220,11 +1222,11 @@ namespace bias {
     void CameraDevice_spin::initCounter()
     {
 
-        
+
         EnumNode_spin CounterSelector = nodeMapCamera_.getNodeByName<EnumNode_spin>("CounterSelector");
         if(CounterSelector.isAvailable() && CounterSelector.isWritable())
         {
-            CounterSelector.setEntryBySymbolic("Counter0");        
+            CounterSelector.setEntryBySymbolic("Counter0");
 
         }else{
 
@@ -1292,7 +1294,7 @@ namespace bias {
             std::cout << "DEBUG: CounterDuration not available " << std::endl;
 
         }
-  
+
 
     }
 
@@ -1304,13 +1306,13 @@ namespace bias {
         //IntegerNode_spin hDeviceThroughput = nodeMapCamera_.getNodeByName<IntegerNode_spin>("DeviceMaxThorughput");
         //std::cout << hDeviceThroughput.value() << std::endl;
         //IntegerNode_spin hLinkThroughput = nodeMapCamera_.getNodeByName<IntegerNode_spin>("DeviceLinkThroughputLimit");
-        //std::cout << hLinkThroughput.value() << std::endl; 
-    
-     
-        TimeStamp ts; 
-        // Retrieve TimestampLatch 
-        CommandNode_spin hTimestampLatch = nodeMapCamera_.getNodeByName<CommandNode_spin>("TimestampLatch"); 
-        
+        //std::cout << hLinkThroughput.value() << std::endl;
+
+
+        TimeStamp ts;
+        // Retrieve TimestampLatch
+        CommandNode_spin hTimestampLatch = nodeMapCamera_.getNodeByName<CommandNode_spin>("TimestampLatch");
+
         //Execute Command
         if(hTimestampLatch.isAvailable())
         {
@@ -1318,33 +1320,33 @@ namespace bias {
 
         }else{
 
-            std::cout << "DEBUG: TimestampLatch not available " << std::endl;  
+            std::cout << "DEBUG: TimestampLatch not available " << std::endl;
         }
 
-        //Increment Timer 
+        //Increment Timer
         /*IntegerNode_spin hTimestampIncrementValue = nodeMapCamera_.getNodeByName<IntegerNode_spin>("TimestampIncrement");
         if(hTimestampIncrementValue.isAvailable())
         {
-            timeStamp_inc = (int64_t)hTimestampIncrementValue.value(); 
+            timeStamp_inc = (int64_t)hTimestampIncrementValue.value();
 
         }else{
-       
+
             std::cout << "DEBUG: TimestamplatchValue not available " << std::endl;
         }*/
 
- 
+
         //Get TimeStampLatch Value
         IntegerNode_spin hTimestampLatchValue = nodeMapCamera_.getNodeByName<IntegerNode_spin>("TimestampLatchValue");
         if(hTimestampLatchValue.isAvailable())
         {
             timeStamp_cam = (int64_t)hTimestampLatchValue.value();
-            ts.seconds = timeStamp_cam/INT64_C(1000000000); 
-            ts.microSeconds = unsigned int(timeStamp_cam/INT64_C(1000) - INT64_C(1000000)*ts.seconds);
- 
+            ts.seconds = timeStamp_cam/INT64_C(1000000000);
+            ts.microSeconds = uint64_t(timeStamp_cam/INT64_C(1000) - INT64_C(1000000)*ts.seconds);
+
 
         }else{
-       
-            std::cout << "DEBUG: TimestamplatchValue not available " << std::endl;  
+
+            std::cout << "DEBUG: TimestamplatchValue not available " << std::endl;
         }
 
 
@@ -1360,7 +1362,7 @@ namespace bias {
         FloatNode_spin blackLevelNode = nodeMapCamera_.getNodeByName<FloatNode_spin>("BlackLevel");
 
         PropertyInfo propInfo;
-        propInfo.type = PROPERTY_TYPE_BRIGHTNESS; 
+        propInfo.type = PROPERTY_TYPE_BRIGHTNESS;
         propInfo.present = blackLevelNode.isAvailable();
 
         if (propInfo.present)
@@ -1410,7 +1412,7 @@ namespace bias {
                 propInfo.units =  gammaNode.unit();
                 propInfo.unitsAbbr = gammaNode.unit();
             }
-            
+
         }
 
         return propInfo;
@@ -1591,7 +1593,7 @@ namespace bias {
 
     // Get Property methods
     // ------------------------
-    
+
     Property CameraDevice_spin::getPropertyBrightness()
     {
         FloatNode_spin blackLevelNode = nodeMapCamera_.getNodeByName<FloatNode_spin>("BlackLevel");
@@ -1599,7 +1601,7 @@ namespace bias {
         Property prop;
         prop.type = PROPERTY_TYPE_BRIGHTNESS;
         prop.present = blackLevelNode.isAvailable();
-        
+
         if(prop.present)
         {
             prop.absoluteControl = true;
@@ -1785,7 +1787,7 @@ namespace bias {
     }
 
 
-    // Set Property methods 
+    // Set Property methods
     // ---------------------
 
     void CameraDevice_spin::setPropertyBrightness(Property prop)
@@ -1811,11 +1813,11 @@ namespace bias {
         BoolNode_spin gammaEnableNode = nodeMapCamera_.getNodeByName<BoolNode_spin>("GammaEnable");
 
 
-        if (gammaEnableNode.isAvailable() && gammaEnableNode.isWritable()) 
+        if (gammaEnableNode.isAvailable() && gammaEnableNode.isWritable())
         {
                 gammaEnableNode.setValue(prop.on);
         }
-        if (gammaNode.isAvailable() && gammaNode.isReadable() && gammaNode.isWritable()) 
+        if (gammaNode.isAvailable() && gammaNode.isReadable() && gammaNode.isWritable())
         {
             if (prop.absoluteControl)
             {
@@ -1834,7 +1836,7 @@ namespace bias {
         EnumNode_spin exposureAutoNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("ExposureAuto");
         FloatNode_spin exposureTimeNode = nodeMapCamera_.getNodeByName<FloatNode_spin>("ExposureTime");
 
-        if (exposureAutoNode.isAvailable() && exposureAutoNode.isWritable()) 
+        if (exposureAutoNode.isAvailable() && exposureAutoNode.isWritable())
         {
             if (prop.onePush)
             {
@@ -1857,7 +1859,7 @@ namespace bias {
             }
         }
 
-        if (exposureTimeNode.isAvailable() && exposureTimeNode.isReadable() && exposureTimeNode.isWritable()) 
+        if (exposureTimeNode.isAvailable() && exposureTimeNode.isReadable() && exposureTimeNode.isWritable())
         {
             if (prop.absoluteControl)
             {
@@ -1899,7 +1901,7 @@ namespace bias {
             }
         }
 
-        if (gainNode.isAvailable() && gainNode.isReadable() && gainNode.isWritable()) 
+        if (gainNode.isAvailable() && gainNode.isReadable() && gainNode.isWritable())
         {
             if (prop.absoluteControl)
             {
@@ -1931,7 +1933,7 @@ namespace bias {
         }
     }
 
-    
+
     void CameraDevice_spin::setPropertyFrameRate(Property prop)
     {
         FloatNode_spin frameRateNode = nodeMapCamera_.getNodeByName<FloatNode_spin>("AcquisitionFrameRate");
@@ -1951,7 +1953,7 @@ namespace bias {
 
 
     void CameraDevice_spin::setPropertyTemperature(Property prop)
-    { 
+    {
         // Do nothing
     }
 
@@ -1965,7 +1967,7 @@ namespace bias {
     PixelFormat CameraDevice_spin::getPixelFormat()
     {
         spinPixelFormatEnums currPixelFormat_spin = getPixelFormat_spin();
-        return convertPixelFormat_from_spin(currPixelFormat_spin); 
+        return convertPixelFormat_from_spin(currPixelFormat_spin);
     }
 
 
@@ -1980,7 +1982,7 @@ namespace bias {
     // ---------------
 
     std::vector<spinPixelFormatEnums> CameraDevice_spin::getSupportedPixelFormats_spin()
-    {   
+    {
         EnumNode_spin pixelFormatNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("PixelFormat");
         std::vector<EntryNode_spin> pixelFormatEntryVec = pixelFormatNode.entries();
 
@@ -2004,8 +2006,8 @@ namespace bias {
     // PropertyInfo, and Property dispatch maps
     // ----------------------------------------
 
-    std::map<PropertyType, std::function<PropertyInfo(CameraDevice_spin*)>> CameraDevice_spin::getPropertyInfoDispatchMap_ = 
-    { 
+    std::map<PropertyType, std::function<PropertyInfo(CameraDevice_spin*)>> CameraDevice_spin::getPropertyInfoDispatchMap_ =
+    {
         {PROPERTY_TYPE_BRIGHTNESS,     std::function<PropertyInfo(CameraDevice_spin*)>(&CameraDevice_spin::getPropertyInfoBrightness)},
         {PROPERTY_TYPE_GAMMA,          std::function<PropertyInfo(CameraDevice_spin*)>(&CameraDevice_spin::getPropertyInfoGamma)},
         {PROPERTY_TYPE_SHUTTER,        std::function<PropertyInfo(CameraDevice_spin*)>(&CameraDevice_spin::getPropertyInfoShutter)},
@@ -2017,8 +2019,8 @@ namespace bias {
     };
 
 
-    std::map<PropertyType, std::function<Property(CameraDevice_spin*)>> CameraDevice_spin::getPropertyDispatchMap_ = 
-    { 
+    std::map<PropertyType, std::function<Property(CameraDevice_spin*)>> CameraDevice_spin::getPropertyDispatchMap_ =
+    {
         {PROPERTY_TYPE_BRIGHTNESS,     std::function<Property(CameraDevice_spin*)>(&CameraDevice_spin::getPropertyBrightness)},
         {PROPERTY_TYPE_GAMMA,          std::function<Property(CameraDevice_spin*)>(&CameraDevice_spin::getPropertyGamma)},
         {PROPERTY_TYPE_SHUTTER,        std::function<Property(CameraDevice_spin*)>(&CameraDevice_spin::getPropertyShutter)},
@@ -2030,8 +2032,8 @@ namespace bias {
     };
 
 
-    std::map<PropertyType, std::function<void(CameraDevice_spin*,Property)>> CameraDevice_spin::setPropertyDispatchMap_ = 
-    { 
+    std::map<PropertyType, std::function<void(CameraDevice_spin*,Property)>> CameraDevice_spin::setPropertyDispatchMap_ =
+    {
         {PROPERTY_TYPE_BRIGHTNESS,     std::function<void(CameraDevice_spin*, Property)>(&CameraDevice_spin::setPropertyBrightness)},
         {PROPERTY_TYPE_GAMMA,          std::function<void(CameraDevice_spin*, Property)>(&CameraDevice_spin::setPropertyGamma)},
         {PROPERTY_TYPE_SHUTTER,        std::function<void(CameraDevice_spin*, Property)>(&CameraDevice_spin::setPropertyShutter)},
@@ -2078,7 +2080,7 @@ namespace bias {
         //FloatNode_spin gainNode = nodeMapCamera_.getNodeByName<FloatNode_spin>("Gain");
         //gainNode.print();
 
-        // Trigger 
+        // Trigger
         // --------------------------------------------------------------------------------------------------
 
         //EnumNode_spin triggerSelectorNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("TriggerSelector");
@@ -2221,7 +2223,7 @@ namespace bias {
 
     TimeStamp CameraDevice_spin::cameraOffsetTime()
     {
-		
+
         TimeStamp pc_ts, cam_ts;
         double pc_s, cam_s, offset_s;
         std::vector<double> timeofs;
@@ -2239,8 +2241,8 @@ namespace bias {
             cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
 
             timeofs.push_back(pc_s - cam_s);
-            //printf("%0.06f \n" ,pc_s-cam_s); 
-            //printf("%0.06f  %0.06f pc_s-cam_us\n ", pc_s ,cam_s); 
+            //printf("%0.06f \n" ,pc_s-cam_s);
+            //printf("%0.06f  %0.06f pc_s-cam_us\n ", pc_s ,cam_s);
             //printf("%0.06f \n", pc_s);
         }
 
@@ -2271,9 +2273,8 @@ namespace bias {
 
     TimeStamp CameraDevice_spin::getCPUtime()
     {
-        return cpu_time; 
-    }	  
-    
+        return cpu_time;
+    }
+
 }
 #endif
-

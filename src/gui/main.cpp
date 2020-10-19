@@ -46,7 +46,7 @@ int main (int argc, char *argv[])
     }
 
     // Get number of cameras
-    unsigned int numCam = unsigned int(guidList.size());
+    unsigned int numCam = uint(guidList.size());
     bias::ThreadAffinityService::setNumberOfCameras(numCam);
 
     // Open camera window for each camera 

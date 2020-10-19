@@ -18,12 +18,12 @@ namespace bias {
 	const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
 
 	// Public Methods
-        JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
+    JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
                                  QWidget *parent) : BiasPlugin(parent)
 	{
 
             nviews_ = numberOfCameras;
-	    threadPoolPtr_ = threadPoolPtr;
+	        threadPoolPtr_ = threadPoolPtr;
             cudaError_t err = cudaGetDeviceCount(&nDevices_);
             if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
             setupUi(this);
@@ -41,17 +41,17 @@ namespace bias {
 
 	QString JaabaPlugin::getDisplayName()
 	{
-            return PLUGIN_DISPLAY_NAME;
+        return PLUGIN_DISPLAY_NAME;
 	}
 
 
 	cv::Mat JaabaPlugin::getCurrentImage()
 	{
 
-            acquireLock();
-            cv::Mat currentImageCopy = currentImage_.clone();
-            releaseLock();
-            return currentImageCopy;
+        acquireLock();
+        cv::Mat currentImageCopy = currentImage_.clone();
+        releaseLock();
+        return currentImageCopy;
 	}
 
 
@@ -418,7 +418,7 @@ namespace bias {
                         delay = cam_ts1 - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
                     }*/
 					
-                    time_seconds.push_back({ cam_ts1 , delay });
+                    time_seconds.push_back({cam_ts1 ,delay});
                     //time_useconds.push_back(delay);
                     if (time_seconds.size()  == 10000) {
 
@@ -843,10 +843,15 @@ namespace bias {
              
                 //QString file_sde = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi";
 #ifdef WIN32           
-		QString file_sde = "C:/Users/patilr/BIAS/BIASJAABA_movies/movie_sde.avi";
+		        //QString file_sde = "C:/Users/patilr/BIAS/BIASJAABA_movies/movie_sde.avi";
+#endif
+
+#ifdef linux
+                QString file_sde = "/home/patilr/BIAS/BIASJAABAi_movies/movie_sde.avi";
 #endif
                 processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
-                processScoresPtr_side -> capture_sde = processScoresPtr_side -> vid_sde -> videoCapObject();
+                processScoresPtr_side -> capture_sde = processScoresPtr_side ->
+                vid_sde -> videoCapObject();
                  
   
                 HOGHOF *hoghofside = new HOGHOF(this);
@@ -864,10 +869,14 @@ namespace bias {
 
             if(frontRadioButtonPtr_->isChecked()) 
             {
-
+//DEVEL
 #ifdef WIN32		
                 //QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";
-		QString file_frt = "C:/Users/patilr/BIAS/BIASJAABA_movies/movie_frt.avi"; 
+		        QString file_frt = "C:/Users/patilr/BIAS/BIASJAABA_movies/movie_frt.avi"; 
+#endif 
+
+#ifdef linux
+                QString file_frt = "/home/patilr/BIAS/BIASJAABA_movies/movie_frt.avi";
 #endif
                 processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
                 processScoresPtr_front -> capture_front = processScoresPtr_front -> vid_front -> videoCapObject(); 

@@ -21,15 +21,7 @@
 #include <QThread>
 
 #include<ctime>
-
-#ifdef linux
-#include <sys/time.h>
-#endif
-
-#ifdef WIN32
 #include "win_time.hpp"
-#endif
-
 
 #ifdef WITH_SPIN
 #include "camera_device_spin.hpp"
@@ -126,7 +118,7 @@ namespace bias
             std::vector<float>laserRead = {0,0,0,0,0,0};
             std::vector<double>timeofs;
             std::vector<double>timestd;
-            //DEVEL
+			//DEVEL
             std::vector<std::vector<int64_t>> time_seconds;
             std::vector<int64_t> time_useconds;
             std::vector<int64_t> tcam0;

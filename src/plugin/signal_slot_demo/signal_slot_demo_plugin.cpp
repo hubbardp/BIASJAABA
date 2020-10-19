@@ -13,14 +13,14 @@
 
 namespace bias
 {
-    // Public static variables 
+    // Public static variables
     // ------------------------------------------------------------------------
     const QString SignalSlotDemoPlugin::PLUGIN_NAME = QString("signalSlotDemo");
     const QString SignalSlotDemoPlugin::PLUGIN_DISPLAY_NAME = QString("Signal Slot Demo");
 
     // Public Methods
     // ------------------------------------------------------------------------
-    
+
     SignalSlotDemoPlugin::SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, QWidget *parentPtr) : BiasPlugin(parentPtr)
     {
         imageLabelPtr_ = imageLabelPtr;
@@ -56,21 +56,21 @@ namespace bias
     void SignalSlotDemoPlugin::processFrames()
     {
         // -------------------------------------------------------------------
-        // NOTE: called in separate thread. Use lock to access data shared 
-        // with other class methods. 
+        // NOTE: called in separate thread. Use lock to access data shared
+        // with other class methods.
         // -------------------------------------------------------------------
 
         /*if(ofs_isSet){
 
             cam_ofs = cameraOffsetTime(cameraPtr_);
-            std::cout << cam_ofs.seconds << " " << cam_ofs.microSeconds << std::endl;      
+            std::cout << cam_ofs.seconds << " " << cam_ofs.microSeconds << std::endl;
         }*/
 
         pluginImageQueuePtr_ -> acquireLock();
         pluginImageQueuePtr_ -> waitIfEmpty();
 
 
-        if (pluginImageQueuePtr_ -> empty() ) 
+        if (pluginImageQueuePtr_ -> empty() )
         {
 
             pluginImageQueuePtr_ -> releaseLock();
@@ -80,7 +80,7 @@ namespace bias
 
         if(!pluginImageQueuePtr_ -> empty())
         {
- 
+
             StampedImage latestFrame = pluginImageQueuePtr_ ->front();//frameList.back();
             //frameList.clear();
 
@@ -89,23 +89,22 @@ namespace bias
 
             // get camera times wrt to stamped image times
             GetTime* gettime = new GetTime(0, 0);
-            TimeStamp pc_time = gettime->getPCtime(); 
+            TimeStamp pc_time = gettime->getPCtime();
             int64_t pc_ts, cam_ts, delay;
-			
+
             // subtract the offset to get camera time
-            pc_ts = ((pc_time.seconds*1e6 + pc_time.microSeconds)-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
+            pc_ts = ((pc_time.seconds*1e6 + pc_time.microSeconds));//-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
             cam_ts = int64_t(latestFrame.timeStampVal.seconds*1e6 + latestFrame.timeStampVal.microSeconds);
             delay = pc_ts - cam_ts;
-            cam_delay.push_back({ cam_ts, delay});
+            cam_delay.push_back({cam_ts,pc_ts});
 
             //std::cout << "frame: "  << <<  std::endl;
-            if(cam_delay.size()==10000){
-                std::string filecam = "signal_slot_" + std::to_string(cameraNumber_) + ".csv"; 
-                gettime->write_time<int64_t>(filecam , 10000, cam_delay);
-            }
+            if(cam_delay.size()==200000){
+                std::string filecam = "signal_slot_" + std::to_string(cameraNumber_) + ".csv";
+                gettime->write_time<int64_t>(filecam , 200000, cam_delay);
+            } 
 
             //---------------------------------------------------------------------------//
-
 
             acquireLock();
             currentImage_ = latestFrame.image;
@@ -175,7 +174,7 @@ namespace bias
     TimeStamp SignalSlotDemoPlugin::cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr)
     {
 
-        TimeStamp cam_ofs = {0,0};   
+        TimeStamp cam_ofs = {0,0};
         TimeStamp pc_ts, cam_ts;
         double pc_s, cam_s, offset_s;
         std::vector<double> timeofs;
@@ -192,13 +191,13 @@ namespace bias
                 cam_ts = cameraPtr->getDeviceTimeStamp();
                 cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
             }else{
-       
+
                 std::cout << " No camera found " << std::endl;
             }
 
             timeofs.push_back(pc_s-cam_s);
-            //printf("%0.06f \n" ,pc_s-cam_s); 
-            //printf("%0.06f  %0.06f pc_s-cam_us\n ", pc_s ,cam_s); 
+            //printf("%0.06f \n" ,pc_s-cam_s);
+            //printf("%0.06f  %0.06f pc_s-cam_us\n ", pc_s ,cam_s);
 
         }
 
@@ -210,7 +209,7 @@ namespace bias
         cam_ofs.microSeconds = (offset_s - cam_ofs.seconds)*1e6;
         ofs_isSet = false;
 
- 
+
         //calculate std dev
         double std_sum=0;
         for(int k=0;k < timeofs.size() ;k++)
@@ -224,14 +223,14 @@ namespace bias
         //printf("%0.06f average offset \n" ,offset_s);
         printf("%0.06f std deviation \n ",std_sum);
         //printf("%ld seconds %d microseconds", cam_ofs.seconds, cam_ofs.microSeconds);
-        
+
         return cam_ofs;
 
     }*/
 
     // Protected Methods
     // ------------------------------------------------------------------------
-    
+
     void SignalSlotDemoPlugin::connectWidgets()
     {
 
@@ -302,7 +301,7 @@ namespace bias
 
     // Private Slots
     // ------------------------------------------------------------------------
-    
+
     void SignalSlotDemoPlugin::onNewFrameData(FrameData data)
     {
         //std::cout << "cam " << cameraNumber_ << " received data from cam " << partnerCameraNumber_ << std::endl;

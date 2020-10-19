@@ -2,14 +2,18 @@
 #define WIN_TIME_HPP
 
 //#include "stdafx.h"
-#include <time.h>
-#include <ctime>
-#include <windows.h>
+//#include <time.h>
+//#include <ctime>
+
 #include <chrono>
 #include "stamped_image.hpp"
 
 #include <fstream>
 //#include <iomanip>
+
+#ifdef WIN32
+#include<windows.h>
+#endif
 
 //using namespace System;
 using namespace std;
@@ -31,7 +35,7 @@ namespace bias
          unsigned long long secs;
          unsigned long long usec;
          time_t curr_time;
-         timeval tv;
+         //timeval tv;
 
          GetTime(long long unsigned int secs, long long unsigned int usec);
 			
@@ -42,8 +46,8 @@ namespace bias
          };
 
          // Definition of a gettimeofday function
-         int getdaytime(struct timeval *tv, struct timezone *tz);
-         std::chrono::system_clock::duration GetTime::duration_since_midnight();
+         //int getdaytime(struct timeval *tv, struct timezone *tz);
+         std::chrono::system_clock::duration duration_since_midnight();
          TimeStamp getPCtime();
 
          // this is a hack to avoid linker errors in VS2017

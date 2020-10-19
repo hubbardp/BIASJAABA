@@ -1,7 +1,9 @@
 #ifndef BIAS_CAMERA_DEVICE_HPP
 #define BIAS_CAMERA_DEVICE_HPP
 
+#ifdef WIN32
 #include "win_time.hpp"
+#endif
 
 #include <string>
 #include <memory>
