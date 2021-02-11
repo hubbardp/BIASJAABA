@@ -41,6 +41,7 @@ namespace bias {
             ssError << ": unable to create Spinnaker context, error = " << err;
             throw RuntimeError(ERROR_SPIN_CREATE_CONTEXT, ssError.str());
         }
+        gettime = new GetTime(0, 0);
     }
 
     CameraDevice_spin::~CameraDevice_spin()
@@ -64,6 +65,9 @@ namespace bias {
             ssError << ": unable to destroy Spinnaker context, error = " << err;
             throw RuntimeError(ERROR_SPIN_DESTROY_CONTEXT, ssError.str());
         }
+
+        if (gettime != nullptr)
+            delete gettime;
     }
 
 
@@ -218,7 +222,7 @@ namespace bias {
 
             if (transferMode.isAvailable() && transferMode.isWritable())
             {
-				        transferMode.setEnumEntry("NewestOnly");
+                        transferMode.setEnumEntry("NewestOnly");
 
             } else {
 
@@ -234,7 +238,6 @@ namespace bias {
             if (transferModeVal.isAvailable() && transferModeVal.isWritable())
             {
                 transferModeVal.setValue(1);
-                std::cout << " hiiii11 " << std::endl;
             }*/
 
 
@@ -292,7 +295,7 @@ namespace bias {
     void CameraDevice_spin::startCapture()
     {
 
-	    std::cout << "DEBUG: " << __FUNCTION__ << " begin" << std::endl;
+        std::cout << "DEBUG: " << __FUNCTION__ << " begin" << std::endl;
 
         if (!connected_)
         {
@@ -388,23 +391,8 @@ namespace bias {
         //bool resize = false;
 
         std::string errMsg;
-        GetTime* gettime = new GetTime(0,0);
-        TimeStamp pc_1, pc_2;
-        int64_t pc_ts, cam_ts;
-
-        //pc_1 = gettime->getPCtime();
 
         bool ok = grabImageCommon(errMsg);
-
-        /*pc_2 = gettime->getPCtime();
-        pc_ts = (pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds);
-		time_stamp2.push_back({ 0, pc_ts});// int64_t(timeStamp_.seconds * 1000000 + timeStamp_.microSeconds), pc_ts});
-
-        if (time_stamp2.size() == 50000)
-        {
-            std::string filename = "grabImageCommon_" + std::to_string(1) + ".csv";
-            gettime->write_time<int64_t>(filename, 50000, time_stamp2);
-        }*/
 
         if (!ok)
         {
@@ -1023,11 +1011,6 @@ namespace bias {
 
         imageOK_ = false;
 
-        GetTime* gettime = new GetTime(0,0);
-        TimeStamp pc_1, pc_2;
-        int64_t pc_ts1, pc_ts2, cam_ts;
-
-        //pc_1 = gettime->getPCtime();
         // Get next image from camera
         if (triggerType_ == TRIGGER_INTERNAL)
         {
@@ -1040,16 +1023,6 @@ namespace bias {
             err = spinCameraGetNextImageEx(hCamera_, 1, &hSpinImage_);
         }
 
-		    //cpu_time = gettime->getPCtime();
-        pc_2 = gettime->getPCtime();
-		pc_ts2 = (pc_2.seconds*1e6 + pc_2.microSeconds) - (cam_ofs.seconds*1e6 + cam_ofs.microSeconds);
-        pc_ts1 = (pc_2.seconds*1e6 + pc_2.microSeconds);// - (pc_1.seconds*1e6 + pc_1.microSeconds);
-        //if(pc_ts1 == 0) {
-        //    std::cout << "pc_2 " << pc_2.seconds*1e6 + pc_2.microSeconds
-        //    << "pc_1 " << pc_1.seconds*1e6 + pc_1.microSeconds << std::endl;}
-        time_stamp1.push_back({ 0, pc_ts1 });
-
-
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             //std::cout << "fail, " << (hSpinImage_ == nullptr) << std::endl;
@@ -1061,9 +1034,9 @@ namespace bias {
         }
 
         // Check to see if image is incomplete
-	    bool8_t isIncomplete = False;
-	    err = spinImageIsIncomplete(hSpinImage_, &isIncomplete);
-	    if (err != SPINNAKER_ERR_SUCCESS)
+        bool8_t isIncomplete = False;
+        err = spinImageIsIncomplete(hSpinImage_, &isIncomplete);
+        if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
             ssError << __FUNCTION__;
@@ -1084,21 +1057,6 @@ namespace bias {
         imageOK_ = true;
 
         updateTimeStamp();
-		cam_ts = timeStamp_.seconds * 1000000 + timeStamp_.microSeconds;
-		time_stamp2.push_back({ 0, pc_ts2 - cam_ts });
-		/*if (time_stamp1.size() == 200000)
-		{
-			std::string filename = "spinImage_" + std::to_string(1) + ".csv";
-			gettime->write_time<int64_t>(filename, 200000, time_stamp1);
-		} */
-
-		/*if (time_stamp2.size() == 50000)
-		{
-			std::string filename = "spinImage_latency" + std::to_string(1) + ".csv";
-			gettime->write_time<int64_t>(filename, 50000, time_stamp2);
-		}*/
-
-        //std::cout << cam_ofs.seconds*1e6 + cam_ofs.microSeconds << std::endl;
         //std::cout << "timeStamp_ns_           = " << timeStamp_ns_ << std::endl;
         //std::cout << "timeStamp_.seconds      = " << timeStamp_.seconds << std::endl;
         //std::cout << "timeStamp_.microSeconds = " << timeStamp_.microSeconds << std::endl;
@@ -1170,7 +1128,7 @@ namespace bias {
         if (chunkSelectorNode.isAvailable())
         {
             std::cout << "DEBUG: ChunkSelector available " << std::endl;
-            std::ofstream entries_file;
+            /*std::ofstream entries_file;
             entries_file.open("chuckselector_entries.txt");
             entries_file << "DEBUG: ChunkSelector entries begin " << std::endl;
             for (auto entry : chunkSelectorNode.entries())
@@ -1178,7 +1136,7 @@ namespace bias {
                 entries_file << entry.toString();
             }
             entries_file << "DEBUG: ChunkSelector entries end " << std::endl;
-            entries_file.close();
+            entries_file.close();*/
             chunkSelectorNode.setEntryBySymbolic("Timestamp");
         }
         else

@@ -117,4 +117,3 @@ target_link_libraries(
     )
 
 qt5_use_modules(test_gui Core Gui Widgets Network PrintSupport SerialPort)
-

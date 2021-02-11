@@ -20,10 +20,11 @@ namespace bias
 
     // Public Methods
     // ------------------------------------------------------------------------
-
-    SignalSlotDemoPlugin::SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, QWidget *parentPtr) : BiasPlugin(parentPtr)
+    SignalSlotDemoPlugin::SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, 
+                  GetTime* gettime, QWidget *parentPtr) : BiasPlugin(parentPtr)
     {
         imageLabelPtr_ = imageLabelPtr;
+        gettime_ = gettime;
         setupUi(this);
         connectWidgets();
         initialize();
@@ -84,26 +85,30 @@ namespace bias
             StampedImage latestFrame = pluginImageQueuePtr_ ->front();//frameList.back();
             //frameList.clear();
 
-
             //-------------------DEVEL----------------------------------------------------//
 
             // get camera times wrt to stamped image times
-            GetTime* gettime = new GetTime(0, 0);
-            TimeStamp pc_time = gettime->getPCtime();
-            int64_t pc_ts, cam_ts, delay;
-
+            /*TimeStamp pc_time = gettime_->getPCtime(); 
+            int64_t pc_ts1, pc_ts2, cam_ts, delay;
+            
             // subtract the offset to get camera time
-            pc_ts = ((pc_time.seconds*1e6 + pc_time.microSeconds));//-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
+            pc_ts1 = (pc_time.seconds*1e6 + pc_time.microSeconds)-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds);
+            pc_ts2 = (pc_time.seconds*1e6 + pc_time.microSeconds);
             cam_ts = int64_t(latestFrame.timeStampVal.seconds*1e6 + latestFrame.timeStampVal.microSeconds);
-            delay = pc_ts - cam_ts;
-            cam_delay.push_back({cam_ts,pc_ts});
+            delay = pc_ts1 - cam_ts;*/
+            //cam_delay1.push_back({ cam_ts, delay});
+            //cam_delay2.push_back({cam_ts, pc_ts2});
 
-            //std::cout << "frame: "  << <<  std::endl;
-            if(cam_delay.size()==200000){
-                std::string filecam = "signal_slot_" + std::to_string(cameraNumber_) + ".csv";
-                gettime->write_time<int64_t>(filecam , 200000, cam_delay);
-            } 
+            /*if (cam_delay1.size() == 200000) {
+                std::string filecam = "signal_slot_lat" + std::to_string(cameraNumber_) + ".csv";
+                gettime->write_time<int64_t>(filecam, 200000, cam_delay1);
+            }*/
 
+
+            /*if(cam_delay2.size()==100000){
+                std::string filecam = "signal_slot_f2f" + std::to_string(cameraNumber_) + ".csv"; 
+                gettime_->write_time<int64_t>(filecam , 100000, cam_delay2);
+            }*/
             //---------------------------------------------------------------------------//
 
             acquireLock();

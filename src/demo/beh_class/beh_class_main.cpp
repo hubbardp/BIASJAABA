@@ -33,24 +33,47 @@ int main(int argc, char* argv[]) {
     //Input files
     //cudaSetDevice(1);
     HOGHOF feat_side;
+    HOGHOF feat_frt;
+    const int nviews = 2;
+    beh_class classifier;
+
+
+
+#ifdef linux 
     feat_side.HOGParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOGparam.json";
     feat_side.HOFParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOFparam.json";
     feat_side.CropParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/Cropsde_param.json";
                            
-    HOGHOF feat_frt;
     feat_frt.HOGParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOGparam.json";
     feat_frt.HOFParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOFparam.json"; 
     feat_frt.CropParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/Cropfrt_param.json";
 
     // Video Capture
-    const int nviews = 2;
     QString vidFile[nviews] = {//"/groups/branson/home/patilr/bias_video_cam_0_date_2019_06_13_time_14_45_56_v001/image_%d.bmp"}; 
                                "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi",
                                "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi"};
 
     //Initialize and load classifier model
-    beh_class classifier;
-    classifier.classifier_file = "/nrs/branson/jab_experiments/M277PSAMBpn/FinalJAB/cuda_jabs/classifier_Handopen.mat";
+    classifier.classifier_file = "/nrs/branson/jab_experiments/M277PSAMBpn/FinalJAB/cuda_jabs/classifier_Lift.mat";
+#endif
+
+#ifdef WIN32
+    feat_side.HOGParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOGparam.json";
+    feat_side.HOFParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOFparam.json";
+    feat_side.CropParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/Cropsde_param.json";
+
+    feat_frt.HOGParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOGparam.json";
+    feat_frt.HOFParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOFparam.json";
+    feat_frt.CropParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/Cropfrt_param.json";
+
+    // Video Capture
+    QString vidFile[nviews] = {"C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi", 
+                               "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi"};
+
+    //Initialize and load classifier model
+    classifier.classifier_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/classifier_Lift.mat";
+#endif    
+
     classifier.allocate_model();
     classifier.loadclassifier_model();
 
@@ -88,7 +111,7 @@ int main(int argc, char* argv[]) {
         
     }
 
-    std::string out_scores = "test_Handopen.h5";
+    std::string out_scores = "test_Lift.h5";
     H5::H5File file_scr(out_scores.c_str(), H5F_ACC_TRUNC);
     create_dataset(file_scr,"scores", classifier.scores, 1, classifier.nframes);
     file_scr.close();

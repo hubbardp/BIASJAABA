@@ -13,740 +13,569 @@
 
 namespace bias {
 
-	//Public static variables 
-	const QString JaabaPlugin::PLUGIN_NAME = QString("jaabaPlugin");
-	const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
+    //Public static variables 
+    const QString JaabaPlugin::PLUGIN_NAME = QString("jaabaPlugin");
+    const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
 
-	// Public Methods
-    JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
-                                 QWidget *parent) : BiasPlugin(parent)
-	{
+    // Public Methods
+        JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
+                             GetTime* gettime, QWidget *parent) : BiasPlugin(parent)
+    {
 
-            nviews_ = numberOfCameras;
-	        threadPoolPtr_ = threadPoolPtr;
-            cudaError_t err = cudaGetDeviceCount(&nDevices_);
-            if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
-            setupUi(this);
-            connectWidgets();
-            initialize();
+        nviews_ = numberOfCameras;
+        threadPoolPtr_ = threadPoolPtr;
+        gettime_ = gettime;
+        cudaError_t err = cudaGetDeviceCount(&nDevices_);
+        if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
+        setupUi(this);
+        connectWidgets();
+        initialize();
 
-	}
-
-
-	QString JaabaPlugin::getName()
-	{
-	    return PLUGIN_NAME;
-	}
+    }
 
 
-	QString JaabaPlugin::getDisplayName()
-	{
+    QString JaabaPlugin::getName()
+    {
+        return PLUGIN_NAME;
+    }
+
+
+    QString JaabaPlugin::getDisplayName()
+    {
         return PLUGIN_DISPLAY_NAME;
-	}
+    }
 
 
-	cv::Mat JaabaPlugin::getCurrentImage()
-	{
+    cv::Mat JaabaPlugin::getCurrentImage()
+    {
 
         acquireLock();
         cv::Mat currentImageCopy = currentImage_.clone();
         releaseLock();
         return currentImageCopy;
-	}
+    }
 
 
-	void JaabaPlugin::getFormatSettings()
-	{
+    void JaabaPlugin::getFormatSettings()
+    {
 
-            Format7Settings settings;
-            settings = cameraPtr_->getFormat7Settings();
-            image_height = settings.height;
-            image_width = settings.width;
+        Format7Settings settings;
+        settings = cameraPtr_->getFormat7Settings();
+        image_height = settings.height;
+        image_width = settings.width;
 
-	}
+        //DEVEL
+        /*if(processScoresPtr_side->vid_sde)
+        {
+            image_height = 384; //height of frame from video input
+            image_width = 260;   //width of frame from video input 
+        }*/
+
+    }
 
 
-	bool JaabaPlugin::isSender()
+    bool JaabaPlugin::isSender()
+    {
+
+        if (cameraNumber_ == 1)
+        {
+            return true;
+             
+        }else {
+
+            return false;
+
+        }
+    }
+
+
+    bool JaabaPlugin::isReceiver()
+    {
+
+        if (cameraNumber_ == 0)
+        {
+            return true;
+
+        }else{
+
+            return false;
+        }
+    }
+
+
+    void JaabaPlugin::stop()
+    {
+
+        if (processScoresPtr_side != nullptr)
         {
 
-            if (cameraNumber_ == 1)
+            if (sideRadioButtonPtr_->isChecked())
             {
-                return true;
-            }else {
-                return false;
-            }
-        }
-
-
-        bool JaabaPlugin::isReceiver()
-	{
-
-            if (cameraNumber_ == 0)
-	    {
-                return true;
-
-	    }else {
-
-                return false;
-
-            }
-        }
-
-
-	void JaabaPlugin::stop()
-	{
-
-            if (processScoresPtr_side != nullptr)
-            {
-
-                if (sideRadioButtonPtr_->isChecked())
-                {
-                    if (processScoresPtr_side->HOGHOF_frame->isHOGPathSet
-                        && processScoresPtr_side->HOGHOF_frame->isHOFPathSet 
-                        && classifier->isClassifierPathSet)
-                    {
-
-                        HOFTeardown(processScoresPtr_side->HOGHOF_frame->hof_ctx);
-                        HOGTeardown(processScoresPtr_side->HOGHOF_frame->hog_ctx);
-                    }
-
-                }
-
-                processScoresPtr_side->stop();
-                visplots->stop();
-
-            }
-
-
-            if (processScoresPtr_front != nullptr)
-            {
-
-                if (frontRadioButtonPtr_->isChecked())
+                if (processScoresPtr_side->HOGHOF_frame->isHOGPathSet
+                    && processScoresPtr_side->HOGHOF_frame->isHOFPathSet 
+                    && classifier->isClassifierPathSet)
                 {
 
-                    if (processScoresPtr_side->HOGHOF_partner->isHOGPathSet
-                        && processScoresPtr_side->HOGHOF_partner->isHOFPathSet
-                        && classifier->isClassifierPathSet)
-                    {
-
-                        HOFTeardown(processScoresPtr_front->HOGHOF_partner->hof_ctx);
-                        HOGTeardown(processScoresPtr_front->HOGHOF_partner->hog_ctx);
-                    }
+                    HOFTeardown(processScoresPtr_side->HOGHOF_frame->hof_ctx);
+                    HOGTeardown(processScoresPtr_side->HOGHOF_frame->hog_ctx);
+                    delete classifier;
                 }
 
-                processScoresPtr_front->stop();
             }
+
+            processScoresPtr_side->stop();
+            visplots->stop();
+            delete processScoresPtr_side->HOGHOF_frame;
+            delete processScoresPtr_side;
+            delete visplots;
 
         }
 
 
-        void JaabaPlugin::reset()
+        if (processScoresPtr_front != nullptr)
         {
 
-            if (isReceiver())
+            if (frontRadioButtonPtr_->isChecked())
             {
 
-		// create threads for side plugin processing and plots visualisation
-                //threadPoolPtr = new QThreadPool(this);
-                //threadPoolPtr->setMaxThreadCount(2);
- 
-                /*if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
+                if (processScoresPtr_side->HOGHOF_partner->isHOGPathSet
+                    && processScoresPtr_side->HOGHOF_partner->isHOFPathSet
+                    && classifier->isClassifierPathSet)
                 {
-                    threadPoolPtr_ -> start(processScoresPtr_side);
-                }*/
 
-                // this thread adds latencyF to process frames
-                /*if((threadPoolPtr != nullptr) && (visplots != nullptr))
-                {
-                    threadPoolPtr -> start(visplots);
-                }*/
+                    HOFTeardown(processScoresPtr_front->HOGHOF_partner->hof_ctx);
+                    HOGTeardown(processScoresPtr_front->HOGHOF_partner->hog_ctx);
+                }
             }
 
+            processScoresPtr_front->stop();
+            delete processScoresPtr_front->HOGHOF_partner;
+            delete processScoresPtr_front;
         }
 
-
-	/*void JaabaPlugin::cameraOffsetTime()
-	{
-
-		//double offset,cam_ts, PC_ts;
-		TimeStamp pc_ts, cam_ts, offset;
-		double pc_s, cam_s, offset_s;
-
-		for(int i=0;i < 20; i++)
-		{
-
-			//get computer local time since midnight
-			pc_ts = getPCtime();
-			pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
-
-			//calculate camera time
-			cam_ts = cameraPtr_->getDeviceTimeStamp();
-			cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
-
-			timeofs.push_back(pc_s-cam_s);
-			std::cout << pc_s-cam_s << "pc_us " << pc_s << "cam_us " << cam_s << std::endl;
-
-		}
-
-		offset_s = accumulate(timeofs.begin(),timeofs.end(),0.0)/20.0;
-		std::cout << "offset us " << offset_s << std::endl;
-		cam_ofs.seconds = int(offset_s);
-		cam_ofs.microSeconds = (offset_s)*1e6 - cam_ofs.seconds;
-
-	}*/
+    }
 
 
-	void JaabaPlugin::gpuInit()
-	{
+    void JaabaPlugin::reset()
+    {
+        
+        if (isReceiver())
+        {
 
-            // intitialize the HOGHOF context for the GPU memory
-            getFormatSettings();
-
-
-            if (!processScoresPtr_side->isHOGHOFInitialised)
+            if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
-
-                if (!(processScoresPtr_side->HOGHOF_frame.isNull()))
-                {
-
-                    if (nDevices_ >= 2)
-		    {
-
-                        cudaSetDevice(0);
-                        processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
-
-                    }else {
-
-                        processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
-
-                    }
-
-                }
-
+                threadPoolPtr_ -> start(processScoresPtr_side);
             }
 
-
-            if (!processScoresPtr_front->isHOGHOFInitialised)
+            // this thread adds latencyF to process frames
+            /*if((threadPoolPtr_ != nullptr) && (visplots != nullptr))
             {
-
-                if (!(processScoresPtr_front->HOGHOF_partner.isNull()))
-                {
-
-                    if (nDevices_ >= 2)
-                    {
-                        cudaSetDevice(1);
-                        processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
-
-                    }else {
-
-                        processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
-                    }
-
-
-                    if (processScoresPtr_side->isHOGHOFInitialised && processScoresPtr_front->isHOGHOFInitialised)
-                    {
-
-                        classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape,
-						&processScoresPtr_front->HOGHOF_partner->hog_shape);
-                    }
-			
-                }
-            }
-
-            // DEVEL
-            /*if (isSender())
-            {
-                processScoresPtr_side->isHOGHOFInitialised = true;
-                processScoresPtr_front->isHOGHOFInitialised = true;
+                threadPoolPtr_->start(visplots);
             }*/
-	}
-
-
-	void JaabaPlugin::finalSetup()
-	{
-
-            QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
-
-            if (partnerCameraWindowPtr)
-            {
-
-                QPointer<BiasPlugin> partnerPluginPtr = partnerCameraWindowPtr->getPluginByName("jaabaPlugin");
-                qRegisterMetaType<std::shared_ptr<LockableQueue<StampedImage>>>("std::shared_ptr<LockableQueue<StampedImage>>");
-                connect(partnerPluginPtr, SIGNAL(partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>>)),
-                    this, SLOT(onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>>)));
-
-            }
-
-	}
-
-
-	void JaabaPlugin::resetTrigger()
-	{
-            //triggerArmedState = true;
-            //updateTrigStateInfo();
-	}
-
-
-	void JaabaPlugin::trigResetPushButtonClicked()
-	{
-            resetTrigger();
-	}
-
-
-        void JaabaPlugin::trigEnabledCheckBoxStateChanged(int state)
-        {
-
-            if (state == Qt::Unchecked)
-            {
-                triggerEnabled = false;
-            }else{
-                triggerEnabled = true;
-            }
-            updateTrigStateInfo();
         }
 
+    }
 
-	//void JaabaPlugin::processFrames(QList<StampedImage> frameList)
-        void JaabaPlugin::processFrames()
+
+    void JaabaPlugin::gpuInit()
+    {
+
+        // intitialize the HOGHOF context for the GPU memory
+        getFormatSettings();
+        std:cout << image_height << " " << image_width << std::endl;
+
+        if (!processScoresPtr_side->isHOGHOFInitialised)
         {
 
-            cv::Mat sideImage;
-            cv::Mat frontImage;
-            cv::Mat greySide;
-            cv::Mat greyFront;
-
-	    // initialize memory on the gpu 
-            /*if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
-            {
-                gpuInit();
-                cam_ofs = cameraOffsetTime(cameraPtr_);
-            }*/
-
-            // Send frames from front plugin to side
-            if(pluginImageQueuePtr_ != nullptr && isSender())
-            {
-		
-                /*if(ofs_isSet)
-                {
-				    
-                    cam_ofs = cameraOffsetTime(cameraPtr_); 
-				  
-                }*/
-		    
-                emit(partnerImageQueue(pluginImageQueuePtr_)); //causes the preview images to be slow
-                processScoresPtr_side -> processedFrameCount += 1;
-
-            }
-
-
-            if (isReceiver() && pluginImageQueuePtr_ != nullptr && partnerPluginImageQueuePtr_ != nullptr)
+            if (!(processScoresPtr_side->HOGHOF_frame.isNull()))
             {
 
-                pluginImageQueuePtr_ -> acquireLock();
-                pluginImageQueuePtr_ -> waitIfEmpty();
-
-                partnerPluginImageQueuePtr_ -> acquireLock();
-                partnerPluginImageQueuePtr_ -> waitIfEmpty();
-
-                
-                if (pluginImageQueuePtr_ -> empty() || partnerPluginImageQueuePtr_ -> empty())
+                if (nDevices_ >= 2)
                 {
 
-                    pluginImageQueuePtr_ -> releaseLock();
-                    partnerPluginImageQueuePtr_ -> releaseLock();
-                    return;
+                    cudaSetDevice(0);
+                    processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
+
+                }else {
+
+                    processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
 
                 }
 
-                if ( !(pluginImageQueuePtr_ -> empty()) && !(partnerPluginImageQueuePtr_ -> empty()))
+            }
+
+        }
+
+
+        if (!processScoresPtr_front->isHOGHOFInitialised)
+        {
+
+            if (!(processScoresPtr_front->HOGHOF_partner.isNull()))
+            {
+
+                if (nDevices_ >= 2)
+                {
+                    cudaSetDevice(1);
+                    processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
+
+                }else {
+
+                    processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
+                }
+
+
+                if (processScoresPtr_side->isHOGHOFInitialised && processScoresPtr_front->isHOGHOFInitialised)
                 {
 
-                    StampedImage stampedImage0 = pluginImageQueuePtr_ -> front();
-                    StampedImage stampedImage1 = partnerPluginImageQueuePtr_ -> front();
+                    classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape,
+                    &processScoresPtr_front->HOGHOF_partner->hog_shape);
+                }
+            
+            }
+        }
 
-                    pluginImageQueuePtr_->pop();
-                    partnerPluginImageQueuePtr_ -> pop();
-
-                    //pluginImageQueuePtr_->releaseLock();
-                    //partnerPluginImageQueuePtr_ -> releaseLock();
-
-					GetTime* gettime = new GetTime(0, 0);
-                    TimeStamp pc_time = gettime->getPCtime();
-                    int64_t cam_ts1,cam_ts2, delay, pc_ts;
+        // DEVEL
+        /*if (isSender())
+        {
+            processScoresPtr_side->isHOGHOFInitialised = true;
+            processScoresPtr_front->isHOGHOFInitialised = true;
+        }*/
+    }
 
 
-                    // subtract the offset to get camera time
-                    pc_ts = ((pc_time.seconds*1e6 + pc_time.microSeconds)-
-                            (cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
-                    cam_ts1 = int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
-                    delay = pc_ts - cam_ts1;
+    void JaabaPlugin::finalSetup()
+    {
+
+        QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
+
+        if (partnerCameraWindowPtr)
+        {
+
+            QPointer<BiasPlugin> partnerPluginPtr = partnerCameraWindowPtr->getPluginByName("jaabaPlugin");
+            qRegisterMetaType<std::shared_ptr<LockableQueue<StampedImage>>>("std::shared_ptr<LockableQueue<StampedImage>>");
+            connect(partnerPluginPtr, SIGNAL(partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>>)),
+                this, SLOT(onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>>)));
+
+        }
+
+    }
+
+
+    void JaabaPlugin::resetTrigger()
+    {
+        //triggerArmedState = true;
+        //updateTrigStateInfo();
+    }
+
+
+    void JaabaPlugin::trigResetPushButtonClicked()
+    {
+        resetTrigger();
+    }
+
+
+    void JaabaPlugin::trigEnabledCheckBoxStateChanged(int state)
+    {
+
+        if (state == Qt::Unchecked)
+        {
+            triggerEnabled = false;
+        }else{
+            triggerEnabled = true;
+        }
+        updateTrigStateInfo();
+    }
+
+
+    //void JaabaPlugin::processFrames(QList<StampedImage> frameList)
+    void JaabaPlugin::processFrames()
+    {
+
+        cv::Mat sideImage;
+        cv::Mat frontImage;
+        cv::Mat greySide;
+        cv::Mat greyFront;
+
+        StampedImage stampedImage0 , stampedImage1;
+
+        //DEVEL
+        TimeStamp pc_time;
+        int64_t pc_ts1, pc_ts2, cam_ts, delay;
+            
+        // initialize memory on the gpu 
+        if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
+        {
+            gpuInit();
+            cam_ofs = cameraOffsetTime(cameraPtr_);
+        }
+
+        // Send frames from front plugin to side
+        if(pluginImageQueuePtr_ != nullptr && isSender())
+        {
+        
+            if(ofs_isSet)
+            {
                     
-                    /*while (delay > threshold_runtime)
-                    {
-                        numskippedFrames_ += 1;
-                        //std::cout << "deleted " <<  stampedImage0.frameCount << " " << numskippedFrames_ << std::endl;
-                        //time_seconds.push_back(cam_ts);
-                        //time_useconds.push_back(int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds));
-                        pluginImageQueuePtr_->pop();
-                        partnerPluginImageQueuePtr_->pop();
+                cam_ofs = cameraOffsetTime(cameraPtr_); 
+                  
+            }
+            
+            emit(partnerImageQueue(pluginImageQueuePtr_)); //causes the preview images to be slow
+            processScoresPtr_side -> processedFrameCount += 1;
 
-                        if (pluginImageQueuePtr_->empty() || partnerPluginImageQueuePtr_->empty())
-                        {
-                            processScoresPtr_side->processedFrameCount = stampedImage0.frameCount;
-                            processScoresPtr_front->processedFrameCount = stampedImage1.frameCount;
-                            processScoresPtr_side->isProcessed_side = false;
+        }
 
-                            pluginImageQueuePtr_->releaseLock();
-                            partnerPluginImageQueuePtr_->releaseLock();
-                            return;
-                        }
 
-                        if (!pluginImageQueuePtr_->empty())
-                        {
+        if (isReceiver() && pluginImageQueuePtr_ != nullptr && partnerPluginImageQueuePtr_ != nullptr)
+        {
 
-                            stampedImage0 = pluginImageQueuePtr_->front();
+            pluginImageQueuePtr_ -> acquireLock();
+            pluginImageQueuePtr_ -> waitIfEmpty();
 
-                        }
+            partnerPluginImageQueuePtr_ -> acquireLock();
+            partnerPluginImageQueuePtr_ -> waitIfEmpty();
+                
+                
+            if (pluginImageQueuePtr_ -> empty() || partnerPluginImageQueuePtr_ -> empty())
+            {
 
-                        if (!partnerPluginImageQueuePtr_->empty())
-                        {
+                pluginImageQueuePtr_ -> releaseLock();
+                partnerPluginImageQueuePtr_ -> releaseLock();
+                return;
 
-                            stampedImage1 = partnerPluginImageQueuePtr_->front();
+            }
 
-                        }
+            if ( !(pluginImageQueuePtr_ -> empty()) && !(partnerPluginImageQueuePtr_ -> empty()))
+            {
 
-                        delay = cam_ts1 - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
-                    }*/
-					
-                    time_seconds.push_back({cam_ts1 ,delay});
-                    //time_useconds.push_back(delay);
-                    if (time_seconds.size()  == 10000) {
+                stampedImage0 = pluginImageQueuePtr_ -> front();
+                stampedImage1 = partnerPluginImageQueuePtr_ -> front();
 
-                        gettime->write_time<int64_t>("delay.csv", time_seconds.size(), time_seconds);
-                        
-                    }
-                    sideImage = stampedImage0.image.clone();
-                    frontImage = stampedImage1.image.clone();
+                    
+                sideImage = stampedImage0.image.clone();
+                frontImage = stampedImage1.image.clone();
+
+                if((sideImage.rows != 0) && (sideImage.cols != 0) 
+                    && (frontImage.rows != 0) && (frontImage.cols != 0))
+                {
+
+                    acquireLock();
+                    currentImage_ = sideImage;
+                    frameCount_ = stampedImage0.frameCount;
+                    releaseLock();
 
                     // Test
-                    /*if(processScoresPtr_side -> capture_sde.isOpened())
+                    /*if(sideImage.ptr<float>(0) != nullptr && frameCount == 1000)
                     {
-
-                        sideImage = processScoresPtr_side-> vid_sde -> getImage(processScoresPtr_side -> capture_sde);
-                        processScoresPtr_side -> vid_sde -> convertImagetoFloat(sideImage);
-                        greySide = sideImage;
-
-                    }
-
-                    if(processScoresPtr_front -> capture_front.isOpened())
-                    {
-                  
-                        frontImage = processScoresPtr_front-> vid_front-> getImage(processScoresPtr_front -> capture_front);
-                        processScoresPtr_front -> vid_front -> convertImagetoFloat(frontImage);
-                        greyFront = frontImage;
-
+                
+                        imwrite("out_feat/side_" + std::to_string(frameCount) + ".jpg", sideImage);
+                        imwrite("out_feat/front_" + std::to_string(frameCount) + ".jpg", frontImage);
+                        //sideImage.convertTo(sideImage, CV_32FC1);
+                        //frontImage.convertTo(frontImage,CV_32FC1);
+                        //sideImage = sideImage / 255;
+                        //std::cout << sideImage.rows << " " << sideImage.cols << std::endl;
+                        //write_output("out_feat/side" + std::to_string(frameCount_) + ".csv" , sideImage.ptr<float>(0), sideImage.rows, sideImage.cols);
+                        //write_output("out_feat/front" + std::to_string(frameCount_) + ".csv" , frontImage.ptr<float>(0), frontImage.rows , frontImage.cols);
                     }*/
 
 
-                    /*if((sideImage.rows != 0) && (sideImage.cols != 0) 
-                        && (frontImage.rows != 0) && (frontImage.cols != 0))
+                    if( stampedImage0.frameCount == stampedImage1.frameCount)
                     {
-
-                        acquireLock();
-                        currentImage_ = sideImage;
-                        frameCount_ = stampedImage0.frameCount;
-                        releaseLock();*/
-
-                        // Test
-                        /*if(sideImage.ptr<float>(0) != nullptr && frameCount == 1000)
-                        {
-				
-                            imwrite("out_feat/side_" + std::to_string(frameCount) + ".jpg", sideImage);
-                            imwrite("out_feat/front_" + std::to_string(frameCount) + ".jpg", frontImage);
-                            //sideImage.convertTo(sideImage, CV_32FC1);
-                            //frontImage.convertTo(frontImage,CV_32FC1);
-                            //sideImage = sideImage / 255;
-                            //std::cout << sideImage.rows << " " << sideImage.cols << std::endl;
-                            //write_output("out_feat/side" + std::to_string(frameCount_) + ".csv" , sideImage.ptr<float>(0), sideImage.rows, sideImage.cols);
-                            //write_output("out_feat/front" + std::to_string(frameCount_) + ".csv" , frontImage.ptr<float>(0), frontImage.rows , frontImage.cols);
-                        }*/
-
-
-                        /*if( stampedImage0.frameCount == stampedImage1.frameCount)
+                        
+                        if((processScoresPtr_side -> detectStarted_) && (frameCount_  == (processScoresPtr_side -> processedFrameCount+1)))
                         {
 
-                            if((processScoresPtr_side -> detectStarted_) && (frameCount_  == (processScoresPtr_side -> processedFrameCount+1)))
+
+                            // Test - Uncomment to perform preprocesing of video frames
+                            /*if (processScoresPtr_side->capture_sde.isOpened())
                             {
 
-                                // preprocessing the frames
-                                // convert the frame into RGB2GRAY
+                                sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
+                                processScoresPtr_side->vid_sde->convertImagetoFloat(sideImage);
+                                greySide = sideImage;
 
-                                if(sideImage.channels() == 3)
-                                {							
-                                    cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
+                            }
+
+                            if (processScoresPtr_front->capture_front.isOpened())
+                            {
+
+                                frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
+                                processScoresPtr_front->vid_front->convertImagetoFloat(frontImage);
+                                greyFront = frontImage;
+                                //std:cout << greyFront.rows << " " << greyFront.cols << std::endl;
+
+                            }*/
+
+
+                            // preprocessing the frames - Comment this section if using video input 
+                            // convert the frame into RGB2GRAY
+
+                            if(sideImage.channels() == 3)
+                            {							
+                                cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
+                            }
+
+                            if(frontImage.channels() == 3)
+                            {
+                                cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
+                            }
+
+                            // convert the frame into float32
+                            sideImage.convertTo(greySide, CV_32FC1);
+                            frontImage.convertTo(greyFront, CV_32FC1);
+                            greySide = greySide / 255;
+                            greyFront = greyFront / 255;
+
+                            if(nDevices_>=2)
+                            {
+                                    
+                                if(processScoresPtr_side -> isSide)
+                                {
+
+                                    cudaSetDevice(0);
+                                    processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                    processScoresPtr_side -> onProcessSide();
+                                    //processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
+
                                 }
 
-                                if(frontImage.channels() == 3)
+                                if(processScoresPtr_front -> isFront)
                                 {
-                                    cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
-                                }
 
-                                // convert the frame into float32
-                                sideImage.convertTo(greySide, CV_32FC1);
-								frontImage.convertTo(greyFront, CV_32FC1);
-                                greySide = greySide / 255;
-								greyFront = greyFront / 255;
-
-
-                                if(nDevices_>=2)
-                                {
-									
-                                    if(processScoresPtr_side -> isSide)
-                                    {
-
-                                        cudaSetDevice(0);
-                                        processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                        processScoresPtr_side -> onProcessSide();
-                                        //processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
-
-                                    }
-
-                                    if(processScoresPtr_front -> isFront)
-                                    {
-
-                                        cudaSetDevice(1);
-                                        processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                        processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
-
-                                    }
-
-                                    while(!processScoresPtr_side -> isProcessed_side) {}
-
-                                } else {
-
-                                    //clock_gettime(CLOCK_REALTIME, &start);
-                                    processScoresPtr_side -> HOGHOF_frame -> img.buf = greySide.ptr<float>(0);
-                                    processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
-                                    processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
+                                    cudaSetDevice(1);
+                                    processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
                                     processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
 
-                                }*/
+                                }
 
-                                // Test
-                                /*if(processScoresPtr_->save && frameCount_ == 2000)
-                                {
+                                while(!processScoresPtr_side -> isProcessed_side) {}
 
-                                    QPointer<HOGHOF> HOGHOF_side = processScoresPtr_->HOGHOF_frame;
-                                    processScoresPtr_ -> write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount_) 
-                                    + ".csv", HOGHOF_side->hog_out.data(), HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
-                                    processScoresPtr_ -> write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount_) 
-                                    + ".csv", HOGHOF_side->hof_out.data(), HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
+                            } else {
+
+                                processScoresPtr_side -> HOGHOF_frame -> img.buf = greySide.ptr<float>(0);
+                                processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
+                                processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
+                                processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
+
+                            }
+
+                            // Test
+                            /*if(processScoresPtr_->save && frameCount_ == 2000)
+                            {
+
+                                QPointer<HOGHOF> HOGHOF_side = processScoresPtr_->HOGHOF_frame;
+                                processScoresPtr_ -> write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount_) 
+                                + ".csv", HOGHOF_side->hog_out.data(), HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
+                                processScoresPtr_ -> write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount_) 
+                                + ".csv", HOGHOF_side->hof_out.data(), HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
 
 
-                                    QPointer<HOGHOF> HOGHOF_front = processScoresPtr_->HOGHOF_partner;
-                                    processScoresPtr_ -> write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount_) 
-                                    + ".csv", HOGHOF_front->hog_out.data(), HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, 
-                                    HOGHOF_front->hog_shape.bin);
+                                QPointer<HOGHOF> HOGHOF_front = processScoresPtr_->HOGHOF_partner;
+                                processScoresPtr_ -> write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount_) 
+                                + ".csv", HOGHOF_front->hog_out.data(), HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, 
+                                HOGHOF_front->hog_shape.bin);
                                     
-                                    processScoresPtr_ -> write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount_) 
-                                    + ".csv", HOGHOF_front->hof_out.data(), HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, 
-                                    HOGHOF_front->hof_shape.bin);
-                                }*/
+                                processScoresPtr_ -> write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount_) 
+                                + ".csv", HOGHOF_front->hof_out.data(), HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, 
+                                HOGHOF_front->hof_shape.bin);
+                            }*/
 
 
-                                // compute scores
-                                /*if(classifier -> isClassifierPathSet && processScoresPtr_side -> processedFrameCount >= 0)
-                                {
+                            // compute scores
+                            if(classifier -> isClassifierPathSet & processScoresPtr_side->processedFrameCount >= 0)
+                            {
 
-                                    std::fill(laserRead.begin(), laserRead.end(), 0);
-                                    classifier->boost_classify(classifier->score, processScoresPtr_side -> HOGHOF_frame -> hog_out,
-                                    processScoresPtr_front -> HOGHOF_partner -> hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out,
-                                    processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape,
-                                    &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes,classifier -> model);
-							   
+                                //std::fill(laserRead.begin(), laserRead.end(), 0);
+                                classifier->boost_classify(classifier->score, processScoresPtr_side -> HOGHOF_frame -> hog_out,
+                                processScoresPtr_front -> HOGHOF_partner -> hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out,
+                                processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape,
+                                &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes,classifier -> model);
+                               
 
-                                    triggerLaser();
-                                    visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
-                                    visplots -> livePlotSignalVec_Lift.append(double(classifier->score[0]));
-                                    visplots -> livePlotSignalVec_Handopen.append(double(classifier->score[1]));
-                                    visplots -> livePlotSignalVec_Grab.append(double(classifier->score[2]));
-                                    visplots -> livePlotSignalVec_Supinate.append(double(classifier->score[3]));
-                                    visplots -> livePlotSignalVec_Chew.append(double(classifier->score[4]));
-                                    visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
-                                    processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[0]);
+                                //triggerLaser();
+                                /*visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
+                                visplots -> livePlotSignalVec_Lift.append(double(classifier->score[0]));
+                                visplots -> livePlotSignalVec_Handopen.append(double(classifier->score[1]));
+                                visplots -> livePlotSignalVec_Grab.append(double(classifier->score[2]));
+                                visplots -> livePlotSignalVec_Supinate.append(double(classifier->score[3]));
+                                visplots -> livePlotSignalVec_Chew.append(double(classifier->score[4]));
+                                visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
+                                visplots->livePlotPtr_->show();
+                                processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[0]);*/
+                                
 
-                                }*/
+                            }
+                                
+                            //pc_time = gettime_->getPCtime();
 
+                            // subtract the offset to get camera time
+                            /*pc_ts2 = (pc_time.seconds*1e6 + pc_time.microSeconds);
+                            cam_ts = ((pc_time.seconds*1e6 + pc_time.microSeconds)-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
+                            delay = cam_ts - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
+                            process_time = cam_ts2 - cam_ts1;*/
+                            //time_seconds.push_back({cam_ts,pc_ts2});
+                                
+                            //if(time_seconds.size() == 100000)
+                            //    gettime_->write_time("process_time.csv", 100000, time_seconds);
+                                    
+                            processScoresPtr_side -> processedFrameCount = frameCount_;
+                            processScoresPtr_front -> processedFrameCount = frameCount_; 
+                            processScoresPtr_side -> isProcessed_side = false;
 
-                                 // If classifier takes more time than threshold skip frame
-                                /*if(time_taken > threshold_runtime)
-                                {
+                        }else{ std::cout << "skipped 1 " << frameCount_ << std::endl; }
 
-                                   numskippedFrames_ += 1;
-                                   processScoresPtr_side -> processedFrameCount = frameCount_;
-                                   processScoresPtr_front -> processedFrameCount = frameCount_;
-                                   pluginImageQueuePtr_ -> pop();
-                                   partnerPluginImageQueuePtr_ -> pop();
-                                   pluginImageQueuePtr_ -> releaseLock();
-                                   partnerPluginImageQueuePtr_ -> releaseLock();
-                                   return;
-
-                                } */
-
-
-                                /*pc_ts = getPCtime();
-                                // subtract the offset to get camera time
-                                cam_ts2 = ((pc_ts.seconds*1e6 + pc_ts.microSeconds)-(cam_ofs.seconds*1e6 + cam_ofs.microSeconds));
-                                //delay = cam_ts2 - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
-                                //process_time = cam_ts2 - cam_ts1;
-                                time_useconds.push_back(pluginImageQueuePtr_->size());// (process_time);
-								
-                                if(time_useconds.size() == 5000)
-                                    write_time("process_time.csv", 5000, time_useconds);
-									
-                                processScoresPtr_side -> processedFrameCount = frameCount_;
-                                processScoresPtr_front -> processedFrameCount = frameCount_; 
-                                processScoresPtr_side -> isProcessed_side = false;
-
-                            }else{ std::cout << "skipped 1 " << frameCount_ << std::endl; }
-
-                        }else{ std::cout << "skipped 2 " << frameCount_ << std::endl; }
+                    }else{ std::cout << "skipped 2 " << frameCount_ << std::endl; }
                      
-                    }else { std::cout << "skipped 3" << frameCount_ << std::endl;}*/
+                }else { std::cout << "skipped 3" << frameCount_ << std::endl;}
                     
-                    //pluginImageQueuePtr_->pop();
-                    //partnerPluginImageQueuePtr_ -> pop();
+                pluginImageQueuePtr_->pop();
+                partnerPluginImageQueuePtr_ -> pop();
              
-                }else { std::cout << "skipped 4 " << frameCount_ << std::endl; }
+            }else { std::cout << "skipped 4 " << frameCount_ << std::endl; }
 
-                pluginImageQueuePtr_->releaseLock();
-                partnerPluginImageQueuePtr_ -> releaseLock();
+            pluginImageQueuePtr_->releaseLock();
+            partnerPluginImageQueuePtr_ -> releaseLock();
                 
-            }
-
-            //DEVEL
-            /*if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
-            {
-                    gpuInit();
-                    cam_ofs = cameraOffsetTime(cameraPtr_);
-            }
-
-            if (isSender() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
-            {
-                    gpuInit();
-                    cam_ofs = cameraOffsetTime(cameraPtr_);
-            }
- 
-            if (isReceiver() && pluginImageQueuePtr_ != nullptr)
-            {
-			
-                pluginImageQueuePtr_->acquireLock();
-                pluginImageQueuePtr_->waitIfEmpty();
-
-                if (pluginImageQueuePtr_->empty())
-                {
-                    pluginImageQueuePtr_->releaseLock();
-                    return;
-                }
-
-
-                if (!(pluginImageQueuePtr_->empty()))
-                {
-				
-                    StampedImage stampedImage0 = pluginImageQueuePtr_->front();
-
-                    // subtract the offset to get camera time
-                    TimeStamp pc_ts = getPCtime();
-                    int64_t cam_ts, delay;
-                    cam_ts = ((pc_ts.seconds*1e6 + pc_ts.microSeconds) - (cam_ofs.seconds*1e6 + cam_ofs.microSeconds));
-                    delay = cam_ts - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
-
-                    time_seconds.push_back(delay);
-                    if (time_seconds.size() == 1000) {
-                        write_delay("delay0.csv", 1000, time_seconds);
-                    }
-
-                    pluginImageQueuePtr_->pop();
-                }
-
-                pluginImageQueuePtr_->releaseLock();
-			
-            }
-
-            if (isSender() && pluginImageQueuePtr_ != nullptr)
-            {
-
-                pluginImageQueuePtr_->acquireLock();
-                pluginImageQueuePtr_->waitIfEmpty();
-
-                if (pluginImageQueuePtr_->empty())
-                {
-                    pluginImageQueuePtr_->releaseLock();
-                    return;
-                }
-
-
-                if (!(pluginImageQueuePtr_->empty()))
-                {
-
-                    StampedImage stampedImage1 = pluginImageQueuePtr_->front();
-
-		    // subtract the offset to get camera time
-                    TimeStamp pc_ts = getPCtime();
-                    int64_t cam_ts, delay;
-                    cam_ts = ((pc_ts.seconds*1e6 + pc_ts.microSeconds) - (cam_ofs.seconds*1e6 + cam_ofs.microSeconds));
-
-                    delay = cam_ts - int64_t(stampedImage1.timeStampVal.seconds*1e6 + stampedImage1.timeStampVal.microSeconds);
-
-                    time_seconds.push_back(delay);
-                    if (time_seconds.size() == 1000) {
-                        write_delay("delay1.csv", 1000, time_seconds);
-                    }
-
-                    pluginImageQueuePtr_->pop();
-                }
-
-                pluginImageQueuePtr_->releaseLock();
-            }*/
-        
-        }
+        }        
+    }
 
     
-        unsigned int JaabaPlugin::getPartnerCameraNumber()
+    unsigned int JaabaPlugin::getPartnerCameraNumber()
+    {
+        // Returns camera number of partner camera. For this example
+        // we just use camera 0 and 1. In another setting you might do
+        // this by GUID or something else.
+        if (cameraNumber_ == 0)
         {
-            // Returns camera number of partner camera. For this example
-            // we just use camera 0 and 1. In another setting you might do
-            // this by GUID or something else.
-            if (cameraNumber_ == 0)
-            {
-                return 1;
-            }
-            else
-            {
-                return 0;
-            }
-        }
+            return 1;
 
+        }else{
 
-        QPointer<CameraWindow> JaabaPlugin::getPartnerCameraWindowPtr()
-        {
-
-            //std::cout << cameraWindowPtrList_ ->size() << std::endl;
-            QPointer<CameraWindow> partnerCameraWindowPtr = nullptr;
-            if ((cameraWindowPtrList_ -> size()) > 1)
-            {
-                for (auto cameraWindowPtr : *cameraWindowPtrList_)
-                {
-                    partnerCameraNumber_ = getPartnerCameraNumber();
-                    if ((cameraWindowPtr -> getCameraNumber()) == partnerCameraNumber_)
-                    {
-                        partnerCameraWindowPtr = cameraWindowPtr;
-                    }
-                }
-            }
-            return partnerCameraWindowPtr;
+            return 0;
 
         }
+    }
+
+
+    QPointer<CameraWindow> JaabaPlugin::getPartnerCameraWindowPtr()
+    {
+
+        QPointer<CameraWindow> partnerCameraWindowPtr = nullptr;
+        if ((cameraWindowPtrList_ -> size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+               partnerCameraNumber_ = getPartnerCameraNumber();
+               if ((cameraWindowPtr -> getCameraNumber()) == partnerCameraNumber_)
+               {
+                    partnerCameraWindowPtr = cameraWindowPtr;
+               }
+            }
+        }
+            
+        return partnerCameraWindowPtr;
+
+    }
     
         
         void JaabaPlugin::initialize()
@@ -770,6 +599,8 @@ namespace bias {
             updateWidgetsOnLoad();
             setupHOGHOF();
             setupClassifier();
+
+
         }
 
 
@@ -843,15 +674,14 @@ namespace bias {
              
                 //QString file_sde = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi";
 #ifdef WIN32           
-		        //QString file_sde = "C:/Users/patilr/BIAS/BIASJAABA_movies/movie_sde.avi";
+                QString file_sde = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi";
 #endif
 
 #ifdef linux
-                QString file_sde = "/home/patilr/BIAS/BIASJAABAi_movies/movie_sde.avi";
+                QString file_sde = "/home/patilr/BIAS/BIASJAABA_movies/movie_sde.avi";
 #endif
-                processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
-                processScoresPtr_side -> capture_sde = processScoresPtr_side ->
-                vid_sde -> videoCapObject();
+                //processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
+                //processScoresPtr_side -> capture_sde = processScoresPtr_side ->vid_sde -> videoCapObject();
                  
   
                 HOGHOF *hoghofside = new HOGHOF(this);
@@ -872,14 +702,14 @@ namespace bias {
 //DEVEL
 #ifdef WIN32		
                 //QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";
-		        QString file_frt = "C:/Users/patilr/BIAS/BIASJAABA_movies/movie_frt.avi"; 
+                QString file_frt = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi"; 
 #endif 
 
 #ifdef linux
                 QString file_frt = "/home/patilr/BIAS/BIASJAABA_movies/movie_frt.avi";
 #endif
-                processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
-                processScoresPtr_front -> capture_front = processScoresPtr_front -> vid_front -> videoCapObject(); 
+                //processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
+                //processScoresPtr_front -> capture_front = processScoresPtr_front -> vid_front -> videoCapObject(); 
 
                 HOGHOF *hoghoffront = new HOGHOF(this);  
                 acquireLock();
@@ -963,13 +793,13 @@ namespace bias {
 
         void JaabaPlugin::SideViewCheckBoxChanged(int state)
         {
-			
+            
             if (state == Qt::Checked)
             {
                 sideRadioButtonPtr_ -> setChecked(true);
-	    }else{  
+        }else{  
                 sideRadioButtonPtr_ -> setChecked(false);
-	    }
+        }
             //checkviews();
             setupHOGHOF();
             setupClassifier();
@@ -1258,6 +1088,9 @@ namespace bias {
         }
 
 
+
+        // Test development
+
         double JaabaPlugin::convertTimeStampToDouble(TimeStamp curr, TimeStamp init)
         {
             double timeStampDbl = 0;
@@ -1267,9 +1100,6 @@ namespace bias {
             timeStampDbl -= (1.0e-6)*double(init.microSeconds);
             return timeStampDbl;
         }
-
-
-        // Test development
 
        void JaabaPlugin::write_output(std::string file,float* out_img, unsigned w, unsigned h) 
        {

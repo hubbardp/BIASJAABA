@@ -203,7 +203,7 @@ void HOGHOF::genFeatures(QString vidname, QString CropFile) {
         frame++;
 
     }
-    write_time("offline_time.csv",num_frames,time_result);
+    //write_time("offline_time.csv",num_frames,time_result);
 
     vid.releaseCapObject(capture) ;
     HOFTeardown(&hof_ctx);

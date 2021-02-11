@@ -18,7 +18,7 @@ namespace bias
 
     ImageDispatcher::ImageDispatcher(QObject *parent) : QObject(parent)
     {
-        initialize(false,false,0,NULL,NULL,NULL,NULL);
+        initialize(false,false,0,NULL,NULL,NULL,NULL, NULL);
     }
 
     ImageDispatcher::ImageDispatcher( 
@@ -29,6 +29,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+            GetTime* gettime,
             QObject *parent
             ) : QObject(parent)
     {
@@ -39,7 +40,8 @@ namespace bias
                 cameraPtr,
                 newImageQueuePtr,
                 logImageQueuePtr,
-                pluginImageQueuePtr
+                pluginImageQueuePtr,
+                gettime
                 );
     }
 
@@ -50,7 +52,8 @@ namespace bias
             std::shared_ptr<Lockable<Camera>> cameraPtr,
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
-            std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr
+            std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+            GetTime* gettime
             ) 
     {
         newImageQueuePtr_ = newImageQueuePtr;
@@ -78,6 +81,9 @@ namespace bias
 
         frameCount_ = 0;
         currentTimeStamp_ = 0.0;
+
+        //DEVEL
+        gettime_ = gettime;
     }
 
     cv::Mat ImageDispatcher::getImage() const
@@ -104,6 +110,7 @@ namespace bias
     void ImageDispatcher::stop()
     {
         stopped_ = true;
+
     }
 
 
@@ -139,8 +146,8 @@ namespace bias
         std::ofstream stampOutStream;
         stampOutStream.open(stampFileName);
         // ---------------------------------------------------------------------------
-		
-        GetTime* gettime = new GetTime(0, 0);
+        
+        
         TimeStamp pc_time;
         int64_t pc_ts, cam_ts;
         cameraPtr_->cameraOffsetTime();
@@ -158,18 +165,18 @@ namespace bias
             newStampImage = newImageQueuePtr_ -> front();
             newImageQueuePtr_ -> pop();
             newImageQueuePtr_ -> releaseLock();
-	    
-            /*pc_time = gettime->getPCtime();
-            pc_ts = (pc_time.seconds*1e6 + pc_time.microSeconds) - (cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds);
+        
+            pc_time = gettime_->getPCtime();
+            /*pc_ts = (pc_time.seconds*1e6 + pc_time.microSeconds) - (cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds);
             cam_ts = int64_t(newStampImage.timeStampVal.seconds*1e6 + newStampImage.timeStampVal.microSeconds);	
             time_stamps.push_back({ cam_ts,  (pc_ts-cam_ts)});
 
             if (time_stamps.size() == 50000)
             {
                 std::string filename = "imagedispatch_" + std::to_string(cameraNumber_) + ".csv";
-                gettime->write_time(filename, 50000, time_stamps);
+                gettime_->write_time(filename, 50000, time_stamps);
             }*/
-			
+            
             if (logging_ )
             {
                 logImageQueuePtr_ -> acquireLock();
@@ -196,8 +203,8 @@ namespace bias
 
             // DEVEL
             // ----------------------------------------------------------------
-            stampOutStream << QString::number(currentTimeStamp_,'g',15).toStdString(); 
-            stampOutStream << std::endl;
+            //stampOutStream << QString::number(currentTimeStamp_,'g',15).toStdString(); 
+            //stampOutStream << std::endl;
             // ----------------------------------------------------------------
 
         }

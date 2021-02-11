@@ -143,7 +143,7 @@ namespace bias {
 
             bool imageOK_ = false;
             spinImage hSpinImage_ = nullptr;
-			 
+             
 
             TriggerType triggerType_ =  TRIGGER_TYPE_UNSPECIFIED;
 
@@ -200,11 +200,11 @@ namespace bias {
             std::vector<spinPixelFormatEnums> getSupportedPixelFormats_spin();
             spinPixelFormatEnums getPixelFormat_spin();
 
-	    //test
+        //test
             std::vector<std::vector<int64_t>> time_stamp1;
             std::vector<std::vector<int64_t>> time_stamp2; 
             std::vector<std::vector<int64_t>> time_stamp3;
-			
+            GetTime* gettime = nullptr;
 
 
     };

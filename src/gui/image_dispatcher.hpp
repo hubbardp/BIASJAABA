@@ -10,6 +10,10 @@
 #include "lockable.hpp"
 #include "camera_fwd.hpp"
 
+
+// DEVEL 
+#include "win_time.hpp"
+
 namespace bias
 {
 
@@ -30,6 +34,7 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+                    GetTime* gettime,
                     QObject *parent = 0
                     );
 
@@ -40,7 +45,8 @@ namespace bias
                     std::shared_ptr<Lockable<Camera>> cameraPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr ,
-                    std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr
+                    std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+                    GetTime* gettime
                     );
 
             // Use lock when calling these methods
@@ -74,6 +80,8 @@ namespace bias
             // ------------------------------------
 
             void run();
+
+            GetTime *gettime_= nullptr;
     };
 
 } // namespace bias

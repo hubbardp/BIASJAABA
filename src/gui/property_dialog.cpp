@@ -1,3 +1,7 @@
+#ifdef WIN32
+#define NOMINMAX
+#endif
+
 #include "property_dialog.hpp"
 #include "camera_facade.hpp"
 #include "lockable.hpp"

@@ -95,83 +95,83 @@ namespace bias {
         while(!done)
         {
 
-            if(livePlotUpdateTimerPtr_ -> isActive())  
+            if (livePlotUpdateTimerPtr_->isActive())
             {
 
-                if(timer < livePlotUpdateDt_)
+                if (timer < livePlotUpdateDt_)
                 {
 
                     timer++;
 
-                } else {
+                }
+                else {
 
 
-                    if(livePlotTimeVec_.empty())
-		    {
-                        timer=0;   
-			continue;
-		    }
+                    if (livePlotTimeVec_.empty())
+                    {
+                        timer = 0;
+                        continue;
+                    }
 
-		    acquireLock();
-		    double lastTime = livePlotTimeVec_.last();
-		    double firstTime = livePlotTimeVec_.first();
+                    acquireLock();
+                    double lastTime = livePlotTimeVec_.last();
+                    double firstTime = livePlotTimeVec_.first();
 
-		    if (lastTime < firstTime)
-		    {
-                        timer=0;
-			livePlotTimeVec_.clear();
-			livePlotSignalVec_Lift.clear();
-			livePlotSignalVec_Handopen.clear();
-			livePlotSignalVec_Grab.clear();
-			livePlotSignalVec_Atmouth.clear();
-			livePlotSignalVec_Supinate.clear();
-			livePlotSignalVec_Chew.clear();
-			releaseLock();
-			continue;
-		    }
+                    if (lastTime < firstTime)
+                    {
+                        timer = 0;
+                        livePlotTimeVec_.clear();
+                        livePlotSignalVec_Lift.clear();
+                        livePlotSignalVec_Handopen.clear();
+                        livePlotSignalVec_Grab.clear();
+                        livePlotSignalVec_Atmouth.clear();
+                        livePlotSignalVec_Supinate.clear();
+                        livePlotSignalVec_Chew.clear();
+                        releaseLock();
+                        continue;
+                    }
 
-		    while (lastTime - firstTime > livePlotTimeWindow_)
-		    {
-			livePlotTimeVec_.pop_front();
-			livePlotSignalVec_Lift.pop_front();
-			livePlotSignalVec_Handopen.pop_front();
-			livePlotSignalVec_Grab.pop_front();
-			livePlotSignalVec_Atmouth.pop_front();
-			livePlotSignalVec_Supinate.pop_front();
-			livePlotSignalVec_Chew.pop_front();
-			firstTime = livePlotTimeVec_.first();
-		    }
+                    while (lastTime - firstTime > livePlotTimeWindow_)
+                    {
+                        livePlotTimeVec_.pop_front();
+                        livePlotSignalVec_Lift.pop_front();
+                        livePlotSignalVec_Handopen.pop_front();
+                        livePlotSignalVec_Grab.pop_front();
+                        livePlotSignalVec_Atmouth.pop_front();
+                        livePlotSignalVec_Supinate.pop_front();
+                        livePlotSignalVec_Chew.pop_front();
+                        firstTime = livePlotTimeVec_.first();
+                    }
 
-		    if (lastTime < livePlotTimeWindow_)
-		    {
-			double windowStartTime= -livePlotTimeWindow_ + lastTime;
-			livePlotPtr_ -> xAxis -> setRange(windowStartTime,lastTime);
+                    if (lastTime < livePlotTimeWindow_)
+                    {
+                        double windowStartTime = -livePlotTimeWindow_ + lastTime;
+                        livePlotPtr_->xAxis->setRange(windowStartTime, lastTime);
 
-		    }
-		    else
-		    {
-			livePlotPtr_ -> xAxis -> setRange(firstTime, lastTime);
+                    }
+                    else
+                    {
+                        livePlotPtr_->xAxis->setRange(firstTime, lastTime);
 
-		    }
+                    }
 
-                   
-		    livePlotPtr_ -> graph(0) -> addData(livePlotTimeVec_,livePlotSignalVec_Lift);
-		    livePlotPtr_ -> graph(1) -> addData(livePlotTimeVec_,livePlotSignalVec_Handopen);
-		    livePlotPtr_ -> graph(2) -> addData(livePlotTimeVec_,livePlotSignalVec_Grab);
-		    livePlotPtr_ -> graph(3) -> addData(livePlotTimeVec_,livePlotSignalVec_Supinate);
-		    livePlotPtr_ -> graph(4) -> addData(livePlotTimeVec_,livePlotSignalVec_Chew);
-                    livePlotPtr_ -> graph(5) -> addData(livePlotTimeVec_, livePlotSignalVec_Atmouth);
-		    livePlotPtr_ -> replot();
-                    timer=0;
-		    releaseLock();
-		    
-                }  
 
-	    }
+                    livePlotPtr_->graph(0)->addData(livePlotTimeVec_, livePlotSignalVec_Lift);
+                    livePlotPtr_->graph(1)->addData(livePlotTimeVec_, livePlotSignalVec_Handopen);
+                    livePlotPtr_->graph(2)->addData(livePlotTimeVec_, livePlotSignalVec_Grab);
+                    livePlotPtr_->graph(3)->addData(livePlotTimeVec_, livePlotSignalVec_Supinate);
+                    livePlotPtr_->graph(4)->addData(livePlotTimeVec_, livePlotSignalVec_Chew);
+                    livePlotPtr_->graph(5)->addData(livePlotTimeVec_, livePlotSignalVec_Atmouth);
+                    livePlotPtr_->replot();
+                    timer = 0;
+                    releaseLock();
 
-            acquireLock();
-            done = stopped_;
-            releaseLock();
+                }
+
+                acquireLock();
+                done = stopped_;
+                releaseLock();
+            }
  
         }
 

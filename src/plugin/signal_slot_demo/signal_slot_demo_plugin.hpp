@@ -30,7 +30,8 @@ namespace bias
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
 
-            SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, QWidget *parentPtr=0);
+            SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, 
+                                 GetTime* gettime, QWidget *parentPtr=0);
 
             virtual void finalSetup();
             virtual void reset();
@@ -60,9 +61,11 @@ namespace bias
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
 
-            std::vector<std::vector<int64_t>>cam_delay;
+            std::vector<std::vector<int64_t>>cam_delay1;
+            std::vector<std::vector<int64_t>>cam_delay2;
             TimeStamp cam_ofs={0,0};
             
+            GetTime* gettime_;
             QPointer<ImageLabel> imageLabelPtr_;
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;

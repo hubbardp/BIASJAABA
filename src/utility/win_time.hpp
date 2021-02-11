@@ -2,9 +2,8 @@
 #define WIN_TIME_HPP
 
 //#include "stdafx.h"
-//#include <time.h>
-//#include <ctime>
-
+#include <time.h>
+#include <ctime> //defines localtime 
 #include <chrono>
 #include "stamped_image.hpp"
 

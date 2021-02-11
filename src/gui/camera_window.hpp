@@ -20,6 +20,7 @@
 #include "rtn_status.hpp"
 #include "bias_plugin.hpp"
 
+#include "win_time.hpp"
 
 // External lib forward declarations
 class QTimer;
@@ -285,7 +286,8 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
-
+            
+            GetTime* gettime_;
             QPointer<QThreadPool> threadPoolPtr_;
 
             QPointer<ImageGrabber> imageGrabberPtr_;

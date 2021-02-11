@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 project(bais)
 
 if (WIN32)
-    set (CMAKE_SYSTEM_VERSION 10 CACHE TYPE INTERNAL FORCE)
+    set(CMAKE_SYSTEM_VERSION 10 CACHE TYPE INTERNAL FORCE)
 endif()
 
 if (POLICY CMP0020) 
@@ -181,7 +181,7 @@ if(UNIX)
 endif()
 
 if(WIN32)
-    set(HEFFALUMP_SRC_DIR C:/Users/patilr/rutuja_heffalump/heffalump)
+    set(HEFFALUMP_SRC_DIR C:/Users/27rut/rutuja_heffalump/heffalump)
     include_directories(${HEFFALUMP_SRC_DIR}/src/gpu)
                         #${HEFFALUMP_SRC_DIR}/src)
 endif()

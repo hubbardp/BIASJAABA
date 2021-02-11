@@ -58,6 +58,7 @@
 #include "grab_detector_plugin.hpp"
 #include "signal_slot_demo_plugin.hpp"
 #include "jaaba_plugin.hpp"
+
 // -------------------------------------
 
 namespace bias
@@ -246,6 +247,7 @@ namespace bias
         {
             rtnStatus.success = true;
             rtnStatus.message = QString("Camera already disconnected");
+            rtnStatus.message = QString("Camera already disconnected");
             return rtnStatus;
         }
 
@@ -306,7 +308,7 @@ namespace bias
     RtnStatus CameraWindow::startImageCapture(bool showErrorDlg) 
     {
         RtnStatus rtnStatus;
-
+        
         if (!connected_)
         {
             QString msgTitle("Capture Error");
@@ -319,7 +321,7 @@ namespace bias
             rtnStatus.message = msgText;
             return rtnStatus;
         }
-
+        
         if (capturing_)
         {
             QString msgTitle("Capture Error");
@@ -431,12 +433,13 @@ namespace bias
                     SLOT(imageLoggingError(unsigned int, QString))
                    );
 
-            threadPoolPtr_ -> start(imageLoggerPtr_);
+            //threadPoolPtr_ -> start(imageLoggerPtr_);
 
         } // if (logging_)
-
+        
         if (isPluginEnabled())
         {
+            
             QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin(); 
             if (!currentPluginPtr.isNull())
             {
@@ -444,21 +447,25 @@ namespace bias
                 currentPluginPtr -> setFileVersionNumber(versionNumber);
                 currentPluginPtr -> reset();
             }
+            
             pluginHandlerPtr_ -> setCameraNumber(cameraNumber_);
             pluginHandlerPtr_ -> setImageQueue(pluginImageQueuePtr_);
+            
             pluginHandlerPtr_ -> setPlugin(currentPluginPtr);
             pluginHandlerPtr_ -> setAutoDelete(false);
+            
             threadPoolPtr_ -> start(pluginHandlerPtr_);
         } 
         actionPluginsEnabledPtr_ -> setEnabled(false);
-
+        
 
         // Set image Grabber and image dispatcher
         // ------------------------------------------------------------------------------
         imageGrabberPtr_ = new ImageGrabber(
                 cameraNumber_, 
                 cameraPtr_, 
-                newImageQueuePtr_, 
+                newImageQueuePtr_,
+                gettime_,
                 this
                 );
         imageGrabberPtr_ -> setAutoDelete(false);
@@ -471,6 +478,7 @@ namespace bias
                 newImageQueuePtr_,
                 logImageQueuePtr_,
                 pluginImageQueuePtr_,
+                gettime_,
                 this
                 );
         imageDispatcherPtr_ -> setAutoDelete(false);
@@ -505,11 +513,19 @@ namespace bias
                     SLOT(startCaptureDurationTimer())
                    );
         }
-
+        std::cout << "hi5" << std::endl;
         threadPoolPtr_ -> start(imageGrabberPtr_);
         threadPoolPtr_ -> start(imageDispatcherPtr_);
         // ------------------------------------------------------------------------------
-
+        /*processScoresPtr_ = new ProcessScores(
+                logging_,
+                isPluginEnabled(),
+                cameraNumber_,
+                cameraPtr_,
+                this
+                );*/
+        
+        std::cout << "hi6" << std::endl;
         // Set Capture start and stop time
         captureStartDateTime_ = QDateTime::currentDateTime();
         captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
@@ -2600,7 +2616,7 @@ namespace bias
 
 
         threadPoolPtr_ = new QThreadPool(this);
-        threadPoolPtr_ -> setMaxThreadCount(MAX_THREAD_COUNT);
+        threadPoolPtr_->setMaxThreadCount(MAX_THREAD_COUNT);
         newImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
         logImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
         pluginImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
@@ -2613,13 +2629,16 @@ namespace bias
 
         // Temporary - plugin development
         // -------------------------------------------------------------------------------
+        gettime_ = new GetTime(0, 0);
+
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
         pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
-        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_,this);
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_,this);
-        //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
-        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
+        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_, this);
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, this);
+
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
+        //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------
 
         setupStatusLabel();
@@ -2633,14 +2652,14 @@ namespace bias
         updateAllMenus(); 
 
         tabWidgetPtr_ -> setCurrentWidget(previewTabPtr_);
+        setCurrentPlugin(pluginMap_.firstKey());
 
-        //setCurrentPlugin(pluginMap_.firstKey());
         //setCurrentPlugin("grabDetector");
-        //setCurrentPlugin("stampede");
-        //setCurrentPlugin("jaabaPlugin");
-        setCurrentPlugin("signalSlotDemo");
+        //setCurrentPlugin("stampede");     
+        //setCurrentPlugin("signalSlotDemo");
+        setCurrentPlugin("jaabaPlugin");
         setPluginEnabled(true);
-        //setPluginEnabled(true);
+     
 
         updateWindowTitle();
         updateCameraInfoMessage();
@@ -5604,12 +5623,12 @@ namespace bias
             newProp.valueA = std::max(newProp.valueA, propInfo.minValue);
             newProp.valueB = std::max(newProp.valueB, propInfo.minValue);
 #ifdef linux	    
-	    newProp.valueA = std::min(newProp.valueA, propInfo.maxValue);
+        newProp.valueA = std::min(newProp.valueA, propInfo.maxValue);
             newProp.valueB = std::min(newProp.valueB, propInfo.maxValue);
 #endif
 
 #ifdef WIN32
-	    newProp.valueA = min(newProp.valueA, propInfo.maxValue);
+        newProp.valueA = min(newProp.valueA, propInfo.maxValue);
             newProp.valueB = min(newProp.valueB, propInfo.maxValue);
 #endif	    
             //if (newProp.valueA < propInfo.minValue)
@@ -5703,7 +5722,7 @@ namespace bias
 #endif
 
 #ifdef linux 
-	    newProp.value = std::min(newProp.value, propInfo.maxValue);
+        newProp.value = std::min(newProp.value, propInfo.maxValue);
 #endif	    
 
             //if (!newProp.absoluteControl) 
