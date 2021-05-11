@@ -22,6 +22,7 @@ if(with_qt_gui)
         lockable.hpp
         timer.h
         tictoc.h
+        NIDAQUtils.hpp
         #win_time.hpp
         )
     
@@ -37,8 +38,8 @@ if(with_qt_gui)
         basic_http_server.cpp
         image_label.cpp
         tictoc.c
-        WriteDigChan.c
-       #win_ime.cpp
+        NIDAQUtils.cpp
+        #win_ime.cpp
        )
  
     if(WIN32)
@@ -58,8 +59,6 @@ if(with_qt_gui)
     include_directories(${CMAKE_CURRENT_BINARY_DIR})
     include_directories(.)
 
-    #NIDAQ Max
-    include_directories("C:/Program Files (x86)/National Instruments/Shared/ExternalCompilerSupport/C/include")
     target_link_libraries(
         bias_utility
         ${QT_LIBRARIES}

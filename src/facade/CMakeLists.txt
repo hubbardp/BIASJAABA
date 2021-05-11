@@ -33,5 +33,9 @@ if(with_video)
     set(bias_camera_facade_link_libs ${bias_camera_facade_link_libs} bias_backend_video)
 endif()
 
+if (with_NIDAQmx)
+    set(bias_camera_facade_link_libs ${bias_camera_facade_link_libs} bias_utility)
+endif()
+
 target_link_libraries(bias_camera_facade ${bias_camera_facade_link_libs})
 
