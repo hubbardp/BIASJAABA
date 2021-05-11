@@ -12,7 +12,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-
+ 
 struct HOGShape {
 
     int x;
@@ -43,28 +43,51 @@ struct HOFShape {
 
 };
 
+struct Params {
+
+    QString HOGParam_file;
+    QString HOFParam_file;
+    QString CropParam_file;
+
+};
+
 class HOGHOF {
 
   public:
 
-    QString HOGParam_file; 
+    HOGHOF();
+    ~HOGHOF();
+    QString HOGParam_file;
     QString HOFParam_file;
     QString CropParam_file;
-    
+    Params param_files;
+    cv::VideoCapture capture;
+
     HOGParameters HOGParams;
     HOFParameters HOFParams;
     CropParams Cropparams;
     HOGImage img;
     HOGShape hog_shape;
     HOFShape hof_shape;
+    struct HOGContext* hog_ctx;
+    struct HOFContext* hof_ctx;
+    
+    float* tmp_hog;
+    float* tmp_hof;
     std::vector<float> hog_out;
     std::vector<float> hof_out;
 
+    void initialize_params(Params& param_file);
+    void initialize_vidparams(bias::videoBackend& vid, Params& param_file);
+    void initializeHOGHOF(int& width, int& height, int& num_frames);
     void loadHOGParams();
     void loadHOFParams();
-    void loadCropParams(QString Cropfile);
+    void loadCropParams();
     void loadImageParams(int img_width, int img_height);
-    void genFeatures(QString vidname, QString CropFile);
+    void getvid_frame(bias::videoBackend & vid);
+    void process_vidFrame(int frame);
+    void process_camFrame();
+    void genFeatures(QString vidname, QString& CropFile);
 
     void copytoHOGParams(QJsonObject& obj);
     void copytoHOFParams(QJsonObject& obj);
@@ -76,8 +99,9 @@ class HOGHOF {
     int copyValueInt(QJsonObject& ob, QString subobj_key);
     void allocateCrop(int sz);
 
+    void deInitializeHOGHOF();
     //TEST
-    void write_time(std::string file, int framenum, std::vector<float> timeVec);
+    //void write_time(std::string file, int framenum, std::vector<float> timeVec);
 
 };
 

@@ -9,6 +9,7 @@ set(
     utils.hpp
     HOGHOF.hpp
     beh_class.hpp
+    spin_utils.hpp
    )
 
 set(
@@ -17,6 +18,7 @@ set(
     utils.cpp
     HOGHOF.cpp
     beh_class.cpp
+    spin_utils.cpp
     )
 
 qt5_wrap_cpp(beh_class_HEADERS_MOC ${JAABA_plugin_HEADERS})

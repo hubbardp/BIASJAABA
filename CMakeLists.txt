@@ -20,6 +20,7 @@ option(with_spin    "include the spin backend"   ON)
 option(with_video    "include the video backend"   ON)
 option(with_demos   "include demos" ON)
 option(with_tests   "include tests" ON)
+option(with_NIDAQmx "include NIDAQmx" ON)
 
 message(STATUS "Option: with_fc2     = ${with_fc2}")
 message(STATUS "Option: with_dc1394  = ${with_dc1394}")
@@ -27,6 +28,7 @@ message(STATUS "Option: with_qt_gui  = ${with_qt_gui}")
 message(STATUS "Option: with_demos   = ${with_demos}")
 message(STATUS "Option: with_tests   = ${with_tests}") 
 message(STATUS "Option: with_video   = ${with_video}")
+message(STATUS "Option: with_NIDAQmx = ${with_NIDAQmx}")
 
 if( NOT( with_fc2 OR with_dc1394 OR with_spin OR with_video) )
     message(FATAL_ERROR "their must be at least one camera backend")
@@ -54,6 +56,10 @@ endif()
 
 if(with_spin)
     find_package( Spinnaker MODULE REQUIRED )
+endif()
+
+if(with_NIDAQmx)
+    find_package( NIDAQmx MODULE REQUIRED )
 endif()
 
 # Qt library
@@ -211,6 +217,10 @@ if(with_video)
    include_directories("./src/backend/video")
 endif()
 
+if(with_NIDAQmx)
+    include_directories("${NIDAQmx_INCLUDE_DIRS}")
+endif()
+
 
 # External link libraries
 # -----------------------------------------------------------------------------
@@ -238,7 +248,9 @@ if(with_demos)
     set(bias_ext_link_LIBS ${bias_ext_link_LIBS} ${HDF5_CXX_LIBRARIES})
 endif()
 
-set(bias_ext_link_LIBS ${bias_ext_link_LIBS})
+if(with_NIDAqmx)
+    set(bias_ext_link_LIBS ${bias_ext_link_LIBS} ${NIDAQmx_LIBRARIES})
+endif()
 message(STATUS "${bias_ext_link_LIBS}")
 
 
@@ -284,7 +296,6 @@ if (with_demos)
     add_subdirectory("src/demo/fly_sorter")
     add_subdirectory("src/demo/beh_class")
 endif()
-
 
 if (with_tests)
     add_subdirectory("src/test")

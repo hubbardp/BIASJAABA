@@ -1,10 +1,16 @@
 #include "HOGHOF.hpp"
 #include "beh_class.hpp"
-#include <vector>
-#include "timer.h"
-#include <fstream>
-#include <iostream>
+#include "spin_utils.hpp"
+#include "utils_spin.hpp"
+#include "SpinnakerC.h"
+
+//#include <vector>
+//#include "timer.h"
+//#include <fstream>
+//#include <iostream>
 #include <QDebug>
+
+//using namespace bias;
 
 /*void parse_args(int nargs, char** arg_inputs, std::string& view) {
 
@@ -16,7 +22,7 @@
         options.insert(opt);
 
         switch(opt){
-iiiii
+
             case 'v': g = optarg;
                 break;
             default: std::cout << "Missing arguments:<help>"
@@ -27,97 +33,319 @@ iiiii
 
 }*/
 
+bool destroySpinImage(spinImage &hImage)
+{
+    bool rval = true;
+    if (hImage != nullptr)
+    {
+        //std::cout << "destroy" << std::endl;
+        spinError err = spinImageDestroy(hImage);
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            rval = false;
+        }
+        //else
+        //{
+        //    hImage = nullptr;
+        //}
+    }
+    return rval;
+}
 
-int main(int argc, char* argv[]) {
+template <typename T>
+void write_time(std::string filename, int framenum, std::vector<std::vector<T>> timeVec)
+{
 
-    //Input files
-    //cudaSetDevice(1);
-    HOGHOF feat_side;
-    HOGHOF feat_frt;
-    const int nviews = 2;
-    beh_class classifier;
+    std::ofstream x_out;
+    x_out.open(filename.c_str(), std::ios_base::app);
 
+    for (int frame_id = 0; frame_id < framenum - 1; frame_id++)
+    {
 
-
-#ifdef linux 
-    feat_side.HOGParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOGparam.json";
-    feat_side.HOFParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOFparam.json";
-    feat_side.CropParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/Cropsde_param.json";
-                           
-    feat_frt.HOGParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOGparam.json";
-    feat_frt.HOFParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/HOFparam.json"; 
-    feat_frt.CropParam_file = "/groups/branson/home/patilr/BIAS/BIASJAABA/src/demo/beh_class/json_files/Cropfrt_param.json";
-
-    // Video Capture
-    QString vidFile[nviews] = {//"/groups/branson/home/patilr/bias_video_cam_0_date_2019_06_13_time_14_45_56_v001/image_%d.bmp"}; 
-                               "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi",
-                               "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi"};
-
-    //Initialize and load classifier model
-    classifier.classifier_file = "/nrs/branson/jab_experiments/M277PSAMBpn/FinalJAB/cuda_jabs/classifier_Lift.mat";
-#endif
-
-#ifdef WIN32
-    feat_side.HOGParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOGparam.json";
-    feat_side.HOFParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOFparam.json";
-    feat_side.CropParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/Cropsde_param.json";
-
-    feat_frt.HOGParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOGparam.json";
-    feat_frt.HOFParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOFparam.json";
-    feat_frt.CropParam_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/Cropfrt_param.json";
-
-    // Video Capture
-    QString vidFile[nviews] = {"C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi", 
-                               "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi"};
-
-    //Initialize and load classifier model
-    classifier.classifier_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/classifier_Lift.mat";
-#endif    
-
-    classifier.allocate_model();
-    classifier.loadclassifier_model();
-
- 
-    //compute Featues 
-    //cudaSetDevice(0); 
-    GpuTimer timer1;
-    timer1.Start();
-    feat_side.genFeatures(vidFile[0], feat_side.CropParam_file);
-    timer1.Stop();
-
-    //cudaSetDevice(1);
-    GpuTimer timer2 ;
-    timer2.Start();
-    feat_frt.genFeatures(vidFile[1], feat_frt.CropParam_file);
-    timer2.Stop();
-    std::cout << timer1.Elapsed()/1000 << std::endl;
-    std::cout << timer2.Elapsed()/1000 << std::endl;
-
-    /*createh5("./hoghof", ".h5", 2498, 
-             2400, 2400,
-             1600, 1600,
-             feat_side.hog_out, feat_frt.hog_out,
-             feat_side.hof_out, feat_frt.hof_out); */
-
-    //predict scores
-    classifier.translate_mat2C(&feat_side.hog_shape, &feat_frt.hof_shape);
-    classifier.scores.resize(classifier.nframes,0.0);
-    
-    for(int frame_id =1;frame_id < classifier.nframes; frame_id++) {
-
-        //std::cout << frame_id << std::endl;
-        classifier.boost_classify(classifier.scores, feat_side.hog_out, feat_frt.hog_out, feat_side.hof_out, feat_frt.hof_out,
-                                  &feat_side.hog_shape, &feat_frt.hof_shape, classifier.nframes, frame_id-1, classifier.model);
-        
+        x_out << timeVec[frame_id][1] << "\n";
     }
 
-    std::string out_scores = "test_Lift.h5";
-    H5::H5File file_scr(out_scores.c_str(), H5F_ACC_TRUNC);
-    create_dataset(file_scr,"scores", classifier.scores, 1, classifier.nframes);
-    file_scr.close();
-    std::cout << "hi" << std::endl;
+    x_out.close();
 
 }
 
+int main(int argc, char* argv[]) {
+
+    //nviews - temp should be command line arg
+    const int nviews = 2;
+
+    //Initialize and load classifier model temporary , should be made command line arguments
+#ifdef WIN32
+    QString HOGParam_file_sde = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOGparam.json";
+    QString HOFParam_file_sde = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOFparam.json";
+    QString CropParam_file_sde = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/Cropsde_param.json";
+
+    QString HOGParam_file_frt = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOGparam.json";
+    QString HOFParam_file_frt = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOFparam.json";
+    QString CropParam_file_frt = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/Cropfrt_param.json";
+
+    // Video Capture
+    QString vidFile[nviews] = { "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi",
+                               "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi" };
+    videoBackend vid_sde(vidFile[0]);
+    videoBackend vid_frt(vidFile[1]);
+    //Initialize and load classifier model
+    QString classifier_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/multiclassifier.mat";
+#endif    
+    //HOG HOF Params
+    
+    HOGHOF* feat_side = new HOGHOF();
+    HOGHOF* feat_frt = new HOGHOF();
+    beh_class* classifier = new beh_class(classifier_file);
+    Params param_sde;
+    Params param_frt;
+
+    param_sde = { HOGParam_file_sde , HOFParam_file_sde, CropParam_file_sde };
+    param_frt = { HOGParam_file_frt , HOFParam_file_frt, CropParam_file_frt };
+    
+    // Retrieve singleton reference to system
+    
+    spinError err = SPINNAKER_ERR_SUCCESS;
+    spinError errReturn = SPINNAKER_ERR_SUCCESS;
+    spinSystem hSystem = NULL;
+    spinCameraList hCameraList = NULL;
+    SpinUtils spin_handle;
+    std::vector<std::vector<float>> timeStamps(500000, std::vector<float>(2, 0.0));
+    bias::NIDAQUtils* nidaq_task = new NIDAQUtils();
+    uInt32 read1, read2;
+
+    // Print out current library version
+    spinLibraryVersion hLibraryVersion;
+    spinSystemGetLibraryVersion(hSystem, &hLibraryVersion);
+    printf(
+        "Spinnaker library version: %d.%d.%d.%d\n\n",
+        hLibraryVersion.major,
+        hLibraryVersion.minor,
+        hLibraryVersion.type,
+        hLibraryVersion.build);
+
+
+    // Retrieve list of cameras from the system
+    bool hasValidInput = false;
+    err = spin_handle.setupSystem(hSystem, hCameraList);
+    if (err != SPINNAKER_ERR_SUCCESS) {
+
+        printf("Aborting with error %d...\n\n", err);
+        return err;
+    }
+
+    // Retrieve number of cameras
+    size_t numCameras = 0;
+    spinCamera hCamera = NULL;
+    spinNodeMapHandle hNodeMapTLDevice = NULL;
+    spinNodeMapHandle hNodeMap = NULL;
+    
+    int imageCnt = 0;
+    int numFrames = classifier->nframes;
+    vector<vector<float>>score_cls(6,vector<float>(numFrames, 0.0));
+
+    err = spinCameraListGetSize(hCameraList, &numCameras);
+    if (err != SPINNAKER_ERR_SUCCESS)
+    {
+        printf("Unable to retrieve number of cameras. Aborting with error %d...\n\n", err);
+        return err;
+    }
+
+    if (numCameras != 0) {
+
+        hasValidInput = true;
+        err = spinCameraListGet(hCameraList, 0, &hCamera);
+        spin_handle.initialize_camera(hCamera, hNodeMap, hNodeMapTLDevice);
+
+        //hNOdeMap.GetNode();
+
+        if (nidaq_task != nullptr) {
+
+            nidaq_task->startTasks();
+            nidaq_task->start_trigger_signal();
+
+        }
+
+        feat_side->initialize_params(param_sde);
+        feat_frt->initialize_params(param_frt);               
+        int height = feat_side->HOFParams.input.h;
+        int width = feat_side->HOFParams.input.w;
+        feat_side->initializeHOGHOF(width, height, numFrames);
+        feat_frt->initializeHOGHOF(width, height, numFrames);
+        std::cout << "hoghof initalized " << std::endl;
+
+        //have to load ImageParams from width and height information
+        //printf("Number of cameras detected: %u\n\n", (unsigned int)numCameras);
+
+    }else if (!vidFile->isEmpty()) {
+
+        hasValidInput = true;
+        feat_side->initialize_vidparams(vid_sde, param_sde);
+        feat_frt->initialize_vidparams(vid_frt , param_frt);
+        int height = feat_side->HOFParams.input.h;
+        int width = feat_side->HOFParams.input.w;
+        feat_side->initializeHOGHOF(width, height, numFrames);
+        feat_frt->initializeHOGHOF(width, height, numFrames);
+        classifier->translate_mat2C(&feat_side->hog_shape, &feat_frt->hog_shape);
+
+    }else {
+
+
+
+    }
+    
+
+    // Finish if there are no cameras
+    while (imageCnt < numFrames) {
+
+        if (hasValidInput && numCameras != 0)
+        {
+            spinImage hResultImage = NULL;
+            cv::Mat image;
+            err = spin_handle.getFrame_camera(hCamera, hResultImage,
+                nidaq_task, timeStamps, imageCnt);
+
+            if (err != SPINNAKER_ERR_SUCCESS)
+            {
+                printf("skip frame...\n\n", err);
+
+            }
+
+            spinError err = SPINNAKER_ERR_SUCCESS;
+            spinImage hSpinImageConv = nullptr;
+
+            err = spinImageCreateEmpty(&hSpinImageConv);
+            if (err != SPINNAKER_ERR_SUCCESS)
+            {
+                printf("empty frame...\n\n", err);
+            }
+
+            spinPixelFormatEnums origPixelFormat = getImagePixelFormat_spin(hResultImage);
+            spinPixelFormatEnums convPixelFormat = getSuitablePixelFormat(origPixelFormat);
+
+            err = spinImageConvert(hResultImage, convPixelFormat, hSpinImageConv);
+            if (err != SPINNAKER_ERR_SUCCESS)
+            {
+                printf("Unable to convert image...\n\n", err);
+
+            }
+
+            ImageInfo_spin imageInfo = getImageInfo_spin(hSpinImageConv);
+
+            int opencvPixelFormat = getCompatibleOpencvFormat(convPixelFormat);
+
+            cv::Mat imageTmp = cv::Mat(
+                imageInfo.rows + imageInfo.ypad,
+                imageInfo.cols + imageInfo.xpad,
+                opencvPixelFormat,
+                imageInfo.dataPtr,
+                imageInfo.stride
+            );
+
+            imageTmp.copyTo(image);
+
+            
+            image.convertTo(image, CV_32FC1);
+            image = image / 255;
+            feat_side->img.buf = image.data;
+            feat_side->process_camFrame();      
+            feat_frt->process_camFrame();
+            // ----------------------------------------------------------------------------
+
+            if (!destroySpinImage(hSpinImageConv))
+            {
+                printf("Unable to release image. Non-fatal error %d...\n\n", err);
+            }
+
+            err = spinImageRelease(hResultImage);
+            if (err != SPINNAKER_ERR_SUCCESS)
+            {
+                printf("Unable to release image. Non-fatal error %d...\n\n", err);
+            }
+
+        }else if (hasValidInput && !vidFile->isEmpty()) {
+
+            feat_side->getvid_frame(vid_sde);
+            feat_side->process_vidFrame(imageCnt);
+            feat_frt->getvid_frame(vid_frt);
+            feat_frt->process_vidFrame(imageCnt);
+
+        }else {
+
+            if (numCameras == 0) {
+
+                err = spin_handle.ReleaseSystem(hSystem, hCameraList);
+                if (err != SPINNAKER_ERR_SUCCESS)
+                {
+                    printf("Unable to release cameras. Aborting with error %d...\n\n", err);
+                    return err;
+                }
+                printf("Not enough cameras!\n");
+                break;
+            }
+
+            if (vidFile->isEmpty()) {
+
+                break;
+            }
+
+        }
+
+        if (imageCnt > 0) {
+
+            classifier->boost_classify(classifier->score, feat_side->hog_out,
+                feat_frt->hog_out, feat_side->hof_out,
+                feat_frt->hof_out, &feat_side->hog_shape,
+                &feat_frt->hof_shape, classifier->nframes, classifier->model);
+            classifier->write_score("./lift_classifier.csv", imageCnt, classifier->score[0]);
+        }
+
+        
+        /*if (imageCnt == 499999){
+            write_time<float>("./cam2sys_latency.csv", 499999, timeStamps);
+            break;
+        }*/
+        imageCnt++;
+
+    }
+
+    
+    /*createh5("./hoghof", ".h5", 2498,
+                 2400, 2400,
+                 1600, 1600,
+                 feat_side->hog_out, feat_frt->hog_out,
+                 feat_side->hof_out, feat_frt->hof_out);*/
+
+    if (numCameras != 0) {
+
+        // End Acquisition
+        err = spinCameraEndAcquisition(hCamera);
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            printf("Unable to end acquisition. Non-fatal error %d...\n\n", err);
+        }
+
+        spin_handle.deInitialize_camera(hCamera, hNodeMap);
+
+        // Release camera
+        err = spinCameraRelease(hCamera);
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            errReturn = err;
+        }
+
+        nidaq_task->Cleanup();
+    }
+        
+    
+    err = spin_handle.ReleaseSystem(hSystem, hCameraList);
+    if (err != SPINNAKER_ERR_SUCCESS)
+    {
+        printf("Unable to release cameras. Aborting with error %d...\n\n", err);
+        return err;
+    }
+
+        
+}
 
  

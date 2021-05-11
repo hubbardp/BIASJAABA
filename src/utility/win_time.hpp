@@ -61,7 +61,7 @@ namespace bias
              for (int frame_id = 0; frame_id < framenum-1; frame_id++)
              {
 
-                 x_out << timeVec[frame_id][0] <<  "," << timeVec[frame_id][1] << "\n";
+                 x_out << timeVec[frame_id][1] <<  "\n";
              }
 
              x_out.close();
