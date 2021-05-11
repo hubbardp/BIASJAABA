@@ -158,7 +158,6 @@ namespace bias {
     void beh_class::translate_mat2C(HOGShape *shape_side, HOGShape *shape_front) 
     {
 
-
 		//shape of hist side
 		unsigned int side_x = shape_side->x;
         unsigned int side_y = shape_side->y;

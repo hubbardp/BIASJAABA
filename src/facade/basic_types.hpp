@@ -373,6 +373,13 @@ namespace bias {
         TRIGGER_TYPE_UNSPECIFIED,
     };
 
+    enum TriggerExternalType
+    {
+        TRIGGER_ELSE,
+        TRIGGER_NIDAQ,
+        TRIGGER_E_UNSPECIFIED,
+    };
+
     typedef std::list<TriggerType> TriggerTypeList;
     typedef std::set<TriggerType> TriggerTypeSet;
 

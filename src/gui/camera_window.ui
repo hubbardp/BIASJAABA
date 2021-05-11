@@ -291,7 +291,14 @@
       <string>Trigger</string>
      </property>
      <addaction name="actionCameraTriggerInternalPtr_"/>
-     <addaction name="actionCameraTriggerExternalPtr_"/>
+     <widget class="QMenu" name="menuCameraTriggerExternalPtr_">
+       <property name="title">
+         <string>External</string>
+       </property>
+       <addaction name="actionCameraTriggerExternalNIDAQPtr_"/>
+       <addaction name="actionCameraTriggerExternalElsePtr_"/>s
+     </widget>
+     <addaction name="menuCameraTriggerExternalPtr_"/>
     </widget>
     <addaction name="menuCameraPropertiesPtr_"/>
     <addaction name="menuCameraVideoModePtr_"/>
@@ -584,13 +591,21 @@
     <string>Internal</string>
    </property>
   </action>
-  <action name="actionCameraTriggerExternalPtr_">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>External</string>
-   </property>
+  <action name="actionCameraTriggerExternalNIDAQPtr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>NIDAQ</string>
+    </property>
+  </action>
+  <action name="actionCameraTriggerExternalElsePtr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Else</string>
+    </property>
   </action>
   <action name="actionFileLoadConfigPtr_">
    <property name="text">

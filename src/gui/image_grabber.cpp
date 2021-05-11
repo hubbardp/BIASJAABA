@@ -27,30 +27,35 @@ namespace bias {
 
     ImageGrabber::ImageGrabber(QObject *parent) : QObject(parent) 
     {
-        initialize(0,NULL,NULL, NULL);
+        initialize(0,NULL,NULL,NULL,NULL, NULL);
     }
 
     ImageGrabber::ImageGrabber (
             unsigned int cameraNumber,
             std::shared_ptr<Lockable<Camera>> cameraPtr,
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
+            QPointer<QThreadPool> threadPoolPtr,
             GetTime *gettime,
+            NIDAQUtils* nidaq_task,
             QObject *parent
             ) : QObject(parent)
     {
-        initialize(cameraNumber, cameraPtr, newImageQueuePtr, gettime);
+        initialize(cameraNumber, cameraPtr, newImageQueuePtr, threadPoolPtr, gettime, nidaq_task);
     }
 
-    void ImageGrabber::initialize( 
-            unsigned int cameraNumber,
-            std::shared_ptr<Lockable<Camera>> cameraPtr,
-            std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
-            GetTime *gettime
-            ) 
+    void ImageGrabber::initialize(
+        unsigned int cameraNumber,
+        std::shared_ptr<Lockable<Camera>> cameraPtr,
+        std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
+        QPointer<QThreadPool> threadPoolPtr,
+        GetTime *gettime,
+        NIDAQUtils *nidaq_task
+        ) 
     {
         capturing_ = false;
         stopped_ = true;
         cameraPtr_ = cameraPtr;
+        threadPoolPtr_ = threadPoolPtr;
         newImageQueuePtr_ = newImageQueuePtr;
         numStartUpSkip_ = DEFAULT_NUM_STARTUP_SKIP;
         cameraNumber_ = cameraNumber;
@@ -65,6 +70,7 @@ namespace bias {
         errorCountEnabled_ = true;
 
         gettime_ = gettime;
+        nidaq_task_ = nidaq_task;
     }
 
     void ImageGrabber::stop()
@@ -86,7 +92,9 @@ namespace bias {
 
     void ImageGrabber::run()
     { 
+        
         bool isFirst = true;
+        bool istriggered = false;
         bool done = false;
         bool error = false;
         bool errorEmitted = false;
@@ -95,6 +103,7 @@ namespace bias {
         unsigned long frameCount = 0;
         unsigned long startUpCount = 0;
         double dtEstimate = 0.0;
+        TriggerType trig;
 
         StampedImage stampImg;
 
@@ -116,11 +125,22 @@ namespace bias {
         thisThread -> setPriority(QThread::TimeCriticalPriority);
         ThreadAffinityService::assignThreadAffinity(true,cameraNumber_);
 
+        trig = cameraPtr_->getTriggerType();
+        
+        if (nidaq_task_ != nullptr) {
+            
+            //nidaq_task_->startTasks();
+            //nidaq_task_->start_trigger_signal();
+
+        }
+
         // Start image capture
         cameraPtr_ -> acquireLock();
         try
         {
             cameraPtr_ -> startCapture();
+            if (nidaq_task_ != nullptr)
+                cameraPtr_->setupNIDAQ(nidaq_task_);
         }
         catch (RuntimeError &runtimeError)
         {
@@ -135,6 +155,7 @@ namespace bias {
             emit startCaptureError(errorId, errorMsg);
             errorEmitted = true;
             return;
+
         } 
 
         acquireLock();
@@ -166,24 +187,33 @@ namespace bias {
         
         TimeStamp pc_time, pc_1, pc_2;
         int64_t pc_ts1, pc_ts2, cam_ts1, cam_ts2;
-        cameraPtr_ -> cameraOffsetTime();
+        //uInt32 read_buffer = 0, read_ondemand = 0;
+        //cameraPtr_ -> cameraOffsetTime();
         
+
         // Grab images from camera until the done signal is given
         while (!done)
         {
             acquireLock();
             done = stopped_;
             releaseLock();
-
+            //printf("hi");
             // Grab an image
-            pc_1 = gettime_->getPCtime();
+            //pc_1 = gettime_->getPCtime();
+            if (!istriggered) {
+
+                nidaq_task_->startTasks();
+                nidaq_task_->start_trigger_signal();
+                istriggered = true;
+
+            }
+
             cameraPtr_ -> acquireLock();
             try
             {
-          
+                
                 stampImg.image = cameraPtr_ -> grabImage();
                 timeStamp = cameraPtr_->getImageTimeStamp();
-                
                 error = false;
 
             }
@@ -196,20 +226,20 @@ namespace bias {
             }
             cameraPtr_ -> releaseLock();
             
-
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty()) 
             { 
                 QThread::yieldCurrentThread();
                 continue; 
             }
-            
+
+
             // Push image into new image queue
-            if (!error) 
+            if (!error)
             {
                 errorCount = 0;                  // Reset error count 
                 timeStampDblLast = timeStampDbl; // Save last timestamp
-                
+
                 // Set initial time stamp for fps estimate
                 if ((startUpCount == 0) && (numStartUpSkip_ > 0))
                 {
@@ -230,16 +260,16 @@ namespace bias {
                     }
                     else if (startUpCount > MIN_STARTUP_SKIP)
                     {
-                        double c0 = double(startUpCount-1)/double(startUpCount);
-                        double c1 = double(1.0)/double(startUpCount);
-                        dtEstimate = c0*dtEstimate + c1*dt;
+                        double c0 = double(startUpCount - 1) / double(startUpCount);
+                        double c1 = double(1.0) / double(startUpCount);
+                        dtEstimate = c0 * dtEstimate + c1 * dt;
                     }
                     startUpCount++;
                     continue;
                 }
 
                 //std::cout << "dt grabber: " << timeStampDbl - timeStampDblLast << std::endl;
-                
+
                 // Reset initial time stamp for image acquisition
                 if ((isFirst) && (startUpCount >= numStartUpSkip_))
                 {
@@ -250,7 +280,7 @@ namespace bias {
                     emit startTimer();
                 }
                 //
-                
+
                 //// TEMPORARY - for mouse grab detector testing
                 //// --------------------------------------------------------------------- 
                 //cv::Mat fileMat;
@@ -276,7 +306,7 @@ namespace bias {
                 //    stampImg.image = camSizeImage;
                 //}
                 //// ---------------------------------------------------------------------
-                
+
                 // Set image data timestamp, framecount and frame interval estimate
                 stampImg.timeStamp = timeStampDbl;
                 stampImg.timeStampInit = timeStampInit;
@@ -285,26 +315,34 @@ namespace bias {
                 stampImg.dtEstimate = dtEstimate;
                 frameCount++;
 
-                newImageQueuePtr_ -> acquireLock();
-                newImageQueuePtr_ -> push(stampImg);
-                newImageQueuePtr_ -> signalNotEmpty(); 
-                newImageQueuePtr_ -> releaseLock();
+                newImageQueuePtr_->acquireLock();
+                newImageQueuePtr_->push(stampImg);
+                newImageQueuePtr_->signalNotEmpty();
+                newImageQueuePtr_->releaseLock();
 
                 //pc_1 = cameraPtr_->getCPUtime();
-                pc_2 = gettime_->getPCtime();
-                pc_ts2 = (pc_2.seconds*1e6 + pc_2.microSeconds )- (cameraPtr_->cam_ofs.seconds*1e6
-                + cameraPtr_->cam_ofs.microSeconds);
-                pc_ts1 = (pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds);
-                cam_ts2 = timeStamp.seconds * 1e6 + timeStamp.microSeconds;
-                time_stamps1.push_back({cam_ts2, pc_ts2});
+                //pc_2 = gettime_->getPCtime();
+                //pc_2 = gettime_->getPCtime();
+                //pc_ts1 = ((pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds)) / 1e3;
+                //pc_ts2 = (pc_2.seconds*1000000 + pc_2.microSeconds);
+                //cam_ts2 = timeStamp.seconds * 1e6 + timeStamp.microSeconds;
+                //time_stamps1.push_back(pc_ts2);
                 //time_stamps2.push_back({ cam_ts2, pc_ts2 - cam_ts2 });
 
-                if (time_stamps1.size() == 1500000)
+                /*if (time_stamps1.size() == 100000)
                 {
                     std::string filename = "imagegrab_f2f" + std::to_string(cameraNumber_) + ".csv";
-                    gettime_->write_time<int64_t>(filename, 1500000, time_stamps1);
-                }
+                    gettime_->write_time<int64_t>(filename, 100000, time_stamps1);
+                }*/
+                
 
+                /*if (time_stamps1.size() == 1000)
+                {
+                    std::string filename1 = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
+                    std::string filename2 = "imagegrab_cam2sys_time" + std::to_string(cameraNumber_) + ".csv";
+                    gettime_->write_time<float>(filename1, 1000, time_stamps1);
+                    gettime_->write_time<uInt32>(filename2, 1000, time_stamps2);
+                }*/
             }
             else
             {

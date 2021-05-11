@@ -58,7 +58,6 @@
 #include "grab_detector_plugin.hpp"
 #include "signal_slot_demo_plugin.hpp"
 #include "jaaba_plugin.hpp"
-
 // -------------------------------------
 
 namespace bias
@@ -465,7 +464,9 @@ namespace bias
                 cameraNumber_, 
                 cameraPtr_, 
                 newImageQueuePtr_,
+                threadPoolPtr_,
                 gettime_,
+                nidaq_task,
                 this
                 );
         imageGrabberPtr_ -> setAutoDelete(false);
@@ -513,9 +514,10 @@ namespace bias
                     SLOT(startCaptureDurationTimer())
                    );
         }
-        std::cout << "hi5" << std::endl;
+        
         threadPoolPtr_ -> start(imageGrabberPtr_);
         threadPoolPtr_ -> start(imageDispatcherPtr_);
+        
         // ------------------------------------------------------------------------------
         /*processScoresPtr_ = new ProcessScores(
                 logging_,
@@ -525,7 +527,7 @@ namespace bias
                 this
                 );*/
         
-        std::cout << "hi6" << std::endl;
+        //std::cout << "hi6" << std::endl;
         // Set Capture start and stop time
         captureStartDateTime_ = QDateTime::currentDateTime();
         captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
@@ -927,6 +929,8 @@ namespace bias
         cameraMap.insert("frameRate", frameRateString);
         QString trigTypeString = QString::fromStdString(getTriggerTypeString(trigType));
         cameraMap.insert("triggerType", trigTypeString);
+        //QString trigTypeString = QString::fromStdString(getTriggerExternalTypeString(trigExternalType));
+        //cameraMap.insert("triggerType", trigTypeString);
 
         // Create format7 settings map
         QVariantMap format7SettingsMap;
@@ -2112,14 +2116,26 @@ namespace bias
     
     void CameraWindow::actionCameraTriggerExternalTriggered()
     {
+        
         if (cameraPtr_ -> tryLock(CAMERA_LOCK_TRY_DT))
         {
+            
             cameraPtr_ -> setTriggerExternal();
             cameraPtr_ -> releaseLock();
+
+            QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
+            triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];
+            if (triggerExternalType_ == TRIGGER_NIDAQ) {
+                //std::cout << "set" << std::endl;
+                nidaq_task = new NIDAQUtils();
+            }else if (triggerExternalType_ == TRIGGER_ELSE) {
+                nidaq_task = nullptr;
+            }
+        
         }
         else
         {
-            actionCameraTriggerExternalPtr_ -> setChecked(false);
+            actionCameraTriggerExternalElsePtr_ -> setChecked(false);
             actionCameraTriggerInternalPtr_ -> setChecked(true);
             if (showCameraLockFailMsg_)
             {
@@ -2128,6 +2144,8 @@ namespace bias
                 QMessageBox::critical(this, msgTitle, msgText);
             }
         }
+
+        updateCameraTriggerMenu();
     }
 
 
@@ -2140,7 +2158,8 @@ namespace bias
         }
         else
         {
-            actionCameraTriggerExternalPtr_ -> setChecked(true);
+            actionCameraTriggerExternalElsePtr_ -> setChecked(true);
+            actionCameraTriggerExternalNIDAQPtr_->setChecked(true);
             actionCameraTriggerInternalPtr_ -> setChecked(false);
             if (showCameraLockFailMsg_)
             {
@@ -2630,6 +2649,8 @@ namespace bias
         // Temporary - plugin development
         // -------------------------------------------------------------------------------
         gettime_ = new GetTime(0, 0);
+        //std::cout << "not set" << std::endl;
+        
 
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
@@ -2637,7 +2658,7 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_, this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, this);
 
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
+        //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------
 
@@ -2649,8 +2670,8 @@ namespace bias
         setupCaptureDurationTimer();
         setupImageLabels();
         setupPluginMenu();
-        updateAllMenus(); 
-
+        updateAllMenus();
+        
         tabWidgetPtr_ -> setCurrentWidget(previewTabPtr_);
         setCurrentPlugin(pluginMap_.firstKey());
 
@@ -2658,7 +2679,7 @@ namespace bias
         //setCurrentPlugin("stampede");     
         //setCurrentPlugin("signalSlotDemo");
         setCurrentPlugin("jaabaPlugin");
-        setPluginEnabled(true);
+        setPluginEnabled(false);
      
 
         updateWindowTitle();
@@ -2779,10 +2800,17 @@ namespace bias
                );
 
         connect(
-                actionCameraTriggerExternalPtr_,
+                actionCameraTriggerExternalNIDAQPtr_,
                 SIGNAL(triggered()),
                 this,
                 SLOT(actionCameraTriggerExternalTriggered())
+               );
+
+        connect(
+               actionCameraTriggerExternalElsePtr_,
+               SIGNAL(triggered()),
+               this,
+               SLOT(actionCameraTriggerExternalTriggered())
                );
 
         connect(
@@ -3175,7 +3203,11 @@ namespace bias
 
         cameraTriggerActionGroupPtr_ = new QActionGroup(menuCameraPtr_);
         cameraTriggerActionGroupPtr_ -> addAction(actionCameraTriggerInternalPtr_);
-        cameraTriggerActionGroupPtr_ -> addAction(actionCameraTriggerExternalPtr_);
+        cameraTriggerActionGroupPtr_ -> addAction(actionCameraTriggerExternalNIDAQPtr_);
+        cameraTriggerActionGroupPtr_ -> addAction(actionCameraTriggerExternalElsePtr_);
+        actionToTriggerExternalMap_[actionCameraTriggerExternalNIDAQPtr_] = TRIGGER_NIDAQ;
+        actionToTriggerExternalMap_[actionCameraTriggerExternalElsePtr_] = TRIGGER_ELSE;
+
     }
 
 
@@ -3967,17 +3999,18 @@ namespace bias
         unsigned int errorId;
         QString errorMsg;
         TriggerType trigType;
+        TriggerExternalType trigExternalType;
 
-        if (!connected_) 
+        if (!connected_)
         {
             return;
         }
 
-        if (cameraPtr_ -> tryLock(CAMERA_LOCK_TRY_DT))
+        if (cameraPtr_->tryLock(CAMERA_LOCK_TRY_DT))
         {
             try
             {
-                trigType = cameraPtr_ -> getTriggerType();
+                trigType = cameraPtr_->getTriggerType();
             }
             catch (RuntimeError &runtimeError)
             {
@@ -3985,7 +4018,7 @@ namespace bias
                 errorId = runtimeError.id();
                 errorMsg = QString::fromStdString(runtimeError.what());
             }
-            cameraPtr_ -> releaseLock();
+            cameraPtr_->releaseLock();
         }
         else
         {
@@ -4011,26 +4044,41 @@ namespace bias
 
         if (trigType == TRIGGER_INTERNAL)
         {
-            actionCameraTriggerInternalPtr_ -> setChecked(true);
-            actionCameraTriggerExternalPtr_ -> setChecked(false);
+            actionCameraTriggerInternalPtr_->setChecked(true);
+            actionCameraTriggerExternalNIDAQPtr_->setChecked(false);
+            actionCameraTriggerExternalElsePtr_->setChecked(false);
         }
-        else 
+        else if (trigType == TRIGGER_EXTERNAL)
         {
-            actionCameraTriggerInternalPtr_ -> setChecked(false);
-            actionCameraTriggerExternalPtr_ -> setChecked(true);
+            actionCameraTriggerInternalPtr_->setChecked(false);
+            trigExternalType = triggerExternalType_;
+
+            if (trigExternalType == TRIGGER_NIDAQ){
+
+                actionCameraTriggerExternalNIDAQPtr_->setChecked(true);
+                actionCameraTriggerExternalElsePtr_ ->setChecked(false);
+
+            } else if (trigExternalType == TRIGGER_ELSE) {
+       
+                actionCameraTriggerExternalNIDAQPtr_->setChecked(false);
+                actionCameraTriggerExternalElsePtr_->setChecked(true);
+            }
+
         }
 
         if (capturing_)
         {
             actionCameraTriggerInternalPtr_ -> setEnabled(false);
-            actionCameraTriggerExternalPtr_ -> setEnabled(false);
+            actionCameraTriggerExternalNIDAQPtr_ -> setEnabled(false);
+            actionCameraTriggerExternalElsePtr_ -> setEnabled(false);
         }
         else
         {
             // TO DO ... temporary, currently only internal trigger supported
             actionCameraTriggerInternalPtr_ -> setEnabled(true);
-            actionCameraTriggerExternalPtr_ -> setEnabled(true);
+            //actionCameraTriggerExternalNIDAQPtr_ -> setEnabled(true);
         }
+        
     }
 
 
@@ -4049,6 +4097,7 @@ namespace bias
             if (videoFileFormat_ == fileFormat) 
             {
                 actionPtr -> setChecked(true);
+               
             }
             else
             {
@@ -4552,7 +4601,8 @@ namespace bias
                     return rtnStatus;
                 }
                 actionCameraTriggerInternalPtr_ -> setChecked(true);
-                actionCameraTriggerExternalPtr_ -> setChecked(false);
+                actionCameraTriggerExternalNIDAQPtr_ -> setChecked(false);
+                actionCameraTriggerExternalElsePtr_  -> setChecked(false);
                 break;
 
             case TRIGGER_EXTERNAL:
@@ -4568,7 +4618,8 @@ namespace bias
                     return rtnStatus;
                 }
                 actionCameraTriggerInternalPtr_ -> setChecked(false);
-                actionCameraTriggerExternalPtr_ -> setChecked(true);
+                actionCameraTriggerExternalNIDAQPtr_ -> setChecked(false);
+                actionCameraTriggerExternalElsePtr_ -> setChecked(true);
                 break;
 
             default:
@@ -7337,6 +7388,7 @@ namespace bias
         }
         return camelCaseName;
     }
+
 } // namespace bias
 
        

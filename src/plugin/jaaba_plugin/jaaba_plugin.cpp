@@ -18,7 +18,7 @@ namespace bias {
     const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
 
     // Public Methods
-        JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
+    JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
                              GetTime* gettime, QWidget *parent) : BiasPlugin(parent)
     {
 
@@ -351,7 +351,6 @@ namespace bias {
                 stampedImage0 = pluginImageQueuePtr_ -> front();
                 stampedImage1 = partnerPluginImageQueuePtr_ -> front();
 
-                    
                 sideImage = stampedImage0.image.clone();
                 frontImage = stampedImage1.image.clone();
 
@@ -578,92 +577,91 @@ namespace bias {
     }
     
         
-        void JaabaPlugin::initialize()
-        {
+    void JaabaPlugin::initialize()
+    {
 
-            QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
-            cameraNumber_ = cameraWindowPtr -> getCameraNumber();
-            partnerCameraNumber_ = getPartnerCameraNumber();
-            cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
-            cameraPtr_ = cameraWindowPtr->getCameraPtr();
-            processScoresPtr_side = new ProcessScores(this);   
-            processScoresPtr_front = new ProcessScores(this);    
-            visplots = new VisPlots(livePlotPtr,this);
-            std::cout << cameraNumber_ << std::endl;
+        QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
+        cameraNumber_ = cameraWindowPtr -> getCameraNumber();
+        partnerCameraNumber_ = getPartnerCameraNumber();
+        cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
+        cameraPtr_ = cameraWindowPtr->getCameraPtr();
+        processScoresPtr_side = new ProcessScores(this);   
+        processScoresPtr_front = new ProcessScores(this);    
+        visplots = new VisPlots(livePlotPtr,this);
+        std::cout << cameraNumber_ << std::endl;
  
-            numMessageSent_=0;
-            numMessageReceived_=0;
-            frameCount_ = 0;
-            laserOn = false;
+        numMessageSent_=0;
+        numMessageReceived_=0;
+        frameCount_ = 0;
+        laserOn = false;
 
-            updateWidgetsOnLoad();
-            setupHOGHOF();
-            setupClassifier();
+        updateWidgetsOnLoad();
+        setupHOGHOF();
+        setupClassifier();
+
+    }
 
 
-        }
+    void JaabaPlugin::connectWidgets()
+    { 
 
-
-        void JaabaPlugin::connectWidgets()
-        { 
-
-            connect(
-                sideRadioButtonPtr_,
-                SIGNAL(stateChanged(int)),
-                this,
-                SLOT(SideViewCheckBoxChanged(int))
-            );
+        connect(
+            sideRadioButtonPtr_,
+            SIGNAL(stateChanged(int)),
+            this,
+            SLOT(SideViewCheckBoxChanged(int))
+        );
  
-            connect(
-                frontRadioButtonPtr_,
-                SIGNAL(stateChanged(int)),
-                this,
-                SLOT(FrontViewCheckBoxChanged(int))
-            );   
-            connect(
-                reloadPushButtonPtr_,
-                SIGNAL(clicked()),
-                this,
-                SLOT(reloadButtonPressed())
-            );
+        connect(
+            frontRadioButtonPtr_,
+            SIGNAL(stateChanged(int)),
+            this,
+            SLOT(FrontViewCheckBoxChanged(int))
+        );   
+        connect(
+            reloadPushButtonPtr_,
+            SIGNAL(clicked()),
+            this,
+            SLOT(reloadButtonPressed())
+        );
 
-            connect(
-                detectButtonPtr_,
-                SIGNAL(clicked()),
-                this,
-                SLOT(detectClicked())
-            );
+        connect(
+            detectButtonPtr_,
+            SIGNAL(clicked()),
+            this,
+            SLOT(detectClicked())
+        );
 
-            connect(
-                saveButtonPtr_,
-                SIGNAL(clicked()),
-                this,
-                SLOT(saveClicked())
-            );
+        connect(
+            saveButtonPtr_,
+            SIGNAL(clicked()),
+            this,
+            SLOT(saveClicked())
+        );
   
  
-            connect(
-                tabWidgetPtr,
-                SIGNAL(currentChanged(currentIndex())),
-                this,
-                SLOT(setCurrentIndex(currentIndex()))
-            );
+        connect(
+            tabWidgetPtr,
+            SIGNAL(currentChanged(currentIndex())),
+            this,
+            SLOT(setCurrentIndex(currentIndex()))
+        );
 
-            /*connect(
-                trigEnabledCheckBoxPtr,
-                SIGNAL(stateChanged(int)),
-                this,
-                SLOT(trigEnabledCheckBoxStateChanged(int))
-            );
+        /*connect(
+            trigEnabledCheckBoxPtr,
+            SIGNAL(stateChanged(int)),
+            this,
+            SLOT(trigEnabledCheckBoxStateChanged(int))
+        );
 
-            connect(
-               trigResetPushButtonPtr,
-               SIGNAL(clicked()),
-               this,
-               SLOT(trigResetPushButtonClicked())
-            );*/
+        connect(
+            trigResetPushButtonPtr,
+            SIGNAL(clicked()),
+            this,
+            SLOT(trigResetPushButtonClicked())
+        );*/
 
-       }
+    }
 
     
        void JaabaPlugin::setupHOGHOF()

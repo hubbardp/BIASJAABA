@@ -14,7 +14,7 @@
 #include "format7.hpp"
 
 #include <numeric>
-
+#include "NIDAQUtils.hpp"
 
 
 namespace bias 
@@ -89,7 +89,10 @@ namespace bias
             TimeStamp cam_ofs = { 0,0 };
             TimeStamp cpu_time = { 0,0 };
             virtual TimeStamp cameraOffsetTime();
-            virtual TimeStamp getCPUtime();			
+            virtual TimeStamp getCPUtime();	
+
+            //Test
+            virtual void setupNIDAQ(NIDAQUtils* nidaq_task);
 
         protected:
             Guid guid_;

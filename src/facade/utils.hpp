@@ -40,6 +40,7 @@ namespace bias
 
     std::string getImageModeString(ImageMode mode);
 
+    std::string getTriggerExternalTypeString(TriggerExternalType trigExternaltype);
     // ------------------------------------------------------------------------
     float getFrameRateAsFloat(FrameRate frmRate);
 

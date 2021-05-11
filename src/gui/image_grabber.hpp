@@ -5,12 +5,15 @@
 #include <QMutex>
 #include <QObject>
 #include <QRunnable>
-#include <QThread>
+#include <QPointer>
+#include <QThreadPool>
 #include "basic_types.hpp"
 #include "camera_fwd.hpp"
 #include "lockable.hpp"
 
 #include "win_time.hpp"
+#include "NIDAQUtils.hpp"
+
 
 namespace bias
 {
@@ -28,7 +31,9 @@ namespace bias
                     unsigned int cameraNumber,
                     std::shared_ptr<Lockable<Camera>> cameraPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
+                    QPointer<QThreadPool> threadPoolPtr,
                     GetTime *gettime,
+                    NIDAQUtils* nidaq_task,
                     QObject *parent=0
                     );
 
@@ -36,7 +41,9 @@ namespace bias
                     unsigned int cameraNumber,
                     std::shared_ptr<Lockable<Camera>> cameraPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
-                    GetTime *gettime 
+                    QPointer<QThreadPool> threadPoolPtr,
+                    GetTime *gettime,
+                    NIDAQUtils* nidaq_task
                     );
 
             void stop();
@@ -64,13 +71,14 @@ namespace bias
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
 
-            std::vector<std::vector<int64_t>> time_stamps1;
-            std::vector<std::vector<int64_t>> time_stamps2;
+            std::vector<int64_t> time_stamps1;
+            std::vector<int64_t> time_stamps2;
 
             void run();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
-
+            QPointer<QThreadPool> threadPoolPtr_;
             GetTime* gettime_ = nullptr;
+            NIDAQUtils* nidaq_task_ = nullptr;
     };
 
 

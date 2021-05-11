@@ -314,7 +314,6 @@ namespace bias {
         if (!capturing_)
         {
 
-
             // Set acquisition mode
             //std::cout << "DEBUG: set AcquisitionMode begin" << std::endl;
             EnumNode_spin acqModeNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("AcquisitionMode");
@@ -392,11 +391,12 @@ namespace bias {
 
         std::string errMsg;
 
-        bool ok = grabImageCommon(errMsg);
-
+        //bool ok = grabImageCommon(errMsg);
+        bool ok = getFrame_camera(errMsg);
         if (!ok)
         {
-            image.release();
+            image.release(); 
+            //std::cout << "Release" << std::endl;
             return;
         }
 
@@ -692,7 +692,6 @@ namespace bias {
     }
 
 
-
     bool CameraDevice_spin::validateFormat7Settings(Format7Settings settings)
     {
         bool ok = true;
@@ -789,7 +788,6 @@ namespace bias {
         }
         return pixelFormatList;
     }
-
 
 
     bool CameraDevice_spin::isSupported(VideoMode vidMode, FrameRate frmRate)
@@ -990,6 +988,9 @@ namespace bias {
     {
 
         spinError err = SPINNAKER_ERR_SUCCESS;
+        uInt32 read_buffer = 0, read_ondemand = 0;
+        TimeStamp pc_ts;
+        int64_t pc_ts1;
 
         if (!capturing_)
         {
@@ -1015,12 +1016,11 @@ namespace bias {
         if (triggerType_ == TRIGGER_INTERNAL)
         {
             err = spinCameraGetNextImage(hCamera_, &hSpinImage_); // This fixes memory leak ??? why??
-
         }
         else
-        {
+        {           
             // Note, 2nd arg > 0 to help reduce effect of slow memory leak
-            err = spinCameraGetNextImageEx(hCamera_, 1, &hSpinImage_);
+            err = spinCameraGetNextImageEx(hCamera_, 10, &hSpinImage_);       
         }
 
         if (err != SPINNAKER_ERR_SUCCESS)
@@ -1030,6 +1030,7 @@ namespace bias {
             ssError << __FUNCTION__;
             ssError << ": unable to get next image";
             errMsg = ssError.str();
+            std::cout << "image error" << std::endl;
             return false;
         }
 
@@ -1042,6 +1043,7 @@ namespace bias {
             ssError << __FUNCTION__;
             ssError << ": unable to determine if image is complete";
             errMsg = ssError.str();
+            std::cout << "image incomplete" << std::endl;
             return false;
         }
 
@@ -1051,18 +1053,126 @@ namespace bias {
             ssError << __FUNCTION__;
             ssError << ": image is incomplete";
             errMsg = ssError.str();
+            std::cout << "incomp" << std::endl;
             return false;
         }
 
         imageOK_ = true;
+        
+        if (nidaq_task_ != nullptr){
+            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+            time_stamp3.push_back({ 0.0,static_cast<float>((read_ondemand - read_buffer)*0.02) });
+        }
+        //pc_ts = gettime->getPCtime();
+        //pc_ts1 = pc_ts.seconds*1000000 + pc_ts.microSeconds;
+        
+        if (time_stamp3.size() == 500000)
+        {
+            std::string filename1 = "imagegrab_cam2sys" + std::to_string(0) + ".csv";
+            std::string filename2 = "imagegrab_cam2sys_time" + std::to_string(0) + ".csv";
+            gettime->write_time<float>(filename1, 500000, time_stamp3);
+            
+        }
 
-        updateTimeStamp();
+        //updateTimeStamp();
         //std::cout << "timeStamp_ns_           = " << timeStamp_ns_ << std::endl;
         //std::cout << "timeStamp_.seconds      = " << timeStamp_.seconds << std::endl;
         //std::cout << "timeStamp_.microSeconds = " << timeStamp_.microSeconds << std::endl;
         return true;
     }
 
+    bool CameraDevice_spin::getFrame_camera(std::string &errMsg) {
+
+        spinError err = SPINNAKER_ERR_SUCCESS;
+        uInt32 read_buffer, read_ondemand;
+
+        if (!capturing_)
+        {
+            std::stringstream ssError;
+            ssError << __FUNCTION__;
+            ssError << ": unable to grab Image - not capturing";
+            errMsg = ssError.str();
+            return false;
+        }
+
+        if (!releaseSpinImage(hSpinImage_))
+        {
+            std::stringstream ssError;
+            ssError << __FUNCTION__;
+            ssError << ": unable to release existing spinImage";
+            errMsg = ssError.str();
+            return false;
+        }
+        imageOK_ = false;
+        err = spinCameraGetNextImageEx(hCamera_, 10, &hSpinImage_);
+
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            printf("Unable to get next image. Non-fatal error %d...\n\n", err);
+
+        }
+
+        // Ensure image completion
+        bool8_t isIncomplete = False;
+        bool8_t hasFailed = False;
+
+        err = spinImageIsIncomplete(hSpinImage_, &isIncomplete);
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            printf("Unable to determine image completion. Non-fatal error %d...\n\n", err);
+            hasFailed = True;
+
+        }
+
+        if (isIncomplete)
+        {
+            spinImageStatus imageStatus = IMAGE_NO_ERROR;
+
+            err = spinImageGetStatus(hSpinImage_, &imageStatus);
+            if (err != SPINNAKER_ERR_SUCCESS)
+            {
+                printf("Unable to retrieve image status. Non-fatal error %d...\n\n", err);
+            }
+            else
+            {
+                printf("Image incomplete with image status %d...\n", imageStatus);
+            }
+
+        }
+
+        // Release incomplete or failed image
+        if (hasFailed)
+        {
+            err = spinImageRelease(hSpinImage_);
+            if (err != SPINNAKER_ERR_SUCCESS)
+            {
+                printf("Unable to release image. Non-fatal error %d...\n\n", err);
+            }
+
+            return false;
+        }
+
+        // Release image
+        /*err = spinImageRelease(hSpinImage_);
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            printf("Unable to release image. Non-fatal error %d...\n\n", err);
+        }*/
+
+        imageOK_ = true;
+        if (nidaq_task_ != nullptr) {
+
+            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+            time_stamp3.push_back({ 0.0 , static_cast<float>((read_ondemand - read_buffer)*0.02) });
+        }
+
+        if (time_stamp3.size() == 500000) {
+            gettime->write_time<float>("./cam2sys_latency.csv", 500000, time_stamp3);
+        }
+        return true;
+    }
 
     bool CameraDevice_spin::releaseSpinImage(spinImage &hImage)
     {
@@ -2232,6 +2342,12 @@ namespace bias {
     TimeStamp CameraDevice_spin::getCPUtime()
     {
         return cpu_time;
+    }
+
+    void CameraDevice_spin::setupNIDAQ(NIDAQUtils* nidaq_task)
+    {
+        nidaq_task_ = nidaq_task;
+        //std::cout << "setup NIDAQ" << std::endl;
     }
 
 }

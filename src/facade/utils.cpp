@@ -280,6 +280,26 @@ namespace bias
         return trigTypeString;
     }
 
+
+    std::string getTriggerExternalTypeString(TriggerExternalType trigExternaltype)
+    {
+        std::string trigTypeString;
+        if (trigExternaltype == TRIGGER_NIDAQ)
+        {
+            trigTypeString = std::string("NIDAQ");
+        }
+        else if (trigExternaltype == TRIGGER_ELSE)
+        {
+            trigTypeString = std::string("ELSE");
+        }
+        else
+        {
+            trigTypeString = std::string("Unspecified");
+        }
+        return trigTypeString;
+    }
+
+
     static std::map<ImageMode, std::string> createImageModeToStringMap()
     {
         std::map<ImageMode, std::string> map;

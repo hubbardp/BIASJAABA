@@ -31,6 +31,8 @@
 //#endif
 #include "stamped_image.hpp"
 #include <QPointer>
+#include "NIDAQUtils.hpp"
+
 namespace bias {
 
 
@@ -117,10 +119,10 @@ namespace bias {
             virtual TimeStamp getCPUtime();
             TimeStamp cam_ofs = { 0,0 };
             TimeStamp cpu_time = { 0,0 };
+            virtual void setupNIDAQ(NIDAQUtils* nidaq_task);
+            
 
         private:
-
-
 
             spinSystem hSystem_ = nullptr;
             spinCamera hCamera_ = nullptr;
@@ -153,7 +155,7 @@ namespace bias {
 
             void setupTimeStamping();
             void updateTimeStamp();
-
+            bool getFrame_camera(std::string &errMsg);
 
             // Get Property Info methods
             static std::map<PropertyType, std::function<PropertyInfo(CameraDevice_spin*)>> getPropertyInfoDispatchMap_; 
@@ -201,10 +203,11 @@ namespace bias {
             spinPixelFormatEnums getPixelFormat_spin();
 
         //test
-            std::vector<std::vector<int64_t>> time_stamp1;
-            std::vector<std::vector<int64_t>> time_stamp2; 
-            std::vector<std::vector<int64_t>> time_stamp3;
+            std::vector<float> time_stamp1;
+            std::vector<float> time_stamp2;
+            std::vector<std::vector<float>> time_stamp3;
             GetTime* gettime = nullptr;
+            NIDAQUtils* nidaq_task_ = nullptr;
 
 
     };

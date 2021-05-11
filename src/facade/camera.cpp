@@ -749,6 +749,11 @@ namespace bias {
     {
         return cameraDevicePtr_ -> getCPUtime();
     }
+
+    void Camera::setupNIDAQ(NIDAQUtils* nidaq_task)
+    {
+        cameraDevicePtr_->setupNIDAQ(nidaq_task);
+    }
     
 
     // FlyCapture2 specific methods
@@ -812,6 +817,8 @@ namespace bias {
     }
 
 #endif
+
+    // ------------------------------------------------------------------------
 
     // Shared pointer comparison operator - for use in sets, maps, etc.
     //-------------------------------------------------------------------------

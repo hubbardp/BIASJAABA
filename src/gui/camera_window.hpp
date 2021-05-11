@@ -21,6 +21,7 @@
 #include "bias_plugin.hpp"
 
 #include "win_time.hpp"
+#include "NIDAQUtils.hpp"
 
 // External lib forward declarations
 class QTimer;
@@ -139,6 +140,7 @@ namespace bias
             double getFramesPerSec();
             unsigned long getFrameCount();
             float getFormat7PercentSpeed();
+            
 
         signals:
 
@@ -185,6 +187,7 @@ namespace bias
             void actionCameraFormat7SettingsTriggered();
             void actionCameraTriggerExternalTriggered();
             void actionCameraTriggerInternalTriggered();
+
             void actionLoggingEnabledTriggered();
             void actionLoggingVideoFileTriggered();
             void actionLoggingSettingsTriggered();
@@ -257,6 +260,8 @@ namespace bias
             unsigned long frameCount_;
             unsigned long captureDurationSec_;
             AutoNamingOptions autoNamingOptions_;
+            TriggerExternalType triggerExternalType_;
+
 
             QPointer<QLabel> statusLabelPtr_;
 
@@ -271,6 +276,7 @@ namespace bias
             QPointer<QActionGroup> rotationActionGroupPtr_;
             QPointer<QActionGroup> colorMapActionGroupPtr_;
             QPointer<QActionGroup> pluginActionGroupPtr_;
+            QPointer<QActionGroup> cameraTriggerExternalGroupPtr_;
 
             QPointer<QSignalMapper> videoModeSignalMapperPtr_;
             QPointer<QSignalMapper> frameRateSignalMapperPtr_;
@@ -281,6 +287,7 @@ namespace bias
             QMap<QAction*, VideoFileFormat> actionToVideoFileFormatMap_;
             QMap<QString, QPointer<BiasPlugin>> pluginMap_;
             QMap<QString, QPointer<QAction>> pluginActionMap_;
+            QMap<QAction*, TriggerExternalType> actionToTriggerExternalMap_;
 
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
@@ -288,6 +295,8 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             
             GetTime* gettime_;
+            //Test
+            NIDAQUtils* nidaq_task;
             QPointer<QThreadPool> threadPoolPtr_;
 
             QPointer<ImageGrabber> imageGrabberPtr_;
@@ -447,7 +456,5 @@ namespace bias
     QString propNameToCamelCase(QString propName);
 
 } // namespace bias
-
-
 
 #endif // #ifndef BIAS_GUI_CAMERA_WINDOW_HPP

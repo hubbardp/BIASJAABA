@@ -70,7 +70,6 @@ namespace bias {
         hoghof->hof_shape = hofshape;
         hoghof->hog_out.resize(hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin);
         hoghof->hof_out.resize(hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin);
-       
     
         isHOGHOFInitialised = true;
 

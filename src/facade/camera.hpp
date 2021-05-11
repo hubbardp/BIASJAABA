@@ -43,9 +43,9 @@ namespace bias {
             TimeStamp getImageTimeStamp();
             TimeStamp getDeviceTimeStamp();
             void cameraOffsetTime();
-	    TimeStamp getCPUtime();
+	        TimeStamp getCPUtime();
             TimeStamp cam_ofs = {0,0};
-	    TimeStamp cpu_time = {0,0};
+	        TimeStamp cpu_time = {0,0};
             void initCounter();
 
             bool isConnected();
@@ -146,6 +146,10 @@ namespace bias {
 
             friend std::ostream& operator<< (std::ostream &out, Camera &camera);
 			
+            // Test NIDAQ
+            void setupNIDAQ(NIDAQUtils* nidaq_task);
+            
+
         private:
             CameraDevicePtr cameraDevicePtr_;
             void createCameraDevice_fc2(Guid guid);
