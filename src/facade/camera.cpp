@@ -750,9 +750,9 @@ namespace bias {
         return cameraDevicePtr_ -> getCPUtime();
     }
 
-    void Camera::setupNIDAQ(NIDAQUtils* nidaq_task)
+    void Camera::setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber)
     {
-        cameraDevicePtr_->setupNIDAQ(nidaq_task);
+        cameraDevicePtr_->setupNIDAQ(nidaq_task, cameraNumber);
     }
     
 

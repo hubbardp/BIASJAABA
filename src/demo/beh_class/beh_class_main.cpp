@@ -112,7 +112,7 @@ int main(int argc, char* argv[]) {
     SpinUtils spin_handle;
     std::vector<std::vector<float>> timeStamps(500000, std::vector<float>(2, 0.0));
     bias::NIDAQUtils* nidaq_task = new NIDAQUtils();
-    uInt32 read1, read2;
+    uInt32 read_buffer, read_ondemand;
 
     // Print out current library version
     spinLibraryVersion hLibraryVersion;
@@ -141,7 +141,7 @@ int main(int argc, char* argv[]) {
     spinNodeMapHandle hNodeMap = NULL;
     
     int imageCnt = 0;
-    int numFrames = classifier->nframes;
+    int numFrames = 5000;// classifier->nframes;
     vector<vector<float>>score_cls(6,vector<float>(numFrames, 0.0));
 
     err = spinCameraListGetSize(hCameraList, &numCameras);
@@ -162,8 +162,7 @@ int main(int argc, char* argv[]) {
         if (nidaq_task != nullptr) {
 
             nidaq_task->startTasks();
-            nidaq_task->start_trigger_signal();
-
+            
         }
 
         feat_side->initialize_params(param_sde);
@@ -194,7 +193,7 @@ int main(int argc, char* argv[]) {
 
     }
     
-
+    bool isTriggered = false;
     // Finish if there are no cameras
     while (imageCnt < numFrames) {
 
@@ -202,6 +201,14 @@ int main(int argc, char* argv[]) {
         {
             spinImage hResultImage = NULL;
             cv::Mat image;
+
+            if (!isTriggered && nidaq_task != nullptr) {
+
+                printf("Started tasks");
+                nidaq_task->start_trigger_signal();
+                isTriggered = true;
+            }
+
             err = spin_handle.getFrame_camera(hCamera, hResultImage,
                 nidaq_task, timeStamps, imageCnt);
 
@@ -243,13 +250,23 @@ int main(int argc, char* argv[]) {
             );
 
             imageTmp.copyTo(image);
-
             
             image.convertTo(image, CV_32FC1);
             image = image / 255;
             feat_side->img.buf = image.data;
-            feat_side->process_camFrame();      
-            feat_frt->process_camFrame();
+            feat_side->process_camFrame();
+            //feat_frt->img.buf = image.data;
+            //feat_frt->process_camFrame();
+            
+            //printf("%d\n", imageCnt);
+            if (nidaq_task != nullptr) {
+
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                timeStamps[imageCnt][1] = static_cast<float>((read_ondemand - read_buffer)*0.02);
+
+            }
+          
             // ----------------------------------------------------------------------------
 
             if (!destroySpinImage(hSpinImageConv))
@@ -262,6 +279,7 @@ int main(int argc, char* argv[]) {
             {
                 printf("Unable to release image. Non-fatal error %d...\n\n", err);
             }
+            //std::cout << imageCnt << std::endl;
 
         }else if (hasValidInput && !vidFile->isEmpty()) {
 
@@ -291,20 +309,20 @@ int main(int argc, char* argv[]) {
 
         }
 
-        if (imageCnt > 0) {
+        /*if (imageCnt > 0) {
 
             classifier->boost_classify(classifier->score, feat_side->hog_out,
                 feat_frt->hog_out, feat_side->hof_out,
                 feat_frt->hof_out, &feat_side->hog_shape,
                 &feat_frt->hof_shape, classifier->nframes, classifier->model);
-            classifier->write_score("./lift_classifier.csv", imageCnt, classifier->score[0]);
-        }
+            //classifier->write_score("./lift_classifier.csv", imageCnt, classifier->score[0]);
+        }*/
 
         
-        /*if (imageCnt == 499999){
-            write_time<float>("./cam2sys_latency.csv", 499999, timeStamps);
+        if (imageCnt == 4999){
+            write_time<float>("./cam2sys_latency.csv", 4999, timeStamps);
             break;
-        }*/
+        }
         imageCnt++;
 
     }

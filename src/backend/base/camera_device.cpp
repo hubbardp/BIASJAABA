@@ -215,7 +215,7 @@ namespace bias
         return cpu_time;     
     }
 
-    void CameraDevice::setupNIDAQ(NIDAQUtils* nidaq_task) {
+    void CameraDevice::setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber) {
 
        
     }

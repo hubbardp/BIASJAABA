@@ -25,6 +25,8 @@ namespace bias {
         nviews_ = numberOfCameras;
         threadPoolPtr_ = threadPoolPtr;
         gettime_ = gettime;
+        nidaq_task_ = nullptr;
+        time_latency.resize(100000);
         cudaError_t err = cudaGetDeviceCount(&nDevices_);
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
         setupUi(this);
@@ -295,6 +297,7 @@ namespace bias {
         cv::Mat frontImage;
         cv::Mat greySide;
         cv::Mat greyFront;
+        uInt32 read_buffer = 0, read_ondemand = 0;
 
         StampedImage stampedImage0 , stampedImage1;
 
@@ -306,19 +309,19 @@ namespace bias {
         if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
         {
             gpuInit();
-            cam_ofs = cameraOffsetTime(cameraPtr_);
+            //cam_ofs = cameraOffsetTime(cameraPtr_);
         }
 
         // Send frames from front plugin to side
         if(pluginImageQueuePtr_ != nullptr && isSender())
         {
         
-            if(ofs_isSet)
+            /*if(ofs_isSet)
             {
                     
                 cam_ofs = cameraOffsetTime(cameraPtr_); 
                   
-            }
+            }*/
             
             emit(partnerImageQueue(pluginImageQueuePtr_)); //causes the preview images to be slow
             processScoresPtr_side -> processedFrameCount += 1;
@@ -512,14 +515,11 @@ namespace bias {
                             cam_ts = ((pc_time.seconds*1e6 + pc_time.microSeconds)-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
                             delay = cam_ts - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
                             process_time = cam_ts2 - cam_ts1;*/
-                            //time_seconds.push_back({cam_ts,pc_ts2});
-                                
-                            //if(time_seconds.size() == 100000)
-                            //    gettime_->write_time("process_time.csv", 100000, time_seconds);
-                                    
+                            //time_seconds.push_back({cam_ts,pc_ts2});*/
+                            
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_; 
-                            processScoresPtr_side -> isProcessed_side = false;
+                            processScoresPtr_side->isProcessed_side = false;
 
                         }else{ std::cout << "skipped 1 " << frameCount_ << std::endl; }
 
@@ -534,8 +534,19 @@ namespace bias {
 
             pluginImageQueuePtr_->releaseLock();
             partnerPluginImageQueuePtr_ -> releaseLock();
-                
+            
+            if (nidaq_task_ != nullptr) {
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                time_latency[frameCount_] = read_ondemand;
+            }
+
+            if (frameCount_ == 99999) {
+                std::string filename = "jaaba_process_time_cam" + to_string(cameraNumber_) + ".csv";
+                gettime_->write_time_1d<uInt32>(filename, 100000, time_latency);
+            }
         }        
+    
+        
     }
 
     
@@ -1086,6 +1097,11 @@ namespace bias {
         }
 
 
+        void JaabaPlugin::setupNIDAQ(NIDAQUtils* nidaq_task) {
+
+            nidaq_task_ = nidaq_task;
+          
+        }
 
         // Test development
 

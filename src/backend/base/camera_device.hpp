@@ -92,7 +92,7 @@ namespace bias
             virtual TimeStamp getCPUtime();	
 
             //Test
-            virtual void setupNIDAQ(NIDAQUtils* nidaq_task);
+            virtual void setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber);
 
         protected:
             Guid guid_;

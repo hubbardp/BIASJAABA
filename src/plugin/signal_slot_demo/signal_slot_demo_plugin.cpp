@@ -25,6 +25,8 @@ namespace bias
     {
         imageLabelPtr_ = imageLabelPtr;
         gettime_ = gettime;
+        nidaq_task_ = nullptr;
+        cam_delay1.resize(50000);
         setupUi(this);
         connectWidgets();
         initialize();
@@ -61,11 +63,7 @@ namespace bias
         // with other class methods.
         // -------------------------------------------------------------------
 
-        /*if(ofs_isSet){
-
-            cam_ofs = cameraOffsetTime(cameraPtr_);
-            std::cout << cam_ofs.seconds << " " << cam_ofs.microSeconds << std::endl;
-        }*/
+        uInt32 read_buffer, read_ondemand;
 
         pluginImageQueuePtr_ -> acquireLock();
         pluginImageQueuePtr_ -> waitIfEmpty();
@@ -117,11 +115,25 @@ namespace bias
             frameCount_ = latestFrame.frameCount;
             releaseLock();
 
+            if (nidaq_task_ != nullptr) {
+                
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                cam_delay1[frameCount_] = read_ondemand;
+            }
+            
+
             FrameData frameData;
             frameData.count = frameCount_;
             frameData.image = currentImage_;
             emit newFrameData(frameData);
             numMessageSent_++;
+
+            
+            if (frameCount_ == 50001) {
+                std::string filename = "signal_slot_time_cam" + std::to_string(cameraNumber_) + ".csv";
+                gettime_->write_time_1d<uInt32>(filename, 50000, cam_delay1);
+            }
+
 
             updateMessageLabels();
 
@@ -313,6 +325,11 @@ namespace bias
         numMessageReceived_++;
         updateMessageLabels();
 
+    }
+
+    void SignalSlotDemoPlugin::setupNIDAQ(NIDAQUtils* nidaq_task) {
+
+        nidaq_task_ = nidaq_task;
     }
 
 

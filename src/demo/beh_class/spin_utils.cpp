@@ -1076,7 +1076,7 @@ spinError SpinUtils::getFrame_camera(spinCamera& hCam, spinImage& hImage,
     uInt32 read_buffer, read_ondemand;
 
     //pc_ts1 = getPCtime();
-    //printf("Image Complete %d...\n");
+    //printf("Image Complete %d...\n", framenum);
     err = spinCameraGetNextImageEx(hCam, 10, &hImage);
 
     if (err != SPINNAKER_ERR_SUCCESS)
@@ -1125,23 +1125,15 @@ spinError SpinUtils::getFrame_camera(spinCamera& hCam, spinImage& hImage,
         return err;
     }
     
-    // Release image
-    /*err = spinImageRelease(hImage);
-    if (err != SPINNAKER_ERR_SUCCESS)
-    {
-        printf("Unable to release image. Non-fatal error %d...\n\n", err);
-    }*/
-    
-    if (nidaq_task != nullptr) {
+    /*if (nidaq_task != nullptr) {
 
         DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
         DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-        timeStamps.push_back({ 0.0,static_cast<float>((read_ondemand - read_buffer)*0.02) });
-    }
-
-    /*if (framenum == 500000) {
-        write_time<float>("./cam2sys_latency.csv", 500000, timeStamps);
+        timeStamps[framenum][1] = static_cast<float>((read_ondemand - read_buffer)*0.02);
+        
     }*/
+
+  
     return err;
 }
 

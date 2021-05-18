@@ -42,6 +42,9 @@ namespace bias {
             throw RuntimeError(ERROR_SPIN_CREATE_CONTEXT, ssError.str());
         }
         gettime = new GetTime(0, 0);
+        
+        time_stamp3.resize(100000, std::vector<uInt32>(2, 0));
+        
     }
 
     CameraDevice_spin::~CameraDevice_spin()
@@ -391,8 +394,8 @@ namespace bias {
 
         std::string errMsg;
 
-        //bool ok = grabImageCommon(errMsg);
-        bool ok = getFrame_camera(errMsg);
+        bool ok = grabImageCommon(errMsg);
+        
         if (!ok)
         {
             image.release(); 
@@ -1025,12 +1028,12 @@ namespace bias {
 
         if (err != SPINNAKER_ERR_SUCCESS)
         {
-            //std::cout << "fail, " << (hSpinImage_ == nullptr) << std::endl;
+            
             std::stringstream ssError;
             ssError << __FUNCTION__;
             ssError << ": unable to get next image";
             errMsg = ssError.str();
-            std::cout << "image error" << std::endl;
+            //std::cout << "image error" << std::endl;
             return false;
         }
 
@@ -1058,121 +1061,42 @@ namespace bias {
         }
 
         imageOK_ = true;
+        numFrameskip++;
         
-        if (nidaq_task_ != nullptr){
+        
+        if (nidaq_task_ != nullptr && cameraNumber_ == 0 
+            && numFrameskip <= 100001) {
             DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+        }
+
+        if(nidaq_task_ != nullptr && numFrameskip <= 100001){
+            
             DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-            time_stamp3.push_back({ 0.0,static_cast<float>((read_ondemand - read_buffer)*0.02) });
+            if (numFrameskip > 2) {
+                if (cameraNumber_ == 0)
+                    time_stamp3[numFrameskip - 3][0] = read_buffer;
+                else
+                    time_stamp3[numFrameskip - 3][0] = 0;
+                time_stamp3[numFrameskip - 3][1] = read_ondemand;
+            }
+        }
+
+        
+        if (numFrameskip == 100001)
+        {
+            std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
+            gettime->write_time_2d<uInt32>(filename, 100000, time_stamp3);
+            
         }
         //pc_ts = gettime->getPCtime();
         //pc_ts1 = pc_ts.seconds*1000000 + pc_ts.microSeconds;
-        
-        if (time_stamp3.size() == 500000)
-        {
-            std::string filename1 = "imagegrab_cam2sys" + std::to_string(0) + ".csv";
-            std::string filename2 = "imagegrab_cam2sys_time" + std::to_string(0) + ".csv";
-            gettime->write_time<float>(filename1, 500000, time_stamp3);
-            
-        }
-
-        //updateTimeStamp();
+        updateTimeStamp();
         //std::cout << "timeStamp_ns_           = " << timeStamp_ns_ << std::endl;
         //std::cout << "timeStamp_.seconds      = " << timeStamp_.seconds << std::endl;
         //std::cout << "timeStamp_.microSeconds = " << timeStamp_.microSeconds << std::endl;
         return true;
     }
 
-    bool CameraDevice_spin::getFrame_camera(std::string &errMsg) {
-
-        spinError err = SPINNAKER_ERR_SUCCESS;
-        uInt32 read_buffer, read_ondemand;
-
-        if (!capturing_)
-        {
-            std::stringstream ssError;
-            ssError << __FUNCTION__;
-            ssError << ": unable to grab Image - not capturing";
-            errMsg = ssError.str();
-            return false;
-        }
-
-        if (!releaseSpinImage(hSpinImage_))
-        {
-            std::stringstream ssError;
-            ssError << __FUNCTION__;
-            ssError << ": unable to release existing spinImage";
-            errMsg = ssError.str();
-            return false;
-        }
-        imageOK_ = false;
-        err = spinCameraGetNextImageEx(hCamera_, 10, &hSpinImage_);
-
-        if (err != SPINNAKER_ERR_SUCCESS)
-        {
-            printf("Unable to get next image. Non-fatal error %d...\n\n", err);
-
-        }
-
-        // Ensure image completion
-        bool8_t isIncomplete = False;
-        bool8_t hasFailed = False;
-
-        err = spinImageIsIncomplete(hSpinImage_, &isIncomplete);
-        if (err != SPINNAKER_ERR_SUCCESS)
-        {
-            printf("Unable to determine image completion. Non-fatal error %d...\n\n", err);
-            hasFailed = True;
-
-        }
-
-        if (isIncomplete)
-        {
-            spinImageStatus imageStatus = IMAGE_NO_ERROR;
-
-            err = spinImageGetStatus(hSpinImage_, &imageStatus);
-            if (err != SPINNAKER_ERR_SUCCESS)
-            {
-                printf("Unable to retrieve image status. Non-fatal error %d...\n\n", err);
-            }
-            else
-            {
-                printf("Image incomplete with image status %d...\n", imageStatus);
-            }
-
-        }
-
-        // Release incomplete or failed image
-        if (hasFailed)
-        {
-            err = spinImageRelease(hSpinImage_);
-            if (err != SPINNAKER_ERR_SUCCESS)
-            {
-                printf("Unable to release image. Non-fatal error %d...\n\n", err);
-            }
-
-            return false;
-        }
-
-        // Release image
-        /*err = spinImageRelease(hSpinImage_);
-        if (err != SPINNAKER_ERR_SUCCESS)
-        {
-            printf("Unable to release image. Non-fatal error %d...\n\n", err);
-        }*/
-
-        imageOK_ = true;
-        if (nidaq_task_ != nullptr) {
-
-            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
-            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-            time_stamp3.push_back({ 0.0 , static_cast<float>((read_ondemand - read_buffer)*0.02) });
-        }
-
-        if (time_stamp3.size() == 500000) {
-            gettime->write_time<float>("./cam2sys_latency.csv", 500000, time_stamp3);
-        }
-        return true;
-    }
 
     bool CameraDevice_spin::releaseSpinImage(spinImage &hImage)
     {
@@ -2344,10 +2268,11 @@ namespace bias {
         return cpu_time;
     }
 
-    void CameraDevice_spin::setupNIDAQ(NIDAQUtils* nidaq_task)
+    void CameraDevice_spin::setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber)
     {
         nidaq_task_ = nidaq_task;
-        //std::cout << "setup NIDAQ" << std::endl;
+        cameraNumber_ = cameraNumber;
+        std::cout << "setup " << cameraNumber_ <<  std::endl;
     }
 
 }

@@ -213,6 +213,8 @@ namespace bias
 
     }
 
+    void BiasPlugin::setupNIDAQ(NIDAQUtils* nidaq_task) {}
+
 
     /*TimeStamp BiasPlugin::getPCtime()
     {

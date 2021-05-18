@@ -165,6 +165,7 @@ namespace bias
             // Button callbacks
             void connectButtonClicked();
             void startButtonClicked();
+            void startTriggerButtonClicked();
 
             // Errors
             void startImageCaptureError(unsigned int errorId, QString errorMsg);
@@ -297,8 +298,9 @@ namespace bias
             GetTime* gettime_;
             //Test
             NIDAQUtils* nidaq_task;
+            unsigned int partnerCameraNumber_;
             QPointer<QThreadPool> threadPoolPtr_;
-
+            
             QPointer<ImageGrabber> imageGrabberPtr_;
             QPointer<ImageDispatcher> imageDispatcherPtr_;
             QPointer<ImageLogger> imageLoggerPtr_;
@@ -433,6 +435,9 @@ namespace bias
 
             cv::Mat calcHistogram(cv::Mat mat);
             RtnStatus onError(QString message, QString title, bool showErrorDlg);
+
+            unsigned int getPartnerCameraNumber();
+            QPointer<CameraWindow> getPartnerCameraWindowPtr();
 
     }; // class CameraWindow
 

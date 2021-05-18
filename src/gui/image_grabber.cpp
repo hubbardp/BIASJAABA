@@ -127,20 +127,18 @@ namespace bias {
 
         trig = cameraPtr_->getTriggerType();
         
-        if (nidaq_task_ != nullptr) {
-            
-            //nidaq_task_->startTasks();
-            //nidaq_task_->start_trigger_signal();
-
-        }
-
         // Start image capture
         cameraPtr_ -> acquireLock();
         try
         {
             cameraPtr_ -> startCapture();
-            if (nidaq_task_ != nullptr)
-                cameraPtr_->setupNIDAQ(nidaq_task_);
+            if (nidaq_task_ != nullptr) {
+                
+                cameraPtr_->setupNIDAQ(nidaq_task_, cameraNumber_);
+            }
+            else {
+                printf("nidaq not set");
+            }
         }
         catch (RuntimeError &runtimeError)
         {
@@ -200,10 +198,9 @@ namespace bias {
             //printf("hi");
             // Grab an image
             //pc_1 = gettime_->getPCtime();
-            if (!istriggered) {
+            if (!istriggered && nidaq_task_ != nullptr && cameraNumber_ == 0) {
 
                 nidaq_task_->startTasks();
-                nidaq_task_->start_trigger_signal();
                 istriggered = true;
 
             }
@@ -244,7 +241,6 @@ namespace bias {
                 if ((startUpCount == 0) && (numStartUpSkip_ > 0))
                 {
                     timeStampInit = timeStamp;
-
                 }
                 timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
 

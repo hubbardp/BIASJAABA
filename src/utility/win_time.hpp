@@ -52,7 +52,7 @@ namespace bias
          // this is a hack to avoid linker errors in VS2017
 
          template <typename T>
-         void write_time(std::string filename, int framenum, std::vector<std::vector<T>> timeVec)
+         void write_time_1d(std::string filename, int framenum, std::vector<T> timeVec)
          {
 
              std::ofstream x_out;
@@ -61,7 +61,24 @@ namespace bias
              for (int frame_id = 0; frame_id < framenum-1; frame_id++)
              {
 
-                 x_out << timeVec[frame_id][1] <<  "\n";
+                 x_out << timeVec[frame_id] <<  "\n";
+             }
+
+             x_out.close();
+
+         }
+
+         template <typename T>
+         void write_time_2d(std::string filename, int framenum, std::vector<std::vector<T>> timeVec)
+         {
+
+             std::ofstream x_out;
+             x_out.open(filename.c_str(), std::ios_base::app);
+
+             for (int frame_id = 0; frame_id < framenum - 1; frame_id++)
+             {
+
+                 x_out << timeVec[frame_id][0] << ", " << timeVec[frame_id][1] << "\n";
              }
 
              x_out.close();

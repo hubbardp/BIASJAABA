@@ -46,6 +46,7 @@ namespace bias
 
             //virtual TimeStamp getPCtime();
             //virtual TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
+            virtual void setupNIDAQ(NIDAQUtils* nidaq_task);
 
         signals:
 
@@ -61,10 +62,13 @@ namespace bias
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
 
-            std::vector<std::vector<int64_t>>cam_delay1;
+
+            std::vector<uInt32>cam_delay1;
             std::vector<std::vector<int64_t>>cam_delay2;
+            std::vector<float>time_lat;
             TimeStamp cam_ofs={0,0};
             
+            NIDAQUtils* nidaq_task_;
             GetTime* gettime_;
             QPointer<ImageLabel> imageLabelPtr_;
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;

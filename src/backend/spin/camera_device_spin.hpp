@@ -119,7 +119,7 @@ namespace bias {
             virtual TimeStamp getCPUtime();
             TimeStamp cam_ofs = { 0,0 };
             TimeStamp cpu_time = { 0,0 };
-            virtual void setupNIDAQ(NIDAQUtils* nidaq_task);
+            virtual void setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber);
             
 
         private:
@@ -155,7 +155,7 @@ namespace bias {
 
             void setupTimeStamping();
             void updateTimeStamp();
-            bool getFrame_camera(std::string &errMsg);
+            
 
             // Get Property Info methods
             static std::map<PropertyType, std::function<PropertyInfo(CameraDevice_spin*)>> getPropertyInfoDispatchMap_; 
@@ -205,10 +205,11 @@ namespace bias {
         //test
             std::vector<float> time_stamp1;
             std::vector<float> time_stamp2;
-            std::vector<std::vector<float>> time_stamp3;
+            std::vector<std::vector<uInt32>> time_stamp3;
             GetTime* gettime = nullptr;
             NIDAQUtils* nidaq_task_ = nullptr;
-
+            int numFrameskip=0;
+            unsigned int cameraNumber_;
 
     };
 
