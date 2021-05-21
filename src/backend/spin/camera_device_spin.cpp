@@ -43,7 +43,7 @@ namespace bias {
         }
         gettime = new GetTime(0, 0);
         
-        time_stamp3.resize(100000, std::vector<uInt32>(2, 0));
+        time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
         
     }
 
@@ -1065,11 +1065,11 @@ namespace bias {
         
         
         if (nidaq_task_ != nullptr && cameraNumber_ == 0 
-            && numFrameskip <= 100001) {
+            && numFrameskip <= 500001) {
             DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
         }
 
-        if(nidaq_task_ != nullptr && numFrameskip <= 100001){
+        if(nidaq_task_ != nullptr && numFrameskip <= 500001){
             
             DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
             if (numFrameskip > 2) {
@@ -1082,10 +1082,10 @@ namespace bias {
         }
 
         
-        if (numFrameskip == 100001)
+        if (numFrameskip == 500001)
         {
             std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
-            gettime->write_time_2d<uInt32>(filename, 100000, time_stamp3);
+            gettime->write_time_2d<uInt32>(filename, 500000, time_stamp3);
             
         }
         //pc_ts = gettime->getPCtime();

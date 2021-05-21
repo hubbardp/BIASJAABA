@@ -2138,9 +2138,12 @@ namespace bias
 
                 startTriggerButtonPtr_->setEnabled(true);
                 QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
-                if(partnerCameraWindowPtr->nidaq_task == nullptr) {
+                if(partnerCameraWindowPtr != nullptr){
                 
-                    partnerCameraWindowPtr->nidaq_task = nidaq_task;
+                    if (partnerCameraWindowPtr->nidaq_task == nullptr) {
+
+                        partnerCameraWindowPtr->nidaq_task = nidaq_task;
+                    }
                 }
                 
             }
@@ -2672,8 +2675,8 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_, this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, this);
 
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
-        //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
+        //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
+        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------
 
         setupStatusLabel();
@@ -2691,8 +2694,8 @@ namespace bias
 
         //setCurrentPlugin("grabDetector");
         //setCurrentPlugin("stampede");     
-        //setCurrentPlugin("signalSlotDemo");
-        setCurrentPlugin("jaabaPlugin");
+        setCurrentPlugin("signalSlotDemo");
+        //setCurrentPlugin("jaabaPlugin");
         setPluginEnabled(true);
      
 

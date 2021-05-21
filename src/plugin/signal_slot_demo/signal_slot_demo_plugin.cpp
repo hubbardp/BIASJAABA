@@ -26,7 +26,7 @@ namespace bias
         imageLabelPtr_ = imageLabelPtr;
         gettime_ = gettime;
         nidaq_task_ = nullptr;
-        cam_delay1.resize(50000);
+        cam_delay1.resize(500000);
         setupUi(this);
         connectWidgets();
         initialize();
@@ -115,28 +115,31 @@ namespace bias
             frameCount_ = latestFrame.frameCount;
             releaseLock();
 
-            if (nidaq_task_ != nullptr) {
-                
-                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                cam_delay1[frameCount_] = read_ondemand;
-            }
-            
-
             FrameData frameData;
             frameData.count = frameCount_;
             frameData.image = currentImage_;
             emit newFrameData(frameData);
             numMessageSent_++;
-
             
-            if (frameCount_ == 50001) {
-                std::string filename = "signal_slot_time_cam" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<uInt32>(filename, 50000, cam_delay1);
+            // the updateMesageLabels() causes 
+            //the plugin to crash sometimes when doing latency measurements
+            //this call is made in the onNewFrameData anyways when the 
+            //frame is emiited. Safe to comment??
+
+            //updateMessageLabels();
+
+            if (nidaq_task_ != nullptr) {
+
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                cam_delay1[frameCount_] = read_ondemand;
             }
+            
 
-
-            updateMessageLabels();
-
+            if (frameCount_ == 499999) {
+                std::string filename = "signal_slot_time_cam" + std::to_string(cameraNumber_) + ".csv";
+                gettime_->write_time_1d<uInt32>(filename, 500000, cam_delay1);
+            }
+            
             pluginImageQueuePtr_->pop();
 
         }
@@ -308,11 +311,13 @@ namespace bias
 
     void SignalSlotDemoPlugin::updateMessageLabels()
     {
+        
         QString sentLabelText = QString("messages sent: %1").arg(numMessageSent_);
         messageSentLabelPtr -> setText(sentLabelText);
 
         QString recvLabelText = QString("messages recv: %1").arg(numMessageReceived_);
         messageReceivedLabelPtr -> setText(recvLabelText);
+        
     }
 
 
@@ -321,7 +326,7 @@ namespace bias
 
     void SignalSlotDemoPlugin::onNewFrameData(FrameData data)
     {
-        //std::cout << "cam " << cameraNumber_ << " received data from cam " << partnerCameraNumber_ << std::endl;
+        
         numMessageReceived_++;
         updateMessageLabels();
 
