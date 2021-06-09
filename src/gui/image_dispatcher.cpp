@@ -138,13 +138,13 @@ namespace bias
 
         // DEVEL - make this non development. Need to pass video file dir as argument
         // ---------------------------------------------------------------------------
-        CameraWindow* cameraWindowPtr = qobject_cast<CameraWindow *>(parent());
+        /*CameraWindow* cameraWindowPtr = qobject_cast<CameraWindow *>(parent());
         QDir videoFileDir = cameraWindowPtr -> getVideoFileDir();
         QString stampLogName = QString("stamp_log_cam%1.txt").arg(cameraNumber_);
         QFileInfo stampFileInfo = QFileInfo(videoFileDir, stampLogName);
         std::string stampFileName = stampFileInfo.absoluteFilePath().toStdString();
         std::ofstream stampOutStream;
-        stampOutStream.open(stampFileName);
+        stampOutStream.open(stampFileName);*/
         // ---------------------------------------------------------------------------
         
         
@@ -211,7 +211,7 @@ namespace bias
 
         // DEVEL
         // --------------------------------------------------------------------
-        stampOutStream.close();
+        //stampOutStream.close();
         // --------------------------------------------------------------------
     }
 
