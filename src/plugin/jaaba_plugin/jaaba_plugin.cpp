@@ -26,7 +26,8 @@ namespace bias {
         threadPoolPtr_ = threadPoolPtr;
         gettime_ = gettime;
         nidaq_task_ = nullptr;
-        time_latency.resize(100000);
+        time_latency.resize(500000);
+        time_useconds.resize(500000);
         cudaError_t err = cudaGetDeviceCount(&nDevices_);
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
         setupUi(this);
@@ -428,7 +429,7 @@ namespace bias {
                             greySide = greySide / 255;
                             greyFront = greyFront / 255;
 
-                            if(nDevices_>=2)
+                            /*if(nDevices_>=2)
                             {
                                     
                                 if(processScoresPtr_side -> isSide)
@@ -437,7 +438,7 @@ namespace bias {
                                     cudaSetDevice(0);
                                     processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
                                     processScoresPtr_side -> onProcessSide();
-                                    //processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
+                                    processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
 
                                 }
 
@@ -459,7 +460,7 @@ namespace bias {
                                 processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
                                 processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
 
-                            }
+                            }*/
 
                             // Test
                             /*if(processScoresPtr_->save && frameCount_ == 2000)
@@ -487,12 +488,12 @@ namespace bias {
                             if(classifier -> isClassifierPathSet & processScoresPtr_side->processedFrameCount >= 0)
                             {
 
-                                //std::fill(laserRead.begin(), laserRead.end(), 0);
+                                /*std::fill(laserRead.begin(), laserRead.end(), 0);
                                 classifier->boost_classify(classifier->score, processScoresPtr_side -> HOGHOF_frame -> hog_out,
                                 processScoresPtr_front -> HOGHOF_partner -> hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out,
                                 processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape,
                                 &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes,classifier -> model);
-                               
+                               */
 
                                 //triggerLaser();
                                 /*visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
@@ -507,15 +508,7 @@ namespace bias {
                                 
 
                             }
-                                
-                            //pc_time = gettime_->getPCtime();
 
-                            // subtract the offset to get camera time
-                            /*pc_ts2 = (pc_time.seconds*1e6 + pc_time.microSeconds);
-                            cam_ts = ((pc_time.seconds*1e6 + pc_time.microSeconds)-(cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds));
-                            delay = cam_ts - int64_t(stampedImage0.timeStampVal.seconds*1e6 + stampedImage0.timeStampVal.microSeconds);
-                            process_time = cam_ts2 - cam_ts1;*/
-                            //time_seconds.push_back({cam_ts,pc_ts2});*/
                             
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_; 
@@ -540,13 +533,18 @@ namespace bias {
                 time_latency[frameCount_] = read_ondemand;
             }
 
+            pc_time = gettime_->getPCtime();
+            pc_ts2 = (pc_time.seconds*1e6 + pc_time.microSeconds);
+            time_useconds[frameCount_] = pc_ts2;
+
             if (frameCount_ == 99999) {
-                std::string filename = "jaaba_process_time_cam" + to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<uInt32>(filename, 100000, time_latency);
+                std::string filename1 = "jaaba_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
+                std::string filename2 = "jaaba_process_time_camf2f" + to_string(cameraNumber_) + ".csv";
+                gettime_->write_time_1d<uInt32>(filename1, 100000, time_latency);
+                gettime_->write_time_1d<int64_t>(filename2, 100000, time_useconds);
             }
         }        
-    
-        
+            
     }
 
     

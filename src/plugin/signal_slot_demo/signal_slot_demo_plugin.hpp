@@ -64,7 +64,7 @@ namespace bias
 
 
             std::vector<uInt32>cam_delay1;
-            std::vector<std::vector<int64_t>>cam_delay2;
+            std::vector<int64_t>cam_delay2;
             std::vector<float>time_lat;
             TimeStamp cam_ofs={0,0};
             
