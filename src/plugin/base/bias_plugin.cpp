@@ -213,7 +213,7 @@ namespace bias
 
     }
 
-    void BiasPlugin::setupNIDAQ(NIDAQUtils* nidaq_task) {}
+    void BiasPlugin::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task) {}
 
 
     /*TimeStamp BiasPlugin::getPCtime()

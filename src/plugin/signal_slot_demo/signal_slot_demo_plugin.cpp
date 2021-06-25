@@ -26,8 +26,8 @@ namespace bias
         imageLabelPtr_ = imageLabelPtr;
         gettime_ = gettime;
         nidaq_task_ = nullptr;
-        cam_delay1.resize(100000);
-        cam_delay2.resize(100000);
+        cam_delay1.resize(500000);
+        cam_delay2.resize(500000);
         setupUi(this);
         connectWidgets();
         initialize();
@@ -99,9 +99,9 @@ namespace bias
             cam_delay2[latestFrame.frameCount] = pc_ts2;
 
 
-            if(latestFrame.frameCount == 99999){
+            if(latestFrame.frameCount == 499999){
                 std::string filecam = "signal_slot_f2f" + std::to_string(cameraNumber_) + ".csv"; 
-                gettime_->write_time_1d<int64_t>(filecam , 100000, cam_delay2);
+                gettime_->write_time_1d<int64_t>(filecam , 500000, cam_delay2);
             }
             //---------------------------------------------------------------------------//
             
@@ -123,16 +123,18 @@ namespace bias
             //frame is emiited. Safe to comment??
 
             //updateMessageLabels();
+            //nidaq_task_->acquireLock();
             if (nidaq_task_ != nullptr) {
 
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
                 cam_delay1[latestFrame.frameCount] = read_ondemand;
             }
+            //nidaq_task_->releaseLock();
             
 
-            if (latestFrame.frameCount == 99999) {
+            if (latestFrame.frameCount == 499999) {
                 std::string filename = "signal_slot_time_cam" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<uInt32>(filename, 100000, cam_delay1);
+                gettime_->write_time_1d<uInt32>(filename, 500000, cam_delay1);
             }
             
             pluginImageQueuePtr_->pop();
@@ -327,7 +329,7 @@ namespace bias
 
     }
 
-    void SignalSlotDemoPlugin::setupNIDAQ(NIDAQUtils* nidaq_task) {
+    void SignalSlotDemoPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task) {
 
         nidaq_task_ = nidaq_task;
     }

@@ -33,7 +33,7 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     QPointer<QThreadPool> threadPoolPtr,
                     GetTime *gettime,
-                    NIDAQUtils* nidaq_task,
+                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
                     QObject *parent=0
                     );
 
@@ -43,7 +43,7 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     QPointer<QThreadPool> threadPoolPtr,
                     GetTime *gettime,
-                    NIDAQUtils* nidaq_task
+                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
                     );
 
             void stop();
@@ -78,7 +78,8 @@ namespace bias
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
             QPointer<QThreadPool> threadPoolPtr_;
             GetTime* gettime_ = nullptr;
-            NIDAQUtils* nidaq_task_ = nullptr;
+            //NIDAQUtils* nidaq_task_ = nullptr;
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
     };
 
 

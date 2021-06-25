@@ -119,7 +119,7 @@ namespace bias {
             virtual TimeStamp getCPUtime();
             TimeStamp cam_ofs = { 0,0 };
             TimeStamp cpu_time = { 0,0 };
-            virtual void setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber);
+            virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task, unsigned int cameraNumber);
             
 
         private:
@@ -207,7 +207,9 @@ namespace bias {
             std::vector<float> time_stamp2;
             std::vector<std::vector<uInt32>> time_stamp3;
             GetTime* gettime = nullptr;
-            NIDAQUtils* nidaq_task_ = nullptr;
+            //NIDAQUtils* nidaq_task_ = nullptr;
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
+
             int numFrameskip=0;
             unsigned int cameraNumber_;
 

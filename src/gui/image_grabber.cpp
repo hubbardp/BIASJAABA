@@ -36,7 +36,7 @@ namespace bias {
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             QPointer<QThreadPool> threadPoolPtr,
             GetTime *gettime,
-            NIDAQUtils* nidaq_task,
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
             QObject *parent
             ) : QObject(parent)
     {
@@ -49,7 +49,7 @@ namespace bias {
         std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
         QPointer<QThreadPool> threadPoolPtr,
         GetTime *gettime,
-        NIDAQUtils *nidaq_task
+        std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
         ) 
     {
         capturing_ = false;

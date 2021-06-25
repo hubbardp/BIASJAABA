@@ -1088,6 +1088,7 @@ namespace bias {
             gettime->write_time_2d<uInt32>(filename, 500000, time_stamp3);
             
         }
+
         //pc_ts = gettime->getPCtime();
         //pc_ts1 = pc_ts.seconds*1000000 + pc_ts.microSeconds;
         updateTimeStamp();
@@ -2268,7 +2269,7 @@ namespace bias {
         return cpu_time;
     }
 
-    void CameraDevice_spin::setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber)
+    void CameraDevice_spin::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task, unsigned int cameraNumber)
     {
         nidaq_task_ = nidaq_task;
         cameraNumber_ = cameraNumber;

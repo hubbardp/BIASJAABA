@@ -100,10 +100,18 @@ namespace bias {
 
     }
 
+    /*void NIDAQUtils::newFrametrig(uInt32 read_buffer) {
+
+        istrig = true;
+        read_buffer = read_buffer;
+    }*/
+
     NIDAQUtils::~NIDAQUtils() {
 
         Cleanup();
-    };
+    }
+
+    
 
 }
 

@@ -2129,7 +2129,8 @@ namespace bias
             QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
-                nidaq_task = new NIDAQUtils();
+                //nidaq_task = new NIDAQUtils();
+                nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();
             }else if (triggerExternalType_ == TRIGGER_ELSE && cameraNumber_ == 0) {
                 nidaq_task = nullptr;
             }
@@ -2667,7 +2668,7 @@ namespace bias
         // Temporary - plugin development
         // -------------------------------------------------------------------------------
         gettime_ = new GetTime(0, 0);
-        nidaq_task = nullptr;
+        //nidaq_task = nullptr;
         
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
@@ -2675,8 +2676,8 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_, this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, this);
 
-        //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
-        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
+        //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------
 
         setupStatusLabel();
@@ -2694,8 +2695,8 @@ namespace bias
 
         //setCurrentPlugin("grabDetector");
         //setCurrentPlugin("stampede");     
-        setCurrentPlugin("signalSlotDemo");
-        //setCurrentPlugin("jaabaPlugin");
+        //setCurrentPlugin("signalSlotDemo");
+        setCurrentPlugin("jaabaPlugin");
         setPluginEnabled(true);
      
 

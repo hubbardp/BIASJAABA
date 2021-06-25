@@ -19,11 +19,15 @@ namespace bias
 {
    
     class NIDAQUtils {
-        
+    
+
     public:
 
         float64  dataf_high[1000], dataf_low[1000], datas_high[1000], datas_low[1000];
         uInt8 data[1000];
+        uInt32 read_buffer;
+        uInt32 read_ondemand;
+        bool istrig = false;
 
         TaskHandle taskHandle_fout = 0;
         TaskHandle taskHandle_sampout = 0;
@@ -38,6 +42,14 @@ namespace bias
         void start_trigger_signal();
         void Cleanup();
         ~NIDAQUtils();
+
+    /*signals:
+
+        void nidaqIstrig(uInt32 read_buffer);
+
+    private slots: 
+
+        void newFrametrig(uInt32 read_buffer);*/
 
         
     };

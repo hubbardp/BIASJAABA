@@ -429,7 +429,7 @@ namespace bias {
                             greySide = greySide / 255;
                             greyFront = greyFront / 255;
 
-                            /*if(nDevices_>=2)
+                            if(nDevices_>=2)
                             {
                                     
                                 if(processScoresPtr_side -> isSide)
@@ -460,7 +460,7 @@ namespace bias {
                                 processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
                                 processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
 
-                            }*/
+                            }
 
                             // Test
                             /*if(processScoresPtr_->save && frameCount_ == 2000)
@@ -537,11 +537,11 @@ namespace bias {
             pc_ts2 = (pc_time.seconds*1e6 + pc_time.microSeconds);
             time_useconds[frameCount_] = pc_ts2;
 
-            if (frameCount_ == 99999) {
+            if (frameCount_ == 499999) {
                 std::string filename1 = "jaaba_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
                 std::string filename2 = "jaaba_process_time_camf2f" + to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<uInt32>(filename1, 100000, time_latency);
-                gettime_->write_time_1d<int64_t>(filename2, 100000, time_useconds);
+                gettime_->write_time_1d<uInt32>(filename1, 500000, time_latency);
+                gettime_->write_time_1d<int64_t>(filename2, 500000, time_useconds);
             }
         }        
             

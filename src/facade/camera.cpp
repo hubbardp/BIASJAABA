@@ -6,6 +6,9 @@
 #include "format7.hpp"
 #include <sstream>
 #include <opencv2/core/core.hpp>
+
+#include "lockable.hpp"
+
 #ifdef WITH_FC2
 #include "camera_device_fc2.hpp"
 #endif
@@ -750,7 +753,7 @@ namespace bias {
         return cameraDevicePtr_ -> getCPUtime();
     }
 
-    void Camera::setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber)
+    void Camera::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task, unsigned int cameraNumber)
     {
         cameraDevicePtr_->setupNIDAQ(nidaq_task, cameraNumber);
     }

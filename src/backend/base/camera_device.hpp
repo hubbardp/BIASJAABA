@@ -13,6 +13,8 @@
 #include "guid.hpp"
 #include "format7.hpp"
 
+#include "lockable.hpp"
+
 #include <numeric>
 #include "NIDAQUtils.hpp"
 
@@ -92,7 +94,7 @@ namespace bias
             virtual TimeStamp getCPUtime();	
 
             //Test
-            virtual void setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber);
+            virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task, unsigned int cameraNumber);
 
         protected:
             Guid guid_;

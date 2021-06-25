@@ -297,7 +297,8 @@ namespace bias
             
             GetTime* gettime_;
             //Test
-            NIDAQUtils* nidaq_task;
+            //NIDAQUtils* nidaq_task;
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task;
             unsigned int partnerCameraNumber_;
             QPointer<QThreadPool> threadPoolPtr_;
             

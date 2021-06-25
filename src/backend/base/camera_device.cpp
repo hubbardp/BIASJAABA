@@ -28,7 +28,7 @@ namespace bias
     CameraLib CameraDevice::getCameraLib()
     {
 
-	return CAMERA_LIB_UNDEFINED;
+	    return CAMERA_LIB_UNDEFINED;
 
     }
 
@@ -215,7 +215,7 @@ namespace bias
         return cpu_time;     
     }
 
-    void CameraDevice::setupNIDAQ(NIDAQUtils* nidaq_task, unsigned int cameraNumber) {
+    void CameraDevice::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task, unsigned int cameraNumber) {
 
        
     }

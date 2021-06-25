@@ -17,6 +17,7 @@ namespace bias
         TimeStamp timeStampVal;
         double dtEstimate;
         unsigned long frameCount;
+        bool isSpike;
     };
 
 }
