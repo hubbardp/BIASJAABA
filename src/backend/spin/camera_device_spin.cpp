@@ -1063,7 +1063,7 @@ namespace bias {
         imageOK_ = true;
         numFrameskip++;
         
-        
+        nidaq_task_->acquireLock();
         if (nidaq_task_ != nullptr && cameraNumber_ == 0 
             && numFrameskip <= 500001) {
             DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
@@ -1080,7 +1080,7 @@ namespace bias {
                 time_stamp3[numFrameskip - 3][1] = read_ondemand;
             }
         }
-
+        nidaq_task_->releaseLock();
         
         if (numFrameskip == 500001)
         {

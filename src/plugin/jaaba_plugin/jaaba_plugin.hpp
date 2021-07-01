@@ -64,7 +64,7 @@ namespace bias
             virtual void stop();
             cv::Mat getCurrentImage();
             int getLaserTrigger();
-            virtual void setupNIDAQ(NIDAQUtils* nidaq_task);
+            virtual void setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task);
 
         protected:
  
@@ -79,7 +79,7 @@ namespace bias
             QPointer<QThreadPool> threadPoolPtr_;
             GetTime* gettime_;
             QThread thread_vis;
-            NIDAQUtils* nidaq_task_;
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
 
             QQueue<FrameData> sendImageQueue;
             QQueue<FrameData> receiveImageQueue;
@@ -122,11 +122,11 @@ namespace bias
             std::vector<float>laserRead = {0,0,0,0,0,0};
             std::vector<double>timeofs;
             std::vector<double>timestd;
+
             //DEVEL
             std::vector<uInt32> time_latency;
             std::vector<int64_t> time_useconds;
-            std::vector<int64_t> tcam0;
-            std::vector<int64_t> tcam1;
+            std::vector<unsigned int> queue_size;
 
           
             bool pluginReady();

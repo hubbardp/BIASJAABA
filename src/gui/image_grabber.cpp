@@ -71,6 +71,7 @@ namespace bias {
 
         gettime_ = gettime;
         nidaq_task_ = nidaq_task;
+        //queue_size.resize(100000);
     }
 
     void ImageGrabber::stop()
@@ -195,7 +196,7 @@ namespace bias {
             acquireLock();
             done = stopped_;
             releaseLock();
-            //printf("hi");
+            
             // Grab an image
             //pc_1 = gettime_->getPCtime();
             if (!istriggered && nidaq_task_ != nullptr && cameraNumber_ == 0) {
@@ -314,11 +315,20 @@ namespace bias {
                 newImageQueuePtr_->acquireLock();
                 newImageQueuePtr_->push(stampImg);
                 newImageQueuePtr_->signalNotEmpty();
+                //queue_size[frameCount-1] = (newImageQueuePtr_->size());
                 newImageQueuePtr_->releaseLock();
+                
 
+                /*if (frameCount == 499999) {
+
+                     string filename = "imagegrab_queue_" + std::to_string(cameraNumber_) + ".csv"; 
+                     gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
+                }*/
+
+                ///---------------------------------------------------------------
                 //pc_1 = cameraPtr_->getCPUtime();
                 //pc_2 = gettime_->getPCtime();
-                //pc_2 = gettime_->getPCtime();
+    
                 //pc_ts1 = ((pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds)) / 1e3;
                 //pc_ts2 = (pc_2.seconds*1000000 + pc_2.microSeconds);
                 //cam_ts2 = timeStamp.seconds * 1e6 + timeStamp.microSeconds;
@@ -339,6 +349,8 @@ namespace bias {
                     gettime_->write_time<float>(filename1, 1000, time_stamps1);
                     gettime_->write_time<uInt32>(filename2, 1000, time_stamps2);
                 }*/
+                ///--------------------------------------------------------------------
+
             }
             else
             {

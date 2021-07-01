@@ -26,8 +26,11 @@ namespace bias {
         threadPoolPtr_ = threadPoolPtr;
         gettime_ = gettime;
         nidaq_task_ = nullptr;
+        
         time_latency.resize(500000);
         time_useconds.resize(500000);
+        //queue_size.resize(500000);
+
         cudaError_t err = cudaGetDeviceCount(&nDevices_);
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
         setupUi(this);
@@ -310,19 +313,11 @@ namespace bias {
         if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
         {
             gpuInit();
-            //cam_ofs = cameraOffsetTime(cameraPtr_);
         }
 
         // Send frames from front plugin to side
         if(pluginImageQueuePtr_ != nullptr && isSender())
         {
-        
-            /*if(ofs_isSet)
-            {
-                    
-                cam_ofs = cameraOffsetTime(cameraPtr_); 
-                  
-            }*/
             
             emit(partnerImageQueue(pluginImageQueuePtr_)); //causes the preview images to be slow
             processScoresPtr_side -> processedFrameCount += 1;
@@ -428,6 +423,7 @@ namespace bias {
                             frontImage.convertTo(greyFront, CV_32FC1);
                             greySide = greySide / 255;
                             greyFront = greyFront / 255;
+                            
 
                             if(nDevices_>=2)
                             {
@@ -438,7 +434,7 @@ namespace bias {
                                     cudaSetDevice(0);
                                     processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
                                     processScoresPtr_side -> onProcessSide();
-                                    processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
+                                  
 
                                 }
 
@@ -488,12 +484,12 @@ namespace bias {
                             if(classifier -> isClassifierPathSet & processScoresPtr_side->processedFrameCount >= 0)
                             {
 
-                                /*std::fill(laserRead.begin(), laserRead.end(), 0);
+                                std::fill(laserRead.begin(), laserRead.end(), 0);
                                 classifier->boost_classify(classifier->score, processScoresPtr_side -> HOGHOF_frame -> hog_out,
                                 processScoresPtr_front -> HOGHOF_partner -> hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out,
                                 processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape,
                                 &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes,classifier -> model);
-                               */
+                               
 
                                 //triggerLaser();
                                 /*visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
@@ -508,8 +504,7 @@ namespace bias {
                                 
 
                             }
-
-                            
+                           
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_; 
                             processScoresPtr_side->isProcessed_side = false;
@@ -520,6 +515,7 @@ namespace bias {
                      
                 }else { std::cout << "skipped 3" << frameCount_ << std::endl;}
                     
+                //queue_size[frameCount_] = pluginImageQueuePtr_->size();
                 pluginImageQueuePtr_->pop();
                 partnerPluginImageQueuePtr_ -> pop();
              
@@ -528,20 +524,28 @@ namespace bias {
             pluginImageQueuePtr_->releaseLock();
             partnerPluginImageQueuePtr_ -> releaseLock();
             
+
+            nidaq_task_->acquireLock();
             if (nidaq_task_ != nullptr) {
+                
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
                 time_latency[frameCount_] = read_ondemand;
+                //time_latency.push_back(read_ondemand);
             }
+            nidaq_task_->releaseLock();
 
             pc_time = gettime_->getPCtime();
             pc_ts2 = (pc_time.seconds*1e6 + pc_time.microSeconds);
             time_useconds[frameCount_] = pc_ts2;
+            //time_useconds.push_back(pc_ts2);
 
             if (frameCount_ == 499999) {
                 std::string filename1 = "jaaba_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
                 std::string filename2 = "jaaba_process_time_camf2f" + to_string(cameraNumber_) + ".csv";
+                std::string filename3 = "jaaba_queue_size" + to_string(cameraNumber_) + ".csv";
                 gettime_->write_time_1d<uInt32>(filename1, 500000, time_latency);
                 gettime_->write_time_1d<int64_t>(filename2, 500000, time_useconds);
+                //gettime_->write_time_1d<unsigned int>(filename3, 500000, queue_size);
             }
         }        
             
@@ -1095,7 +1099,7 @@ namespace bias {
         }
 
 
-        void JaabaPlugin::setupNIDAQ(NIDAQUtils* nidaq_task) {
+        void JaabaPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task) {
 
             nidaq_task_ = nidaq_task;
           
