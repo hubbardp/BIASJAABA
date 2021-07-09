@@ -17,23 +17,25 @@ namespace bias
 
     ImageLogger::ImageLogger(QObject *parent) : QObject(parent) 
     {
-        initialize(0, NULL,NULL);
+        initialize(0, NULL,NULL,NULL);
     }
 
     ImageLogger::ImageLogger (
             unsigned int cameraNumber,
             std::shared_ptr<VideoWriter> videoWriterPtr,
-            std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
+            std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
+            std::shared_ptr<Lockable<GetTime>> gettime,
             QObject *parent
             ) : QObject(parent)
     {
-        initialize(cameraNumber, videoWriterPtr, logImageQueuePtr);
+        initialize(cameraNumber, videoWriterPtr, logImageQueuePtr, gettime);
     }
 
     void ImageLogger::initialize( 
             unsigned int cameraNumber,
             std::shared_ptr<VideoWriter> videoWriterPtr,
-            std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr 
+            std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
+            std::shared_ptr<Lockable<GetTime>> gettime
             ) 
     {
         frameCount_ = 0;
@@ -50,6 +52,8 @@ namespace bias
         {
             ready_ = false;
         }
+        gettime_ = gettime;
+        queue_size.resize(100000);
     }
 
     void ImageLogger::stop()
@@ -98,7 +102,14 @@ namespace bias
             logImageQueuePtr_ -> pop();
             logQueueSize =  logImageQueuePtr_ -> size();
             logImageQueuePtr_ -> releaseLock();
+            queue_size[frameCount_] = logQueueSize;
 
+            if (frameCount_ == 99999) {
+                gettime_ -> acquireLock();
+                string filename = "log_queue_" + std::to_string(cameraNumber_) + ".csv";
+                gettime_->write_time_1d<unsigned int>(filename, 100000, queue_size);
+                gettime_ -> releaseLock();
+            }
             frameCount_++;
             //std::cout << "logger frame count = " << frameCount_ << std::endl;
 

@@ -31,7 +31,7 @@ namespace bias
             static const QString PLUGIN_DISPLAY_NAME;
 
             SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, 
-                                 GetTime* gettime, QWidget *parentPtr=0);
+                std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parentPtr=0);
 
             virtual void finalSetup();
             virtual void reset();
@@ -69,7 +69,7 @@ namespace bias
             TimeStamp cam_ofs={0,0};
             
             std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task_;
-            GetTime* gettime_;
+            std::shared_ptr<Lockable<GetTime>> gettime_;
             QPointer<ImageLabel> imageLabelPtr_;
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;

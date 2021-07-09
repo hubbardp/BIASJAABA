@@ -19,7 +19,7 @@ namespace bias {
 
     // Public Methods
     JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
-                             GetTime* gettime, QWidget *parent) : BiasPlugin(parent)
+                             std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parent) : BiasPlugin(parent)
     {
 
         nviews_ = numberOfCameras;

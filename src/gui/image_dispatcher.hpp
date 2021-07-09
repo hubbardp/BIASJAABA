@@ -34,7 +34,7 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-                    GetTime* gettime,
+                    std::shared_ptr<Lockable<GetTime>> gettime,
                     QObject *parent = 0
                     );
 
@@ -46,7 +46,7 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr ,
                     std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-                    GetTime* gettime
+                    std::shared_ptr<Lockable<GetTime>> gettime
                     );
 
             // Use lock when calling these methods
@@ -81,7 +81,7 @@ namespace bias
 
             void run();
 
-            GetTime *gettime_= nullptr;
+            std::shared_ptr<Lockable<GetTime>> gettime_;
     };
 
 } // namespace bias

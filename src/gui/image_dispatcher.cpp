@@ -18,7 +18,7 @@ namespace bias
 
     ImageDispatcher::ImageDispatcher(QObject *parent) : QObject(parent)
     {
-        initialize(false,false,0,NULL,NULL,NULL,NULL, NULL);
+        initialize(false,false,0,NULL,NULL,NULL,NULL,NULL);
     }
 
     ImageDispatcher::ImageDispatcher( 
@@ -29,7 +29,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-            GetTime* gettime,
+            std::shared_ptr<Lockable<GetTime>> gettime,
             QObject *parent
             ) : QObject(parent)
     {
@@ -53,7 +53,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-            GetTime* gettime
+            std::shared_ptr<Lockable<GetTime>> gettime
             ) 
     {
         newImageQueuePtr_ = newImageQueuePtr;

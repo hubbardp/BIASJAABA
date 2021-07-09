@@ -8,6 +8,7 @@
 #include "camera_fwd.hpp"
 #include "lockable.hpp"
 
+#include "win_time.hpp"
 // Debugging -------------------
 //#include <opencv2/core/core.hpp>
 // -----------------------------
@@ -33,13 +34,15 @@ namespace bias
                     unsigned int cameraNumber,
                     std::shared_ptr<VideoWriter> videoWriterPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
+                    std::shared_ptr<Lockable<GetTime>> gettime,
                     QObject *parent=0
                     );
 
             void initialize(
                     unsigned int cameraNumber,
                     std::shared_ptr<VideoWriter> videoWriterPtr,
-                    std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr 
+                    std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
+                    std::shared_ptr<Lockable<GetTime>> gettime
                     );
 
             void stop();
@@ -64,7 +67,10 @@ namespace bias
             std::shared_ptr<VideoWriter> videoWriterPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
 
+            std::vector<unsigned int> queue_size;
             void run();
+
+            std::shared_ptr<Lockable<GetTime>> gettime_;
     };
 
 } // namespace bias

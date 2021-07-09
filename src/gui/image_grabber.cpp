@@ -35,7 +35,7 @@ namespace bias {
             std::shared_ptr<Lockable<Camera>> cameraPtr,
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             QPointer<QThreadPool> threadPoolPtr,
-            GetTime *gettime,
+            std::shared_ptr<Lockable<GetTime>> gettime,
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
             QObject *parent
             ) : QObject(parent)
@@ -48,7 +48,7 @@ namespace bias {
         std::shared_ptr<Lockable<Camera>> cameraPtr,
         std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
         QPointer<QThreadPool> threadPoolPtr,
-        GetTime *gettime,
+        std::shared_ptr<Lockable<GetTime>> gettime,
         std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
         ) 
     {
@@ -71,7 +71,7 @@ namespace bias {
 
         gettime_ = gettime;
         nidaq_task_ = nidaq_task;
-        //queue_size.resize(100000);
+        queue_size.resize(100000);
     }
 
     void ImageGrabber::stop()
@@ -315,15 +315,17 @@ namespace bias {
                 newImageQueuePtr_->acquireLock();
                 newImageQueuePtr_->push(stampImg);
                 newImageQueuePtr_->signalNotEmpty();
-                //queue_size[frameCount-1] = (newImageQueuePtr_->size());
+                queue_size[frameCount-1] = (newImageQueuePtr_->size());
                 newImageQueuePtr_->releaseLock();
                 
-
-                /*if (frameCount == 499999) {
-
+                
+                if (frameCount == 99999) {
+                     gettime_ -> acquireLock();
                      string filename = "imagegrab_queue_" + std::to_string(cameraNumber_) + ".csv"; 
                      gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
-                }*/
+                     gettime_ -> releaseLock();
+                }
+
 
                 ///---------------------------------------------------------------
                 //pc_1 = cameraPtr_->getCPUtime();

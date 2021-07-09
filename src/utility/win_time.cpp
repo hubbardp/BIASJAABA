@@ -3,7 +3,7 @@
 
 namespace bias
 {
-
+    GetTime::GetTime() {}
 
 	GetTime::GetTime(long long unsigned int sec,long long unsigned int usec)
 	{

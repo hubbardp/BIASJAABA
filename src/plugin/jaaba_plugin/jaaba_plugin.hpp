@@ -4,6 +4,7 @@
 #include "ui_jaaba_plugin.h"
 #include "camera_window.hpp"
 //#include "bias_plugin.hpp"
+
 #include "rtn_status.hpp"
 #include "frame_data.hpp"
 #include "camera_facade.hpp"
@@ -51,7 +52,7 @@ namespace bias
             int lastProcessedFrameCount = 0;
 
             JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr,
-                        GetTime* gettime, QWidget *parent=0);
+                std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parent=0);
 
             void resetTrigger();
 
@@ -77,7 +78,7 @@ namespace bias
             QPointer<beh_class> classifier;
             QPointer<VisPlots> visplots;
             QPointer<QThreadPool> threadPoolPtr_;
-            GetTime* gettime_;
+            std::shared_ptr<Lockable<GetTime>> gettime_;
             QThread thread_vis;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
 

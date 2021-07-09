@@ -21,7 +21,7 @@ namespace bias
     // Public Methods
     // ------------------------------------------------------------------------
     SignalSlotDemoPlugin::SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, 
-                  GetTime* gettime, QWidget *parentPtr) : BiasPlugin(parentPtr)
+                     std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parentPtr) : BiasPlugin(parentPtr)
     {
         imageLabelPtr_ = imageLabelPtr;
         gettime_ = gettime;

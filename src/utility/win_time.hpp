@@ -36,6 +36,7 @@ namespace bias
          time_t curr_time;
          //timeval tv;
 
+         GetTime();
          GetTime(long long unsigned int secs, long long unsigned int usec);
 			
          struct timezone

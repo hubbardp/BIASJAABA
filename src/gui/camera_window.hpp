@@ -12,6 +12,7 @@
 #include <QMainWindow>
 #include <QByteArray>
 #include <QVariantMap>
+
 #include "ui_camera_window.h"
 #include "camera_facade_fwd.hpp"
 #include "video_writer_params.hpp"
@@ -295,9 +296,11 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             
-            GetTime* gettime_;
+            
             //Test
+            //GetTime* gettime_;
             //NIDAQUtils* nidaq_task;
+            std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task;
             unsigned int partnerCameraNumber_;
             QPointer<QThreadPool> threadPoolPtr_;

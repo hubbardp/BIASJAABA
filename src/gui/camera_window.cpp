@@ -412,7 +412,8 @@ namespace bias
             imageLoggerPtr_ = new ImageLogger(
                     cameraNumber_,
                     videoWriterPtr, 
-                    logImageQueuePtr_, 
+                    logImageQueuePtr_,
+                    gettime_,
                     this
                     );
             imageLoggerPtr_ -> setAutoDelete(false);
@@ -432,7 +433,7 @@ namespace bias
                     SLOT(imageLoggingError(unsigned int, QString))
                    );
 
-            //threadPoolPtr_ -> start(imageLoggerPtr_);
+            threadPoolPtr_ -> start(imageLoggerPtr_);
 
         } // if (logging_)
         
@@ -2624,8 +2625,8 @@ namespace bias
         connected_ = false;
         capturing_ = false;
         haveImagePixmap_ = false;
-        logging_ = false; 
-        //logging_ = true; 
+        //logging_ = false; 
+        logging_ = true; 
 
         flipVert_ = false;
         flipHorz_ = false;
@@ -2667,7 +2668,8 @@ namespace bias
 
         // Temporary - plugin development
         // -------------------------------------------------------------------------------
-        gettime_ = new GetTime(0, 0);
+        gettime_ = std::make_shared<Lockable<GetTime>>();
+        //gettime_ = new GetTime(0, 0);
         //nidaq_task = nullptr;
         
         pluginHandlerPtr_  = new PluginHandler(this);
@@ -2676,7 +2678,7 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_, this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, this);
 
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
+        //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------
 
@@ -2696,8 +2698,8 @@ namespace bias
         //setCurrentPlugin("grabDetector");
         //setCurrentPlugin("stampede");     
         //setCurrentPlugin("signalSlotDemo");
-        setCurrentPlugin("jaabaPlugin");
-        setPluginEnabled(true);
+        //setCurrentPlugin("jaabaPlugin");
+        //setPluginEnabled(true);
      
 
         updateWindowTitle();
