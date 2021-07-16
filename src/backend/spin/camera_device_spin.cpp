@@ -392,7 +392,7 @@ namespace bias {
         //bool resize = false;
 
         std::string errMsg;
-
+        
         bool ok = grabImageCommon(errMsg);
         
         if (!ok)
@@ -993,7 +993,7 @@ namespace bias {
         uInt32 read_buffer = 0, read_ondemand = 0;
         TimeStamp pc_ts;
         int64_t pc_ts1;
-
+        
         if (!capturing_)
         {
             std::stringstream ssError;
@@ -1024,7 +1024,7 @@ namespace bias {
             // Note, 2nd arg > 0 to help reduce effect of slow memory leak
             err = spinCameraGetNextImageEx(hCamera_, 10, &hSpinImage_);       
         }
-
+        
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             
@@ -1061,33 +1061,36 @@ namespace bias {
 
         imageOK_ = true;
         numFrameskip++;
-        
-        nidaq_task_->acquireLock();
-        if (nidaq_task_ != nullptr && cameraNumber_ == 0 
-            && numFrameskip <= 500001) {
-            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
-        }
-
-        if(nidaq_task_ != nullptr && numFrameskip <= 500001){
-            
-            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-            if (numFrameskip > 2) {
-                if (cameraNumber_ == 0)
-                    time_stamp3[numFrameskip - 3][0] = read_buffer;
-                else
-                    time_stamp3[numFrameskip - 3][0] = 0;
-                time_stamp3[numFrameskip - 3][1] = read_ondemand;
+        if (nidaq_task_ != nullptr) {
+            nidaq_task_->acquireLock();
+            if (cameraNumber_ == 0
+                && numFrameskip <= 500001) {
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
             }
-        }
-        nidaq_task_->releaseLock();
         
-        if (numFrameskip == 500001)
-        {
-            
-            std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
-            gettime->write_time_2d<uInt32>(filename, 500000, time_stamp3);
-            
-        }
+
+            if (nidaq_task_ != nullptr && numFrameskip <= 500001) {
+
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                if (numFrameskip > 2) {
+                    if (cameraNumber_ == 0)
+                        time_stamp3[numFrameskip - 3][0] = read_buffer;
+                    else
+                        time_stamp3[numFrameskip - 3][0] = 0;
+                    time_stamp3[numFrameskip - 3][1] = read_ondemand;
+                }
+            }
+            nidaq_task_->releaseLock();
+
+            if (numFrameskip == 500001)
+            {
+
+                std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
+                gettime->write_time_2d<uInt32>(filename, 500000, time_stamp3);
+
+            }
+        }      
+        
 
         //pc_ts = gettime->getPCtime();
         //pc_ts1 = pc_ts.seconds*1000000 + pc_ts.microSeconds;

@@ -2126,17 +2126,19 @@ namespace bias
             
             cameraPtr_ -> setTriggerExternal();
             cameraPtr_ -> releaseLock();
-
+            nidaq_task = nullptr;
             QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
-                //nidaq_task = new NIDAQUtils();
+                
                 nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();
+
             }else if (triggerExternalType_ == TRIGGER_ELSE && cameraNumber_ == 0) {
+
                 nidaq_task = nullptr;
             }
 
-            if(cameraNumber_ == 0) {
+            if(triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
 
                 startTriggerButtonPtr_->setEnabled(true);
                 QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
@@ -2146,11 +2148,9 @@ namespace bias
 
                         partnerCameraWindowPtr->nidaq_task = nidaq_task;
                     }
-                }
-                
+                }                
             }
-                
-        
+                        
         }
         else
         {
@@ -4104,7 +4104,7 @@ namespace bias
         {
             // TO DO ... temporary, currently only internal trigger supported
             actionCameraTriggerInternalPtr_ -> setEnabled(true);
-            //actionCameraTriggerExternalNIDAQPtr_ -> setEnabled(true);
+            actionCameraTriggerExternalElsePtr_ -> setEnabled(true);
         }
         
     }

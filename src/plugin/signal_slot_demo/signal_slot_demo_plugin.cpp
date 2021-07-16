@@ -123,20 +123,18 @@ namespace bias
             //frame is emiited. Safe to comment??
 
             //updateMessageLabels();
-            //nidaq_task_->acquireLock();
+            
             if (nidaq_task_ != nullptr) {
-
+                nidaq_task_->acquireLock();
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
                 cam_delay1[latestFrame.frameCount] = read_ondemand;
+                nidaq_task_->releaseLock();
+                if (latestFrame.frameCount == 499999) {
+                    std::string filename = "signal_slot_time_cam" + std::to_string(cameraNumber_) + ".csv";
+                    gettime_->write_time_1d<uInt32>(filename, 500000, cam_delay1);
+                }
             }
-            //nidaq_task_->releaseLock();
-            
-
-            if (latestFrame.frameCount == 499999) {
-                std::string filename = "signal_slot_time_cam" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<uInt32>(filename, 500000, cam_delay1);
-            }
-            
+                      
             pluginImageQueuePtr_->pop();
 
         }

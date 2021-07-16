@@ -201,17 +201,18 @@ namespace bias {
             // Grab an image
             //pc_1 = gettime_->getPCtime();
             if (!istriggered && nidaq_task_ != nullptr && cameraNumber_ == 0) {
-
+                
                 nidaq_task_->startTasks();
                 istriggered = true;
 
             }
-
+            
             cameraPtr_ -> acquireLock();
             try
             {
                 
                 stampImg.image = cameraPtr_ -> grabImage();
+                
                 timeStamp = cameraPtr_->getImageTimeStamp();
                 error = false;
 
@@ -312,7 +313,7 @@ namespace bias {
                 stampImg.frameCount = frameCount;
                 stampImg.dtEstimate = dtEstimate;
                 frameCount++;
-
+                
                 newImageQueuePtr_->acquireLock();
                 newImageQueuePtr_->push(stampImg);
                 newImageQueuePtr_->signalNotEmpty();

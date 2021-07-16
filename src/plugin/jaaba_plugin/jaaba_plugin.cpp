@@ -525,14 +525,20 @@ namespace bias {
             partnerPluginImageQueuePtr_ -> releaseLock();
             
 
-            nidaq_task_->acquireLock();
+            
             if (nidaq_task_ != nullptr) {
-                
+                nidaq_task_->acquireLock();
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
                 time_latency[frameCount_] = read_ondemand;
                 //time_latency.push_back(read_ondemand);
+                nidaq_task_->releaseLock();
+
+                if (frameCount_ == 499999) {
+                    std::string filename1 = "jaaba_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
+                    gettime_->write_time_1d<uInt32>(filename1, 500000, time_latency);
+                }
             }
-            nidaq_task_->releaseLock();
+            
 
             pc_time = gettime_->getPCtime();
             pc_ts2 = (pc_time.seconds*1e6 + pc_time.microSeconds);
@@ -541,10 +547,9 @@ namespace bias {
 
             if (frameCount_ == 499999) {
                 //gettime_->acquireLock();
-                std::string filename1 = "jaaba_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
+                
                 std::string filename2 = "jaaba_process_time_camf2f" + to_string(cameraNumber_) + ".csv";
-                std::string filename3 = "jaaba_queue_size" + to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<uInt32>(filename1, 500000, time_latency);
+                std::string filename3 = "jaaba_queue_size" + to_string(cameraNumber_) + ".csv";              
                 gettime_->write_time_1d<int64_t>(filename2, 500000, time_useconds);
                 //gettime_->write_time_1d<unsigned int>(filename3, 500000, queue_size);
                 //gettime_->releaseLock();
