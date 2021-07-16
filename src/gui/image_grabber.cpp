@@ -135,7 +135,8 @@ namespace bias {
             cameraPtr_ -> startCapture();
             if (nidaq_task_ != nullptr) {
                 
-                cameraPtr_->setupNIDAQ(nidaq_task_, cameraNumber_);
+                cameraPtr_->setupNIDAQ(nidaq_task_, gettime_, cameraNumber_);
+                
             }
             else {
                 printf("nidaq not set");
@@ -315,16 +316,17 @@ namespace bias {
                 newImageQueuePtr_->acquireLock();
                 newImageQueuePtr_->push(stampImg);
                 newImageQueuePtr_->signalNotEmpty();
-                queue_size[frameCount-1] = (newImageQueuePtr_->size());
+                //queue_size[frameCount-1] = (newImageQueuePtr_->size());
                 newImageQueuePtr_->releaseLock();
                 
                 
-                if (frameCount == 99999) {
+                /*if (frameCount == 99999) {
                      gettime_ -> acquireLock();
                      string filename = "imagegrab_queue_" + std::to_string(cameraNumber_) + ".csv"; 
                      gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
                      gettime_ -> releaseLock();
-                }
+                }*/
+                
 
 
                 ///---------------------------------------------------------------

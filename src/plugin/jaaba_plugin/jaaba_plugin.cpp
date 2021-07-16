@@ -484,7 +484,7 @@ namespace bias {
                             if(classifier -> isClassifierPathSet & processScoresPtr_side->processedFrameCount >= 0)
                             {
 
-                                std::fill(laserRead.begin(), laserRead.end(), 0);
+                                /*std::fill(laserRead.begin(), laserRead.end(), 0);*/
                                 classifier->boost_classify(classifier->score, processScoresPtr_side -> HOGHOF_frame -> hog_out,
                                 processScoresPtr_front -> HOGHOF_partner -> hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out,
                                 processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape,
@@ -540,12 +540,14 @@ namespace bias {
             //time_useconds.push_back(pc_ts2);
 
             if (frameCount_ == 499999) {
+                //gettime_->acquireLock();
                 std::string filename1 = "jaaba_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
                 std::string filename2 = "jaaba_process_time_camf2f" + to_string(cameraNumber_) + ".csv";
                 std::string filename3 = "jaaba_queue_size" + to_string(cameraNumber_) + ".csv";
                 gettime_->write_time_1d<uInt32>(filename1, 500000, time_latency);
                 gettime_->write_time_1d<int64_t>(filename2, 500000, time_useconds);
                 //gettime_->write_time_1d<unsigned int>(filename3, 500000, queue_size);
+                //gettime_->releaseLock();
             }
         }        
             

@@ -147,7 +147,9 @@ namespace bias {
             friend std::ostream& operator<< (std::ostream &out, Camera &camera);
 			
             // Test NIDAQ
-            void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task, unsigned int cameraNumber);
+            void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                            std::shared_ptr<Lockable<GetTime>> gettime, 
+                            unsigned int cameraNumber);
             
 
         private:

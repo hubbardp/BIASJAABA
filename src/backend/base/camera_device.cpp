@@ -215,7 +215,9 @@ namespace bias
         return cpu_time;     
     }
 
-    void CameraDevice::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task, unsigned int cameraNumber) {
+    void CameraDevice::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                                  std::shared_ptr<Lockable<GetTime>> gettime,
+                                  unsigned int cameraNumber) {
 
        
     }

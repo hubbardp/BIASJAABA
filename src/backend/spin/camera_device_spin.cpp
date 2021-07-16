@@ -41,7 +41,7 @@ namespace bias {
             ssError << ": unable to create Spinnaker context, error = " << err;
             throw RuntimeError(ERROR_SPIN_CREATE_CONTEXT, ssError.str());
         }
-        gettime = new GetTime(0, 0);
+        
         
         time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
         
@@ -69,8 +69,7 @@ namespace bias {
             throw RuntimeError(ERROR_SPIN_DESTROY_CONTEXT, ssError.str());
         }
 
-        if (gettime != nullptr)
-            delete gettime;
+        
     }
 
 
@@ -1084,6 +1083,7 @@ namespace bias {
         
         if (numFrameskip == 500001)
         {
+            
             std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
             gettime->write_time_2d<uInt32>(filename, 500000, time_stamp3);
             
@@ -2269,9 +2269,12 @@ namespace bias {
         return cpu_time;
     }
 
-    void CameraDevice_spin::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task, unsigned int cameraNumber)
+    void CameraDevice_spin::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                                       std::shared_ptr<Lockable<GetTime>> gettime, 
+                                       unsigned int cameraNumber)
     {
         nidaq_task_ = nidaq_task;
+        gettime = gettime;
         cameraNumber_ = cameraNumber;
         std::cout << "setup " << cameraNumber_ <<  std::endl;
     }

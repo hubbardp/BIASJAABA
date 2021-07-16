@@ -94,7 +94,9 @@ namespace bias
             virtual TimeStamp getCPUtime();	
 
             //Test
-            virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task, unsigned int cameraNumber);
+            virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                                    std::shared_ptr<Lockable<GetTime>> gettime,
+                                    unsigned int cameraNumber);
 
         protected:
             Guid guid_;

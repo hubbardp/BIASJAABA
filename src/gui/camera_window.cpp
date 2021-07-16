@@ -2625,8 +2625,7 @@ namespace bias
         connected_ = false;
         capturing_ = false;
         haveImagePixmap_ = false;
-        //logging_ = false; 
-        logging_ = true; 
+        logging_ = false;  
 
         flipVert_ = false;
         flipHorz_ = false;
@@ -2678,7 +2677,7 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_, this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, this);
 
-        //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------
 
@@ -2698,8 +2697,8 @@ namespace bias
         //setCurrentPlugin("grabDetector");
         //setCurrentPlugin("stampede");     
         //setCurrentPlugin("signalSlotDemo");
-        //setCurrentPlugin("jaabaPlugin");
-        //setPluginEnabled(true);
+        setCurrentPlugin("jaabaPlugin");
+        setPluginEnabled(true);
      
 
         updateWindowTitle();
