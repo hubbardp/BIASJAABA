@@ -84,6 +84,8 @@ namespace bias
 
         //DEVEL
         gettime_ = gettime;
+        //queue_size.resize(500000);
+        
     }
 
     cv::Mat ImageDispatcher::getImage() const
@@ -150,7 +152,6 @@ namespace bias
         
         TimeStamp pc_time;
         int64_t pc_ts, cam_ts;
-        cameraPtr_->cameraOffsetTime();
 
         while (!done) 
         {
@@ -164,10 +165,19 @@ namespace bias
             }
             newStampImage = newImageQueuePtr_ -> front();
             newImageQueuePtr_ -> pop();
+            //queue_size[frameCount_] = newImageQueuePtr_->size();
             newImageQueuePtr_ -> releaseLock();
         
-            pc_time = gettime_->getPCtime();
-            /*pc_ts = (pc_time.seconds*1e6 + pc_time.microSeconds) - (cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds);
+            /*if (frameCount_ == 499999) {
+                gettime_->acquireLock();
+                string filename = "imagegrab_queue_" + std::to_string(cameraNumber_) + ".csv";
+                gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
+                gettime_->releaseLock();
+                Sleep(10);
+            }*/
+
+            /*pc_time = gettime_->getPCtime();
+            pc_ts = (pc_time.seconds*1e6 + pc_time.microSeconds) - (cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds);
             cam_ts = int64_t(newStampImage.timeStampVal.seconds*1e6 + newStampImage.timeStampVal.microSeconds);	
             time_stamps.push_back({ cam_ts,  (pc_ts-cam_ts)});
 

@@ -522,8 +522,7 @@ namespace bias {
             }else { std::cout << "skipped 4 " << frameCount_ << std::endl; }
 
             pluginImageQueuePtr_->releaseLock();
-            partnerPluginImageQueuePtr_ -> releaseLock();
-            
+            partnerPluginImageQueuePtr_ -> releaseLock();            
 
             
             if (nidaq_task_ != nullptr) {
@@ -534,25 +533,29 @@ namespace bias {
                 nidaq_task_->releaseLock();
 
                 if (frameCount_ == 499999) {
+                    gettime_->acquireLock();
                     std::string filename1 = "jaaba_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
                     gettime_->write_time_1d<uInt32>(filename1, 500000, time_latency);
+                    gettime_->releaseLock();
+                    
                 }
             }
             
-
+            gettime_->acquireLock();
             pc_time = gettime_->getPCtime();
+            gettime_->releaseLock();
             pc_ts2 = (pc_time.seconds*1e6 + pc_time.microSeconds);
             time_useconds[frameCount_] = pc_ts2;
             //time_useconds.push_back(pc_ts2);
 
             if (frameCount_ == 499999) {
-                //gettime_->acquireLock();
-                
+                gettime_->acquireLock();                
                 std::string filename2 = "jaaba_process_time_camf2f" + to_string(cameraNumber_) + ".csv";
                 std::string filename3 = "jaaba_queue_size" + to_string(cameraNumber_) + ".csv";              
                 gettime_->write_time_1d<int64_t>(filename2, 500000, time_useconds);
                 //gettime_->write_time_1d<unsigned int>(filename3, 500000, queue_size);
-                //gettime_->releaseLock();
+                gettime_->releaseLock();
+                Sleep(10);
             }
         }        
             

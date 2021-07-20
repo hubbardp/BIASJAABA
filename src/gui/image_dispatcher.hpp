@@ -82,6 +82,7 @@ namespace bias
             void run();
 
             std::shared_ptr<Lockable<GetTime>> gettime_;
+            std::vector<unsigned int>queue_size;
     };
 
 } // namespace bias

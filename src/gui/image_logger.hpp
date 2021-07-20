@@ -9,6 +9,7 @@
 #include "lockable.hpp"
 
 #include "win_time.hpp"
+#include "NIDAQUtils.hpp"
 // Debugging -------------------
 //#include <opencv2/core/core.hpp>
 // -----------------------------
@@ -35,6 +36,7 @@ namespace bias
                     std::shared_ptr<VideoWriter> videoWriterPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
                     std::shared_ptr<Lockable<GetTime>> gettime,
+                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
                     QObject *parent=0
                     );
 
@@ -42,7 +44,8 @@ namespace bias
                     unsigned int cameraNumber,
                     std::shared_ptr<VideoWriter> videoWriterPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
-                    std::shared_ptr<Lockable<GetTime>> gettime
+                    std::shared_ptr<Lockable<GetTime>> gettime,
+                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
                     );
 
             void stop();
@@ -68,9 +71,11 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
 
             std::vector<unsigned int> queue_size;
+            std::vector<uInt32> time_stamps1;
             void run();
 
             std::shared_ptr<Lockable<GetTime>> gettime_;
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
     };
 
 } // namespace bias

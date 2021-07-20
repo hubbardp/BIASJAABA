@@ -1062,16 +1062,24 @@ namespace bias {
         imageOK_ = true;
         numFrameskip++;
         if (nidaq_task_ != nullptr) {
-            nidaq_task_->acquireLock();
+
+            //nidaq_task_->acquireLock();
             if (cameraNumber_ == 0
                 && numFrameskip <= 500001) {
+
+                nidaq_task_->acquireLock();
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+                nidaq_task_->releaseLock();
+
             }
         
 
             if (nidaq_task_ != nullptr && numFrameskip <= 500001) {
 
+                nidaq_task_->acquireLock();
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                nidaq_task_->releaseLock();
+                
                 if (numFrameskip > 2) {
                     if (cameraNumber_ == 0)
                         time_stamp3[numFrameskip - 3][0] = read_buffer;
@@ -1079,18 +1087,19 @@ namespace bias {
                         time_stamp3[numFrameskip - 3][0] = 0;
                     time_stamp3[numFrameskip - 3][1] = read_ondemand;
                 }
-            }
-            nidaq_task_->releaseLock();
-
-            if (numFrameskip == 500001)
-            {
-
-                std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
-                gettime->write_time_2d<uInt32>(filename, 500000, time_stamp3);
-
-            }
+            } 
+            //nidaq_task_->releaseLock();
+            
         }      
         
+        if (numFrameskip == 500001)
+        {
+            gettime_->acquireLock();
+            std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
+            gettime_->write_time_2d<uInt32>(filename, 500000, time_stamp3);
+            gettime_->releaseLock();
+
+        }
 
         //pc_ts = gettime->getPCtime();
         //pc_ts1 = pc_ts.seconds*1000000 + pc_ts.microSeconds;
@@ -2277,7 +2286,7 @@ namespace bias {
                                        unsigned int cameraNumber)
     {
         nidaq_task_ = nidaq_task;
-        gettime = gettime;
+        gettime_ = gettime;
         cameraNumber_ = cameraNumber;
         std::cout << "setup " << cameraNumber_ <<  std::endl;
     }

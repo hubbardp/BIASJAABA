@@ -17,7 +17,7 @@ namespace bias
 
     ImageLogger::ImageLogger(QObject *parent) : QObject(parent) 
     {
-        initialize(0, NULL,NULL,NULL);
+        initialize(0, NULL,NULL,NULL,NULL);
     }
 
     ImageLogger::ImageLogger (
@@ -25,17 +25,19 @@ namespace bias
             std::shared_ptr<VideoWriter> videoWriterPtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
             std::shared_ptr<Lockable<GetTime>> gettime,
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
             QObject *parent
             ) : QObject(parent)
     {
-        initialize(cameraNumber, videoWriterPtr, logImageQueuePtr, gettime);
+        initialize(cameraNumber, videoWriterPtr, logImageQueuePtr, gettime,nidaq_task);
     }
 
     void ImageLogger::initialize( 
             unsigned int cameraNumber,
             std::shared_ptr<VideoWriter> videoWriterPtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
-            std::shared_ptr<Lockable<GetTime>> gettime
+            std::shared_ptr<Lockable<GetTime>> gettime,
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
             ) 
     {
         frameCount_ = 0;
@@ -53,7 +55,9 @@ namespace bias
             ready_ = false;
         }
         gettime_ = gettime;
-        queue_size.resize(100000);
+        nidaq_task_ = nidaq_task;
+        queue_size.resize(500000);
+        time_stamps1.resize(500000);
     }
 
     void ImageLogger::stop()
@@ -72,6 +76,7 @@ namespace bias
         bool errorFlag = false;
         StampedImage newStampedImage;
         size_t logQueueSize;
+        uInt32 read_ondemand = 0;
 
         if (!ready_) 
         { 
@@ -89,8 +94,17 @@ namespace bias
         releaseLock();
         cv::Mat tmp_img;
 
+        if (nidaq_task_ != nullptr) {
+
+        }
+        else {
+            printf("nidaq not set-%d", cameraNumber_);
+        }
+
+
         while (!done)
         {
+            
             logImageQueuePtr_ -> acquireLock();
             logImageQueuePtr_ -> waitIfEmpty();
             if (logImageQueuePtr_ -> empty())
@@ -104,15 +118,31 @@ namespace bias
             logImageQueuePtr_ -> releaseLock();
             queue_size[frameCount_] = logQueueSize;
 
-            if (frameCount_ == 99999) {
+            if (nidaq_task_ != nullptr) {
+                nidaq_task_->acquireLock();
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                time_stamps1[frameCount_] = read_ondemand;
+                nidaq_task_->releaseLock();
+
+                if (frameCount_ == 499999) {
+                    gettime_->acquireLock();
+                    std::string filename1 = "logger_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
+                    gettime_->write_time_1d<uInt32>(filename1, 500000, time_stamps1);
+                    gettime_->releaseLock();
+                }
+            }
+
+
+            if (frameCount_ == 499999) {
                 gettime_ -> acquireLock();
                 string filename = "log_queue_" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<unsigned int>(filename, 100000, queue_size);
+                gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
                 gettime_ -> releaseLock();
+                Sleep(10);
             }
             frameCount_++;
             //std::cout << "logger frame count = " << frameCount_ << std::endl;
-
+            
             if (!errorFlag) 
             {
                 // Check if log queue has grown too large - if so signal an error

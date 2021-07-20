@@ -347,6 +347,21 @@ namespace bias
         QString autoNamingString = getAutoNamingString();
         unsigned int versionNumber = 0;
 
+        if (cameraNumber_ == 1)
+        {
+            QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
+            if (partnerCameraWindowPtr->nidaq_task != nullptr) {
+                nidaq_task = partnerCameraWindowPtr->nidaq_task;
+                printf(" nidaq set - %d\n", cameraNumber_);
+            }
+        }
+
+        if (cameraNumber_ == 0) {
+            if (nidaq_task != nullptr)
+                printf(" nidaq set - %d\n", cameraNumber_);
+
+        }
+
         if (logging_)
         {
             // Create video writer based on video file format type
@@ -408,12 +423,15 @@ namespace bias
             videoWriterPtr -> setFileName(videoFileFullPath);
             videoWriterPtr -> setVersioning(autoNamingOptions_.includeVersionNumber);
             versionNumber = videoWriterPtr -> getNextVersionNumber();
+            //set nidaq pointer for cam 1
+            
 
             imageLoggerPtr_ = new ImageLogger(
                     cameraNumber_,
                     videoWriterPtr, 
                     logImageQueuePtr_,
                     gettime_,
+                    nidaq_task,
                     this
                     );
             imageLoggerPtr_ -> setAutoDelete(false);
@@ -461,7 +479,7 @@ namespace bias
             threadPoolPtr_ -> start(pluginHandlerPtr_);
         } 
         actionPluginsEnabledPtr_ -> setEnabled(false);
-        
+ 
 
         // Set image Grabber and image dispatcher
         // ------------------------------------------------------------------------------
@@ -2130,8 +2148,8 @@ namespace bias
             QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
-                
-                nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();
+                               
+                nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();              
 
             }else if (triggerExternalType_ == TRIGGER_ELSE && cameraNumber_ == 0) {
 
@@ -2141,14 +2159,15 @@ namespace bias
             if(triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
 
                 startTriggerButtonPtr_->setEnabled(true);
-                QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
+                /*QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
                 if(partnerCameraWindowPtr != nullptr){
                 
                     if (partnerCameraWindowPtr->nidaq_task == nullptr) {
 
                         partnerCameraWindowPtr->nidaq_task = nidaq_task;
+                        std::cout << "partner nidaq set" << std::endl;
                     }
-                }                
+                } */               
             }
                         
         }
@@ -2625,7 +2644,8 @@ namespace bias
         connected_ = false;
         capturing_ = false;
         haveImagePixmap_ = false;
-        logging_ = false;  
+        //logging_ = false;  
+        logging_ = true;
 
         flipVert_ = false;
         flipHorz_ = false;
@@ -2668,7 +2688,6 @@ namespace bias
         // Temporary - plugin development
         // -------------------------------------------------------------------------------
         gettime_ = std::make_shared<Lockable<GetTime>>();
-        //gettime_ = new GetTime(0, 0);
         //nidaq_task = nullptr;
         
         pluginHandlerPtr_  = new PluginHandler(this);
@@ -2677,7 +2696,7 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_, this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, this);
 
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
+        //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------
 
@@ -2697,8 +2716,8 @@ namespace bias
         //setCurrentPlugin("grabDetector");
         //setCurrentPlugin("stampede");     
         //setCurrentPlugin("signalSlotDemo");
-        setCurrentPlugin("jaabaPlugin");
-        setPluginEnabled(true);
+        //setCurrentPlugin("jaabaPlugin");
+        //setPluginEnabled(true);
      
 
         updateWindowTitle();

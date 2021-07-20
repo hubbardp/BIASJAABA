@@ -208,7 +208,7 @@ namespace bias {
             std::vector<float> time_stamp1;
             std::vector<float> time_stamp2;
             std::vector<std::vector<uInt32>> time_stamp3;
-            GetTime* gettime = nullptr;
+            std::shared_ptr<Lockable<GetTime>> gettime_;
             //NIDAQUtils* nidaq_task_ = nullptr;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
 
