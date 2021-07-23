@@ -83,6 +83,7 @@ namespace bias
 
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::vector<unsigned int>queue_size;
+            std::vector<int64_t>time_stamps1;
     };
 
 } // namespace bias

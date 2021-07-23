@@ -64,22 +64,7 @@ namespace bias
 	}*/
 
 
-    std::chrono::system_clock::duration GetTime::duration_since_midnight()  
-    {
-
-        auto now = std::chrono::system_clock::now();
-        time_t tnow = std::chrono::system_clock::to_time_t(now);
-        tm *date = std::localtime(&tnow);
-        date->tm_hour = 0;
-        date->tm_min = 0;
-        date->tm_sec = 0;
-        auto midnight = std::chrono::system_clock::from_time_t(std::mktime(date));
-        return now-midnight;
-
-    }
-
-
-	TimeStamp GetTime::getPCtime()
+	int64_t GetTime::getPCtime()
 	{
 
             //GetTime* getTime = new GetTime(0,0);
@@ -91,20 +76,11 @@ namespace bias
             getTime->usec = (unsigned int)getTime->tv.tv_usec;
             TimeStamp ts = {getTime->secs, unsigned int(getTime->usec)};*/
 
-            auto since_midnight = duration_since_midnight();
+            // returns a time_point object 
+            // https://www.cplusplus.com/reference/chrono/time_point/ 
+            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());     
 
-            auto hours = std::chrono::duration_cast<std::chrono::hours>(since_midnight);
-            auto minutes = std::chrono::duration_cast<std::chrono::minutes>(since_midnight - hours);
-            auto seconds = std::chrono::duration_cast<std::chrono::seconds>(since_midnight - hours - minutes);
-            auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(since_midnight - hours - minutes - seconds);
-            auto microseconds = std::chrono::duration_cast<std::chrono::microseconds>(since_midnight - hours - minutes - seconds - milliseconds);
-            auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(since_midnight - hours - minutes - seconds - milliseconds - microseconds);
-
-            this->secs = (hours.count()*3600 + minutes.count()*60 + seconds.count());
-            this->usec = (milliseconds.count()*1000 + microseconds.count() + nanoseconds.count()/1000);
-            TimeStamp ts = {this->secs, uint64_t(this->usec)};
-
-            return ts;
+            return static_cast<int64_t>(usec.count());
 	}
 
 }

@@ -161,6 +161,16 @@ namespace bias {
                  
             }
 
+            if (processFront) {
+
+                cudaSetDevice(1);
+                genFeatures(HOGHOF_partner, processedFrameCount + 1);
+                acquireLock();
+                processFront = false;
+                isProcessed_front = true;
+                releaseLock();
+            }
+
             acquireLock();
             done = stopped_;
             releaseLock();

@@ -84,6 +84,7 @@ namespace bias
 
         //DEVEL
         gettime_ = gettime;
+        //time_stamps1.resize(500000);
         //queue_size.resize(500000);
         
     }
@@ -120,6 +121,8 @@ namespace bias
     {
         bool done = false; 
         StampedImage newStampImage;
+        int64_t pc_time;
+
 
         if (!ready_) 
         { 
@@ -149,10 +152,7 @@ namespace bias
         stampOutStream.open(stampFileName);*/
         // ---------------------------------------------------------------------------
         
-        
-        TimeStamp pc_time;
-        int64_t pc_ts, cam_ts;
-
+ 
         while (!done) 
         {
 
@@ -174,17 +174,6 @@ namespace bias
                 gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
                 gettime_->releaseLock();
                 Sleep(10);
-            }*/
-
-            /*pc_time = gettime_->getPCtime();
-            pc_ts = (pc_time.seconds*1e6 + pc_time.microSeconds) - (cameraPtr_->cam_ofs.seconds*1e6 + cameraPtr_->cam_ofs.microSeconds);
-            cam_ts = int64_t(newStampImage.timeStampVal.seconds*1e6 + newStampImage.timeStampVal.microSeconds);	
-            time_stamps.push_back({ cam_ts,  (pc_ts-cam_ts)});
-
-            if (time_stamps.size() == 50000)
-            {
-                std::string filename = "imagedispatch_" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time(filename, 50000, time_stamps);
             }*/
             
             if (logging_ )
@@ -211,6 +200,24 @@ namespace bias
             done = stopped_;
             releaseLock();
 
+            /************************************************************************************************************/
+            /*gettime_->acquireLock();
+            pc_time = gettime_->getPCtime();
+            gettime_->releaseLock();
+
+            if (frameCount_ < 500000)
+                time_stamps1[frameCount_] = pc_time;*/
+
+            /*if (frameCount_ == 500000)
+            {
+
+                std::string filename = "imagedispatch_f2f_" + std::to_string(cameraNumber_) + ".csv";
+                gettime_->write_time_1d<int64_t>(filename, 500000, time_stamps1);
+                Sleep(100);
+            }*/
+
+
+            /************************************************************************************************************/
             // DEVEL
             // ----------------------------------------------------------------
             //stampOutStream << QString::number(currentTimeStamp_,'g',15).toStdString(); 

@@ -47,8 +47,7 @@ namespace bias
 
          // Definition of a gettimeofday function
          //int getdaytime(struct timeval *tv, struct timezone *tz);
-         std::chrono::system_clock::duration duration_since_midnight();
-         TimeStamp getPCtime();
+         int64_t getPCtime();
 
          // this is a hack to avoid linker errors in VS2017
 

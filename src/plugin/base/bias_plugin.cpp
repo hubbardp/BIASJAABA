@@ -263,7 +263,8 @@ namespace bias
     {
 
         TimeStamp cam_ofs={0,0};
-        TimeStamp pc_ts, cam_ts;
+        int64_t pc_ts;
+        TimeStamp cam_ts;
         double pc_s, cam_s, offset_s;
         std::vector<double> timeofs;
 
@@ -271,9 +272,8 @@ namespace bias
         {
 
             //get computer local time since midnight
-	    GetTime* gettime = new GetTime(0,0);
-            pc_ts = gettime->getPCtime();
-            pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
+	        GetTime* gettime = new GetTime(0,0);
+            pc_ts = static_cast<double>(gettime->getPCtime());
 
             //calculate camera time
             if(cameraPtr!=nullptr){

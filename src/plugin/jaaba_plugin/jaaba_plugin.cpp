@@ -306,8 +306,7 @@ namespace bias {
         StampedImage stampedImage0 , stampedImage1;
 
         //DEVEL
-        TimeStamp pc_time;
-        int64_t pc_ts1, pc_ts2, cam_ts, delay;
+        int64_t pc_time;
             
         // initialize memory on the gpu 
         if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
@@ -383,7 +382,6 @@ namespace bias {
                         if((processScoresPtr_side -> detectStarted_) && (frameCount_  == (processScoresPtr_side -> processedFrameCount+1)))
                         {
 
-
                             // Test - Uncomment to perform preprocesing of video frames
                             /*if (processScoresPtr_side->capture_sde.isOpened())
                             {
@@ -435,7 +433,6 @@ namespace bias {
                                     processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
                                     processScoresPtr_side -> onProcessSide();
                                   
-
                                 }
 
                                 if(processScoresPtr_front -> isFront)
@@ -443,11 +440,12 @@ namespace bias {
 
                                     cudaSetDevice(1);
                                     processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                    processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
-
+                                    //processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
+                                    processScoresPtr_front->onProcessFront();
                                 }
 
-                                while(!processScoresPtr_side -> isProcessed_side) {}
+                                while(!processScoresPtr_side -> isProcessed_side && 
+                                      !processScoresPtr_front-> isProcessed_front) {}
 
                             } else {
 
@@ -501,13 +499,14 @@ namespace bias {
                                 visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
                                 visplots->livePlotPtr_->show();
                                 processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[0]);*/
-                                
+                                 
 
                             }
                            
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_; 
                             processScoresPtr_side->isProcessed_side = false;
+                            processScoresPtr_front->isProcessed_front = false;
 
                         }else{ std::cout << "skipped 1 " << frameCount_ << std::endl; }
 
@@ -544,8 +543,7 @@ namespace bias {
             gettime_->acquireLock();
             pc_time = gettime_->getPCtime();
             gettime_->releaseLock();
-            pc_ts2 = (pc_time.seconds*1e6 + pc_time.microSeconds);
-            time_useconds[frameCount_] = pc_ts2;
+            time_useconds[frameCount_] = pc_time;
             //time_useconds.push_back(pc_ts2);
 
             if (frameCount_ == 499999) {

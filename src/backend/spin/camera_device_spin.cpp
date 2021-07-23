@@ -43,7 +43,7 @@ namespace bias {
         }
         
         
-        time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
+        //time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
         
     }
 
@@ -1061,7 +1061,7 @@ namespace bias {
 
         imageOK_ = true;
         numFrameskip++;
-        if (nidaq_task_ != nullptr) {
+        /*if (nidaq_task_ != nullptr) {
 
             //nidaq_task_->acquireLock();
             if (cameraNumber_ == 0
@@ -1090,16 +1090,16 @@ namespace bias {
             } 
             //nidaq_task_->releaseLock();
             
-        }      
+        }*/     
         
-        if (numFrameskip == 500001)
+        /*if (numFrameskip == 500001)
         {
             gettime_->acquireLock();
             std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
             gettime_->write_time_2d<uInt32>(filename, 500000, time_stamp3);
             gettime_->releaseLock();
 
-        }
+        }*/
 
         //pc_ts = gettime->getPCtime();
         //pc_ts1 = pc_ts.seconds*1000000 + pc_ts.microSeconds;
@@ -2229,7 +2229,7 @@ namespace bias {
     TimeStamp CameraDevice_spin::cameraOffsetTime()
     {
 
-        TimeStamp pc_ts, cam_ts;
+        TimeStamp cam_ts;
         double pc_s, cam_s, offset_s;
         std::vector<double> timeofs;
 
@@ -2238,12 +2238,12 @@ namespace bias {
 
             //get computer local time since midnight
             GetTime* gettime = new GetTime(0, 0);
-            pc_ts = gettime->getPCtime();
-            pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
+            pc_s = static_cast<double>(gettime->getPCtime());
+            
 
             //calculate camera time
             cam_ts = getDeviceTimeStamp();
-            cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
+            cam_s = static_cast<double>((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
 
             timeofs.push_back(pc_s - cam_s);
             //printf("%0.06f \n" ,pc_s-cam_s);

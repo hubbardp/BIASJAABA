@@ -71,7 +71,8 @@ namespace bias {
 
         gettime_ = gettime;
         nidaq_task_ = nidaq_task;
-        //queue_size.resize(500000);
+        time_stamps1.resize(500000);
+        queue_size.resize(500000);
     }
 
     void ImageGrabber::stop()
@@ -186,12 +187,10 @@ namespace bias {
         //// -------------------------------------------------------------------------------
 
         
-        TimeStamp pc_time, pc_1, pc_2;
-        int64_t pc_ts1, pc_ts2, cam_ts1, cam_ts2;
+        int64_t pc_time;
         //uInt32 read_buffer = 0, read_ondemand = 0;
         //cameraPtr_ -> cameraOffsetTime();
         
-
         // Grab images from camera until the done signal is given
         while (!done)
         {
@@ -318,43 +317,34 @@ namespace bias {
                 newImageQueuePtr_->push(stampImg);
                 newImageQueuePtr_->signalNotEmpty();
                 //queue_size[frameCount-1] = (newImageQueuePtr_->size());
-                newImageQueuePtr_->releaseLock();
-                
+                newImageQueuePtr_->releaseLock();                
                 
                 /*if (frameCount == 499999) {
                      gettime_ -> acquireLock();
                      string filename = "imagegrab_queue_" + std::to_string(cameraNumber_) + ".csv"; 
                      gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
                      gettime_ -> releaseLock();
-                     Sleep(10);
+                     //Sleep(10);
                 }*/
                 
-
 
                 ///---------------------------------------------------------------
-                //pc_1 = cameraPtr_->getCPUtime();
-                //pc_2 = gettime_->getPCtime();
-    
-                //pc_ts1 = ((pc_2.seconds*1e6 + pc_2.microSeconds) - (pc_1.seconds*1e6 + pc_1.microSeconds)) / 1e3;
-                //pc_ts2 = (pc_2.seconds*1000000 + pc_2.microSeconds);
-                //cam_ts2 = timeStamp.seconds * 1e6 + timeStamp.microSeconds;
-                //time_stamps1.push_back(pc_ts2);
-                //time_stamps2.push_back({ cam_ts2, pc_ts2 - cam_ts2 });
+                
+                gettime_->acquireLock();
+                pc_time = gettime_->getPCtime();
+                gettime_->releaseLock();
 
-                /*if (time_stamps1.size() == 100000)
+                if(frameCount <= 500000)
+                   time_stamps1[frameCount-1] = pc_time;
+
+                if (frameCount == 500000)
                 {
                     std::string filename = "imagegrab_f2f" + std::to_string(cameraNumber_) + ".csv";
-                    gettime_->write_time<int64_t>(filename, 100000, time_stamps1);
-                }*/
+                    gettime_->write_time_1d<int64_t>(filename, 500000, time_stamps1);
+                    Sleep(100);
+                }
                 
 
-                /*if (time_stamps1.size() == 1000)
-                {
-                    std::string filename1 = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
-                    std::string filename2 = "imagegrab_cam2sys_time" + std::to_string(cameraNumber_) + ".csv";
-                    gettime_->write_time<float>(filename1, 1000, time_stamps1);
-                    gettime_->write_time<uInt32>(filename2, 1000, time_stamps2);
-                }*/
                 ///--------------------------------------------------------------------
 
             }
