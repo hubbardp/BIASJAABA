@@ -2645,8 +2645,8 @@ namespace bias
         connected_ = false;
         capturing_ = false;
         haveImagePixmap_ = false;
-        //logging_ = false;  
-        logging_ = true;
+        logging_ = false;  
+        //logging_ = true;
 
         flipVert_ = false;
         flipHorz_ = false;

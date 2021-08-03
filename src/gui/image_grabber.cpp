@@ -71,10 +71,10 @@ namespace bias {
 
         gettime_ = gettime;
         nidaq_task_ = nidaq_task;
-        //time_stamps2.resize(500000);
-        //time_stamps3.resize(500000, std::vector<uInt32>(2, 0));
+        time_stamps2.resize(500000);
+        time_stamps3.resize(500000, std::vector<uInt32>(2, 0));
         //queue_size.resize(500000);
-        time_stamps1.resize(500000);
+        //time_stamps1.resize(500000);
     }
 
     void ImageGrabber::stop()
@@ -193,7 +193,7 @@ namespace bias {
         int64_t pc1, pc2;
         uInt32 read_buffer = 0, read_ondemand = 0;
         //cameraPtr_ -> cameraOffsetTime();
-        std::cout << cameraNumber_ << " " << cameraPtr_->getGuid() << std::endl;
+        //std::cout << cameraNumber_ << " " << cameraPtr_->getGuid() << std::endl;
 
         // Grab images from camera until the done signal is given
         while (!done)
@@ -216,11 +216,11 @@ namespace bias {
             {
                 
                 pc1 = 0, pc2 = 0;
-                if(startUpCount >= numStartUpSkip_)
-                    pc1 = gettime_->getPCtime();
+                //if(startUpCount >= numStartUpSkip_)
+                //    pc1 = gettime_->getPCtime();
                 stampImg.image = cameraPtr_ -> grabImage();
-                if(startUpCount >= numStartUpSkip_)
-                    pc2 = gettime_->getPCtime();
+                //if(startUpCount >= numStartUpSkip_)
+                //    pc2 = gettime_->getPCtime();
                 timeStamp = cameraPtr_->getImageTimeStamp();
                 error = false;
 
@@ -272,7 +272,7 @@ namespace bias {
                     }
                     startUpCount++;
 
-                    /*if (cameraNumber_ == 0) {
+                    if (cameraNumber_ == 0) {
 
                         if (nidaq_task_ != nullptr) {
 
@@ -280,7 +280,7 @@ namespace bias {
                             DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
                             nidaq_task_->releaseLock();
                         }
-                    }*/
+                    }
                     continue;
                 }
 
@@ -349,7 +349,7 @@ namespace bias {
 
                 ///---------------------------------------------------------------
                 
-                /*if (nidaq_task_ != nullptr) {
+                if (nidaq_task_ != nullptr) {
 
                     if (cameraNumber_ == 0
                         && frameCount <= 500000) {
@@ -377,26 +377,25 @@ namespace bias {
 
                 }
 
-                gettime_->acquireLock();
+                
                 pc_time = gettime_->getPCtime();
-                gettime_->releaseLock();*/
-
+                
                 if (frameCount <= 500000)
-                    time_stamps1[frameCount - 1] = (pc2-pc1) * 1e-3;
+                    time_stamps2[frameCount - 1] = pc_time;
 
 
                 if (frameCount == 500000)
                 {
                     std::string filename = "imagegrab_f2f" + std::to_string(cameraNumber_) + ".csv";
-                    gettime_->write_time_1d<float>(filename, 500000, time_stamps1);
+                    gettime_->write_time_1d<int64_t>(filename, 500000, time_stamps2);
                 }
 
-                /*if (frameCount == 500000)
+                if (frameCount == 500000)
                 {
                     std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
                     gettime_->write_time_2d<uInt32>(filename, 500000, time_stamps3);
                     
-                }*/
+                }
 
                 ///--------------------------------------------------------------------
 
