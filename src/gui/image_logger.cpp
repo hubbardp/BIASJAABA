@@ -110,7 +110,7 @@ namespace bias
         {
             pc1 = 0, pc2 = 0;
             
-            pc1 = gettime_->getPCtime();
+            //pc1 = gettime_->getPCtime();
             logImageQueuePtr_ -> acquireLock();
             logImageQueuePtr_ -> waitIfEmpty();
             if (logImageQueuePtr_ -> empty())
@@ -125,7 +125,7 @@ namespace bias
             logImageQueuePtr_ -> pop();
             logQueueSize =  logImageQueuePtr_ -> size();
             logImageQueuePtr_ -> releaseLock();
-            pc2 = gettime_->getPCtime();
+            //pc2 = gettime_->getPCtime();
 
             /*if(frameCount_ < 500000)
                 queue_size[frameCount_] = logQueueSize;
@@ -155,6 +155,7 @@ namespace bias
                 //std::cout << "/" << MAX_LOG_QUEUE_SIZE << std::endl;
 
                 // Add frame to video writer
+                pc1 = gettime_->getPCtime();
                 try 
                 {
                     videoWriterPtr_ -> addFrame(newStampedImage);
@@ -172,6 +173,7 @@ namespace bias
                     QString errorMsg = QString::fromStdString(runtimeError.what());
                     emit imageLoggingError(errorId, errorMsg);
                 }
+                pc2 = gettime_->getPCtime();
                 
             }
 
@@ -200,7 +202,7 @@ namespace bias
 
             if (frameCount_ == 499999)
             {
-                std::string filename = "imagelogger_f2f_" + std::to_string(cameraNumber_) + ".csv";
+                std::string filename = "imagelogger_vid_f2f_" + std::to_string(cameraNumber_) + ".csv";
                 gettime_->write_time_1d<float>(filename, 500000, time_stamps2);
                 
             }
