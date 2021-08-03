@@ -43,7 +43,7 @@ namespace bias {
         }
         
         
-        //time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
+        time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
         
     }
 
@@ -1090,9 +1090,9 @@ namespace bias {
             } 
             //nidaq_task_->releaseLock();
             
-        }*/     
+        }     
         
-        /*if (numFrameskip == 500001)
+        if (numFrameskip == 500001)
         {
             gettime_->acquireLock();
             std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";

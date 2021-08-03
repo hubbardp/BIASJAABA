@@ -81,8 +81,9 @@ namespace bias
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
 
             //test
-            std::vector<int64_t> time_stamps1;
+            std::vector<float> time_stamps1;
             std::vector<int64_t> time_stamps2;
+            std::vector<std::vector<uInt32>>time_stamps3;
             std::vector<unsigned int> queue_size;
     };
 

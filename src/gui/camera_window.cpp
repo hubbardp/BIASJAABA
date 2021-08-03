@@ -347,6 +347,7 @@ namespace bias
         QString autoNamingString = getAutoNamingString();
         unsigned int versionNumber = 0;
 
+        //set nidaq pointer for cam 1
         if (cameraNumber_ == 1)
         {
             QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
@@ -423,7 +424,7 @@ namespace bias
             videoWriterPtr -> setFileName(videoFileFullPath);
             videoWriterPtr -> setVersioning(autoNamingOptions_.includeVersionNumber);
             versionNumber = videoWriterPtr -> getNextVersionNumber();
-            //set nidaq pointer for cam 1
+            
             
 
             imageLoggerPtr_ = new ImageLogger(

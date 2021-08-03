@@ -72,7 +72,7 @@ namespace bias
 
             std::vector<unsigned int> queue_size;
             std::vector<uInt32> time_stamps1;
-            std::vector<int64_t>time_stamps2;
+            std::vector<float>time_stamps2;
             void run();
 
             std::shared_ptr<Lockable<GetTime>> gettime_;
