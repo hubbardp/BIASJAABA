@@ -56,7 +56,7 @@ namespace bias
         }
         gettime_ = gettime;
         nidaq_task_ = nidaq_task;
-        //queue_size.resize(500000);
+        queue_size.resize(500000);
         time_stamps2.resize(500000);
         //time_stamps1.resize(500000);
     }
@@ -127,7 +127,7 @@ namespace bias
             logImageQueuePtr_ -> releaseLock();
             //pc2 = gettime_->getPCtime();
 
-            /*if(frameCount_ < 500000)
+            if(frameCount_ < 500000)
                 queue_size[frameCount_] = logQueueSize;
 
             if (frameCount_ == 499999) {
@@ -137,7 +137,7 @@ namespace bias
                 gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
                 gettime_ -> releaseLock();
                 
-            }*/
+            }
 
             //frameCount_++;
             
