@@ -56,9 +56,9 @@ namespace bias
         }
         gettime_ = gettime;
         nidaq_task_ = nidaq_task;
-        queue_size.resize(500000);
+        //queue_size.resize(500000);
         time_stamps2.resize(500000);
-        //time_stamps1.resize(500000);
+        time_stamps1.resize(500000);
     }
 
     void ImageLogger::stop()
@@ -127,7 +127,8 @@ namespace bias
             logImageQueuePtr_ -> releaseLock();
             //pc2 = gettime_->getPCtime();
 
-            if(frameCount_ < 500000)
+
+            /*if(frameCount_ < 500000)
                 queue_size[frameCount_] = logQueueSize;
 
             if (frameCount_ == 499999) {
@@ -137,7 +138,7 @@ namespace bias
                 gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
                 gettime_ -> releaseLock();
                 
-            }
+            }*/
 
             //frameCount_++;
             
@@ -155,7 +156,7 @@ namespace bias
                 //std::cout << "/" << MAX_LOG_QUEUE_SIZE << std::endl;
 
                 // Add frame to video writer
-                pc1 = gettime_->getPCtime();
+                //pc1 = gettime_->getPCtime();
                 try 
                 {
                     videoWriterPtr_ -> addFrame(newStampedImage);
@@ -173,37 +174,33 @@ namespace bias
                     QString errorMsg = QString::fromStdString(runtimeError.what());
                     emit imageLoggingError(errorId, errorMsg);
                 }
-                pc2 = gettime_->getPCtime();
+                //pc2 = gettime_->getPCtime();
                 
             }
 
-            /*if (nidaq_task_ != nullptr) {
+            if (nidaq_task_ != nullptr) {
                 nidaq_task_->acquireLock();
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                time_stamps1[frameCount_-1] = read_ondemand;
+                time_stamps1[frameCount_] = read_ondemand;
                 nidaq_task_->releaseLock();
 
                 if (frameCount_ == 500000) {
 
-                    gettime_->acquireLock();
                     std::string filename1 = "logger_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
                     gettime_->write_time_1d<uInt32>(filename1, 500000, time_stamps1);
-                    gettime_->releaseLock();
                     
                 }
-            }*/
+            }
 
-            /*gettime_->acquireLock();
             pc_time = gettime_->getPCtime();
-            gettime_->releaseLock();*/
    
             if (frameCount_ >= 0 && frameCount_ < 500000)
-                time_stamps2[frameCount_] = (pc2-pc1)*1e-3;
+                time_stamps2[frameCount_] = pc_time;
 
             if (frameCount_ == 499999)
             {
                 std::string filename = "imagelogger_vid_f2f_" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<float>(filename, 500000, time_stamps2);
+                gettime_->write_time_1d<int64_t>(filename, 500000, time_stamps2);
                 
             }
 

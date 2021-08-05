@@ -42,9 +42,8 @@ class SpinUtils {
         spinError PrintDeviceInfo(spinNodeMapHandle hNodeMap);
         spinError ReleaseSystem(spinSystem& hSystem, spinCameraList& hCameraList);
         spinError setupSystem(spinSystem& hSystem, spinCameraList& hCameraList);
-        spinError getFrame_camera(spinCamera& hCam, spinImage& hImage, 
-                                  NIDAQUtils* nidaq_task,std::vector<std::vector<float>>& timeStamps,
-                                  int framenum);
+        
+        spinError getFrame_camera(spinCamera& hCam, spinImage& hImage);
         spinError initialize_camera(spinCamera& hCam, spinNodeMapHandle& hNodeMap,
         spinNodeMapHandle& hNodeMapTLDevice);
         spinError deInitialize_camera(spinCamera& hCam, spinNodeMapHandle& hNodeMap);

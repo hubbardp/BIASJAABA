@@ -53,7 +53,7 @@ bool destroySpinImage(spinImage &hImage)
 }
 
 template <typename T>
-void write_time(std::string filename, int framenum, std::vector<std::vector<T>> timeVec)
+void write_time(std::string filename, int framenum, std::vector<T> timeVec)
 {
 
     std::ofstream x_out;
@@ -62,7 +62,7 @@ void write_time(std::string filename, int framenum, std::vector<std::vector<T>> 
     for (int frame_id = 0; frame_id < framenum - 1; frame_id++)
     {
 
-        x_out << timeVec[frame_id][1] << "\n";
+        x_out << timeVec[frame_id] << "\n";
     }
 
     x_out.close();
@@ -73,6 +73,7 @@ int main(int argc, char* argv[]) {
 
     //nviews - temp should be command line arg
     const int nviews = 2;
+    int numFrames = 500000; //frames to process
 
     //Initialize and load classifier model temporary , should be made command line arguments
 #ifdef WIN32
@@ -110,7 +111,7 @@ int main(int argc, char* argv[]) {
     spinSystem hSystem = NULL;
     spinCameraList hCameraList = NULL;
     SpinUtils spin_handle;
-    std::vector<std::vector<float>> timeStamps(500000, std::vector<float>(2, 0.0));
+    std::vector<float> timeStamps(numFrames, 0.0);
     bias::NIDAQUtils* nidaq_task = new NIDAQUtils();
     uInt32 read_buffer, read_ondemand;
 
@@ -141,7 +142,7 @@ int main(int argc, char* argv[]) {
     spinNodeMapHandle hNodeMap = NULL;
     
     int imageCnt = 0;
-    int numFrames = 5000;// classifier->nframes;
+    
     vector<vector<float>>score_cls(6,vector<float>(numFrames, 0.0));
 
     err = spinCameraListGetSize(hCameraList, &numCameras);
@@ -151,6 +152,7 @@ int main(int argc, char* argv[]) {
         return err;
     }
 
+    // initialize camera, nidaq, HOGHOF params 
     if (numCameras != 0) {
 
         hasValidInput = true;
@@ -204,13 +206,12 @@ int main(int argc, char* argv[]) {
 
             if (!isTriggered && nidaq_task != nullptr) {
 
-                printf("Started tasks");
+                printf("Started NIDAQ Trigger Signal");
                 nidaq_task->start_trigger_signal();
                 isTriggered = true;
             }
 
-            err = spin_handle.getFrame_camera(hCamera, hResultImage,
-                nidaq_task, timeStamps, imageCnt);
+            err = spin_handle.getFrame_camera(hCamera, hResultImage);                
 
             if (err != SPINNAKER_ERR_SUCCESS)
             {
@@ -254,16 +255,13 @@ int main(int argc, char* argv[]) {
             image.convertTo(image, CV_32FC1);
             image = image / 255;
             feat_side->img.buf = image.data;
-            feat_side->process_camFrame();
-            //feat_frt->img.buf = image.data;
-            //feat_frt->process_camFrame();
             
             //printf("%d\n", imageCnt);
             if (nidaq_task != nullptr) {
 
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                timeStamps[imageCnt][1] = static_cast<float>((read_ondemand - read_buffer)*0.02);
+                timeStamps[imageCnt] = static_cast<float>((read_ondemand - read_buffer)*0.02);
 
             }
           
@@ -319,8 +317,8 @@ int main(int argc, char* argv[]) {
         }*/
 
         
-        if (imageCnt == 4999){
-            write_time<float>("./cam2sys_latency.csv", 4999, timeStamps);
+        if (imageCnt == numFrames-1){
+            write_time<float>("./cam2sys_latency.csv", numFrames, timeStamps);
             break;
         }
         imageCnt++;

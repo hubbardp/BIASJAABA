@@ -1067,10 +1067,8 @@ spinError SpinUtils::initialize_camera(spinCamera& hCam, spinNodeMapHandle& hNod
 }
 
 
-spinError SpinUtils::getFrame_camera(spinCamera& hCam, spinImage& hImage, 
-                                     bias::NIDAQUtils* nidaq_task,
-                                     std::vector<std::vector<float>>& timeStamps,
-                                     int framenum) {
+spinError SpinUtils::getFrame_camera(spinCamera& hCam, spinImage& hImage){ 
+                                      
 
     spinError err = SPINNAKER_ERR_SUCCESS;
     uInt32 read_buffer, read_ondemand;

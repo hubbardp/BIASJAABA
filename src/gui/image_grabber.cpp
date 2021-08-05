@@ -71,7 +71,7 @@ namespace bias {
 
         gettime_ = gettime;
         nidaq_task_ = nidaq_task;
-        time_stamps2.resize(500000);
+        //time_stamps2.resize(500000);
         time_stamps3.resize(500000, std::vector<uInt32>(2, 0));
         //queue_size.resize(500000);
         //time_stamps1.resize(500000);
@@ -378,7 +378,7 @@ namespace bias {
                 }
 
                 
-                pc_time = gettime_->getPCtime();
+                /*pc_time = gettime_->getPCtime();
                 
                 if (frameCount <= 500000)
                     time_stamps2[frameCount - 1] = pc_time;
@@ -388,7 +388,7 @@ namespace bias {
                 {
                     std::string filename = "imagegrab_f2f" + std::to_string(cameraNumber_) + ".csv";
                     gettime_->write_time_1d<int64_t>(filename, 500000, time_stamps2);
-                }
+                }*/
 
                 if (frameCount == 500000)
                 {
