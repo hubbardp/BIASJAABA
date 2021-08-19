@@ -88,6 +88,17 @@ namespace bias
                     bool showErrorDlg=true
                     );
 
+            // BIAS Latency Test Config 
+            RtnStatus setConfigurationFromTestJson(
+                QByteArray jsonConfig,
+                bool showErrorDlg = true
+            );
+
+            RtnStatus setConfigurationFromTestMap(
+                QVariantMap configMap,
+                bool showErrorDlg = true
+            );
+
             RtnStatus enableLogging(bool showErrorDlg=true);
             RtnStatus disableLogging(bool showErrorDlg=true);
 
@@ -100,6 +111,12 @@ namespace bias
                     QString fileName, 
                     bool showErrorDlg=true
                     );
+
+            RtnStatus loadTestConfiguration(
+                QString fileName,
+                bool showErrorDlg = true
+            );
+
 
             RtnStatus setVideoFile(QString videoFileString);
             void setUserCameraName(QString cameraName);
@@ -190,6 +207,7 @@ namespace bias
             void actionCameraTriggerExternalTriggered();
             void actionCameraTriggerInternalTriggered();
 
+            void actionTestLoadConfigTriggered();
             void actionLoggingEnabledTriggered();
             void actionLoggingVideoFileTriggered();
             void actionLoggingSettingsTriggered();
@@ -249,8 +267,12 @@ namespace bias
             QString currentVideoFileName_;
 
             QDir defaultConfigFileDir_;
+            QDir defaultTestConfigFileDir_;
             QDir currentConfigFileDir_;
+            QDir currentTestConfigFileDir_;
+
             QString currentConfigFileName_;
+            QString currentTestConfigFileName_;
 
             QString userCameraName_;
 
@@ -409,6 +431,7 @@ namespace bias
             void setServerPortText();
 
             QString getConfigFileFullPath();
+            QString getTestConfigFileFullPath();
             QString getAutoNamingString();
 
             RtnStatus setCameraFromMap(QVariantMap cameraMap, bool showErrorDlg);
@@ -436,6 +459,7 @@ namespace bias
             RtnStatus setServerFromMap(QVariantMap serverMap, bool showErrorDlg);
             RtnStatus setConfigFileFromMap(QVariantMap configFileMap, bool showErrorDlg);
             RtnStatus setPluginFromMap(QVariantMap pluginMap, bool showErrorDlg);
+            RtnStatus setMetricsFromMap(QVariantMap pluginMap, bool showErrorDlg);
 
             cv::Mat calcHistogram(cv::Mat mat);
             RtnStatus onError(QString message, QString title, bool showErrorDlg);

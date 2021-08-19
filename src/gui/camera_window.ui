@@ -386,6 +386,12 @@
     </property>
     <addaction name="actionDumpCameraPropsPtr_"/>
    </widget>
+   <widget class="QMenu" name="menuTestPtr_">
+     <property name="title">
+       <string>&amp;Test</string>
+     </property>
+     <addaction name="actionTestLoadConfigPtr_"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuCameraPtr_"/>
    <addaction name="menuLoggingPtr_"/>
@@ -395,6 +401,7 @@
    <addaction name="menuPluginsPtr_"/>
    <addaction name="menuHelpPtr_"/>
    <addaction name="menuDebugPtr_"/>
+   <addaction name="menuTestPtr_"/>
   </widget>
   <widget class="QStatusBar" name="statusbarPtr_"/>
   <action name="actionLogging">
@@ -769,6 +776,11 @@
     <string>jpg</string>
    </property>
   </action>
+  <action name="actionTestLoadConfigPtr_">
+    <property name="text">
+      <string>Load Test Configuration</string>
+    </property>
+  </action> 
  </widget>
  <customwidgets>
   <customwidget>

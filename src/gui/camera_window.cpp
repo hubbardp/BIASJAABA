@@ -78,6 +78,7 @@ namespace bias
     const QSize DEFAULT_HISTOGRAM_IMAGE_SIZE = QSize(256,204);
     const QString DEFAULT_VIDEO_FILE_NAME = QString("bias_video");
     const QString DEFAULT_CONFIG_FILE_NAME = QString("bias_config");
+    const QString DEFAULT_TESTCONFIG_FILE_NAME = QString("bias_testconfig");
     const QString CONFIG_FILE_EXTENSION = QString("json");
     const float DEFAULT_FORMAT7_PERCENT_SPEED = 100.0;
     const int CAMERA_LOCK_TRY_DT = 100;                  // mSec
@@ -425,7 +426,6 @@ namespace bias
             videoWriterPtr -> setVersioning(autoNamingOptions_.includeVersionNumber);
             versionNumber = videoWriterPtr -> getNextVersionNumber();
             
-            
 
             imageLoggerPtr_ = new ImageLogger(
                     cameraNumber_,
@@ -473,10 +473,11 @@ namespace bias
             pluginHandlerPtr_ -> setPlugin(currentPluginPtr);
             pluginHandlerPtr_ -> setAutoDelete(false);
 
+
             if (currentPluginPtr->getName() == "signalSlotDemo" || 
                 currentPluginPtr->getName() == "jaabaPlugin")
                 currentPluginPtr->setupNIDAQ(nidaq_task);
-            
+
             threadPoolPtr_ -> start(pluginHandlerPtr_);
         } 
         actionPluginsEnabledPtr_ -> setEnabled(false);
@@ -769,6 +770,7 @@ namespace bias
 
     RtnStatus CameraWindow::loadConfiguration(QString fileName, bool showErrorDlg) 
     {
+
         // --------------------------------------------------------------------
         // TO DO  ... need to add error checking. 
         // --------------------------------------------------------------------
@@ -802,7 +804,49 @@ namespace bias
         }
         QByteArray jsonConfig = configFile.readAll();
         configFile.close();
-        rtnStatus = setConfigurationFromJson(jsonConfig,showErrorDlg);
+        rtnStatus = setConfigurationFromTestJson(jsonConfig,showErrorDlg);
+        return rtnStatus;
+    }
+
+
+    RtnStatus CameraWindow::loadTestConfiguration(QString fileName, bool showErrorDlg)
+    {
+
+        std::cout << "load test config " << std::endl;
+        // --------------------------------------------------------------------
+        // TO DO  ... need to add error checking. 
+        // --------------------------------------------------------------------
+        RtnStatus rtnStatus;
+        QString msgTitle("Load Configuration Error");
+        QFile configFile(fileName);
+
+        if (!configFile.exists())
+        {
+            QString msgText = QString("Configuration file, %1, does not exist").arg(fileName);
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, msgTitle, msgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = msgText;
+            return rtnStatus;
+        }
+
+        bool ok = configFile.open(QIODevice::ReadOnly);
+        if (!ok)
+        {
+            QString msgText = QString("Unable to open configuration file %1").arg(fileName);
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, msgTitle, msgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = msgText;
+            return rtnStatus;
+        }
+        QByteArray jsonConfig = configFile.readAll();
+        configFile.close();
+        rtnStatus = setConfigurationFromTestJson(jsonConfig, showErrorDlg);
         return rtnStatus;
     }
 
@@ -1135,6 +1179,65 @@ namespace bias
     }
 
 
+    RtnStatus CameraWindow::setConfigurationFromTestJson(
+        QByteArray jsonConfig,
+        bool showErrorDlg)
+    {
+
+        std::cout << "set configuration from Json " << std::endl;
+        RtnStatus rtnStatus;
+        QString errMsgTitle("Load Configuration Error");
+
+        bool ok;
+        QVariantMap configMap = QtJson::parse(QString(jsonConfig), ok).toMap();
+        if (!ok)
+        {
+            QString errMsgText("Error loading configuration - ");
+            errMsgText += "unable to parse json.";
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+
+        rtnStatus = setConfigurationFromTestMap(configMap, showErrorDlg);
+        //QVariantMap oldConfigMap = getConfigurationMap(rtnStatus);        
+
+        /*if (!rtnStatus.success)
+        {
+            QString origErrMsg = rtnStatus.message;
+
+            // Something went wrong - try to revert to old configuration
+            rtnStatus = setConfigurationFromMap(oldConfigMap, showErrorDlg);
+            if (!rtnStatus.success)
+            {
+                QString errMsgText("Unable to revert to previous configuration");
+                if (showErrorDlg)
+                {
+                    QMessageBox::critical(this, errMsgTitle, errMsgText);
+                }
+                rtnStatus.success = false;
+                rtnStatus.message = errMsgText;
+                return rtnStatus;
+            }
+            else
+            {
+                rtnStatus.success = false;
+                rtnStatus.message = origErrMsg;
+                return rtnStatus;
+            }
+        }*/
+        updateAllMenus();
+        updateStatusLabel();
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+    }
+
+
     RtnStatus CameraWindow::setConfigurationFromMap( 
             QVariantMap configMap, 
             bool showErrorDlg
@@ -1246,6 +1349,149 @@ namespace bias
 
         return rtnStatus;
     }
+
+    RtnStatus CameraWindow::setMetricsFromMap(
+        QVariantMap configMap,
+        bool showErrorDlg
+    )
+    {
+        RtnStatus rtnStatus;
+        QString errMsgTitle("Load Configuration Error");
+
+        // Get "frame to frame latency" value
+        // -------------------
+        if (!configMap.contains("frametoframe_latency"))
+        {
+            QString errMsgText("Logging configuration: enabled not present");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        if (!configMap["frametoframe_latency"].canConvert<bool>())
+        {
+            QString errMsgText("frametoframe latency configuration: unable to convert logging to bool");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        bool frametoframeLatencyValue = configMap["frametoframe_latency"].toBool();
+
+        // Get "nidaq latency" value
+        // -------------------
+        if (!configMap.contains("nidaq_latency"))
+        {
+            QString errMsgText("nidaq latency configuration: enabled not present");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        if (!configMap["nidaq_latency"].canConvert<bool>())
+        {
+            QString errMsgText("nidaq latency configuration: unable to convert logging to bool");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        bool nidaqLatencyValue = configMap["nidaq_latency"].toBool();
+
+        return rtnStatus;
+    }
+
+
+    RtnStatus CameraWindow::setConfigurationFromTestMap(
+        QVariantMap configMap,
+        bool showErrorDlg
+    )
+    {
+  
+        RtnStatus rtnStatus;
+        QString errMsgTitle("Load Configuration Error");
+        //QVariantMap oldConfigMap = getConfigurationMap(rtnStatus);
+        
+        // Get "logging" value
+        // -------------------
+        if (!configMap.contains("logging"))
+        {
+            QString errMsgText("Logging configuration: enabled not present");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        if (!configMap["logging"].canConvert<bool>())
+        {
+            QString errMsgText("Logging configuration: unable to convert logging to bool");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        bool loggingEnabledValue = configMap["logging"].toBool();
+         
+        // Get "isPlugin" value
+        // -------------------
+        if (!configMap.contains("isPlugin"))
+        {
+            QString errMsgText("isPlugin configuration: enabled not present");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        if (!configMap["isPlugin"].canConvert<bool>())
+        {
+            QString errMsgText("isPlugin configuration: unable to convert logging to bool");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        bool isPluginEnabledValue = configMap["isPlugin"].toBool();
+
+        // set metrics 
+        //----------------------------------------------------
+        QVariantMap metricsMap = configMap["metrics"].toMap();
+        if (metricsMap.isEmpty())
+        {
+            
+        }
+        rtnStatus = setMetricsFromMap(metricsMap, showErrorDlg);
+        if (!rtnStatus.success)
+        {
+            return rtnStatus;
+        }
+
+        return rtnStatus;
+    }
+
 
     RtnStatus CameraWindow::enableLogging(bool showErrorDlg)
     {
@@ -1843,9 +2089,11 @@ namespace bias
 
     void CameraWindow::startTriggerButtonClicked()
     {
+
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
             nidaq_task ->start_trigger_signal();
         }
+
     }
 
     void CameraWindow::updateDisplayOnTimer()
@@ -2040,6 +2288,26 @@ namespace bias
         loadConfiguration(configFileString);
     }
 
+    void CameraWindow::actionTestLoadConfigTriggered()
+    {
+
+        std::cout << "Load Test Configuration " << std::endl;
+        QString configFileFullPath = getTestConfigFileFullPath();
+
+        // Query user for desired video filename and directory
+        QString configFileString = QFileDialog::getOpenFileName(
+            this,
+            QString("Load Configuration File"),
+            configFileFullPath
+        );
+
+        if (configFileString.isEmpty())
+        {
+            return;
+        }
+        loadConfiguration(configFileString);
+    }
+
 
     void CameraWindow::actionFileSaveConfigTriggered()
     {
@@ -2148,6 +2416,7 @@ namespace bias
             nidaq_task = nullptr;
             QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];
+          
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
                                
                 nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();              
@@ -2160,15 +2429,7 @@ namespace bias
             if(triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
 
                 startTriggerButtonPtr_->setEnabled(true);
-                /*QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
-                if(partnerCameraWindowPtr != nullptr){
-                
-                    if (partnerCameraWindowPtr->nidaq_task == nullptr) {
-
-                        partnerCameraWindowPtr->nidaq_task = nidaq_task;
-                        std::cout << "partner nidaq set" << std::endl;
-                    }
-                } */               
+                              
             }
                         
         }
@@ -2673,7 +2934,6 @@ namespace bias
         cameraWindowPtrList_ = cameraWindowPtrList;
         cameraPtr_ = std::make_shared<Lockable<Camera>>(guid);
 
-
         threadPoolPtr_ = new QThreadPool(this);
         threadPoolPtr_->setMaxThreadCount(MAX_THREAD_COUNT);
         newImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
@@ -2683,14 +2943,17 @@ namespace bias
         setDefaultFileDirs();
         currentVideoFileDir_ = defaultVideoFileDir_;
         currentVideoFileName_ = DEFAULT_VIDEO_FILE_NAME;
+
         currentConfigFileDir_ = defaultConfigFileDir_;
         currentConfigFileName_ = DEFAULT_CONFIG_FILE_NAME;
 
+        currentTestConfigFileDir_ = defaultConfigFileDir_;
+        currentTestConfigFileName_ = DEFAULT_TESTCONFIG_FILE_NAME;      
+
         // Temporary - plugin development
-        // -------------------------------------------------------------------------------
+        // -------------------------------------------------------------------------------        
         gettime_ = std::make_shared<Lockable<GetTime>>();
-        //nidaq_task = nullptr;
-        
+
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
         pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
@@ -3070,6 +3333,14 @@ namespace bias
                 this,
                 SLOT(tabWidgetChanged(int))
                );
+
+        connect(
+            actionTestLoadConfigPtr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionTestLoadConfigTriggered())
+        );
+
 
     }
 
@@ -4335,6 +4606,19 @@ namespace bias
         QString configFileFullPath = configFileInfo.absoluteFilePath();
         return configFileFullPath;
     }
+
+    QString CameraWindow::getTestConfigFileFullPath()
+    {
+        QString fileName = currentTestConfigFileName_ + "." + CONFIG_FILE_EXTENSION;
+        if (!currentTestConfigFileDir_.exists())
+        {
+            currentTestConfigFileDir_ = defaultConfigFileDir_;
+        }
+        QFileInfo configFileInfo(currentTestConfigFileDir_, fileName);
+        QString configFileFullPath = configFileInfo.absoluteFilePath();
+        return configFileFullPath;
+    }
+
 
     QString CameraWindow::getAutoNamingString()
     {
