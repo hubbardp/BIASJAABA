@@ -23,6 +23,7 @@
 
 #include "win_time.hpp"
 #include "NIDAQUtils.hpp"
+#include "test_config.hpp"
 
 // External lib forward declarations
 class QTimer;
@@ -322,6 +323,7 @@ namespace bias
             //Test
             //GetTime* gettime_;
             //NIDAQUtils* nidaq_task;
+            TestConfig test_config;
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task;
             unsigned int partnerCameraNumber_;

@@ -58,6 +58,7 @@
 #include "grab_detector_plugin.hpp"
 #include "signal_slot_demo_plugin.hpp"
 #include "jaaba_plugin.hpp"
+#include "test_config.hpp"
 // -------------------------------------
 
 namespace bias
@@ -818,24 +819,15 @@ namespace bias
         // --------------------------------------------------------------------
         RtnStatus rtnStatus;
         QString msgTitle("Load Configuration Error");
-        QFile configFile(fileName);
+        
+        // Create an input filestream
+        std::ifstream input_configFile(fileName.toUtf8().constData());
 
-        if (!configFile.exists())
-        {
-            QString msgText = QString("Configuration file, %1, does not exist").arg(fileName);
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, msgTitle, msgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = msgText;
-            return rtnStatus;
-        }
-
-        bool ok = configFile.open(QIODevice::ReadOnly);
+        // Check if file is open
+        bool ok = input_configFile.is_open();
         if (!ok)
         {
-            QString msgText = QString("Unable to open configuration file %1").arg(fileName);
+            QString msgText = QString("Unable to open test configuration file %1").arg(fileName);
             if (showErrorDlg)
             {
                 QMessageBox::critical(this, msgTitle, msgText);
@@ -844,9 +836,10 @@ namespace bias
             rtnStatus.message = msgText;
             return rtnStatus;
         }
-        QByteArray jsonConfig = configFile.readAll();
-        configFile.close();
-        rtnStatus = setConfigurationFromTestJson(jsonConfig, showErrorDlg);
+        read_testConfig(test_config, input_configFile);
+        input_configFile.close();
+        std::cout << test_config.nidaq_prefix << std::endl;
+        //rtnStatus = setConfigurationFromTestJson(jsonConfig, showErrorDlg);
         return rtnStatus;
     }
 
@@ -2305,7 +2298,7 @@ namespace bias
         {
             return;
         }
-        loadConfiguration(configFileString);
+        loadTestConfiguration(configFileString);
     }
 
 

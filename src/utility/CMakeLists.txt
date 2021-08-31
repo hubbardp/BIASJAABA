@@ -23,7 +23,7 @@ if(with_qt_gui)
         timer.h
         tictoc.h
         NIDAQUtils.hpp
-        #win_time.hpp
+        test_config.hpp
         )
     
     set(
@@ -39,7 +39,7 @@ if(with_qt_gui)
         image_label.cpp
         tictoc.c
         NIDAQUtils.cpp
-        #win_ime.cpp
+        test_config.cpp
        )
  
     if(WIN32)
