@@ -90,13 +90,13 @@ namespace bias
                     );
 
             // BIAS Latency Test Config 
-            RtnStatus setConfigurationFromTestJson(
-                QByteArray jsonConfig,
+            RtnStatus setConfigurationFromTestConfig(
+                TestConfig& testConfig,
                 bool showErrorDlg = true
             );
 
             RtnStatus setConfigurationFromTestMap(
-                QVariantMap configMap,
+                TestConfig& testConfig,
                 bool showErrorDlg = true
             );
 
@@ -247,7 +247,7 @@ namespace bias
         private:
 
             bool connected_;
-            bool capturing_;
+            bool capturing_; 
             bool haveImagePixmap_;
             bool logging_;
             bool flipVert_;
@@ -257,6 +257,10 @@ namespace bias
             bool showCameraLockFailMsg_;
             bool pluginEnabled_;
             bool skippedFramesWarning_;
+
+            bool nidaqLatencyVal;
+            bool frametoframeLatencyVal;
+
             unsigned int cameraNumber_;
             unsigned int numberOfCameras_;
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
@@ -286,7 +290,6 @@ namespace bias
             unsigned long captureDurationSec_;
             AutoNamingOptions autoNamingOptions_;
             TriggerExternalType triggerExternalType_;
-
 
             QPointer<QLabel> statusLabelPtr_;
 

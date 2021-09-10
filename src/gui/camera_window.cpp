@@ -345,7 +345,6 @@ namespace bias
         logImageQueuePtr_ -> clear();
         pluginImageQueuePtr_ -> clear();
 
-
         QString autoNamingString = getAutoNamingString();
         unsigned int versionNumber = 0;
 
@@ -427,7 +426,6 @@ namespace bias
             videoWriterPtr -> setVersioning(autoNamingOptions_.includeVersionNumber);
             versionNumber = videoWriterPtr -> getNextVersionNumber();
             
-
             imageLoggerPtr_ = new ImageLogger(
                     cameraNumber_,
                     videoWriterPtr, 
@@ -805,7 +803,7 @@ namespace bias
         }
         QByteArray jsonConfig = configFile.readAll();
         configFile.close();
-        rtnStatus = setConfigurationFromTestJson(jsonConfig,showErrorDlg);
+        rtnStatus = setConfigurationFromJson(jsonConfig,showErrorDlg);
         return rtnStatus;
     }
 
@@ -836,10 +834,17 @@ namespace bias
             rtnStatus.message = msgText;
             return rtnStatus;
         }
+
+        QSettings settings;
+        QString configFilePath = QDir(fileName).absolutePath();
+        //std::cout << configFilePath.toStdString() << std::endl;
+        settings.setValue("DEFAULT_DIR_KEY", configFilePath);
+        std::cout << " " << QString(QVariant(settings.value("DEFAULT_DIR_KEY")).toString()).toStdString() << std::endl;
+
         read_testConfig(test_config, input_configFile);
         input_configFile.close();
         std::cout << test_config.nidaq_prefix << std::endl;
-        //rtnStatus = setConfigurationFromTestJson(jsonConfig, showErrorDlg);
+        rtnStatus = setConfigurationFromTestConfig(test_config, showErrorDlg);
         return rtnStatus;
     }
 
@@ -1105,7 +1110,13 @@ namespace bias
                 pluginMap.insert("config", pluginConfigMap);
                 configurationMap.insert("plugin", pluginMap);
             }
-        } 
+        }
+
+        
+        QVariantMap metricsMap;
+        metricsMap.insert("nidaq_latency", nidaqLatencyVal);
+        metricsMap.insert("frametoframe_latency", frametoframeLatencyVal);
+        configurationMap.insert("metrics", metricsMap);
 
         rtnStatus.success = true;
         rtnStatus.message = QString("");
@@ -1172,31 +1183,16 @@ namespace bias
     }
 
 
-    RtnStatus CameraWindow::setConfigurationFromTestJson(
-        QByteArray jsonConfig,
+    RtnStatus CameraWindow::setConfigurationFromTestConfig(
+        TestConfig& testConfig,
         bool showErrorDlg)
     {
 
-        std::cout << "set configuration from Json " << std::endl;
+        std::cout << "set configuration from Config " << std::endl;
         RtnStatus rtnStatus;
         QString errMsgTitle("Load Configuration Error");
 
-        bool ok;
-        QVariantMap configMap = QtJson::parse(QString(jsonConfig), ok).toMap();
-        if (!ok)
-        {
-            QString errMsgText("Error loading configuration - ");
-            errMsgText += "unable to parse json.";
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, errMsgTitle, errMsgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = errMsgText;
-            return rtnStatus;
-        }
-
-        rtnStatus = setConfigurationFromTestMap(configMap, showErrorDlg);
+        rtnStatus = setConfigurationFromTestMap(testConfig, showErrorDlg);
         //QVariantMap oldConfigMap = getConfigurationMap(rtnStatus);        
 
         /*if (!rtnStatus.success)
@@ -1343,6 +1339,7 @@ namespace bias
         return rtnStatus;
     }
 
+
     RtnStatus CameraWindow::setMetricsFromMap(
         QVariantMap configMap,
         bool showErrorDlg
@@ -1375,7 +1372,7 @@ namespace bias
             rtnStatus.message = errMsgText;
             return rtnStatus;
         }
-        bool frametoframeLatencyValue = configMap["frametoframe_latency"].toBool();
+        bool frametoframeLatencyVal = configMap["frametoframe_latency"].toBool();
 
         // Get "nidaq latency" value
         // -------------------
@@ -1401,86 +1398,82 @@ namespace bias
             rtnStatus.message = errMsgText;
             return rtnStatus;
         }
-        bool nidaqLatencyValue = configMap["nidaq_latency"].toBool();
+        bool nidaqLatencyVal = configMap["nidaq_latency"].toBool();
 
         return rtnStatus;
     }
 
 
     RtnStatus CameraWindow::setConfigurationFromTestMap(
-        QVariantMap configMap,
+        TestConfig& testConfig,
         bool showErrorDlg
     )
     {
-  
+
         RtnStatus rtnStatus;
-        QString errMsgTitle("Load Configuration Error");
-        //QVariantMap oldConfigMap = getConfigurationMap(rtnStatus);
-        
+        TriggerType trig;
+        QVariantMap configMap = getConfigurationMap(rtnStatus);
+        QVariantMap cameraMap;
+
         // Get "logging" value
         // -------------------
-        if (!configMap.contains("logging"))
+        if (!testConfig.logging_prefix.empty())
         {
-            QString errMsgText("Logging configuration: enabled not present");
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, errMsgTitle, errMsgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = errMsgText;
-            return rtnStatus;
+            logging_ = true;
+
         }
-        if (!configMap["logging"].canConvert<bool>())
-        {
-            QString errMsgText("Logging configuration: unable to convert logging to bool");
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, errMsgTitle, errMsgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = errMsgText;
-            return rtnStatus;
+        else {
+
+            logging_ = false;
         }
-        bool loggingEnabledValue = configMap["logging"].toBool();
-         
+
         // Get "isPlugin" value
         // -------------------
-        if (!configMap.contains("isPlugin"))
+        if (!testConfig.plugin_prefix.empty())
         {
-            QString errMsgText("isPlugin configuration: enabled not present");
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, errMsgTitle, errMsgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = errMsgText;
-            return rtnStatus;
+            setPluginEnabled(true);
+
         }
-        if (!configMap["isPlugin"].canConvert<bool>())
-        {
-            QString errMsgText("isPlugin configuration: unable to convert logging to bool");
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, errMsgTitle, errMsgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = errMsgText;
-            return rtnStatus;
+        else {
+
+            setPluginEnabled(false);
         }
-        bool isPluginEnabledValue = configMap["isPlugin"].toBool();
 
         // set metrics 
         //----------------------------------------------------
-        QVariantMap metricsMap = configMap["metrics"].toMap();
-        if (metricsMap.isEmpty())
-        {
-            
-        }
-        rtnStatus = setMetricsFromMap(metricsMap, showErrorDlg);
-        if (!rtnStatus.success)
-        {
-            return rtnStatus;
-        }
+        // set nidaq config value
+        if (!testConfig.nidaq_prefix.empty()) {
+             trig = cameraPtr_->getTriggerType();
+             if (trig != TRIGGER_NIDAQ) {
+
+                 cameraMap = configMap["camera"].toMap();
+                 cameraMap["triggerType"] = "TRIGGER_NIDAQ";
+
+                 if (cameraPtr_->tryLock(CAMERA_LOCK_TRY_DT))
+                 {
+
+                     cameraPtr_->setTriggerExternal();
+                     cameraPtr_->releaseLock();
+                 }
+
+                 actionCameraTriggerExternalNIDAQPtr_->setChecked(true);
+                 actionCameraTriggerExternalNIDAQPtr_->setEnabled(true);
+                 actionCameraTriggerExternalNIDAQPtr_->triggered();
+                 updateCameraTriggerMenu();
+                  
+             }
+             nidaqLatencyVal = true;
+
+         }else {
+
+             nidaqLatencyVal = false;
+         }
+
+        // set frame to frame config value
+        if (!testConfig.f2f_prefix.empty())
+            frametoframeLatencyVal = true;
+        else
+            frametoframeLatencyVal = false;
 
         return rtnStatus;
     }
@@ -2298,6 +2291,12 @@ namespace bias
         {
             return;
         }
+
+        // set file path as default
+        QFileInfo configFileInfo = QFileInfo(configFileString);
+        QDir configFileDir = configFileInfo.dir();
+        defaultTestConfigFileDir_ = configFileDir;
+        std::cout << "default saved after" << configFileDir.absoluteFilePath(configFileString).toStdString() << std::endl;
         loadTestConfiguration(configFileString);
     }
 
@@ -2409,10 +2408,12 @@ namespace bias
             nidaq_task = nullptr;
             QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];
-          
+            printf("nidaq initialized ");
+
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
                                
                 nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();              
+                
 
             }else if (triggerExternalType_ == TRIGGER_ELSE && cameraNumber_ == 0) {
 
@@ -2899,8 +2900,6 @@ namespace bias
         connected_ = false;
         capturing_ = false;
         haveImagePixmap_ = false;
-        logging_ = false;  
-        //logging_ = true;
 
         flipVert_ = false;
         flipHorz_ = false;
@@ -2940,8 +2939,10 @@ namespace bias
         currentConfigFileDir_ = defaultConfigFileDir_;
         currentConfigFileName_ = DEFAULT_CONFIG_FILE_NAME;
 
-        currentTestConfigFileDir_ = defaultConfigFileDir_;
-        currentTestConfigFileName_ = DEFAULT_TESTCONFIG_FILE_NAME;      
+        currentTestConfigFileDir_ = defaultTestConfigFileDir_;
+        currentTestConfigFileName_ = DEFAULT_TESTCONFIG_FILE_NAME;  
+        std::cout << "initialize default Config File Dir"
+            << defaultTestConfigFileDir_.absoluteFilePath(currentTestConfigFileName_).toStdString() << std::endl;
 
         // Temporary - plugin development
         // -------------------------------------------------------------------------------        
@@ -2974,8 +2975,9 @@ namespace bias
         //setCurrentPlugin("stampede");     
         //setCurrentPlugin("signalSlotDemo");
         //setCurrentPlugin("jaabaPlugin");
-        //setPluginEnabled(true);
-     
+
+        if(pluginEnabled_)
+            setPluginEnabled(true);
 
         updateWindowTitle();
         updateCameraInfoMessage();
@@ -3334,7 +3336,6 @@ namespace bias
             SLOT(actionTestLoadConfigTriggered())
         );
 
-
     }
 
 
@@ -3345,6 +3346,9 @@ namespace bias
         QSettings settings(QSettings::UserScope, "Microsoft", "Windows");
         settings.beginGroup("CurrentVersion/Explorer/Shell Folders");
         QString myDocsString = settings.value("Personal").toString();
+        defaultTestConfigFileDir_ = settings.value("DEFAULT_DIR_KEY").toString();
+        std::cout << "init default test Config File Dir" << defaultTestConfigFileDir_.absolutePath().toStdString()
+            << std::endl;
 
         QDir myDocsDir = QDir(myDocsString);
         QDir videoDir = myDocsDir;
@@ -4605,7 +4609,7 @@ namespace bias
         QString fileName = currentTestConfigFileName_ + "." + CONFIG_FILE_EXTENSION;
         if (!currentTestConfigFileDir_.exists())
         {
-            currentTestConfigFileDir_ = defaultConfigFileDir_;
+            currentTestConfigFileDir_ = defaultTestConfigFileDir_;
         }
         QFileInfo configFileInfo(currentTestConfigFileDir_, fileName);
         QString configFileFullPath = configFileInfo.absoluteFilePath();
@@ -5999,12 +6003,12 @@ namespace bias
             newProp.valueA = std::max(newProp.valueA, propInfo.minValue);
             newProp.valueB = std::max(newProp.valueB, propInfo.minValue);
 #ifdef linux	    
-        newProp.valueA = std::min(newProp.valueA, propInfo.maxValue);
+            newProp.valueA = std::min(newProp.valueA, propInfo.maxValue);
             newProp.valueB = std::min(newProp.valueB, propInfo.maxValue);
 #endif
 
 #ifdef WIN32
-        newProp.valueA = min(newProp.valueA, propInfo.maxValue);
+            newProp.valueA = min(newProp.valueA, propInfo.maxValue);
             newProp.valueB = min(newProp.valueB, propInfo.maxValue);
 #endif	    
             //if (newProp.valueA < propInfo.minValue)
@@ -6098,7 +6102,7 @@ namespace bias
 #endif
 
 #ifdef linux 
-        newProp.value = std::min(newProp.value, propInfo.maxValue);
+            newProp.value = std::min(newProp.value, propInfo.maxValue);
 #endif	    
 
             //if (!newProp.absoluteControl) 
@@ -6159,6 +6163,7 @@ namespace bias
             rtnStatus.message = errMsgText;
             return rtnStatus;
         }
+        
         newProp.absoluteValue = propValueMap["absoluteValue"].toFloat();
         if (newProp.absoluteControl)
         {
