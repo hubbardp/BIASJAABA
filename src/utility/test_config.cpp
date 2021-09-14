@@ -11,56 +11,57 @@
 
 using namespace std;
 
+
 int convertValtoInt(string val) {
 
     return stoi(val);
 }
 
 
-void copyConfigField(TestConfig& test_config, int fieldname_index, string val) {
+void copyConfigField(std::shared_ptr<TestConfig> test_config, int fieldname_index, string val) {
 
 
     std::cout << "fieldname index : " << fieldname_index << " val: " << val << std::endl;
     switch (fieldname_index) {
 
         case 1:
-            test_config.numCameras = convertValtoInt(val);
+            test_config->numCameras = convertValtoInt(val);
             break;
         case 2:
-            test_config.cam_suffix.push_back(val);
+            test_config->cam_suffix.push_back(val);
             break;
         case 3:
-            test_config.dir_len = convertValtoInt(val);
+            test_config->dir_len = convertValtoInt(val);
             break;
         case 4:
-            test_config.dir_list.push_back(val);
+            test_config->dir_list.push_back(val);
             break;
         case 5:
-            test_config.numFrames = convertValtoInt(val);
+            test_config->numFrames = convertValtoInt(val);
             break;
         case 6:
-            test_config.no_of_trials = convertValtoInt(val);
+            test_config->no_of_trials = convertValtoInt(val);
             break;
         case 7:
-            test_config.framerate = convertValtoInt(val);
+            test_config->framerate = convertValtoInt(val);
             break;
         case 8:
-            test_config.nidaq_prefix = val;
+            test_config->nidaq_prefix = val;
             break;
         case 9:
-            test_config.f2f_prefix = val;
+            test_config->f2f_prefix = val;
             break;
         case 10:
-            test_config.queue_prefix = val;
+            test_config->queue_prefix = val;
             break;
         case 11:
-            test_config.plugin_prefix = val;
+            test_config->plugin_prefix = val;
             break;
         case 12:
-            test_config.logging_prefix = val;
+            test_config->logging_prefix = val;
             break;
         case 13:
-            test_config.imagegrab_prefix = val;
+            test_config->imagegrab_prefix = val;
             break;
         default:
             break;
@@ -68,7 +69,7 @@ void copyConfigField(TestConfig& test_config, int fieldname_index, string val) {
 
 }
 
-int read_testConfig(TestConfig& test_config, ifstream& input_testconfig) {
+int read_testConfig(std::shared_ptr<TestConfig> test_config, ifstream& input_testconfig) {
 
     //index to iterate throuh config fieldnames
     int rowIdx = 0;
@@ -86,9 +87,9 @@ int read_testConfig(TestConfig& test_config, ifstream& input_testconfig) {
         ss.getline(fieldname, 256, ',');
 
         // to check that we are reading the correct fieldname 
-        if (test_config.fieldnames[rowIdx] != fieldname) {
+        if (test_config->fieldnames[rowIdx] != fieldname) {
                      
-            std::cout << test_config.fieldnames[rowIdx] << " " << string(fieldname) <<  std::endl;
+            std::cout << test_config->fieldnames[rowIdx] << " " << string(fieldname) <<  std::endl;
             QString errMsgText = QString("Test Config not present");               
             qDebug() << errMsgText;
             return -1;

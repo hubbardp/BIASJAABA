@@ -32,7 +32,7 @@ struct TestConfig {
 };
 
 int convertValtoInt(string val);
-void copyConfigField(TestConfig& test_config, int fieldname_index, string val);
-int read_testConfig(TestConfig& test_config, ifstream& input_testconfig);
+void copyConfigField(std::shared_ptr<TestConfig> test_config, int fieldname_index, string val);
+int read_testConfig(std::shared_ptr<TestConfig> test_config, ifstream& input_testconfig);
 
 #endif

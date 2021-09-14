@@ -91,12 +91,12 @@ namespace bias
 
             // BIAS Latency Test Config 
             RtnStatus setConfigurationFromTestConfig(
-                TestConfig& testConfig,
+                std::shared_ptr<TestConfig> testConfig,
                 bool showErrorDlg = true
             );
 
             RtnStatus setConfigurationFromTestMap(
-                TestConfig& testConfig,
+                std::shared_ptr<TestConfig> testConfig,
                 bool showErrorDlg = true
             );
 
@@ -169,6 +169,9 @@ namespace bias
             void imageOrientationChanged(bool flipVert, bool flipHorz, ImageRotationType imageRot);
             void timerDurationChanged(unsigned long duration);
             void videoFileChanged();
+
+            // Test Configuration signal
+            void valueChangedFrametoFrame(bool frametoframeLatencyVal);
 
         protected:
 
@@ -243,6 +246,9 @@ namespace bias
             void format7RoiEnableStateChanged();
             void alignmentSettingsChanged(AlignmentSettings);
             void autoNamingOptionsChanged(AutoNamingOptions options);
+
+            //Test private slots
+            void enableFrametoFrame();
 
         private:
 
@@ -326,10 +332,12 @@ namespace bias
             //Test
             //GetTime* gettime_;
             //NIDAQUtils* nidaq_task;
-            TestConfig test_config;
+            bool loadTestConfigEnabled;
+            unsigned int partnerCameraNumber_;
+            unsigned int numTestFrames;
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task;
-            unsigned int partnerCameraNumber_;
+            std::shared_ptr<TestConfig>testConfig;
             QPointer<QThreadPool> threadPoolPtr_;
             
             QPointer<ImageGrabber> imageGrabberPtr_;

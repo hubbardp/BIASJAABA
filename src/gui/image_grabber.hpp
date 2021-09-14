@@ -13,6 +13,7 @@
 
 #include "win_time.hpp"
 #include "NIDAQUtils.hpp"
+#include "test_config.hpp"
 
 
 namespace bias
@@ -32,6 +33,8 @@ namespace bias
                     std::shared_ptr<Lockable<Camera>> cameraPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     QPointer<QThreadPool> threadPoolPtr,
+                    bool testConfigEnabled,
+                    std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
                     std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
                     QObject *parent=0
@@ -42,6 +45,8 @@ namespace bias
                     std::shared_ptr<Lockable<Camera>> cameraPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     QPointer<QThreadPool> threadPoolPtr,
+                    bool testConfigEnabled,
+                    std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
                     std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
                     );
@@ -67,6 +72,7 @@ namespace bias
             bool errorCountEnabled_;
             unsigned int numStartUpSkip_;
             unsigned int cameraNumber_;
+            bool testConfigEnabled_;
 
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
@@ -75,10 +81,9 @@ namespace bias
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
             QPointer<QThreadPool> threadPoolPtr_;
 
-            //GetTime* gettime_ = nullptr;
-            //NIDAQUtils* nidaq_task_ = nullptr;
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
+            std::shared_ptr<TestConfig>testConfig_;
 
             //test
             std::vector<float> time_stamps1;

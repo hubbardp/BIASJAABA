@@ -489,6 +489,8 @@ namespace bias
                 cameraPtr_, 
                 newImageQueuePtr_,
                 threadPoolPtr_,
+                loadTestConfigEnabled,
+                testConfig,
                 gettime_,
                 nidaq_task,
                 this
@@ -812,12 +814,12 @@ namespace bias
     {
 
         std::cout << "load test config " << std::endl;
-        // --------------------------------------------------------------------
-        // TO DO  ... need to add error checking. 
-        // --------------------------------------------------------------------
+
         RtnStatus rtnStatus;
         QString msgTitle("Load Configuration Error");
-        
+        loadTestConfigEnabled = true;
+        testConfig = make_shared<TestConfig>();
+
         // Create an input filestream
         std::ifstream input_configFile(fileName.toUtf8().constData());
 
@@ -841,10 +843,10 @@ namespace bias
         settings.setValue("DEFAULT_DIR_KEY", configFilePath);
         std::cout << " " << QString(QVariant(settings.value("DEFAULT_DIR_KEY")).toString()).toStdString() << std::endl;
 
-        read_testConfig(test_config, input_configFile);
+        read_testConfig(testConfig, input_configFile);
         input_configFile.close();
-        std::cout << test_config.nidaq_prefix << std::endl;
-        rtnStatus = setConfigurationFromTestConfig(test_config, showErrorDlg);
+        std::cout << testConfig->nidaq_prefix << std::endl;
+        rtnStatus = setConfigurationFromTestConfig(testConfig, showErrorDlg);
         return rtnStatus;
     }
 
@@ -1184,7 +1186,7 @@ namespace bias
 
 
     RtnStatus CameraWindow::setConfigurationFromTestConfig(
-        TestConfig& testConfig,
+        std::shared_ptr<TestConfig> testConfig,
         bool showErrorDlg)
     {
 
@@ -1373,6 +1375,10 @@ namespace bias
             return rtnStatus;
         }
         bool frametoframeLatencyVal = configMap["frametoframe_latency"].toBool();
+        if (frametoframeLatencyVal) {
+            emit valueChangedFrametoFrame(frametoframeLatencyVal);
+            std::cout << "frametoframeLatencyVal" << std::endl;
+        }
 
         // Get "nidaq latency" value
         // -------------------
@@ -1405,7 +1411,7 @@ namespace bias
 
 
     RtnStatus CameraWindow::setConfigurationFromTestMap(
-        TestConfig& testConfig,
+        std::shared_ptr<TestConfig> testConfig,
         bool showErrorDlg
     )
     {
@@ -1417,7 +1423,7 @@ namespace bias
 
         // Get "logging" value
         // -------------------
-        if (!testConfig.logging_prefix.empty())
+        if (!testConfig->logging_prefix.empty())
         {
             logging_ = true;
 
@@ -1429,7 +1435,7 @@ namespace bias
 
         // Get "isPlugin" value
         // -------------------
-        if (!testConfig.plugin_prefix.empty())
+        if (!testConfig->plugin_prefix.empty())
         {
             setPluginEnabled(true);
 
@@ -1442,8 +1448,10 @@ namespace bias
         // set metrics 
         //----------------------------------------------------
         // set nidaq config value
-        if (!testConfig.nidaq_prefix.empty()) {
+        if (!testConfig->nidaq_prefix.empty()) {
+
              trig = cameraPtr_->getTriggerType();
+
              if (trig != TRIGGER_NIDAQ) {
 
                  cameraMap = configMap["camera"].toMap();
@@ -1470,12 +1478,21 @@ namespace bias
          }
 
         // set frame to frame config value
-        if (!testConfig.f2f_prefix.empty())
+        if (!testConfig->f2f_prefix.empty()) {
+            
             frametoframeLatencyVal = true;
-        else
-            frametoframeLatencyVal = false;
+            emit(valueChangedFrametoFrame(frametoframeLatencyVal));
+            
+        } else {
 
+            frametoframeLatencyVal = false;
+        }
+
+        //get number of frames recorded for test trial
+        numTestFrames = testConfig->numFrames;
+  
         return rtnStatus;
+
     }
 
 
@@ -2913,6 +2930,7 @@ namespace bias
         format7PercentSpeed_ = DEFAULT_FORMAT7_PERCENT_SPEED;
         showCameraLockFailMsg_ = true;
         skippedFramesWarning_ = false;
+        loadTestConfigEnabled = false;
 
         colorMapNumber_ = DEFAULT_COLORMAP_NUMBER;
         //videoFileFormat_ = VIDEOFILE_FORMAT_UFMF;
@@ -2946,7 +2964,8 @@ namespace bias
 
         // Temporary - plugin development
         // -------------------------------------------------------------------------------        
-        gettime_ = std::make_shared<Lockable<GetTime>>();
+        if(frametoframeLatencyVal)
+            gettime_ = std::make_shared<Lockable<GetTime>>();
 
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
@@ -3008,7 +3027,6 @@ namespace bias
         {
             actionServerEnabledPtr_ -> setChecked(false);
         }
-
 
     }
 
@@ -3330,11 +3348,18 @@ namespace bias
                );
 
         connect(
-            actionTestLoadConfigPtr_,
-            SIGNAL(triggered()),
-            this,
-            SLOT(actionTestLoadConfigTriggered())
-        );
+                actionTestLoadConfigPtr_,
+                SIGNAL(triggered()),
+                this,
+                SLOT(actionTestLoadConfigTriggered())
+               );
+
+        connect(this,
+                SIGNAL(valueChangedFrametoFrame(bool)),
+                this,
+                SLOT(enableFrametoFrame())
+              );
+             
 
     }
 
@@ -7753,6 +7778,15 @@ namespace bias
         }
 
         return partnerCameraWindowPtr;
+
+    }
+
+    void CameraWindow::enableFrametoFrame() {
+
+        if (frametoframeLatencyVal) {
+
+            gettime_ = make_shared<Lockable<GetTime>>();
+        }
 
     }
 
