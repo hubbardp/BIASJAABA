@@ -359,9 +359,10 @@ namespace bias
         }
 
         if (cameraNumber_ == 0) {
+
             if (nidaq_task != nullptr)
                 printf(" nidaq set - %d\n", cameraNumber_);
-
+            
         }
 
         if (logging_)
@@ -2094,6 +2095,7 @@ namespace bias
     {
 
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
+            
             nidaq_task ->start_trigger_signal();
         }
 

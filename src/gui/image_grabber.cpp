@@ -78,6 +78,8 @@ namespace bias {
         }
         errorCountEnabled_ = true;
 
+        nidaq_task_ = nidaq_task;
+
         if (testConfigEnabled) {
 
             if (!testConfig_->f2f_prefix.empty()) {
@@ -88,13 +90,11 @@ namespace bias {
 
             if (!testConfig_->nidaq_prefix.empty()) {
 
-                nidaq_task_ = nidaq_task;
                 time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
             }
             
             if (!testConfig_->queue_prefix.empty()) {
 
-                nidaq_task_ = nidaq_task;
                 queue_size.resize(testConfig_->numFrames);
             }
         }
@@ -158,13 +158,13 @@ namespace bias {
         try
         {
             cameraPtr_ -> startCapture();
-            if (testConfigEnabled_ && nidaq_task_ != nullptr) {
+            if (nidaq_task_ != nullptr) {
                 
                 cameraPtr_->setupNIDAQ(nidaq_task_, gettime_, cameraNumber_);
                
             }
             else {
-                printf("nidaq not set");
+                //printf("nidaq not set");
                     
             }
         }
@@ -218,30 +218,28 @@ namespace bias {
         // Grab images from camera until the done signal is given
         while (!done)
         {
-            
+
             acquireLock();
             done = stopped_;
             releaseLock();
-            
+
             // Grab an image
-            if (testConfigEnabled_) {
+            if (!istriggered && nidaq_task_ != nullptr && cameraNumber_ == 0) {
 
-                if (!istriggered && nidaq_task_ != nullptr && cameraNumber_ == 0) {
+                nidaq_task_->startTasks();
+                istriggered = true;
 
-                    nidaq_task_->startTasks();
-                    istriggered = true;
-
-                }
             }
-            
-            cameraPtr_ -> acquireLock();
+
+
+            cameraPtr_->acquireLock();
             try
             {
-                
+
                 pc1 = 0, pc2 = 0;
                 //if(startUpCount >= numStartUpSkip_)
                 //    pc1 = gettime_->getPCtime();
-                stampImg.image = cameraPtr_ -> grabImage();
+                stampImg.image = cameraPtr_->grabImage();
                 //if(startUpCount >= numStartUpSkip_)
                 //    pc2 = gettime_->getPCtime();
                 timeStamp = cameraPtr_->getImageTimeStamp();
@@ -251,17 +249,17 @@ namespace bias {
             catch (RuntimeError &runtimeError)
             {
                 std::cout << "Frame grab error: id = ";
-                std::cout << runtimeError.id() << ", what = "; 
+                std::cout << runtimeError.id() << ", what = ";
                 std::cout << runtimeError.what() << std::endl;
                 error = true;
             }
-            cameraPtr_ -> releaseLock();
-            
+            cameraPtr_->releaseLock();
+
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
-            if (stampImg.image.empty()) 
-            { 
+            if (stampImg.image.empty())
+            {
                 QThread::yieldCurrentThread();
-                continue; 
+                continue;
             }
 
             // Push image into new image queue
@@ -295,17 +293,16 @@ namespace bias {
                     }
                     startUpCount++;
 
-                    if (testConfigEnabled_) {
+                    if (cameraNumber_ == 0 && nidaq_task_ != nullptr) {
 
-                        if (cameraNumber_ == 0 && nidaq_task_ != nullptr) {
-
-                            nidaq_task_->acquireLock();
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
-                            nidaq_task_->releaseLock();
-                        }
+                        nidaq_task_->acquireLock();
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+                        nidaq_task_->releaseLock();
                     }
+
                     continue;
                 }
+            
 
                 //std::cout << "dt grabber: " << timeStampDbl - timeStampDblLast << std::endl;
 
@@ -352,33 +349,39 @@ namespace bias {
                 stampImg.timeStampVal = timeStamp;
                 stampImg.frameCount = frameCount;
                 stampImg.dtEstimate = dtEstimate;
-                
+
                 frameCount++;
-                
+
                 newImageQueuePtr_->acquireLock();
                 newImageQueuePtr_->push(stampImg);
                 newImageQueuePtr_->signalNotEmpty();
-                newImageQueuePtr_->releaseLock();                
-                
+                newImageQueuePtr_->releaseLock();
 
                 ///---------------------------------------------------------------
-                
-                if (nidaq_task_ != nullptr) {
+                if (testConfigEnabled_) {
 
-                    if (cameraNumber_ == 0
-                        && frameCount <= testConfig_->numFrames) {
+                    if (nidaq_task_ != nullptr) {
 
-                        nidaq_task_->acquireLock();
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
-                        nidaq_task_->releaseLock();
+                        if (cameraNumber_ == 0
+                            && frameCount <= testConfig_->numFrames) {
+
+                            nidaq_task_->acquireLock();
+                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+                            nidaq_task_->releaseLock();
+
+                        }
+
+                        if (frameCount <= testConfig_->numFrames) {
+
+                            nidaq_task_->acquireLock();
+                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                            nidaq_task_->releaseLock();
+
+                        }
 
                     }
 
-                    if (frameCount <= testConfig_->numFrames) {
-
-                        nidaq_task_->acquireLock();
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                        nidaq_task_->releaseLock();
+                    if (!testConfig_->nidaq_prefix.empty()) {
 
                         if (cameraNumber_ == 0)
                             time_stamps3[frameCount - 1][0] = read_buffer;
@@ -386,53 +389,59 @@ namespace bias {
                             time_stamps3[frameCount - 1][0] = 0;
 
                         time_stamps3[frameCount - 1][1] = read_ondemand;
+                    }
+
+                    if (!testConfig_->f2f_prefix.empty()) {
+
+                        pc_time = gettime_->getPCtime();
+                        
+                        if (frameCount <= testConfig_->numFrames)
+                            time_stamps2[frameCount - 1] = pc_time;
+                    }
+
+                    if (!testConfig_->queue_prefix.empty()) {
+
+                        if (frameCount <= testConfig_->numFrames)
+                            queue_size[frameCount - 1] = newImageQueuePtr_->size();
 
                     }
 
+                    if (frameCount == testConfig_->numFrames
+                        && !testConfig_->f2f_prefix.empty())
+                    {
+                        std::string filename = testConfig_->dir_list[0] + "/"
+                            + testConfig_->f2f_prefix + "/imagegrab_"
+                            + testConfig_->f2f_prefix + "cam"
+                            + std::to_string(cameraNumber_) + ".csv";
+                        gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
+                    }
+
+                    if (frameCount == testConfig_->numFrames
+                        && !testConfig_->nidaq_prefix.empty())
+                    {
+
+                        std::string filename = testConfig_->dir_list[0] + "/"
+                            + testConfig_->nidaq_prefix + "/imagegrab_"
+                            + testConfig_->nidaq_prefix + "cam"
+                            + std::to_string(cameraNumber_) + ".csv";
+                        gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
+
+                    }
+
+                    if (frameCount == testConfig_->numFrames
+                        && !testConfig_->queue_prefix.empty()) {
+
+
+                        string filename = testConfig_->dir_list[0] + "/"
+                            + testConfig_->queue_prefix + "/imagegrab_"
+                            + testConfig_->queue_prefix + "cam"
+                            + std::to_string(cameraNumber_) + ".csv";
+                        gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
+
+                    }
                 }
 
-                if (!testConfig_->f2f_prefix.empty()) {
-
-                    pc_time = gettime_->getPCtime();
-                    //std::cout << pc_time << std::endl;
-                    if (frameCount <= testConfig_->numFrames)
-                        time_stamps2[frameCount - 1] = pc_time;
-                }
-
-                if (!testConfig_->queue_prefix.empty()) {
-
-                    if (frameCount <= testConfig_->numFrames)
-                        queue_size[frameCount - 1] = newImageQueuePtr_->size();
-
-                }
-
-
-                if (frameCount == testConfig_->numFrames 
-                    && !testConfig_->f2f_prefix.empty())
-                {
-                    std::string filename = "imagegrab_f2f" + std::to_string(cameraNumber_) + ".csv";
-                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
-                }
-
-                if (frameCount == testConfig_->numFrames 
-                    && !testConfig_->nidaq_prefix.empty())
-                {
-                    std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
-                    gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
-                    
-                }
-
-                if (frameCount == testConfig_->numFrames
-                    && !testConfig_->queue_prefix.empty()) {
-
-                     string filename = "imagegrab_queue_" + std::to_string(cameraNumber_) + ".csv";
-                     gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
-
-                }
-
-            }
-            else
-            {
+            }else {
                 if (errorCountEnabled_ ) 
                 {
                     errorCount++;
