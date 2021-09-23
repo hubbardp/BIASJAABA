@@ -58,7 +58,7 @@ namespace bias
              std::ofstream x_out;
              x_out.open(filename.c_str(), std::ios_base::app);
          
-             for (int frame_id = 0; frame_id < framenum-1; frame_id++)
+             for (int frame_id = 0; frame_id < framenum; frame_id++)
              {
 
                  x_out << timeVec[frame_id] <<  "\n";
@@ -75,7 +75,7 @@ namespace bias
              std::ofstream x_out;
              x_out.open(filename.c_str(), std::ios_base::app);
 
-             for (int frame_id = 0; frame_id < framenum - 1; frame_id++)
+             for (int frame_id = 0; frame_id < framenum; frame_id++)
              {
 
                  x_out << timeVec[frame_id][0] << ", " << timeVec[frame_id][1] << "\n";

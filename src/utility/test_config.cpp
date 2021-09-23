@@ -17,6 +17,10 @@ int convertValtoInt(string val) {
     return stoi(val);
 }
 
+float convertToFloat(string val) {
+
+    return stof(val);
+}
 
 void copyConfigField(std::shared_ptr<TestConfig> test_config, int fieldname_index, string val) {
 
@@ -46,21 +50,23 @@ void copyConfigField(std::shared_ptr<TestConfig> test_config, int fieldname_inde
             test_config->framerate = convertValtoInt(val);
             break;
         case 8:
+            test_config->latency_threshold = convertToFloat(val);
+        case 9:
             test_config->nidaq_prefix = val;
             break;
-        case 9:
+        case 10:
             test_config->f2f_prefix = val;
             break;
-        case 10:
+        case 11:
             test_config->queue_prefix = val;
             break;
-        case 11:
+        case 12:
             test_config->plugin_prefix = val;
             break;
-        case 12:
+        case 13:
             test_config->logging_prefix = val;
             break;
-        case 13:
+        case 14:
             test_config->imagegrab_prefix = val;
             break;
         default:

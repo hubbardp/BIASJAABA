@@ -410,8 +410,8 @@ namespace bias {
                         && !testConfig_->f2f_prefix.empty())
                     {
                         std::string filename = testConfig_->dir_list[0] + "/"
-                            + testConfig_->f2f_prefix + "/imagegrab_"
-                            + testConfig_->f2f_prefix + "cam"
+                            + testConfig_->f2f_prefix + "/" + testConfig_->imagegrab_prefix 
+                            + "_" + testConfig_->f2f_prefix + "cam"
                             + std::to_string(cameraNumber_) + ".csv";
                         gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
                     }
@@ -421,8 +421,8 @@ namespace bias {
                     {
 
                         std::string filename = testConfig_->dir_list[0] + "/"
-                            + testConfig_->nidaq_prefix + "/imagegrab_"
-                            + testConfig_->nidaq_prefix + "cam"
+                            + testConfig_->nidaq_prefix + "/" + testConfig_->imagegrab_prefix 
+                            + "_" + testConfig_->nidaq_prefix + "cam"
                             + std::to_string(cameraNumber_) + ".csv";
                         gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
 
@@ -431,12 +431,12 @@ namespace bias {
                     if (frameCount == testConfig_->numFrames
                         && !testConfig_->queue_prefix.empty()) {
 
-
                         string filename = testConfig_->dir_list[0] + "/"
-                            + testConfig_->queue_prefix + "/imagegrab_"
-                            + testConfig_->queue_prefix + "cam"
+                            + testConfig_->queue_prefix + "/" + testConfig_->imagegrab_prefix
+                            + "_" + testConfig_->queue_prefix + "cam"
                             + std::to_string(cameraNumber_) + ".csv";
-                        gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
+                        std::cout << filename << std::endl;
+                        gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
 
                     }
                 }

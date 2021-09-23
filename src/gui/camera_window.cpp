@@ -1378,7 +1378,6 @@ namespace bias
         bool frametoframeLatencyVal = configMap["frametoframe_latency"].toBool();
         if (frametoframeLatencyVal) {
             emit valueChangedFrametoFrame(frametoframeLatencyVal);
-            std::cout << "frametoframeLatencyVal" << std::endl;
         }
 
         // Get "nidaq latency" value
@@ -1433,7 +1432,7 @@ namespace bias
 
             logging_ = false;
         }
-
+        std:cout << " logging " << logging_ << std::endl;
         // Get "isPlugin" value
         // -------------------
         if (!testConfig->plugin_prefix.empty())
