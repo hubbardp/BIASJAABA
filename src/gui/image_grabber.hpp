@@ -34,6 +34,7 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     QPointer<QThreadPool> threadPoolPtr,
                     bool testConfigEnabled,
+                    string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
                     std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
@@ -46,6 +47,7 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     QPointer<QThreadPool> threadPoolPtr,
                     bool testConfigEnabled,
+                    string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
                     std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
@@ -73,6 +75,7 @@ namespace bias
             unsigned int numStartUpSkip_;
             unsigned int cameraNumber_;
             bool testConfigEnabled_;
+            string trial_num;
 
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;

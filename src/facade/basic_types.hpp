@@ -418,6 +418,16 @@ namespace bias {
         IMAGE_ROTATION_UNSPECIFIED,
     };
 
+    enum TrialType
+    {
+        TRIAL_1,
+        TRIAL_2,
+        TRIAL_3,
+        TRIAL_4,
+        TRIAL_5,
+        TRIAL_TYPE_UNSPECIFIED,
+    };
+
     struct ImageInfo 
     {
         unsigned int rows;

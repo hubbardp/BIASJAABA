@@ -18,6 +18,7 @@ struct TestConfig {
     int no_of_trials;
     int framerate;
     float latency_threshold;
+    string cam_dir;
     string nidaq_prefix;
     string f2f_prefix;
     string queue_prefix;
@@ -25,12 +26,14 @@ struct TestConfig {
     string logging_prefix;
     string imagegrab_prefix;
 
-    string fieldnames[14] = { "numCameras", "cam_suffix", "dir_len", "dir_list",
-                             "numFrames", "no_of_trials","framerate","latency_threshold","nidaq_prefix", "f2f_prefix",
-                             "queue_prefix", "plugin_prefix", "logging_prefix", "framegrab_prefix"};
+    string fieldnames[15] = { "numCameras", "cam_suffix", "dir_len", "dir_list",
+                             "numFrames", "no_of_trials","framerate","latency_threshold",
+                             "cam_dir", "nidaq_prefix", "f2f_prefix", "queue_prefix", 
+                             "plugin_prefix", "logging_prefix", "framegrab_prefix"};
     
 
 };
+
 
 int convertValtoInt(string val);
 float convertToFloat(string val);

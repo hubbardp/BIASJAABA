@@ -491,6 +491,7 @@ namespace bias
                 newImageQueuePtr_,
                 threadPoolPtr_,
                 loadTestConfigEnabled,
+                trial_num,
                 testConfig,
                 gettime_,
                 nidaq_task,
@@ -2318,6 +2319,40 @@ namespace bias
         loadTestConfiguration(configFileString);
     }
 
+    void CameraWindow::actionCameraShortTestTrialTriggered(){
+
+ 
+        QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
+        trialType_ = actionToTrialType_[actionPtr];
+        printf("trial type %d", trialType_);
+
+        if (trialType_ == TRIAL_5) {
+            trial_num = "short_trial5";
+        }else if (trialType_ == TRIAL_4) {
+            trial_num = "short_trial4";
+        }else if (trialType_ == TRIAL_3) {
+            trial_num = "short_trial3";
+        }else if (trialType_ == TRIAL_2) {
+            trial_num = "short_trial2";
+        }else {
+            trial_num = "short_trial1";
+        }
+
+        //updateTestMenu();
+    }
+
+    void CameraWindow::actionCameraLongTestTrialTriggered() {
+
+        std::cout << "inside long" << std::endl;
+        QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
+        trialType_ = actionToTrialType_[actionPtr];
+        printf("trial type %d", trialType_);
+
+        if(trialType_ == TRIAL_1){
+            trial_num = "long_trial1";
+        }
+        //updateTestMenu();
+    }
 
     void CameraWindow::actionFileSaveConfigTriggered()
     {
@@ -2426,7 +2461,7 @@ namespace bias
             nidaq_task = nullptr;
             QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];
-            printf("nidaq initialized ");
+            printf("nidaq initialized - %d ", triggerExternalType_);
 
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
                                
@@ -2922,6 +2957,8 @@ namespace bias
         flipVert_ = false;
         flipHorz_ = false;
         imageRotation_ = IMAGE_ROTATION_0;
+        trial_num = " ";
+        trialType_ = TRIAL_TYPE_UNSPECIFIED;
 
         haveDefaultVideoFileDir_ = false;
         timeStamp_ = 0.0;
@@ -2986,6 +3023,8 @@ namespace bias
         setupCaptureDurationTimer();
         setupImageLabels();
         setupPluginMenu();
+        setupShortTrialTestMenu();
+        setupLongTrialTestMenu();
         updateAllMenus();
         
         tabWidgetPtr_ -> setCurrentWidget(previewTabPtr_);
@@ -3657,6 +3696,70 @@ namespace bias
 
     }
 
+
+    void CameraWindow::setupShortTrialTestMenu() {
+
+        shortTrialActionGroupPtr_ = new QActionGroup(menuCameraTestTrialShortPtr_);
+        shortTrialActionGroupPtr_->addAction(actionTrial1Ptr_);
+        shortTrialActionGroupPtr_->addAction(actionTrial2Ptr_);
+        shortTrialActionGroupPtr_->addAction(actionTrial3Ptr_);
+        shortTrialActionGroupPtr_->addAction(actionTrial4Ptr_);
+        shortTrialActionGroupPtr_->addAction(actionTrial5Ptr_);
+
+        actionToTrialType_[actionTrial1Ptr_] = TRIAL_1;
+        actionToTrialType_[actionTrial2Ptr_] = TRIAL_2;
+        actionToTrialType_[actionTrial3Ptr_] = TRIAL_3;
+        actionToTrialType_[actionTrial4Ptr_] = TRIAL_4;
+        actionToTrialType_[actionTrial5Ptr_] = TRIAL_5;
+
+        connect(actionTrial1Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraShortTestTrialTriggered())
+        );
+
+        connect(actionTrial2Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraShortTestTrialTriggered())
+        );
+
+        connect(actionTrial3Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraShortTestTrialTriggered())
+        );
+
+        connect(actionTrial4Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraShortTestTrialTriggered())
+        );
+
+        connect(actionTrial5Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraShortTestTrialTriggered())
+        );
+
+
+    }
+
+    void CameraWindow::setupLongTrialTestMenu() {
+       
+        longTrialActionGroupPtr_ = new QActionGroup(menuCameraTestTrialLongPtr_);
+
+        longTrialActionGroupPtr_->addAction(actionLongTrial1Ptr_);
+
+        actionToTrialType_[actionLongTrial1Ptr_] = TRIAL_1;
+
+        connect(actionLongTrial1Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraLongTestTrialTriggered())
+        );
+
+    }
 
     void CameraWindow::updateImageLabel(
             ImageLabel *imageLabelPtr, 

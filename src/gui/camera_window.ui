@@ -303,7 +303,7 @@
          <string>External</string>
        </property>
        <addaction name="actionCameraTriggerExternalNIDAQPtr_"/>
-       <addaction name="actionCameraTriggerExternalElsePtr_"/>s
+       <addaction name="actionCameraTriggerExternalElsePtr_"/>
      </widget>
      <addaction name="menuCameraTriggerExternalPtr_"/>
     </widget>
@@ -391,6 +391,30 @@
        <string>&amp;Test</string>
      </property>
      <addaction name="actionTestLoadConfigPtr_"/>
+     <widget class="QMenu" name="menuCameraTestTrialPtr_">
+       <property name="title">
+         <string>Trials</string>
+       </property>
+       <widget class="QMenu" name="menuCameraTestTrialShortPtr_">
+         <property name="title">
+           <string>Short Trials</string>
+         </property>
+         <addaction name="actionTrial1Ptr_"/>
+         <addaction name="actionTrial2Ptr_"/>
+         <addaction name="actionTrial3Ptr_"/>
+         <addaction name="actionTrial4Ptr_"/>
+         <addaction name="actionTrial5Ptr_"/>
+       </widget>
+       <widget class="QMenu" name="menuCameraTestTrialLongPtr_">
+         <property name="title">
+           <string>Long Trials</string>
+         </property>
+         <addaction name="actionLongTrial1Ptr_"/>
+       </widget>
+       <addaction name="menuCameraTestTrialShortPtr_"/>
+       <addaction name="menuCameraTestTrialLongPtr_"/>
+     </widget>
+     <addaction name="menuCameraTestTrialPtr_"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuCameraPtr_"/>
@@ -779,6 +803,67 @@
   <action name="actionTestLoadConfigPtr_">
     <property name="text">
       <string>Load Test Configuration</string>
+    </property>
+  </action>
+  <!--<action name="actionCameraTestTrialPtr_">
+    <property name="text">
+      <string>Trials</string>
+    </property>
+  </action>
+  <action name="actionCameraTestTrialdummyPtr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Dummy</string>
+    </property>
+  </action>-->\
+  <action name="actionTrial1Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 1</string>
+    </property>
+  </action>
+  <action name="actionTrial2Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 2</string>
+    </property>
+  </action>
+  <action name="actionTrial3Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 3</string>
+    </property>
+  </action>
+  <action name="actionTrial4Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 4</string>
+    </property>
+  </action>
+  <action name="actionTrial5Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 5</string>
+    </property>
+  </action>
+  <action name="actionLongTrial1Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 1</string>
     </property>
   </action> 
  </widget>

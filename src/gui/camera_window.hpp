@@ -212,6 +212,9 @@ namespace bias
             void actionCameraTriggerInternalTriggered();
 
             void actionTestLoadConfigTriggered();
+            void actionCameraShortTestTrialTriggered();
+            void actionCameraLongTestTrialTriggered();
+          
             void actionLoggingEnabledTriggered();
             void actionLoggingVideoFileTriggered();
             void actionLoggingSettingsTriggered();
@@ -296,6 +299,7 @@ namespace bias
             unsigned long captureDurationSec_;
             AutoNamingOptions autoNamingOptions_;
             TriggerExternalType triggerExternalType_;
+            TrialType trialType_;
 
             QPointer<QLabel> statusLabelPtr_;
 
@@ -310,18 +314,23 @@ namespace bias
             QPointer<QActionGroup> rotationActionGroupPtr_;
             QPointer<QActionGroup> colorMapActionGroupPtr_;
             QPointer<QActionGroup> pluginActionGroupPtr_;
+            QPointer<QActionGroup> trialActionGroupPtr_;
+            QPointer<QActionGroup> shortTrialActionGroupPtr_;
+            QPointer<QActionGroup> longTrialActionGroupPtr_;
             QPointer<QActionGroup> cameraTriggerExternalGroupPtr_;
 
             QPointer<QSignalMapper> videoModeSignalMapperPtr_;
             QPointer<QSignalMapper> frameRateSignalMapperPtr_;
             QPointer<QSignalMapper> propertiesSignalMapperPtr_;
             QPointer<QSignalMapper> colorMapSignalMapperPtr_;
+          
 
             QMap<QAction*, ImageRotationType> actionToRotationMap_;
             QMap<QAction*, VideoFileFormat> actionToVideoFileFormatMap_;
             QMap<QString, QPointer<BiasPlugin>> pluginMap_;
             QMap<QString, QPointer<QAction>> pluginActionMap_;
             QMap<QAction*, TriggerExternalType> actionToTriggerExternalMap_;
+            QMap<QAction*, TrialType> actionToTrialType_;
 
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
@@ -332,6 +341,7 @@ namespace bias
             //Test
             //GetTime* gettime_;
             //NIDAQUtils* nidaq_task;
+            string trial_num;
             bool loadTestConfigEnabled;
             unsigned int partnerCameraNumber_;
             unsigned int numTestFrames;
@@ -386,6 +396,9 @@ namespace bias
             void setupPluginMenu();
             void setupDisplayColorMapMenu();
             void setupStatusLabel();
+
+            void setupShortTrialTestMenu();
+            void setupLongTrialTestMenu();
 
             // Menu update methods
             void updateAllMenus();

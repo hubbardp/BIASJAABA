@@ -28,7 +28,7 @@ namespace bias {
     ImageGrabber::ImageGrabber(QObject *parent) : QObject(parent) 
     {
         
-        initialize(0,NULL,NULL,NULL,false,NULL,NULL,NULL);
+        initialize(0,NULL,NULL,NULL,false,"",NULL,NULL,NULL);
     }
 
     ImageGrabber::ImageGrabber (
@@ -37,6 +37,7 @@ namespace bias {
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             QPointer<QThreadPool> threadPoolPtr,
             bool testConfigEnabled,
+            string trial_info,
             std::shared_ptr<TestConfig> testConfig,
             std::shared_ptr<Lockable<GetTime>> gettime,
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
@@ -44,7 +45,7 @@ namespace bias {
             ) : QObject(parent)
     {
         initialize(cameraNumber, cameraPtr, newImageQueuePtr, threadPoolPtr,
-                   testConfigEnabled, testConfig, gettime, nidaq_task);
+                   testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
     }
 
     void ImageGrabber::initialize(
@@ -53,6 +54,7 @@ namespace bias {
         std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
         QPointer<QThreadPool> threadPoolPtr,
         bool testConfigEnabled,
+        string trial_info,
         std::shared_ptr<TestConfig> testConfig,
         std::shared_ptr<Lockable<GetTime>> gettime,
         std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
@@ -67,6 +69,7 @@ namespace bias {
         cameraNumber_ = cameraNumber;
         testConfigEnabled_ = testConfigEnabled;
         testConfig_ = testConfig;
+        trial_num = trial_info;
 
         if ((cameraPtr_ != NULL) && (newImageQueuePtr_ != NULL))
         {
@@ -118,7 +121,8 @@ namespace bias {
 
     void ImageGrabber::run()
     { 
-        
+
+        std:cout << "trial num "  << trial_num << std::endl;
         bool isFirst = true;
         bool istriggered = false;
         bool done = false;
@@ -230,7 +234,6 @@ namespace bias {
                 istriggered = true;
 
             }
-
 
             cameraPtr_->acquireLock();
             try
@@ -409,10 +412,12 @@ namespace bias {
                     if (frameCount == testConfig_->numFrames
                         && !testConfig_->f2f_prefix.empty())
                     {
+              
                         std::string filename = testConfig_->dir_list[0] + "/"
-                            + testConfig_->f2f_prefix + "/" + testConfig_->imagegrab_prefix 
+                            + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir 
+                            +  "/" + testConfig_->imagegrab_prefix 
                             + "_" + testConfig_->f2f_prefix + "cam"
-                            + std::to_string(cameraNumber_) + ".csv";
+                            + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
                         gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
                     }
 
@@ -421,9 +426,10 @@ namespace bias {
                     {
 
                         std::string filename = testConfig_->dir_list[0] + "/"
-                            + testConfig_->nidaq_prefix + "/" + testConfig_->imagegrab_prefix 
+                            + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir 
+                            + "/" + testConfig_->imagegrab_prefix
                             + "_" + testConfig_->nidaq_prefix + "cam"
-                            + std::to_string(cameraNumber_) + ".csv";
+                            + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
                         gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
 
                     }
@@ -432,10 +438,11 @@ namespace bias {
                         && !testConfig_->queue_prefix.empty()) {
 
                         string filename = testConfig_->dir_list[0] + "/"
-                            + testConfig_->queue_prefix + "/" + testConfig_->imagegrab_prefix
+                            + testConfig_->queue_prefix + "/" + testConfig_->cam_dir 
+                            + "/" + testConfig_->imagegrab_prefix
                             + "_" + testConfig_->queue_prefix + "cam"
-                            + std::to_string(cameraNumber_) + ".csv";
-                        std::cout << filename << std::endl;
+                            + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+                        
                         gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
 
                     }

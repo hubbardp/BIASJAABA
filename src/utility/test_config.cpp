@@ -22,6 +22,21 @@ float convertToFloat(string val) {
     return stof(val);
 }
 
+void addCamDir(std::shared_ptr<TestConfig>& test_config) {
+
+    if (test_config->numCameras == 2) {
+
+        test_config->cam_dir = "multi";
+
+    }else if (test_config->numCameras == 1){
+        
+        test_config->cam_dir = "single";
+    }else {
+        
+        test_config->cam_dir = "";
+    }
+}
+
 void copyConfigField(std::shared_ptr<TestConfig> test_config, int fieldname_index, string val) {
 
 
@@ -51,22 +66,26 @@ void copyConfigField(std::shared_ptr<TestConfig> test_config, int fieldname_inde
             break;
         case 8:
             test_config->latency_threshold = convertToFloat(val);
+            break;
         case 9:
-            test_config->nidaq_prefix = val;
+            test_config->cam_dir = val;
             break;
         case 10:
-            test_config->f2f_prefix = val;
+            test_config->nidaq_prefix = val;
             break;
         case 11:
-            test_config->queue_prefix = val;
+            test_config->f2f_prefix = val;
             break;
         case 12:
-            test_config->plugin_prefix = val;
+            test_config->queue_prefix = val;
             break;
         case 13:
-            test_config->logging_prefix = val;
+            test_config->plugin_prefix = val;
             break;
         case 14:
+            test_config->logging_prefix = val;
+            break;
+        case 15:
             test_config->imagegrab_prefix = val;
             break;
         default:
@@ -120,6 +139,7 @@ int read_testConfig(std::shared_ptr<TestConfig> test_config, ifstream& input_tes
             copyConfigField(test_config, rowIdx, val);
 
         }
+        addCamDir(test_config);
        
     }  
     return 0;
