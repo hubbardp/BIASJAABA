@@ -88,6 +88,9 @@ void copyConfigField(std::shared_ptr<TestConfig> test_config, int fieldname_inde
         case 15:
             test_config->imagegrab_prefix = val;
             break;
+        case 16:
+            test_config->git_commit = val;
+            break;
         default:
             break;
     }

@@ -123,6 +123,8 @@ namespace bias {
     { 
 
         std:cout << "trial num "  << trial_num << std::endl;
+        std::cout << "git commit " << testConfig_ ->git_commit << std::endl;
+
         bool isFirst = true;
         bool istriggered = false;
         bool done = false;
@@ -362,7 +364,12 @@ namespace bias {
 
                 ///---------------------------------------------------------------
                 if (testConfigEnabled_) {
-
+                    /*string filename = testConfig_->dir_list[0] + "/" +
+                         testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "/" + testConfig_->imagegrab_prefix
+                        + "_" + testConfig_->queue_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+                    printf("%s", filename);*/
                     if (nidaq_task_ != nullptr) {
 
                         if (cameraNumber_ == 0
@@ -415,7 +422,7 @@ namespace bias {
               
                         std::string filename = testConfig_->dir_list[0] + "/"
                             + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir 
-                            +  "/" + testConfig_->imagegrab_prefix 
+                            + "/" + testConfig_->git_commit +  "/" + testConfig_->imagegrab_prefix
                             + "_" + testConfig_->f2f_prefix + "cam"
                             + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
                         gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
@@ -427,9 +434,10 @@ namespace bias {
 
                         std::string filename = testConfig_->dir_list[0] + "/"
                             + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir 
-                            + "/" + testConfig_->imagegrab_prefix
+                            + "/" + testConfig_->git_commit + "/" + testConfig_->imagegrab_prefix
                             + "_" + testConfig_->nidaq_prefix + "cam"
                             + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+                        printf("%s", filename);
                         gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
 
                     }
@@ -439,7 +447,7 @@ namespace bias {
 
                         string filename = testConfig_->dir_list[0] + "/"
                             + testConfig_->queue_prefix + "/" + testConfig_->cam_dir 
-                            + "/" + testConfig_->imagegrab_prefix
+                            + "/" + testConfig_->git_commit + "/" + testConfig_->imagegrab_prefix
                             + "_" + testConfig_->queue_prefix + "cam"
                             + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
                         

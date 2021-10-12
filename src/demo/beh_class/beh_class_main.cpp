@@ -9,6 +9,7 @@
 //#include <fstream>
 //#include <iostream>
 #include <QDebug>
+#include <QThreadPool>
 
 //using namespace bias;
 
@@ -93,8 +94,8 @@ int main(int argc, char* argv[]) {
     //Initialize and load classifier model
     QString classifier_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/multiclassifier.mat";
 #endif    
+
     //HOG HOF Params
-    
     HOGHOF* feat_side = new HOGHOF();
     HOGHOF* feat_frt = new HOGHOF();
     beh_class* classifier = new beh_class(classifier_file);
@@ -104,13 +105,17 @@ int main(int argc, char* argv[]) {
     param_sde = { HOGParam_file_sde , HOFParam_file_sde, CropParam_file_sde };
     param_frt = { HOGParam_file_frt , HOFParam_file_frt, CropParam_file_frt };
     
-    // Retrieve singleton reference to system
-    
+    // spinnaker camera configuration variables
     spinError err = SPINNAKER_ERR_SUCCESS;
     spinError errReturn = SPINNAKER_ERR_SUCCESS;
     spinSystem hSystem = NULL;
     spinCameraList hCameraList = NULL;
     SpinUtils spin_handle;
+
+    // Multithreading for multi camera system
+    //QPointer<QThreadPool> threadPoolPtr_ = new QThreadPool();
+
+    // performance benchmark variables.
     std::vector<float> timeStamps(numFrames, 0.0);
     bias::NIDAQUtils* nidaq_task = new NIDAQUtils();
     uInt32 read_buffer, read_ondemand;
@@ -141,8 +146,7 @@ int main(int argc, char* argv[]) {
     spinNodeMapHandle hNodeMapTLDevice = NULL;
     spinNodeMapHandle hNodeMap = NULL;
     
-    int imageCnt = 0;
-    
+    int imageCnt = 0;    
     vector<vector<float>>score_cls(6,vector<float>(numFrames, 0.0));
 
     err = spinCameraListGetSize(hCameraList, &numCameras);

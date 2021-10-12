@@ -25,11 +25,12 @@ struct TestConfig {
     string plugin_prefix;
     string logging_prefix;
     string imagegrab_prefix;
+    string git_commit;
 
-    string fieldnames[15] = { "numCameras", "cam_suffix", "dir_len", "dir_list",
+    string fieldnames[16] = { "numCameras", "cam_suffix", "dir_len", "dir_list",
                              "numFrames", "no_of_trials","framerate","latency_threshold",
                              "cam_dir", "nidaq_prefix", "f2f_prefix", "queue_prefix", 
-                             "plugin_prefix", "logging_prefix", "framegrab_prefix"};
+                             "plugin_prefix", "logging_prefix", "framegrab_prefix", "git_commit"};
     
 
 };
