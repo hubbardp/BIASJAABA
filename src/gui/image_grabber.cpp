@@ -124,6 +124,13 @@ namespace bias {
 
         std:cout << "trial num "  << trial_num << std::endl;
         std::cout << "git commit " << testConfig_ ->git_commit << std::endl;
+        std::string filename = testConfig_->dir_list[0] + "/"
+            + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+            + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+            + testConfig_->imagegrab_prefix
+            + "_" + testConfig_->f2f_prefix + "cam"
+            + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+        std::cout << filename << std::endl;
 
         bool isFirst = true;
         bool istriggered = false;
@@ -220,7 +227,7 @@ namespace bias {
         int64_t pc_time;
         int64_t pc1, pc2;
         uInt32 read_buffer = 0, read_ondemand = 0;
-     
+        
         // Grab images from camera until the done signal is given
         while (!done)
         {
@@ -364,12 +371,8 @@ namespace bias {
 
                 ///---------------------------------------------------------------
                 if (testConfigEnabled_) {
-                    /*string filename = testConfig_->dir_list[0] + "/" +
-                         testConfig_->queue_prefix + "/" + testConfig_->cam_dir
-                        + "/" + testConfig_->git_commit + "/" + testConfig_->imagegrab_prefix
-                        + "_" + testConfig_->queue_prefix + "cam"
-                        + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
-                    printf("%s", filename);*/
+
+                    
                     if (nidaq_task_ != nullptr) {
 
                         if (cameraNumber_ == 0
@@ -422,10 +425,13 @@ namespace bias {
               
                         std::string filename = testConfig_->dir_list[0] + "/"
                             + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir 
-                            + "/" + testConfig_->git_commit +  "/" + testConfig_->imagegrab_prefix
+                            + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                            + testConfig_->imagegrab_prefix
                             + "_" + testConfig_->f2f_prefix + "cam"
                             + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+                        std::cout << "writing " << std::endl;
                         gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
+                        std::cout << "written" << std::endl;
                     }
 
                     if (frameCount == testConfig_->numFrames
@@ -434,12 +440,13 @@ namespace bias {
 
                         std::string filename = testConfig_->dir_list[0] + "/"
                             + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir 
-                            + "/" + testConfig_->git_commit + "/" + testConfig_->imagegrab_prefix
+                            + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                            + testConfig_->imagegrab_prefix
                             + "_" + testConfig_->nidaq_prefix + "cam"
                             + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
-                        printf("%s", filename);
+                        
                         gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
-
+                        
                     }
 
                     if (frameCount == testConfig_->numFrames
@@ -447,7 +454,8 @@ namespace bias {
 
                         string filename = testConfig_->dir_list[0] + "/"
                             + testConfig_->queue_prefix + "/" + testConfig_->cam_dir 
-                            + "/" + testConfig_->git_commit + "/" + testConfig_->imagegrab_prefix
+                            + "/" + testConfig_->git_commit + "_" +testConfig_->date + "/"
+                            + testConfig_->imagegrab_prefix
                             + "_" + testConfig_->queue_prefix + "cam"
                             + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
                         

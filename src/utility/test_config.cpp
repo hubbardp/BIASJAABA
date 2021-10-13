@@ -91,6 +91,9 @@ void copyConfigField(std::shared_ptr<TestConfig> test_config, int fieldname_inde
         case 16:
             test_config->git_commit = val;
             break;
+        case 17:
+            test_config->date = val;
+            break;
         default:
             break;
     }

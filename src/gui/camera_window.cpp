@@ -2350,6 +2350,14 @@ namespace bias
 
         if(trialType_ == TRIAL_1){
             trial_num = "long_trial1";
+        }else if (trialType_ == TRIAL_4) {
+            trial_num = "long_trial4";
+        }else if (trialType_ == TRIAL_3) {
+            trial_num = "long_trial3";
+        }else if (trialType_ == TRIAL_2) {
+            trial_num = "long_trial2";
+        }else {
+            trial_num = "long_trial5";
         }
         //updateTestMenu();
     }
@@ -3750,10 +3758,42 @@ namespace bias
         longTrialActionGroupPtr_ = new QActionGroup(menuCameraTestTrialLongPtr_);
 
         longTrialActionGroupPtr_->addAction(actionLongTrial1Ptr_);
+        longTrialActionGroupPtr_->addAction(actionLongTrial2Ptr_);
+        longTrialActionGroupPtr_->addAction(actionLongTrial3Ptr_);
+        longTrialActionGroupPtr_->addAction(actionLongTrial4Ptr_);
+        longTrialActionGroupPtr_->addAction(actionLongTrial5Ptr_);
 
         actionToTrialType_[actionLongTrial1Ptr_] = TRIAL_1;
+        actionToTrialType_[actionLongTrial2Ptr_] = TRIAL_2;
+        actionToTrialType_[actionLongTrial3Ptr_] = TRIAL_3;
+        actionToTrialType_[actionLongTrial4Ptr_] = TRIAL_4;
+        actionToTrialType_[actionLongTrial5Ptr_] = TRIAL_5;
 
         connect(actionLongTrial1Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraLongTestTrialTriggered())
+        );
+
+        connect(actionLongTrial2Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraLongTestTrialTriggered())
+        );
+
+        connect(actionLongTrial3Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraLongTestTrialTriggered())
+        );
+
+        connect(actionLongTrial4Ptr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCameraLongTestTrialTriggered())
+        );
+
+        connect(actionLongTrial5Ptr_,
             SIGNAL(triggered()),
             this,
             SLOT(actionCameraLongTestTrialTriggered())

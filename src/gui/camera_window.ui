@@ -410,6 +410,10 @@
            <string>Long Trials</string>
          </property>
          <addaction name="actionLongTrial1Ptr_"/>
+         <addaction name="actionLongTrial2Ptr_"/>
+         <addaction name="actionLongTrial3Ptr_"/>
+         <addaction name="actionLongTrial4Ptr_"/>
+         <addaction name="actionLongTrial5Ptr_"/>
        </widget>
        <addaction name="menuCameraTestTrialShortPtr_"/>
        <addaction name="menuCameraTestTrialLongPtr_"/>
@@ -865,7 +869,39 @@
     <property name="text">
       <string>Trial 1</string>
     </property>
-  </action> 
+  </action>
+  <action name="actionLongTrial2Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 2</string>
+    </property>
+  </action>
+  <action name="actionLongTrial3Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 3</string>
+    </property>
+  </action>
+  <action name="actionLongTrial4Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 4</string>
+    </property>
+  </action>
+  <action name="actionLongTrial5Ptr_">
+    <property name="checkable">
+      <bool>true</bool>
+    </property>
+    <property name="text">
+      <string>Trial 5</string>
+    </property>
+  </action>   
  </widget>
  <customwidgets>
   <customwidget>
