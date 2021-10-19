@@ -44,54 +44,57 @@ void copyConfigField(std::shared_ptr<TestConfig> test_config, int fieldname_inde
     switch (fieldname_index) {
 
         case 1:
-            test_config->numCameras = convertValtoInt(val);
+            test_config->filename = val;
             break;
         case 2:
-            test_config->cam_suffix.push_back(val);
+            test_config->numCameras = convertValtoInt(val);
             break;
         case 3:
-            test_config->dir_len = convertValtoInt(val);
+            test_config->cam_suffix.push_back(val);
             break;
         case 4:
-            test_config->dir_list.push_back(val);
+            test_config->dir_len = convertValtoInt(val);
             break;
         case 5:
-            test_config->numFrames = convertValtoInt(val);
+            test_config->dir_list.push_back(val);
             break;
         case 6:
-            test_config->no_of_trials = convertValtoInt(val);
+            test_config->numFrames = convertValtoInt(val);
             break;
         case 7:
-            test_config->framerate = convertValtoInt(val);
+            test_config->no_of_trials = convertValtoInt(val);
             break;
         case 8:
-            test_config->latency_threshold = convertToFloat(val);
+            test_config->framerate = convertValtoInt(val);
             break;
         case 9:
-            test_config->cam_dir = val;
+            test_config->latency_threshold = convertToFloat(val);
             break;
         case 10:
-            test_config->nidaq_prefix = val;
+            test_config->cam_dir = val;
             break;
         case 11:
-            test_config->f2f_prefix = val;
+            test_config->nidaq_prefix = val;
             break;
         case 12:
-            test_config->queue_prefix = val;
+            test_config->f2f_prefix = val;
             break;
         case 13:
-            test_config->plugin_prefix = val;
+            test_config->queue_prefix = val;
             break;
         case 14:
-            test_config->logging_prefix = val;
+            test_config->plugin_prefix = val;
             break;
         case 15:
-            test_config->imagegrab_prefix = val;
+            test_config->logging_prefix = val;
             break;
         case 16:
-            test_config->git_commit = val;
+            test_config->imagegrab_prefix = val;
             break;
         case 17:
+            test_config->git_commit = val;
+            break;
+        case 18:
             test_config->date = val;
             break;
         default:
@@ -126,7 +129,7 @@ int read_testConfig(std::shared_ptr<TestConfig> test_config, ifstream& input_tes
             return -1;
         }
         else {
-            //std::cout << test_config.fieldnames[rowIdx] << " " << string(fieldname) << std::endl;
+            //std::cout << test_config->fieldnames[rowIdx] << " " << string(fieldname) << std::endl;
         }
 
         rowIdx++;
