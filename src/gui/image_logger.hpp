@@ -10,6 +10,8 @@
 
 #include "win_time.hpp"
 #include "NIDAQUtils.hpp"
+#include "test_config.hpp"
+
 // Debugging -------------------
 //#include <opencv2/core/core.hpp>
 // -----------------------------
@@ -34,7 +36,10 @@ namespace bias
             ImageLogger(
                     unsigned int cameraNumber,
                     std::shared_ptr<VideoWriter> videoWriterPtr,
-                    std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
+                    std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
+                    bool testConfigEnabled,
+                    string trial_info,
+                    std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
                     std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
                     QObject *parent=0
@@ -44,6 +49,9 @@ namespace bias
                     unsigned int cameraNumber,
                     std::shared_ptr<VideoWriter> videoWriterPtr,
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
+                    bool testConfigEnabled,
+                    string trial_info,
+                    std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
                     std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
                     );
@@ -66,17 +74,22 @@ namespace bias
             unsigned long frameCount_;
             unsigned int cameraNumber_;
             unsigned int logQueueSize_;
+            bool testConfigEnabled_;
+            string trial_num_;
 
             std::shared_ptr<VideoWriter> videoWriterPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
 
+
+            std::vector<float> time_stamps1;
+            std::vector<int64_t> time_stamps2;
+            std::vector<uInt32>time_stamps3;
             std::vector<unsigned int> queue_size;
-            std::vector<uInt32> time_stamps1;
-            std::vector<int64_t>time_stamps2;
             void run();
 
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
+            std::shared_ptr<TestConfig>testConfig_;
     };
 
 } // namespace bias

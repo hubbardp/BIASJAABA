@@ -17,25 +17,32 @@ namespace bias
 
     ImageLogger::ImageLogger(QObject *parent) : QObject(parent) 
     {
-        initialize(0, NULL,NULL,NULL,NULL);
+        initialize(0,NULL,NULL,false,"", NULL, NULL, NULL);
     }
 
     ImageLogger::ImageLogger (
             unsigned int cameraNumber,
             std::shared_ptr<VideoWriter> videoWriterPtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
+            bool testConfigEnabled,
+            string trial_info,
+            std::shared_ptr<TestConfig> testConfig,
             std::shared_ptr<Lockable<GetTime>> gettime,
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
             QObject *parent
             ) : QObject(parent)
     {
-        initialize(cameraNumber, videoWriterPtr, logImageQueuePtr, gettime,nidaq_task);
+        initialize(cameraNumber, videoWriterPtr, logImageQueuePtr, 
+                   testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
     }
 
     void ImageLogger::initialize( 
             unsigned int cameraNumber,
             std::shared_ptr<VideoWriter> videoWriterPtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
+            bool testConfigEnabled,
+            string trial_info,
+            std::shared_ptr<TestConfig> testConfig,
             std::shared_ptr<Lockable<GetTime>> gettime,
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
             ) 
@@ -54,11 +61,31 @@ namespace bias
         {
             ready_ = false;
         }
+
         gettime_ = gettime;
         nidaq_task_ = nidaq_task;
-        //queue_size.resize(500000);
-        time_stamps2.resize(500000);
-        time_stamps1.resize(500000);
+        testConfigEnabled_ = testConfigEnabled;
+        testConfig_ = testConfig;
+        trial_num_ = trial_info;
+
+        if (testConfigEnabled) {
+
+            if (!testConfig_->f2f_prefix.empty()) {
+
+                gettime_ = gettime;
+                time_stamps2.resize(testConfig_->numFrames);
+            }
+
+            if (!testConfig_->nidaq_prefix.empty()) {
+
+                time_stamps3.resize(testConfig_->numFrames);
+            }
+
+            if (!testConfig_->queue_prefix.empty()) {
+
+                time_stamps1.resize(testConfig_->numFrames);
+            }
+        }
     }
 
     void ImageLogger::stop()
@@ -127,20 +154,7 @@ namespace bias
             logImageQueuePtr_ -> releaseLock();
             //pc2 = gettime_->getPCtime();
 
-
-            /*if(frameCount_ < 500000)
-                queue_size[frameCount_] = logQueueSize;
-
-            if (frameCount_ == 499999) {
-
-                gettime_ -> acquireLock();
-                string filename = "log_queue_" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
-                gettime_ -> releaseLock();
-                
-            }*/
-
-            //frameCount_++;
+            frameCount_++;
             
             if (!errorFlag) 
             {
@@ -178,32 +192,87 @@ namespace bias
                 
             }
 
-            if (nidaq_task_ != nullptr) {
-                nidaq_task_->acquireLock();
-                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                time_stamps1[frameCount_] = read_ondemand;
-                nidaq_task_->releaseLock();
+            if (testConfigEnabled_) {
 
-                if (frameCount_ == 500000) {
 
-                    std::string filename1 = "logger_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
-                    gettime_->write_time_1d<uInt32>(filename1, 500000, time_stamps1);
-                    
+                if (nidaq_task_ != nullptr) {
+
+                    if (frameCount_ <= testConfig_->numFrames) {
+
+                        nidaq_task_->acquireLock();
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                        nidaq_task_->releaseLock();
+
+                    }
+
                 }
+
+                if (!testConfig_->nidaq_prefix.empty()) {
+
+                    time_stamps3[frameCount_ - 1] = read_ondemand;
+                }
+
+                if (!testConfig_->f2f_prefix.empty()) {
+
+                    pc_time = gettime_->getPCtime();
+
+                    if (frameCount_ <= testConfig_->numFrames)
+                        time_stamps2[frameCount_ - 1] = pc_time;
+                }
+
+                if (!testConfig_->queue_prefix.empty()) {
+
+                    if (frameCount_ <= testConfig_->numFrames)
+                        queue_size[frameCount_ - 1] = logImageQueuePtr_->size();
+
+                }
+
+                if (frameCount_ == testConfig_->numFrames
+                    && !testConfig_->f2f_prefix.empty())
+                {
+
+                    std::string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->imagegrab_prefix
+                        + "_" + testConfig_->f2f_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
+
+                }
+
+                if (frameCount_ == testConfig_->numFrames
+                    && !testConfig_->nidaq_prefix.empty())
+                {
+
+                    std::string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->imagegrab_prefix
+                        + "_" + testConfig_->nidaq_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_1d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
+
+                }
+
+                if (frameCount_ == testConfig_->numFrames
+                    && !testConfig_->queue_prefix.empty()) {
+
+                    string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->imagegrab_prefix
+                        + "_" + testConfig_->queue_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+
+                }
+
             }
-
-            pc_time = gettime_->getPCtime();
-   
-            if (frameCount_ >= 0 && frameCount_ < 500000)
-                time_stamps2[frameCount_] = pc_time;
-
-            if (frameCount_ == 499999)
-            {
-                std::string filename = "imagelogger_vid_f2f_" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<int64_t>(filename, 500000, time_stamps2);
-                
-            }
-
+                  
             acquireLock();
             done = stopped_;
             logQueueSize_ = static_cast<unsigned int>(logQueueSize);

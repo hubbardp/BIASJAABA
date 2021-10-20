@@ -431,6 +431,9 @@ namespace bias
                     cameraNumber_,
                     videoWriterPtr, 
                     logImageQueuePtr_,
+                    loadTestConfigEnabled,
+                    trial_num,
+                    testConfig,
                     gettime_,
                     nidaq_task,
                     this
