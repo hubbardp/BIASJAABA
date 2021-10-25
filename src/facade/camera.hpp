@@ -6,6 +6,7 @@
 #include "basic_types.hpp"
 #include <iostream>
 #include "camera_device.hpp"
+#include "test_config.hpp"
 
 namespace cv
 {
@@ -148,6 +149,8 @@ namespace bias {
 			
             // Test NIDAQ
             void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                            bool testConfigEnabled, string trial_info,
+                            std::shared_ptr<TestConfig> testConfig,
                             std::shared_ptr<Lockable<GetTime>> gettime, 
                             unsigned int cameraNumber);
             

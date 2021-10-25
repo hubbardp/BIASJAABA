@@ -754,9 +754,13 @@ namespace bias {
     }
 
     void Camera::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
-        std::shared_ptr<Lockable<GetTime>> gettime, unsigned int cameraNumber)
+                            bool testConfigEnabled, string trial_info,
+                            std::shared_ptr<TestConfig> testConfig,
+                            std::shared_ptr<Lockable<GetTime>> gettime, 
+                            unsigned int cameraNumber)
     {
-        cameraDevicePtr_->setupNIDAQ(nidaq_task, gettime, cameraNumber);
+        cameraDevicePtr_->setupNIDAQ(nidaq_task, testConfigEnabled, trial_info,
+                                     testConfig, gettime, cameraNumber);
     }
     
 

@@ -43,7 +43,7 @@ namespace bias {
         }
         
         
-        time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
+        //time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
         
     }
 
@@ -2282,13 +2282,19 @@ namespace bias {
     }
 
     void CameraDevice_spin::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                                       bool testConfigEnabled, string trial_info,
+                                       std::shared_ptr<TestConfig> testConfig,
                                        std::shared_ptr<Lockable<GetTime>> gettime, 
                                        unsigned int cameraNumber)
     {
         nidaq_task_ = nidaq_task;
         gettime_ = gettime;
         cameraNumber_ = cameraNumber;
-        std::cout << "setup " << cameraNumber_ <<  std::endl;
+        testConfig_ = testConfig;
+        trial_num_ = trial_info;
+        testConfigEnabled_ = testConfigEnabled;
+
+        std::cout << "setup........ " << cameraNumber_ <<  std::endl;
     }
 
 }

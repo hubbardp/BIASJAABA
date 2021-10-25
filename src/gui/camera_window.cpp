@@ -479,7 +479,8 @@ namespace bias
 
             if (currentPluginPtr->getName() == "signalSlotDemo" || 
                 currentPluginPtr->getName() == "jaabaPlugin")
-                currentPluginPtr->setupNIDAQ(nidaq_task);
+                currentPluginPtr->setupNIDAQ(nidaq_task, loadTestConfigEnabled,
+                                             trial_num, testConfig);
 
             threadPoolPtr_ -> start(pluginHandlerPtr_);
         } 
@@ -1442,7 +1443,11 @@ namespace bias
         if (!testConfig->plugin_prefix.empty())
         {
             setPluginEnabled(true);
-
+            if (testConfig->plugin_prefix == "signal_slot") {
+                setCurrentPlugin("signalSlotDemo");
+            }else {
+                setCurrentPlugin("jaabaPlugin");
+            }
         }
         else {
 
@@ -3019,8 +3024,10 @@ namespace bias
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
         pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
-        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_, this);
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, this);
+        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_,
+                                                                                 loadTestConfigEnabled, trial_num,
+                                                                                 testConfig,this);
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_,this);
 
         //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();

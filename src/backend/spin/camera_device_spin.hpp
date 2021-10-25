@@ -32,6 +32,7 @@
 #include "stamped_image.hpp"
 #include <QPointer>
 #include "NIDAQUtils.hpp"
+#include "test_config.hpp"
 
 namespace bias {
 
@@ -120,6 +121,8 @@ namespace bias {
             TimeStamp cam_ofs = { 0,0 };
             TimeStamp cpu_time = { 0,0 };
             virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                                    bool testConfigEnabled, string trial_info,
+                                    std::shared_ptr<TestConfig> testConfig,
                                     std::shared_ptr<Lockable<GetTime>> gettime,
                                     unsigned int cameraNumber);
             
@@ -147,7 +150,9 @@ namespace bias {
 
             bool imageOK_ = false;
             spinImage hSpinImage_ = nullptr;
-             
+
+            bool testConfigEnabled_;
+            string trial_num_;           
 
             TriggerType triggerType_ =  TRIGGER_TYPE_UNSPECIFIED;
 
@@ -208,9 +213,10 @@ namespace bias {
             std::vector<float> time_stamp1;
             std::vector<float> time_stamp2;
             std::vector<std::vector<uInt32>> time_stamp3;
+
             std::shared_ptr<Lockable<GetTime>> gettime_;
-            //NIDAQUtils* nidaq_task_ = nullptr;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
+            std::shared_ptr<TestConfig>testConfig_;
 
             int numFrameskip=0;
             unsigned int cameraNumber_;

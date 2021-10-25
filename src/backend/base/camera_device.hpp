@@ -17,7 +17,7 @@
 
 #include <numeric>
 #include "NIDAQUtils.hpp"
-
+#include "test_config.hpp"
 
 namespace bias 
 {
@@ -95,6 +95,8 @@ namespace bias
 
             //Test
             virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                                    bool testConfigEnabled, string trial_info,
+                                    std::shared_ptr<TestConfig> testConfig,
                                     std::shared_ptr<Lockable<GetTime>> gettime,
                                     unsigned int cameraNumber);
 

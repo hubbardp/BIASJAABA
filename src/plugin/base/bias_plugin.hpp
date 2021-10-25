@@ -76,7 +76,9 @@ namespace bias
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr);
             //TimeStamp getPCtime();
             TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
-            virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task);
+            virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                                    bool testConfigEnabled, string trial_info,
+                                    std::shared_ptr<TestConfig> testConfig);
 
             // this is a hack to avoid linker errors in VS2017
 

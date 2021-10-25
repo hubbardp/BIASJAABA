@@ -7,6 +7,7 @@
 #include <QVector>
 #include <QList>
 
+#include "test_config.hpp"
 
 namespace cv
 {
@@ -31,7 +32,11 @@ namespace bias
             static const QString PLUGIN_DISPLAY_NAME;
 
             SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, 
-                std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parentPtr=0);
+                std::shared_ptr<Lockable<GetTime>> gettime,
+                bool testConfigEnabled,
+                string trial_info,
+                std::shared_ptr<TestConfig> testConfig,
+                QWidget *parentPtr=0);
 
             virtual void finalSetup();
             virtual void reset();
@@ -46,7 +51,9 @@ namespace bias
 
             //virtual TimeStamp getPCtime();
             //virtual TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
-            virtual void setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task);
+            virtual void setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
+                                    bool testConfigEnabled, string trial_info,
+                                    std::shared_ptr<TestConfig> testConfig);
 
         signals:
 
@@ -62,12 +69,16 @@ namespace bias
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
 
+            bool testConfigEnabled_;
+            string trial_num_;
 
-            std::vector<uInt32>cam_delay1;
-            std::vector<int64_t>cam_delay2;
-            std::vector<float>time_lat;
-            TimeStamp cam_ofs={0,0};
-            
+            //test
+            std::vector<float> time_stamps1;
+            std::vector<int64_t> time_stamps2;
+            std::vector<std::vector<uInt32>>time_stamps3;
+            std::vector<unsigned int> queue_size;
+             
+            std::shared_ptr<TestConfig>testConfig_;
             std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<Lockable<GetTime>> gettime_;
             QPointer<ImageLabel> imageLabelPtr_;
@@ -81,6 +92,8 @@ namespace bias
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
 
             void updateMessageLabels();
+            
+            void allocate_testVec();
 
         private slots:
 

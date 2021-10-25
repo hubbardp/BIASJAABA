@@ -194,7 +194,6 @@ namespace bias
 
             if (testConfigEnabled_) {
 
-
                 if (nidaq_task_ != nullptr) {
 
                     if (frameCount_ <= testConfig_->numFrames) {

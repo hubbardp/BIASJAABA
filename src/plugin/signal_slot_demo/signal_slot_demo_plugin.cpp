@@ -21,13 +21,20 @@ namespace bias
     // Public Methods
     // ------------------------------------------------------------------------
     SignalSlotDemoPlugin::SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, 
-                     std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parentPtr) : BiasPlugin(parentPtr)
+                     std::shared_ptr<Lockable<GetTime>> gettime,
+                     bool testConfigEnabled,
+                     string trial_info,
+                     std::shared_ptr<TestConfig> testConfig,
+                     QWidget *parentPtr) : BiasPlugin(parentPtr)
     {
         imageLabelPtr_ = imageLabelPtr;
         gettime_ = gettime;
         nidaq_task_ = nullptr;
-        cam_delay1.resize(500000);
-        cam_delay2.resize(500000);
+        testConfigEnabled_ = testConfigEnabled;
+        testConfig_ = testConfig;
+        trial_num_ = trial_info;
+        gettime_ = gettime;
+
         setupUi(this);
         connectWidgets();
         initialize();
@@ -65,17 +72,16 @@ namespace bias
         // -------------------------------------------------------------------
 
         uInt32 read_buffer, read_ondemand;
-
+        int64_t pc_time;
+        
         pluginImageQueuePtr_ -> acquireLock();
         pluginImageQueuePtr_ -> waitIfEmpty();
 
 
         if (pluginImageQueuePtr_ -> empty() )
         {
-
             pluginImageQueuePtr_ -> releaseLock();
             return;
-
         }
 
         if(!pluginImageQueuePtr_ -> empty())
@@ -87,18 +93,10 @@ namespace bias
             //-------------------DEVEL----------------------------------------------------//
 
             // get camera times wrt to stamped image times
-            int64_t pc_ts1;
-            pc_ts1 = gettime_->getPCtime();
-            cam_delay2[latestFrame.frameCount] = pc_ts1;
-
-
-            if(latestFrame.frameCount == 499999){
-                std::string filecam = "signal_slot_f2f" + std::to_string(cameraNumber_) + ".csv"; 
-                gettime_->write_time_1d<int64_t>(filecam , 500000, cam_delay2);
-            }
+            
             //---------------------------------------------------------------------------//
             
-            /*acquireLock();
+            acquireLock();
             currentImage_ = latestFrame.image;
             timeStamp_ = latestFrame.timeStamp;
             frameCount_ = latestFrame.frameCount;
@@ -108,24 +106,109 @@ namespace bias
             frameData.count = frameCount_;
             frameData.image = currentImage_;
             emit newFrameData(frameData);
-            numMessageSent_++;*/
+            numMessageSent_++;
             
             // the updateMesageLabels() causes 
             //the plugin to crash sometimes when doing latency measurements
             //this call is made in the onNewFrameData anyways when the 
             //frame is emiited. Safe to comment??
-
             //updateMessageLabels();
             
-            if (nidaq_task_ != nullptr) {
-                nidaq_task_->acquireLock();
-                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                cam_delay1[latestFrame.frameCount] = read_ondemand;
-                nidaq_task_->releaseLock();
-                if (latestFrame.frameCount == 499999) {
-                    std::string filename = "signal_slot_time_cam" + std::to_string(cameraNumber_) + ".csv";
-                    gettime_->write_time_1d<uInt32>(filename, 500000, cam_delay1);
+            if (testConfigEnabled_ 
+                && testConfig_->plugin_prefix == "signal_slot")
+            {
+                
+                if (nidaq_task_ != nullptr) {
+
+                    if (cameraNumber_ == 0
+                        && frameCount_ <= unsigned long(testConfig_->numFrames)) {
+
+                        nidaq_task_->acquireLock();
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+                        nidaq_task_->releaseLock();
+
+                    }
+
+                    if (frameCount_ <= testConfig_->numFrames) {
+
+                        nidaq_task_->acquireLock();
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                        nidaq_task_->releaseLock();
+
+                    }
+
                 }
+
+                if (!testConfig_->nidaq_prefix.empty()) {
+
+                    if (cameraNumber_ == 0)
+                        time_stamps3[frameCount_][0] = read_buffer;
+                    else
+                        time_stamps3[frameCount_][0] = 0;
+
+                    time_stamps3[frameCount_][1] = read_ondemand;
+                }
+
+                if (!testConfig_->f2f_prefix.empty()) {
+
+                    pc_time = gettime_->getPCtime();
+
+                    if (frameCount_ <= testConfig_->numFrames)
+                        time_stamps2[frameCount_] = pc_time;
+                }
+
+                if (!testConfig_->queue_prefix.empty()) {
+
+                    if (frameCount_ <= testConfig_->numFrames)
+                        queue_size[frameCount_] = pluginImageQueuePtr_->size();
+
+                }
+
+                if (frameCount_ == testConfig_->numFrames-1
+                    && !testConfig_->f2f_prefix.empty())
+                {
+                    std::cout << "..............."  << std::endl;
+
+                    std::string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->f2f_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+                    std::cout << filename << std::endl;
+                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
+
+                }
+
+                if (frameCount_ == testConfig_->numFrames-1
+                    && !testConfig_->nidaq_prefix.empty())
+                {
+
+                    std::string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->nidaq_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
+
+                }
+
+                if (frameCount_ == testConfig_->numFrames-1
+                    && !testConfig_->queue_prefix.empty()) {
+
+                    string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->queue_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+
+                }
+
             }
                       
             pluginImageQueuePtr_->pop();
@@ -158,84 +241,7 @@ namespace bias
     }
 
 
-    /*TimeStamp SignalSlotDemoPlugin::getPCtime()
-    {
-
-        unsigned long long int secs;
-        unsigned int usec;
-        time_t curr_time;
-        timeval tv;
-
-        //get computer local time since midnight
-        curr_time = time(NULL);
-        tm *tm_local = localtime(&curr_time);
-        gettimeofday(&tv, NULL);
-        secs = (tm_local->tm_hour*3600) + tm_local->tm_min*60 + tm_local->tm_sec;
-        usec = (unsigned int)tv.tv_usec;
-        TimeStamp ts = {secs,usec};
-
-        return ts;
-
-    }
-
-
-    TimeStamp SignalSlotDemoPlugin::cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr)
-    {
-
-        TimeStamp cam_ofs = {0,0};
-        TimeStamp pc_ts, cam_ts;
-        double pc_s, cam_s, offset_s;
-        std::vector<double> timeofs;
-
-        for(int ind=0;ind < 10;ind++)
-        {
-
-            //get computer local time since midnight
-            pc_ts = getPCtime();
-            pc_s = (double)((pc_ts.seconds*1e6) + (pc_ts.microSeconds))*1e-6;
-
-            //calculate camera time
-            if(cameraPtr!=nullptr){
-                cam_ts = cameraPtr->getDeviceTimeStamp();
-                cam_s = (double)((cam_ts.seconds*1e6) + (cam_ts.microSeconds))*1e-6;
-            }else{
-
-                std::cout << " No camera found " << std::endl;
-            }
-
-            timeofs.push_back(pc_s-cam_s);
-            //printf("%0.06f \n" ,pc_s-cam_s);
-            //printf("%0.06f  %0.06f pc_s-cam_us\n ", pc_s ,cam_s);
-
-        }
-
-        //write_time("offset.csv",20,timeofs);
-
-        //calculate mean
-        offset_s = accumulate(timeofs.begin(),timeofs.end(),0.0)/timeofs.size();
-        cam_ofs.seconds = int(offset_s);
-        cam_ofs.microSeconds = (offset_s - cam_ofs.seconds)*1e6;
-        ofs_isSet = false;
-
-
-        //calculate std dev
-        double std_sum=0;
-        for(int k=0;k < timeofs.size() ;k++)
-        {
-           std_sum += (timeofs[k] - offset_s) * (timeofs[k] - offset_s);
-        }
-
-        std_sum = std_sum/timeofs.size();
-        std_sum = sqrt(std_sum);
-
-        //printf("%0.06f average offset \n" ,offset_s);
-        printf("%0.06f std deviation \n ",std_sum);
-        //printf("%ld seconds %d microseconds", cam_ofs.seconds, cam_ofs.microSeconds);
-
-        return cam_ofs;
-
-    }*/
-
+    
     // Protected Methods
     // ------------------------------------------------------------------------
 
@@ -308,6 +314,29 @@ namespace bias
         
     }
 
+    void SignalSlotDemoPlugin::allocate_testVec() {
+
+        if (testConfigEnabled_) {
+
+            if (!testConfig_->f2f_prefix.empty()) {
+
+                time_stamps2.resize(testConfig_->numFrames);
+            }
+
+            if (!testConfig_->nidaq_prefix.empty()) {
+               
+                time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+            }
+
+            if (!testConfig_->queue_prefix.empty()) {
+
+                queue_size.resize(testConfig_->numFrames);
+            }
+
+            
+        }
+
+    }
 
     // Private Slots
     // ------------------------------------------------------------------------
@@ -320,9 +349,18 @@ namespace bias
 
     }
 
-    void SignalSlotDemoPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task) {
-
+    void SignalSlotDemoPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
+                                          bool testConfigEnabled, string trial_info,
+                                          std::shared_ptr<TestConfig> testConfig) {
+        
         nidaq_task_ = nidaq_task;
+        testConfig_ = testConfig;
+        testConfigEnabled_ = testConfigEnabled;
+        trial_num_ = trial_info;
+
+        if (testConfigEnabled_)
+            allocate_testVec();
+
     }
 
 
