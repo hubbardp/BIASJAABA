@@ -1445,8 +1445,10 @@ namespace bias
             setPluginEnabled(true);
             if (testConfig->plugin_prefix == "signal_slot") {
                 setCurrentPlugin("signalSlotDemo");
+                pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME]->show();
             }else {
                 setCurrentPlugin("jaabaPlugin");
+                pluginMap_[JaabaPlugin::PLUGIN_NAME]->show();
             }
         }
         else {

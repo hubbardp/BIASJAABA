@@ -24,6 +24,7 @@
 #include<ctime>
 #include "win_time.hpp"
 
+
 #ifdef WITH_SPIN
 #include "camera_device_spin.hpp"
 #endif
@@ -65,7 +66,9 @@ namespace bias
             virtual void stop();
             cv::Mat getCurrentImage();
             int getLaserTrigger();
-            virtual void setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task);
+            virtual void setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
+                                    bool testConfigEnabled, string trial_info,
+                                    std::shared_ptr<TestConfig> testConfig);
 
         protected:
  
@@ -81,6 +84,7 @@ namespace bias
             std::shared_ptr<Lockable<GetTime>> gettime_;
             QThread thread_vis;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
+            std::shared_ptr<TestConfig>testConfig_;
 
             QQueue<FrameData> sendImageQueue;
             QQueue<FrameData> receiveImageQueue;
@@ -93,6 +97,8 @@ namespace bias
 
             void updateTrigStateInfo();
             RtnStatus connectTriggerDev();
+
+            void allocate_testVec();
 
         private:
 
@@ -112,23 +118,24 @@ namespace bias
  
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
-
                          
             // Trigger parameters
             bool triggerEnabled;
             bool triggerArmedState;
 
+            bool testConfigEnabled_;
+            string trial_num_;
 
-            std::vector<float>classifier_score;
-            std::vector<float>laserRead = {0,0,0,0,0,0};
-            std::vector<double>timeofs;
-            std::vector<double>timestd;
-
-            //DEVEL
-            std::vector<uInt32> time_latency;
-            std::vector<int64_t> time_useconds;
+            //test
+            std::vector<float> time_stamps1;
+            std::vector<int64_t> time_stamps2;
+            std::vector<std::vector<uInt32>>time_stamps3;
             std::vector<unsigned int> queue_size;
 
+            std::vector<float>classifier_score;
+            std::vector<float>laserRead = { 0,0,0,0,0,0 };
+            std::vector<double>timeofs;
+            std::vector<double>timestd;
           
             bool pluginReady();
             bool isSender();
@@ -147,14 +154,6 @@ namespace bias
             void gpuInit();
             //void cameraOffsetTime();
             //TimeStamp getPCtime();
-           
-            // Test
-            std::vector<double>gpuSide;
-            std::vector<double>gpuFront;
-            std::vector<double>gpuOverall;
-            std::vector<double>timediff;
-            std::vector<double>timeStamp1; 
-            void write_output(std::string file,float* out_img, unsigned w, unsigned h);
  
         signals:
 

@@ -135,21 +135,29 @@ int read_testConfig(std::shared_ptr<TestConfig> test_config, ifstream& input_tes
         rowIdx++;
 
         while (getline(ss, val, ',')) {
-            
+
             //strip all char before the actual 
             //string value to be stored
-            while(!isalpha(*val.begin()) && 
-                  !isdigit(*val.begin()))
-                val.erase(val.begin());
-            while (!isalpha(val.back()) &&
+            
+            while (!val.empty() && !isalpha(*val.begin()) &&
+                !isdigit(*val.begin())) {
+                
+                string tmp = val;
+                tmp.erase(tmp.begin());
+                val = tmp;
+                
+            }
+            
+            while (!val.empty() && !isalpha(val.back()) &&
                 !isdigit(val.back()))
                 val.pop_back();
             
             copyConfigField(test_config, rowIdx, val);
 
         }
-        addCamDir(test_config);
        
     }  
+    
+    addCamDir(test_config);
     return 0;
 }

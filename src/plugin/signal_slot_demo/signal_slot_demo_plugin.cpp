@@ -167,8 +167,7 @@ namespace bias
                 if (frameCount_ == testConfig_->numFrames-1
                     && !testConfig_->f2f_prefix.empty())
                 {
-                    std::cout << "..............."  << std::endl;
-
+                    
                     std::string filename = testConfig_->dir_list[0] + "/"
                         + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
                         + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"

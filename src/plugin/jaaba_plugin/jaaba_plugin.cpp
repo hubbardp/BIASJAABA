@@ -26,10 +26,6 @@ namespace bias {
         threadPoolPtr_ = threadPoolPtr;
         gettime_ = gettime;
         nidaq_task_ = nullptr;
-        
-        time_latency.resize(500000);
-        time_useconds.resize(500000);
-        //queue_size.resize(500000);
 
         cudaError_t err = cudaGetDeviceCount(&nDevices_);
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
@@ -503,6 +499,7 @@ namespace bias {
 
                             }
                            
+                            std::cout << frameCount_ << std::endl;
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_; 
                             processScoresPtr_side->isProcessed_side = false;
@@ -514,7 +511,6 @@ namespace bias {
                      
                 }else { std::cout << "skipped 3" << frameCount_ << std::endl;}
                     
-                //queue_size[frameCount_] = pluginImageQueuePtr_->size();
                 pluginImageQueuePtr_->pop();
                 partnerPluginImageQueuePtr_ -> pop();
              
@@ -523,37 +519,99 @@ namespace bias {
             pluginImageQueuePtr_->releaseLock();
             partnerPluginImageQueuePtr_ -> releaseLock();            
 
-            
-            if (nidaq_task_ != nullptr) {
-                nidaq_task_->acquireLock();
-                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                time_latency[frameCount_] = read_ondemand;
-                //time_latency.push_back(read_ondemand);
-                nidaq_task_->releaseLock();
+            if (testConfigEnabled_
+                && testConfig_->plugin_prefix == "jaaba_plugin")
+            {
 
-                if (frameCount_ == 499999) {
-                    gettime_->acquireLock();
-                    std::string filename1 = "jaaba_process_time_cam2sys" + to_string(cameraNumber_) + ".csv";
-                    gettime_->write_time_1d<uInt32>(filename1, 500000, time_latency);
-                    gettime_->releaseLock();
-                    
+                if (nidaq_task_ != nullptr) {
+
+                    if (cameraNumber_ == 0
+                        && frameCount_ <= unsigned long(testConfig_->numFrames)) {
+
+                        nidaq_task_->acquireLock();
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+                        nidaq_task_->releaseLock();
+
+                    }
+
+                    if (frameCount_ <= testConfig_->numFrames) {
+
+                        nidaq_task_->acquireLock();
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                        nidaq_task_->releaseLock();
+
+                    }
+
                 }
-            }
-            
-            gettime_->acquireLock();
-            pc_time = gettime_->getPCtime();
-            gettime_->releaseLock();
-            time_useconds[frameCount_] = pc_time;
-            //time_useconds.push_back(pc_ts2);
 
-            if (frameCount_ == 499999) {
-                gettime_->acquireLock();                
-                std::string filename2 = "jaaba_process_time_camf2f" + to_string(cameraNumber_) + ".csv";
-                std::string filename3 = "jaaba_queue_size" + to_string(cameraNumber_) + ".csv";              
-                gettime_->write_time_1d<int64_t>(filename2, 500000, time_useconds);
-                //gettime_->write_time_1d<unsigned int>(filename3, 500000, queue_size);
-                gettime_->releaseLock();
-                Sleep(10);
+                if (!testConfig_->nidaq_prefix.empty()) {
+
+                    if (cameraNumber_ == 0)
+                        time_stamps3[frameCount_][0] = read_buffer;
+                    else
+                        time_stamps3[frameCount_][0] = 0;
+
+                    time_stamps3[frameCount_][1] = read_ondemand;
+                }
+
+                if (!testConfig_->f2f_prefix.empty()) {
+
+                    pc_time = gettime_->getPCtime();
+
+                    if (frameCount_ <= testConfig_->numFrames)
+                        time_stamps2[frameCount_] = pc_time;
+                }
+
+                if (!testConfig_->queue_prefix.empty()) {
+
+                    if (frameCount_ <= testConfig_->numFrames)
+                        queue_size[frameCount_] = pluginImageQueuePtr_->size();
+
+                }
+
+                if (frameCount_ == testConfig_->numFrames - 1
+                    && !testConfig_->f2f_prefix.empty())
+                {
+
+                    std::string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->f2f_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+                    std::cout << filename << std::endl;
+                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
+
+                }
+
+                if (frameCount_ == testConfig_->numFrames - 1
+                    && !testConfig_->nidaq_prefix.empty())
+                {
+
+                    std::string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->nidaq_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
+
+                }
+
+                if (frameCount_ == testConfig_->numFrames - 1
+                    && !testConfig_->queue_prefix.empty()) {
+
+                    string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->queue_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+
+                }
             }
         }        
             
@@ -1107,10 +1165,41 @@ namespace bias {
         }
 
 
-        void JaabaPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task) {
+        void JaabaPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
+                                     bool testConfigEnabled, string trial_info,
+                                     std::shared_ptr<TestConfig> testConfig) {
 
             nidaq_task_ = nidaq_task;
+            testConfig_ = testConfig;
+            testConfigEnabled_ = testConfigEnabled;
+            trial_num_ = trial_info;
+
+            if (testConfigEnabled_)
+                allocate_testVec();
           
+        }
+
+        void JaabaPlugin::allocate_testVec() {
+
+            if (testConfigEnabled_) {
+
+                if (!testConfig_->f2f_prefix.empty()) {
+
+                    time_stamps2.resize(testConfig_->numFrames);
+                }
+
+                if (!testConfig_->nidaq_prefix.empty()) {
+
+                    time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+                }
+
+                if (!testConfig_->queue_prefix.empty()) {
+
+                    queue_size.resize(testConfig_->numFrames);
+                }
+
+            }
+
         }
 
         // Test development
@@ -1125,23 +1214,6 @@ namespace bias {
             return timeStampDbl;
         }
 
-       void JaabaPlugin::write_output(std::string file,float* out_img, unsigned w, unsigned h) 
-       {
-
-           std::ofstream x_out;
-           x_out.open(file.c_str());
-      
-          // write hist output to csv file
-          for(unsigned i = 0;i < h;i++)
-          {
-              std::cout << " " << i << std::endl;
-              for(unsigned j = 0; j < w;j++) 
-              {
-                  x_out << out_img[i*w + j];
-                  if(j != w-1 || i != h-1)
-                     x_out << ",";
-              }
-          }
-       }
+       
 }
 
