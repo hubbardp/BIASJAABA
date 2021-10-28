@@ -4,6 +4,7 @@
 #include <cuda_runtime.h>
 #include <string>
 
+#define DEBUG 0 
 
 //
 
@@ -66,13 +67,16 @@ namespace bias {
         image_height = settings.height;
         image_width = settings.width;
 
+#if DEBUG 
         //DEVEL
-        /*if(processScoresPtr_side->vid_sde)
+        
+        if(processScoresPtr_side->vid_sde)
         {
+            std::cout << "inside debug mode " << std::endl;
             image_height = 384; //height of frame from video input
             image_width = 260;   //width of frame from video input 
-        }*/
-
+        }
+#endif
     }
 
 
@@ -357,6 +361,7 @@ namespace bias {
                     frameCount_ = stampedImage0.frameCount;
                     releaseLock();
 
+#if DEBUG
                     // Test
                     /*if(sideImage.ptr<float>(0) != nullptr && frameCount == 1000)
                     {
@@ -370,7 +375,8 @@ namespace bias {
                         //write_output("out_feat/side" + std::to_string(frameCount_) + ".csv" , sideImage.ptr<float>(0), sideImage.rows, sideImage.cols);
                         //write_output("out_feat/front" + std::to_string(frameCount_) + ".csv" , frontImage.ptr<float>(0), frontImage.rows , frontImage.cols);
                     }*/
-
+                    
+#endif
 
                     if( stampedImage0.frameCount == stampedImage1.frameCount)
                     {
@@ -378,8 +384,9 @@ namespace bias {
                         if((processScoresPtr_side -> detectStarted_) && (frameCount_  == (processScoresPtr_side -> processedFrameCount+1)))
                         {
 
+#if DEBUG
                             // Test - Uncomment to perform preprocesing of video frames
-                            /*if (processScoresPtr_side->capture_sde.isOpened())
+                            if (processScoresPtr_side->capture_sde.isOpened())
                             {
 
                                 sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
@@ -394,10 +401,9 @@ namespace bias {
                                 frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
                                 processScoresPtr_front->vid_front->convertImagetoFloat(frontImage);
                                 greyFront = frontImage;
-                                //std:cout << greyFront.rows << " " << greyFront.cols << std::endl;
 
-                            }*/
-
+                            }
+#else
 
                             // preprocessing the frames - Comment this section if using video input 
                             // convert the frame into RGB2GRAY
@@ -417,7 +423,8 @@ namespace bias {
                             frontImage.convertTo(greyFront, CV_32FC1);
                             greySide = greySide / 255;
                             greyFront = greyFront / 255;
-                            
+
+#endif
 
                             if(nDevices_>=2)
                             {
@@ -436,12 +443,14 @@ namespace bias {
 
                                     cudaSetDevice(1);
                                     processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                    //processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
-                                    processScoresPtr_front->onProcessFront();
+                                    processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
+                                    //processScoresPtr_front->onProcessFront();
+                                    
                                 }
 
-                                while(!processScoresPtr_side -> isProcessed_side && 
-                                      !processScoresPtr_front-> isProcessed_front) {}
+                                /*while(!processScoresPtr_side -> isProcessed_side && 
+                                      !processScoresPtr_front-> isProcessed_front) {}*/
+                                while (!processScoresPtr_side->isProcessed_side) {}
 
                             } else {
 
@@ -452,6 +461,7 @@ namespace bias {
 
                             }
 
+#if DEBUG
                             // Test
                             /*if(processScoresPtr_->save && frameCount_ == 2000)
                             {
@@ -473,6 +483,7 @@ namespace bias {
                                 HOGHOF_front->hof_shape.bin);
                             }*/
 
+#endif
 
                             // compute scores
                             if(classifier -> isClassifierPathSet & processScoresPtr_side->processedFrameCount >= 0)
@@ -484,7 +495,7 @@ namespace bias {
                                 processScoresPtr_front -> HOGHOF_partner -> hof_out, &processScoresPtr_side -> HOGHOF_frame->hog_shape,
                                 &processScoresPtr_front -> HOGHOF_partner -> hof_shape, classifier -> nframes,classifier -> model);
                                
-
+#if DEBUG
                                 //triggerLaser();
                                 /*visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
                                 visplots -> livePlotSignalVec_Lift.append(double(classifier->score[0]));
@@ -493,17 +504,18 @@ namespace bias {
                                 visplots -> livePlotSignalVec_Supinate.append(double(classifier->score[3]));
                                 visplots -> livePlotSignalVec_Chew.append(double(classifier->score[4]));
                                 visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
-                                visplots->livePlotPtr_->show();
-                                processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[0]);*/
-                                 
+                                visplots->livePlotPtr_->show();*/
+                                processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[0]);
+#endif
+
 
                             }
                            
-                            std::cout << frameCount_ << std::endl;
+                            //std::cout << frameCount_ << " "  << processScoresPtr_side->processedFrameCount << std::endl;
                             processScoresPtr_side -> processedFrameCount = frameCount_;
                             processScoresPtr_front -> processedFrameCount = frameCount_; 
                             processScoresPtr_side->isProcessed_side = false;
-                            processScoresPtr_front->isProcessed_front = false;
+                            //processScoresPtr_front->isProcessed_front = false;
 
                         }else{ std::cout << "skipped 1 " << frameCount_ << std::endl; }
 
@@ -743,476 +755,486 @@ namespace bias {
     }
 
     
-       void JaabaPlugin::setupHOGHOF()
-       {
+    void JaabaPlugin::setupHOGHOF()
+    {
      
-           if(sideRadioButtonPtr_->isChecked())
-           {
+        if(sideRadioButtonPtr_->isChecked())
+        {
              
-                //QString file_sde = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_sde.avi";
+#if DEBUG 
+            std::cout << "video file set" << std::endl;
 #ifdef WIN32           
-                QString file_sde = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi";
+            QString file_sde = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi";
 #endif
 
 #ifdef linux
-                QString file_sde = "/home/patilr/BIAS/BIASJAABA_movies/movie_sde.avi";
+            QString file_sde = "/home/patilr/BIAS/BIASJAABA_movies/movie_sde.avi";
 #endif
-                //processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
-                //processScoresPtr_side -> capture_sde = processScoresPtr_side ->vid_sde -> videoCapObject();
-                 
+            processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
+            processScoresPtr_side -> capture_sde = processScoresPtr_side ->vid_sde -> videoCapObject();
+#endif
+
   
-                HOGHOF *hoghofside = new HOGHOF(this);
-                acquireLock();
-                processScoresPtr_side -> HOGHOF_frame = hoghofside;
-                processScoresPtr_side -> HOGHOF_frame -> HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-                processScoresPtr_side -> HOGHOF_frame -> HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-                processScoresPtr_side -> HOGHOF_frame -> CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
-                processScoresPtr_side -> HOGHOF_frame -> loadHOGParams();
-                processScoresPtr_side -> HOGHOF_frame -> loadHOFParams(); 
-                processScoresPtr_side -> HOGHOF_frame -> loadCropParams();
-                releaseLock();
+            HOGHOF *hoghofside = new HOGHOF(this);
+            acquireLock();
+            processScoresPtr_side -> HOGHOF_frame = hoghofside;
+            processScoresPtr_side -> HOGHOF_frame -> HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+            processScoresPtr_side -> HOGHOF_frame -> HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+            processScoresPtr_side -> HOGHOF_frame -> CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
+            processScoresPtr_side -> HOGHOF_frame -> loadHOGParams();
+            processScoresPtr_side -> HOGHOF_frame -> loadHOFParams(); 
+            processScoresPtr_side -> HOGHOF_frame -> loadCropParams();
+            releaseLock();
 
-            }
+        }
 
-            if(frontRadioButtonPtr_->isChecked()) 
-            {
+        if(frontRadioButtonPtr_->isChecked()) 
+        {
+
+#if DEBUG
 //DEVEL
 #ifdef WIN32		
-                //QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";
-                QString file_frt = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi"; 
+            //QString file_frt = "/nrs/branson/jab_experiments/M274Vglue2_Gtacr2_TH/20180814/M274_20180814_v002/cuda_dir/movie_frt.avi";
+            QString file_frt = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi"; 
 #endif 
 
 #ifdef linux
-                QString file_frt = "/home/patilr/BIAS/BIASJAABA_movies/movie_frt.avi";
+            QString file_frt = "/home/patilr/BIAS/BIASJAABA_movies/movie_frt.avi";
 #endif
-                //processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
-                //processScoresPtr_front -> capture_front = processScoresPtr_front -> vid_front -> videoCapObject(); 
+            processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
+            processScoresPtr_front -> capture_front = processScoresPtr_front -> vid_front -> videoCapObject(); 
+#endif
 
-                HOGHOF *hoghoffront = new HOGHOF(this);  
-                acquireLock();
-                processScoresPtr_front -> HOGHOF_partner = hoghoffront;
-                processScoresPtr_front -> HOGHOF_partner -> HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-                processScoresPtr_front -> HOGHOF_partner -> HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-                processScoresPtr_front -> HOGHOF_partner -> CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
-                processScoresPtr_front -> HOGHOF_partner -> loadHOGParams();
-                processScoresPtr_front -> HOGHOF_partner -> loadHOFParams();
-                processScoresPtr_front -> HOGHOF_partner -> loadCropParams();
-                releaseLock();
+            HOGHOF *hoghoffront = new HOGHOF(this);  
+            acquireLock();
+            processScoresPtr_front -> HOGHOF_partner = hoghoffront;
+            processScoresPtr_front -> HOGHOF_partner -> HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+            processScoresPtr_front -> HOGHOF_partner -> HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+            processScoresPtr_front -> HOGHOF_partner -> CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
+            processScoresPtr_front -> HOGHOF_partner -> loadHOGParams();
+            processScoresPtr_front -> HOGHOF_partner -> loadHOFParams();
+            processScoresPtr_front -> HOGHOF_partner -> loadCropParams();
+            releaseLock();
  
-            }
-
         }
 
+    }
 
-        void JaabaPlugin::setupClassifier() 
+
+    void JaabaPlugin::setupClassifier() 
+    {
+
+        if(sideRadioButtonPtr_->isChecked() || frontRadioButtonPtr_->isChecked())
         {
-
-            if(sideRadioButtonPtr_->isChecked() || frontRadioButtonPtr_->isChecked())
-            {
             
-                beh_class *cls = new beh_class(this);
-                classifier = cls;
-                classifier -> classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
-                //qDebug()  << classifier->classifier_file;
-                classifier -> allocate_model();
-                classifier -> loadclassifier_model();
+            beh_class *cls = new beh_class(this);
+            classifier = cls;
+            classifier -> classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+            //qDebug()  << classifier->classifier_file;
+            classifier -> allocate_model();
+            classifier -> loadclassifier_model();
             
-            }
+        }
       
-        }
+    }
 
     
-        int JaabaPlugin::getNumberofViews() 
-        {
+    int JaabaPlugin::getNumberofViews() 
+    {
 
-            return nviews_;
+        return nviews_;
 
-        }
+    }
 
-        int JaabaPlugin::getNumberOfDevices()
-        {
+    int JaabaPlugin::getNumberOfDevices()
+    {
   
-            return nDevices_;
+        return nDevices_;
 
-        }
-
-   
-        int JaabaPlugin::getLaserTrigger()
-        {
-
-            return laserOn;
-
-        }
+    }
 
    
-        void JaabaPlugin::updateWidgetsOnLoad() 
-        {
+    int JaabaPlugin::getLaserTrigger()
+    {
 
-            if( cameraNumber_ == 1 )
-            {
+        return laserOn;
+
+    }
+
+   
+    void JaabaPlugin::updateWidgetsOnLoad() 
+    {
+
+        if( cameraNumber_ == 1 )
+        {
  
-                this -> setEnabled(false);   
+            this -> setEnabled(false);   
 
-            } else {
+        } else {
 
-                sideRadioButtonPtr_ -> setChecked(false);
-                frontRadioButtonPtr_ -> setChecked(false);
-                detectButtonPtr_ -> setEnabled(false);
-                saveButtonPtr_-> setEnabled(false);
-                save = false;        
-
-                tabWidgetPtr -> setEnabled(true);
-                tabWidgetPtr -> repaint();        
-            }
-
-        }
-   
-
-        void JaabaPlugin::SideViewCheckBoxChanged(int state)
-        {
-            
-            if (state == Qt::Checked)
-            {
-                sideRadioButtonPtr_ -> setChecked(true);
-        }else{  
-                sideRadioButtonPtr_ -> setChecked(false);
-        }
-            //checkviews();
-            setupHOGHOF();
-            setupClassifier();
-            detectEnabled();
-        }
-
-
-        void JaabaPlugin::FrontViewCheckBoxChanged(int state)
-        {
-            
-            if (state == Qt::Checked)
-            {   
-                frontRadioButtonPtr_ -> setChecked(true);
-
-            }
-            else
-            {   
-                frontRadioButtonPtr_ -> setChecked(false);
-            }
-            //checkviews();
-            setupHOGHOF();
-            setupClassifier();
-            detectEnabled();
-
-        }
-
-
-        void JaabaPlugin::detectClicked() 
-        {
-        
-            if(!detectStarted) 
-            {
-                detectButtonPtr_->setText(QString("Stop Detecting"));
-                detectStarted = true;
-
-                if (processScoresPtr_side != nullptr)
-                {
-
-                    processScoresPtr_side -> acquireLock();
-                    processScoresPtr_side -> detectOn();
-                    processScoresPtr_side -> releaseLock();
-
-                    /*if(isSender())
-                    {
-                         processScoresPtr_ -> acquireLock();
-                         processScoresPtr_ -> isFront = true;
-                         processScoresPtr_ -> releaseLock();    
-                    }*/
-
-                    if(isReceiver())
-                    {
-                        processScoresPtr_side -> acquireLock();
-                        processScoresPtr_side -> isSide = true;
-                        processScoresPtr_side -> releaseLock();
-
-                        processScoresPtr_front -> acquireLock();
-                        processScoresPtr_front -> isFront = true;
-                        processScoresPtr_front -> releaseLock();
-                    }
-
-                }
-
-            } else {
-
-                detectButtonPtr_->setText(QString("Detect"));
-                detectStarted = false;
-             
-                if (processScoresPtr_side != nullptr)
-                {
-                    processScoresPtr_side -> acquireLock();
-                    processScoresPtr_side ->  detectOff();
-                    processScoresPtr_side -> releaseLock();
-                }
-
-            }
-
-        }
-
-
-        void JaabaPlugin::saveClicked()
-        {
-
-            if(!save) { 
-
-                saveButtonPtr_->setText(QString("Stop Saving"));
-                processScoresPtr_side -> save = true;
- 
-            } else {
-
-                saveButtonPtr_->setText(QString("Save"));
-                processScoresPtr_side -> save = false;
-
-            }       
-
-        }
-
-    
-        void JaabaPlugin::detectEnabled() 
-        {
-
-            if(sideRadioButtonPtr_->isChecked())
-            {
-
-                if(processScoresPtr_side -> HOGHOF_frame->isHOGPathSet 
-                  && processScoresPtr_side -> HOGHOF_frame->isHOFPathSet
-                  && classifier->isClassifierPathSet)
-                {
-                    detectButtonPtr_->setEnabled(true);
-                    saveButtonPtr_->setEnabled(true);
-                }
-        
-            }
-
-            if(frontRadioButtonPtr_->isChecked())
-            {
-
-                if(processScoresPtr_front -> HOGHOF_partner->isHOGPathSet 
-                 && processScoresPtr_front -> HOGHOF_partner->isHOFPathSet
-                 && classifier->isClassifierPathSet)
-                {
-                    detectButtonPtr_->setEnabled(true);
-                    saveButtonPtr_->setEnabled(true);
-                }
-
-            }
-
-        }    
-    
-
-        void JaabaPlugin::reloadButtonPressed()
-        {
-
-            pathtodir_->setPlaceholderText(pathtodir_->displayText());
-            // load side HOGHOFParams if side view checked
-            if(sideRadioButtonPtr_->isChecked())
-            {
-                if(processScoresPtr_side -> HOGHOF_frame == nullptr) 
-                {
-                    setupHOGHOF();
-
-                } else {
-            
-                    processScoresPtr_side -> HOGHOF_frame->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-                    processScoresPtr_side -> HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-                    processScoresPtr_side -> HOGHOF_frame->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
-                    processScoresPtr_side -> HOGHOF_frame->loadHOGParams();
-                    processScoresPtr_side -> HOGHOF_frame->loadHOFParams();
-                    processScoresPtr_side -> HOGHOF_frame->loadCropParams();            
-                }
-            }
-
-            // load front HOGHOFParams if front view checked
-            if(frontRadioButtonPtr_->isChecked())
-            {
-                if(processScoresPtr_front -> HOGHOF_partner == nullptr)
-                {
-
-                    setupHOGHOF();        
-  
-                } else {
-
-                    processScoresPtr_front -> HOGHOF_partner->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-                    processScoresPtr_front -> HOGHOF_partner->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-                    processScoresPtr_front -> HOGHOF_partner->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
-                    processScoresPtr_front -> HOGHOF_partner->loadHOGParams();
-                    processScoresPtr_front -> HOGHOF_partner->loadHOFParams();
-                    processScoresPtr_front -> HOGHOF_partner->loadCropParams();
-                }
-            }
-
-            //load classifier
-            if(classifier == nullptr)
-            {
-
-                setupClassifier();
-
-            } else {
-
-                classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
-                classifier->allocate_model();
-                classifier->loadclassifier_model();
-
-            }
-            detectEnabled();
-       
-        }
-
-
-        void JaabaPlugin::triggerLaser()
-        {
-
-            int num_beh = static_cast<int>(classifier->beh_present.size()); 
-            for(int nbeh =0;nbeh < num_beh;nbeh++)
-            {
-                if (classifier->score[nbeh] > 0)  
-                    laserRead[nbeh] = 1;
-                else
-                    laserRead[nbeh] = 0;
-            }
-
-        }
-
-
-        RtnStatus JaabaPlugin::connectTriggerDev()
-        {
-            RtnStatus rtnStatus;
-
-            tabWidgetPtr -> setEnabled(false);
-            tabWidgetPtr -> repaint();
-
+            sideRadioButtonPtr_ -> setChecked(false);
+            frontRadioButtonPtr_ -> setChecked(false);
+            detectButtonPtr_ -> setEnabled(false);
+            saveButtonPtr_-> setEnabled(false);
+            save = false;        
 
             tabWidgetPtr -> setEnabled(true);
-            rtnStatus.success = true;
-            rtnStatus.message = QString("");
-            return rtnStatus;
+            tabWidgetPtr -> repaint();        
         }
 
-    
-        void JaabaPlugin::updateTrigStateInfo()
+    }
+   
+
+    void JaabaPlugin::SideViewCheckBoxChanged(int state)
+    {
+            
+        if (state == Qt::Checked)
         {
+            sideRadioButtonPtr_ -> setChecked(true);
 
-            /*if (triggerArmedState)
-            {
-                trigStateLabelPtr -> setText("State: Ready");
-            }
-            else
-            {
-                trigStateLabelPtr -> setText("State: Stopped");
-            }
+        }else{
 
-
-            if (trigEnabledCheckBoxPtr -> isChecked())
-            {
-                trigStateLabelPtr -> setEnabled(true);
-                trigResetPushButtonPtr -> setEnabled(true);
-            }
-            else
-            {
-                trigStateLabelPtr -> setEnabled(false);
-                trigResetPushButtonPtr -> setEnabled(false);
-            }*/
+            sideRadioButtonPtr_ -> setChecked(false);
         }
- 
-        /*void JaabaPlugin::checkviews() 
+
+        //checkviews();
+        setupHOGHOF();
+        setupClassifier();
+        detectEnabled();
+    }
+
+
+    void JaabaPlugin::FrontViewCheckBoxChanged(int state)
+    {
+            
+        if (state == Qt::Checked)
+        {   
+            frontRadioButtonPtr_ -> setChecked(true);
+
+        }
+        else
+        {   
+            frontRadioButtonPtr_ -> setChecked(false);
+        }
+        //checkviews();
+        setupHOGHOF();
+        setupClassifier();
+        detectEnabled();
+
+    }
+
+
+    void JaabaPlugin::detectClicked() 
+    {
+        
+        if(!detectStarted) 
         {
-      
-            if(~sideRadioButtonPtr_->isChecked() || ~frontRadioButtonPtr_->isChecked()) 
+            detectButtonPtr_->setText(QString("Stop Detecting"));
+            detectStarted = true;
+
+            if (processScoresPtr_side != nullptr)
             {
- 
-                if(nviews_ == 2) 
+
+                processScoresPtr_side -> acquireLock();
+                processScoresPtr_side -> detectOn();
+                processScoresPtr_side -> releaseLock();
+
+                /*if(isSender())
                 {
-                   // if both views are checked
-                    QString errMsgText = QString("Number of cameras not equal to number of views ");
-                    QString errMsgTitle = QString("Number of Views error");
-                    QMessageBox::critical(this, errMsgTitle, errMsgText);
+                    processScoresPtr_ -> acquireLock();
+                    processScoresPtr_ -> isFront = true;
+                    processScoresPtr_ -> releaseLock();    
+                }*/
 
+                if(isReceiver())
+                {
+                    processScoresPtr_side -> acquireLock();
+                    processScoresPtr_side -> isSide = true;
+                    processScoresPtr_side -> releaseLock();
+
+                    processScoresPtr_front -> acquireLock();
+                    processScoresPtr_front -> isFront = true;
+                    processScoresPtr_front -> releaseLock();
                 }
 
             }
 
-            // Only one view checked
-            if(sideRadioButtonPtr_->isChecked() && frontRadioButtonPtr_->isChecked()) 
+        } else {
+
+            detectButtonPtr_->setText(QString("Detect"));
+            detectStarted = false;
+             
+            if (processScoresPtr_side != nullptr)
             {
+                processScoresPtr_side -> acquireLock();
+                processScoresPtr_side ->  detectOff();
+                processScoresPtr_side -> releaseLock();
+            }
 
-                if(nviews_ < 2) 
-                { 
+        }
 
-                    QString errMsgText = QString("Number of cameras not equal to number of views ");
-                    QString errMsgTitle = QString("Number of Views error");
-                    QMessageBox::critical(this, errMsgTitle, errMsgText);
+    }
 
-                }
 
-            }       
+    void JaabaPlugin::saveClicked()
+    {
 
-        }*/
+        if(!save) { 
+
+            saveButtonPtr_->setText(QString("Stop Saving"));
+            processScoresPtr_side -> save = true;
+ 
+        } else {
+
+            saveButtonPtr_->setText(QString("Save"));
+            processScoresPtr_side -> save = false;
+
+        }       
+
+    }
 
     
-        void JaabaPlugin::onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr)
+    void JaabaPlugin::detectEnabled() 
+    {
+
+        if(sideRadioButtonPtr_->isChecked())
         {
 
-            if(partnerPluginImageQueuePtr != nullptr)
+            if(processScoresPtr_side -> HOGHOF_frame->isHOGPathSet 
+                && processScoresPtr_side -> HOGHOF_frame->isHOFPathSet
+                && classifier->isClassifierPathSet)
+            {
+                detectButtonPtr_->setEnabled(true);
+                saveButtonPtr_->setEnabled(true);
+            }
+        
+        }
+
+        if(frontRadioButtonPtr_->isChecked())
+        {
+
+            if(processScoresPtr_front -> HOGHOF_partner->isHOGPathSet 
+                && processScoresPtr_front -> HOGHOF_partner->isHOFPathSet
+                && classifier->isClassifierPathSet)
+            {
+                detectButtonPtr_->setEnabled(true);
+                saveButtonPtr_->setEnabled(true);
+            }
+
+        }
+
+    }    
+    
+
+    void JaabaPlugin::reloadButtonPressed()
+    {
+
+        pathtodir_->setPlaceholderText(pathtodir_->displayText());
+        // load side HOGHOFParams if side view checked
+        if(sideRadioButtonPtr_->isChecked())
+        {
+            if(processScoresPtr_side -> HOGHOF_frame == nullptr) 
+            {
+                setupHOGHOF();
+
+            } else {
+            
+                processScoresPtr_side -> HOGHOF_frame->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+                processScoresPtr_side -> HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+                processScoresPtr_side -> HOGHOF_frame->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
+                processScoresPtr_side -> HOGHOF_frame->loadHOGParams();
+                processScoresPtr_side -> HOGHOF_frame->loadHOFParams();
+                processScoresPtr_side -> HOGHOF_frame->loadCropParams();            
+            }
+        }
+
+        // load front HOGHOFParams if front view checked
+        if(frontRadioButtonPtr_->isChecked())
+        {
+            if(processScoresPtr_front -> HOGHOF_partner == nullptr)
+            {
+
+                setupHOGHOF();        
+  
+            } else {
+
+                processScoresPtr_front -> HOGHOF_partner->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+                processScoresPtr_front -> HOGHOF_partner->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+                processScoresPtr_front -> HOGHOF_partner->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
+                processScoresPtr_front -> HOGHOF_partner->loadHOGParams();
+                processScoresPtr_front -> HOGHOF_partner->loadHOFParams();
+                processScoresPtr_front -> HOGHOF_partner->loadCropParams();
+            }
+        }
+
+        //load classifier
+        if(classifier == nullptr)
+        {
+
+            setupClassifier();
+
+        } else {
+
+            classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+            classifier->allocate_model();
+            classifier->loadclassifier_model();
+
+        }
+        detectEnabled();
+       
+    }
+
+
+    void JaabaPlugin::triggerLaser()
+    {
+
+        int num_beh = static_cast<int>(classifier->beh_present.size()); 
+        for(int nbeh =0;nbeh < num_beh;nbeh++)
+        {
+            if (classifier->score[nbeh] > 0)  
+                laserRead[nbeh] = 1;
+            else
+                laserRead[nbeh] = 0;
+        }
+
+    }
+
+
+    RtnStatus JaabaPlugin::connectTriggerDev()
+    {
+        RtnStatus rtnStatus;
+
+        tabWidgetPtr -> setEnabled(false);
+        tabWidgetPtr -> repaint();
+
+
+        tabWidgetPtr -> setEnabled(true);
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+    }
+
+    
+    void JaabaPlugin::updateTrigStateInfo()
+    {
+
+        /*if (triggerArmedState)
+        {
+            trigStateLabelPtr -> setText("State: Ready");
+        }
+        else
+        {
+            trigStateLabelPtr -> setText("State: Stopped");
+        }
+
+
+        if (trigEnabledCheckBoxPtr -> isChecked())
+        {
+            trigStateLabelPtr -> setEnabled(true);
+            trigResetPushButtonPtr -> setEnabled(true);
+        }
+        else
+        {
+            trigStateLabelPtr -> setEnabled(false);
+            trigResetPushButtonPtr -> setEnabled(false);
+        }*/
+    }
+ 
+    /*void JaabaPlugin::checkviews() 
+    {
+      
+        if(~sideRadioButtonPtr_->isChecked() || ~frontRadioButtonPtr_->isChecked()) 
+        {
+ 
+            if(nviews_ == 2) 
+            {
+                // if both views are checked
+                QString errMsgText = QString("Number of cameras not equal to number of views ");
+                QString errMsgTitle = QString("Number of Views error");
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+
+            }
+
+        }
+
+        // Only one view checked
+        if(sideRadioButtonPtr_->isChecked() && frontRadioButtonPtr_->isChecked()) 
+        {
+
+            if(nviews_ < 2) 
             { 
-                partnerPluginImageQueuePtr_ = partnerPluginImageQueuePtr;
+
+                QString errMsgText = QString("Number of cameras not equal to number of views ");
+                QString errMsgTitle = QString("Number of Views error");
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+
             }
+
+        }       
+
+    }*/
+
+    
+    void JaabaPlugin::onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr)
+    {
+
+        if(partnerPluginImageQueuePtr != nullptr)
+        { 
+            partnerPluginImageQueuePtr_ = partnerPluginImageQueuePtr;
         }
+    }
 
 
-        void JaabaPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
-                                     bool testConfigEnabled, string trial_info,
-                                     std::shared_ptr<TestConfig> testConfig) {
+    void JaabaPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
+                                    bool testConfigEnabled, string trial_info,
+                                    std::shared_ptr<TestConfig> testConfig) 
+    {
 
-            nidaq_task_ = nidaq_task;
-            testConfig_ = testConfig;
-            testConfigEnabled_ = testConfigEnabled;
-            trial_num_ = trial_info;
+        nidaq_task_ = nidaq_task;
+        testConfig_ = testConfig;
+        testConfigEnabled_ = testConfigEnabled;
+        trial_num_ = trial_info;
 
-            if (testConfigEnabled_)
-                allocate_testVec();
+        if (testConfigEnabled_)
+            allocate_testVec();
           
-        }
+    }
 
-        void JaabaPlugin::allocate_testVec() {
+    void JaabaPlugin::allocate_testVec() 
+    {
 
-            if (testConfigEnabled_) {
+        if (testConfigEnabled_) {
 
-                if (!testConfig_->f2f_prefix.empty()) {
+            if (!testConfig_->f2f_prefix.empty()) {
 
-                    time_stamps2.resize(testConfig_->numFrames);
-                }
+                time_stamps2.resize(testConfig_->numFrames);
+            }
 
-                if (!testConfig_->nidaq_prefix.empty()) {
+            if (!testConfig_->nidaq_prefix.empty()) {
 
-                    time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
-                }
+                time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+            }
 
-                if (!testConfig_->queue_prefix.empty()) {
+            if (!testConfig_->queue_prefix.empty()) {
 
-                    queue_size.resize(testConfig_->numFrames);
-                }
-
+                queue_size.resize(testConfig_->numFrames);
             }
 
         }
 
-        // Test development
+    }
 
-        double JaabaPlugin::convertTimeStampToDouble(TimeStamp curr, TimeStamp init)
-        {
-            double timeStampDbl = 0;
-            timeStampDbl  = double(curr.seconds);
-            timeStampDbl -= double(init.seconds);
-            timeStampDbl += (1.0e-6)*double(curr.microSeconds);
-            timeStampDbl -= (1.0e-6)*double(init.microSeconds);
-            return timeStampDbl;
-        }
+    // Test development
+
+    double JaabaPlugin::convertTimeStampToDouble(TimeStamp curr, TimeStamp init)
+    {
+        double timeStampDbl = 0;
+        timeStampDbl  = double(curr.seconds);
+        timeStampDbl -= double(init.seconds);
+        timeStampDbl += (1.0e-6)*double(curr.microSeconds);
+        timeStampDbl -= (1.0e-6)*double(init.microSeconds);
+        return timeStampDbl;
+    }
 
        
 }
