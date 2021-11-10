@@ -302,11 +302,12 @@ namespace bias {
         cv::Mat greySide;
         cv::Mat greyFront;
         uInt32 read_buffer = 0, read_ondemand = 0;
+        bool process_frame_time = 0;
 
         StampedImage stampedImage0 , stampedImage1;
 
         //DEVEL
-        int64_t pc_time;
+        int64_t pc_time, start_process, end_process;
             
         // initialize memory on the gpu 
         if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
@@ -323,7 +324,7 @@ namespace bias {
 
         }
 
-
+        
         if (isReceiver() && pluginImageQueuePtr_ != nullptr && partnerPluginImageQueuePtr_ != nullptr)
         {
 
@@ -343,6 +344,7 @@ namespace bias {
 
             }
 
+            //start_process = gettime_->getPCtime();
             if ( !(pluginImageQueuePtr_ -> empty()) && !(partnerPluginImageQueuePtr_ -> empty()))
             {
 
@@ -425,7 +427,7 @@ namespace bias {
                             greyFront = greyFront / 255;
 
 #endif
-
+                            
                             if(nDevices_>=2)
                             {
                                     
@@ -460,6 +462,7 @@ namespace bias {
                                 processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
 
                             }
+                            
 
 #if DEBUG
                             // Test
@@ -530,7 +533,8 @@ namespace bias {
 
             pluginImageQueuePtr_->releaseLock();
             partnerPluginImageQueuePtr_ -> releaseLock();            
-
+            //end_process = gettime_->getPCtime();
+            
             if (testConfigEnabled_
                 && testConfig_->plugin_prefix == "jaaba_plugin")
             {
@@ -581,6 +585,12 @@ namespace bias {
 
                 }
 
+                if (process_frame_time) {
+
+                    if (frameCount_ <= testConfig_->numFrames)
+                        time_stamps4[frameCount_] = (end_process - start_process);
+                }
+
                 if (frameCount_ == testConfig_->numFrames - 1
                     && !testConfig_->f2f_prefix.empty())
                 {
@@ -591,7 +601,7 @@ namespace bias {
                         + testConfig_->plugin_prefix
                         + "_" + testConfig_->f2f_prefix + "cam"
                         + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-                    std::cout << filename << std::endl;
+                    
                     gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
 
                 }
@@ -624,12 +634,26 @@ namespace bias {
                     gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
 
                 }
+
+                if (frameCount_ == testConfig_->numFrames - 1
+                    && process_frame_time) {
+
+                    string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + "jaaba_process_time" + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+                    std::cout << filename << std::endl;
+                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps4);
+
+                }
             }
         }        
             
     }
 
-    
+
     unsigned int JaabaPlugin::getPartnerCameraNumber()
     {
         // Returns camera number of partner camera. For this example
@@ -1208,6 +1232,7 @@ namespace bias {
             if (!testConfig_->f2f_prefix.empty()) {
 
                 time_stamps2.resize(testConfig_->numFrames);
+                time_stamps4.resize(testConfig_->numFrames);
             }
 
             if (!testConfig_->nidaq_prefix.empty()) {
