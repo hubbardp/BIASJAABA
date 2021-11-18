@@ -224,4 +224,9 @@ namespace bias
        
     }
 
+    void CameraDevice::skipDetected(StampedImage& stampedImage)
+    {
+        
+    }
+
 }

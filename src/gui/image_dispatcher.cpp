@@ -164,17 +164,9 @@ namespace bias
                 break;
             }
             newStampImage = newImageQueuePtr_ -> front();
-            newImageQueuePtr_ -> pop();
-            //queue_size[frameCount_] = newImageQueuePtr_->size();
+            newImageQueuePtr_ -> pop();//queue_size[frameCount_] = newImageQueuePtr_->size();
             newImageQueuePtr_ -> releaseLock();
         
-            /*if (frameCount_ == 499999) {
-                gettime_->acquireLock();
-                string filename = "imagegrab_queue_" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<unsigned int>(filename, 500000, queue_size);
-                gettime_->releaseLock();
-                Sleep(10);
-            }*/
             
             if (logging_ )
             {
@@ -186,10 +178,15 @@ namespace bias
 
             if (pluginEnabled_)
             {
-                pluginImageQueuePtr_ -> acquireLock();
-                pluginImageQueuePtr_ -> push(newStampImage);
-                pluginImageQueuePtr_ -> signalNotEmpty();
-                pluginImageQueuePtr_ -> releaseLock();
+                if (!newStampImage.isSpike) {
+                    pluginImageQueuePtr_->acquireLock();
+                    pluginImageQueuePtr_->push(newStampImage);
+                    pluginImageQueuePtr_->signalNotEmpty();
+                    pluginImageQueuePtr_->releaseLock();
+                }else {
+                    //std::cout << "frame skipped" << std::endl;
+                    //std::cout << "frame skipped" << std::endl;
+                }
             }
 
             acquireLock();

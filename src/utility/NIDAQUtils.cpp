@@ -16,8 +16,8 @@ namespace bias {
 
             dataf_high[i] = 0.00001;
             dataf_low[i] = 0.00001;
-            datas_high[i] = 0.001665;
-            datas_low[i] = 0.001665;
+            datas_high[i] = 0.00125;
+            datas_low[i] = 0.00125;
             data[i] = (uInt8)(i % 2);
         }
     }

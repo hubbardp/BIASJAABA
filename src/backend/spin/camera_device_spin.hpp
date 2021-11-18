@@ -213,6 +213,7 @@ namespace bias {
             std::vector<float> time_stamp1;
             std::vector<float> time_stamp2;
             std::vector<std::vector<uInt32>> time_stamp3;
+            std::vector<int64_t> skipFrames;
 
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
@@ -220,6 +221,8 @@ namespace bias {
 
             int numFrameskip=0;
             unsigned int cameraNumber_;
+
+            void skipDetected(StampedImage& stampedImage);
 
     };
 

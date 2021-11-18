@@ -762,6 +762,12 @@ namespace bias {
         cameraDevicePtr_->setupNIDAQ(nidaq_task, testConfigEnabled, trial_info,
                                      testConfig, gettime, cameraNumber);
     }
+
+    void Camera::skipDetected(StampedImage& stampedImage)
+        
+    {
+        cameraDevicePtr_->skipDetected(stampedImage);
+    }
     
 
     // FlyCapture2 specific methods

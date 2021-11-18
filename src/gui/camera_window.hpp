@@ -159,7 +159,7 @@ namespace bias
             double getFramesPerSec();
             unsigned long getFrameCount();
             float getFormat7PercentSpeed();
-            
+            QPointer<ImageGrabber> getImageGrabberPtr();
 
         signals:
 
@@ -339,8 +339,6 @@ namespace bias
             
             
             //Test
-            //GetTime* gettime_;
-            //NIDAQUtils* nidaq_task;
             string trial_num;
             bool loadTestConfigEnabled;
             unsigned int partnerCameraNumber_;

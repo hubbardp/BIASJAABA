@@ -2105,7 +2105,10 @@ namespace bias
     {
 
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
+
+            this->imageGrabberPtr_->connectSlots();
             
+            // start the nidaq tasks
             nidaq_task ->start_trigger_signal();
         }
 
@@ -7935,6 +7938,16 @@ namespace bias
 
         return partnerCameraWindowPtr;
 
+    }
+
+    QPointer<ImageGrabber> CameraWindow::getImageGrabberPtr()
+    {
+        if (!imageGrabberPtr_.isNull()) {
+            
+            return imageGrabberPtr_;
+            
+        }
+        
     }
 
     void CameraWindow::enableFrametoFrame() {

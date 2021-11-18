@@ -42,7 +42,8 @@ namespace bias {
             throw RuntimeError(ERROR_SPIN_CREATE_CONTEXT, ssError.str());
         }
         
-        
+        std::cout << "initialized " << "skip " << std::endl;
+        skipFrames.resize(100000,0);
         //time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
         
     }
@@ -1087,7 +1088,7 @@ namespace bias {
                         time_stamp3[numFrameskip - 3][0] = 0;
                     time_stamp3[numFrameskip - 3][1] = read_ondemand;
                 }
-            } 
+            }
             //nidaq_task_->releaseLock();
             
         }     
@@ -2295,6 +2296,12 @@ namespace bias {
         testConfigEnabled_ = testConfigEnabled;
 
         std::cout << "setup........ " << cameraNumber_ <<  std::endl;
+    }
+
+    void CameraDevice_spin::skipDetected(StampedImage& stampedImage) {
+
+        stampedImage.isSpike = true;
+        
     }
 
 }

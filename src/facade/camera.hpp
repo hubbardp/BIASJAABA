@@ -154,6 +154,9 @@ namespace bias {
                             std::shared_ptr<Lockable<GetTime>> gettime, 
                             unsigned int cameraNumber);
             
+            vector<int64_t>skipFrames;
+
+            void skipDetected(StampedImage& stampedImage);
 
         private:
             CameraDevicePtr cameraDevicePtr_;

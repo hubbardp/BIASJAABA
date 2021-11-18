@@ -7,9 +7,11 @@
 #include <QRunnable>
 #include <QPointer>
 #include <QThreadPool>
+
 #include "basic_types.hpp"
 #include "camera_fwd.hpp"
 #include "lockable.hpp"
+#include "camera_window.hpp"
 
 #include "win_time.hpp"
 #include "NIDAQUtils.hpp"
@@ -61,11 +63,17 @@ namespace bias
             static unsigned int MIN_STARTUP_SKIP;
             static unsigned int MAX_ERROR_COUNT;
 
+            void connectSlots();
+
         signals:
+            void triggerSignal(uInt32 read_buffer, int frameCount);
             void startTimer();
             void startCaptureError(unsigned int errorId, QString errorMsg);
             void stopCaptureError(unsigned int errorId, QString errorMsg);
             void captureError(unsigned int errorId, QString errorMsg);
+
+        private slots:
+            void partnerTriggerSignal(uInt32 read_buffer, int frameCount);
 
         private:
             bool ready_;
@@ -77,8 +85,14 @@ namespace bias
             bool testConfigEnabled_;
             string trial_num;
 
+            unsigned int partnerCameraNumber_;
+            uInt32 read_buffer_ = 0, read_ondemand_ = 0;
+            StampedImage stampImg;
+
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
+            QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
+            QPointer<CameraWindow> partnerCameraWindowPtr;
 
             void run();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
@@ -93,6 +107,13 @@ namespace bias
             std::vector<int64_t> time_stamps2;
             std::vector<std::vector<uInt32>>time_stamps3;
             std::vector<unsigned int> queue_size;
+            std::vector<std::vector<unsigned int>> skippedFrames;
+
+            void spikeDetected(unsigned int frameCount);
+
+            unsigned int getPartnerCameraNumber();
+            QPointer<CameraWindow> getCameraWindow();
+            QPointer<CameraWindow> getPartnerCameraWindowPtr();
     };
 
 

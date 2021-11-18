@@ -90,6 +90,7 @@ namespace bias
 
             TimeStamp cam_ofs = { 0,0 };
             TimeStamp cpu_time = { 0,0 };
+            vector<int64_t>skipFrames;
             virtual TimeStamp cameraOffsetTime();
             virtual TimeStamp getCPUtime();	
 
@@ -99,6 +100,7 @@ namespace bias
                                     std::shared_ptr<TestConfig> testConfig,
                                     std::shared_ptr<Lockable<GetTime>> gettime,
                                     unsigned int cameraNumber);
+            virtual void skipDetected(StampedImage& stampedImage);
 
         protected:
             Guid guid_;

@@ -70,7 +70,12 @@ namespace bias {
         testConfigEnabled_ = testConfigEnabled;
         testConfig_ = testConfig;
         trial_num = trial_info;
-
+        trial_num = trial_info;
+        
+        QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
+        cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
+        partnerCameraWindowPtr = getPartnerCameraWindowPtr();
+      
         if ((cameraPtr_ != NULL) && (newImageQueuePtr_ != NULL))
         {
             ready_ = true;
@@ -93,6 +98,7 @@ namespace bias {
 
             if (!testConfig_->nidaq_prefix.empty()) {
 
+                skippedFrames.resize(testConfig_->numFrames, std::vector<unsigned int>(2, 0));
                 time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
             }
             
@@ -100,6 +106,7 @@ namespace bias {
 
                 queue_size.resize(testConfig_->numFrames);
             }
+
         }
     }
 
@@ -133,8 +140,6 @@ namespace bias {
         unsigned long startUpCount = 0;
         double dtEstimate = 0.0;
         TriggerType trig;
-
-        StampedImage stampImg;
 
         TimeStamp timeStamp;
         TimeStamp timeStampInit; 
@@ -214,11 +219,9 @@ namespace bias {
         //}
         //// -------------------------------------------------------------------------------
 
-        
         int64_t pc_time;
         int64_t pc1, pc2;
-        uInt32 read_buffer = 0, read_ondemand = 0;
-        
+                
         // Grab images from camera until the done signal is given
         while (!done)
         {
@@ -227,7 +230,6 @@ namespace bias {
             done = stopped_;
             releaseLock();
 
-            // Grab an image
             if (!istriggered && nidaq_task_ != nullptr && cameraNumber_ == 0) {
 
                 nidaq_task_->startTasks();
@@ -235,16 +237,13 @@ namespace bias {
 
             }
 
+            // Grab an image
             cameraPtr_->acquireLock();
             try
             {
 
                 pc1 = 0, pc2 = 0;
-                //if(startUpCount >= numStartUpSkip_)
-                //    pc1 = gettime_->getPCtime();
                 stampImg.image = cameraPtr_->grabImage();
-                //if(startUpCount >= numStartUpSkip_)
-                //    pc2 = gettime_->getPCtime();
                 timeStamp = cameraPtr_->getImageTimeStamp();
                 error = false;
 
@@ -286,7 +285,6 @@ namespace bias {
                     if (startUpCount == MIN_STARTUP_SKIP)
                     {
                         dtEstimate = dt;
-
                     }
                     else if (startUpCount > MIN_STARTUP_SKIP)
                     {
@@ -299,7 +297,7 @@ namespace bias {
                     if (cameraNumber_ == 0 && nidaq_task_ != nullptr) {
 
                         nidaq_task_->acquireLock();
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
                         nidaq_task_->releaseLock();
                     }
 
@@ -366,37 +364,39 @@ namespace bias {
                     if (testConfig_->plugin_prefix.empty() && !testConfig_->imagegrab_prefix.empty()
                         && nidaq_task_ != nullptr) {
 
-                        
+
                         if (cameraNumber_ == 0
-                            && frameCount <= unsigned long(testConfig_->numFrames)) {
+                            && frameCount <= unsigned long(testConfig_->numFrames)) 
+                        {
 
                             nidaq_task_->acquireLock();
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
+                            emit(triggerSignal(read_buffer_, frameCount));
+                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
                             nidaq_task_->releaseLock();
-
+                            
+                            // latency calculation between 
+                            // event and camera trigger, fast clock is 50khz
+                            // hence multiplying factor is (1/50khz- period) 0.02 to calculate latency
+                            if (((read_ondemand_ - read_buffer_)*0.02) > testConfig_->latency_threshold)
+                            {
+                                cameraPtr_->skipDetected(stampImg);
+                            }
                         }
-
-                        if (frameCount <= unsigned long(testConfig_->numFrames)) {
-
-                            nidaq_task_->acquireLock();
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                            nidaq_task_->releaseLock();
-
-                        }
-
+                        
                     }
 
                     if (!testConfig_->imagegrab_prefix.empty()){ 
 
                         
-                        if (!testConfig_->nidaq_prefix.empty()) {
-
-                            if (cameraNumber_ == 0)
-                                time_stamps3[frameCount - 1][0] = read_buffer;
-                            else
-                                time_stamps3[frameCount - 1][0] = 0;
-
-                            time_stamps3[frameCount - 1][1] = read_ondemand;
+                        if (!testConfig_->nidaq_prefix.empty()) 
+                        {
+                            if (cameraNumber_ == 0) 
+                            {
+                                time_stamps3[frameCount - 1][0] = read_buffer_;
+                                time_stamps3[frameCount - 1][1] = read_ondemand_;
+                            }
+                            
                         }
 
                         if (!testConfig_->f2f_prefix.empty()) {
@@ -454,7 +454,16 @@ namespace bias {
                                 + "_" + testConfig_->queue_prefix + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
-                            gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+
+                                string filename1 = testConfig_->dir_list[0] + "/"
+                                    + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                                    + testConfig_->imagegrab_prefix
+                                    + "_" + "skipped_frames" + "_cam"
+                                    + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+
+                            gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, cameraPtr_->skipFrames);
+                            //gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
 
                         }
                     }
@@ -511,6 +520,87 @@ namespace bias {
         timeStampDbl -= (1.0e-6)*double(init.microSeconds);
         return timeStampDbl;
     }
+
+    void ImageGrabber::spikeDetected(unsigned int frameCount) {
+
+        size_t sz = newImageQueuePtr_->size();
+        skippedFrames[frameCount][0] = sz;  
+
+    }
+
+    void ImageGrabber::connectSlots() 
+    {
+
+        QPointer<ImageGrabber>partnerImageGrabberPtr_ = partnerCameraWindowPtr->getImageGrabberPtr();
+        qRegisterMetaType<uInt32>("uInt32");
+        connect(this, SIGNAL(triggerSignal(uInt32, int)),
+            partnerImageGrabberPtr_, SLOT(partnerTriggerSignal(uInt32, int)));
+
+    }
+
+    void ImageGrabber::partnerTriggerSignal(uInt32 read_buffer, int frameCount)
+    {
+ 
+        if (cameraNumber_ == 1) {
+
+            nidaq_task_->acquireLock();
+            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
+            nidaq_task_->releaseLock();
+
+            time_stamps3[frameCount - 1][0] = read_buffer;
+            time_stamps3[frameCount - 1][1] = read_ondemand_;
+
+            if (((read_ondemand_ - read_buffer_) * 0.02) > testConfig_->latency_threshold)
+            {
+                cameraPtr_->skipDetected(stampImg);
+            }
+
+        }
+       
+    }
+
+
+    unsigned int ImageGrabber::getPartnerCameraNumber()
+    {
+        // Returns camera number of partner camera. For this example
+        // we just use camera 0 and 1. In another setting you might do
+        // this by GUID or something else.
+        if (cameraNumber_ == 0)
+        {
+            return 1;
+
+        }else {
+
+            return 0;
+
+        }
+    }
+
+    QPointer<CameraWindow> ImageGrabber::getCameraWindow()
+    {
+        QPointer<CameraWindow> cameraWindowPtr = (CameraWindow*)(parent());
+        return cameraWindowPtr;
+    }
+
+    QPointer<CameraWindow> ImageGrabber::getPartnerCameraWindowPtr()
+    {
+        QPointer<CameraWindow> partnerCameraWindowPtr = nullptr;
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                partnerCameraNumber_ = getPartnerCameraNumber();
+               
+                if ((cameraWindowPtr->getCameraNumber()) == partnerCameraNumber_)
+                {
+                   
+                    partnerCameraWindowPtr = cameraWindowPtr;
+                }
+            }
+        }
+        return partnerCameraWindowPtr;
+    }
+   
 
 } // namespace bias
 
