@@ -100,6 +100,9 @@ namespace bias {
 
                 skippedFrames.resize(testConfig_->numFrames, std::vector<unsigned int>(2, 0));
                 time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+                if (nidaq_task_ != nullptr) {
+                    nidaq_task_->cam_trigger.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+                }
             }
             
             if (!testConfig_->queue_prefix.empty()) {
@@ -361,7 +364,7 @@ namespace bias {
                 ///---------------------------------------------------------------
                 if (testConfigEnabled_) {
                     
-                    if (testConfig_->plugin_prefix.empty() && !testConfig_->imagegrab_prefix.empty()
+                    if (!testConfig_->imagegrab_prefix.empty()
                         && nidaq_task_ != nullptr) {
 
 
@@ -395,6 +398,8 @@ namespace bias {
                             {
                                 time_stamps3[frameCount - 1][0] = read_buffer_;
                                 time_stamps3[frameCount - 1][1] = read_ondemand_;
+                                nidaq_task_->cam_trigger[frameCount - 1][0] = read_buffer_;
+                                nidaq_task_->cam_trigger[frameCount - 1][1] = read_ondemand_;
                             }
                             
                         }

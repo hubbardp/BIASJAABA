@@ -114,20 +114,20 @@ namespace bias
             //frame is emiited. Safe to comment??
             //updateMessageLabels();
             
-            if (testConfigEnabled_ 
+            if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()
                 && testConfig_->plugin_prefix == "signal_slot")
             {
                 
                 if (nidaq_task_ != nullptr) {
 
-                    if (cameraNumber_ == 0
+                    /*if (cameraNumber_ == 0
                         && frameCount_ <= unsigned long(testConfig_->numFrames)) {
 
                         nidaq_task_->acquireLock();
                         DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
                         nidaq_task_->releaseLock();
 
-                    }
+                    }*/
 
                     if (frameCount_ <= testConfig_->numFrames) {
 
@@ -142,7 +142,7 @@ namespace bias
                 if (!testConfig_->nidaq_prefix.empty()) {
 
                     if (cameraNumber_ == 0)
-                        time_stamps3[frameCount_][0] = read_buffer;
+                        time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_][0];
                     else
                         time_stamps3[frameCount_][0] = 0;
 

@@ -192,15 +192,16 @@ namespace bias {
 
         if (!processScoresPtr_side->isHOGHOFInitialised)
         {
-
+            
             if (!(processScoresPtr_side->HOGHOF_frame.isNull()))
             {
-
+                
                 if (nDevices_ >= 2)
                 {
 
                     cudaSetDevice(0);
                     processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
+                    std::cout << "in side " << processScoresPtr_side->isHOGHOFInitialised << std::endl;
 
                 }else {
 
@@ -215,28 +216,38 @@ namespace bias {
 
         if (!processScoresPtr_front->isHOGHOFInitialised)
         {
-
+            
             if (!(processScoresPtr_front->HOGHOF_partner.isNull()))
             {
-
+                
                 if (nDevices_ >= 2)
                 {
                     cudaSetDevice(1);
                     processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
-
+                    std::cout << "init front " << processScoresPtr_front->isHOGHOFInitialised << std::endl;
                 }else {
 
                     processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
                 }
 
+            }
 
-                if (processScoresPtr_side->isHOGHOFInitialised && processScoresPtr_front->isHOGHOFInitialised)
-                {
+        }
 
-                    classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape,
+        if (mesPass) {
+
+            if (processScoresPtr_side->isHOGHOFInitialised && processScoresPtr_front->isHOGHOFInitialised)
+            {
+
+                classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape,
                     &processScoresPtr_front->HOGHOF_partner->hog_shape);
-                }
-            
+            }
+        }
+        else {
+
+            if (isSender()) 
+            {
+
             }
         }
 
@@ -292,9 +303,290 @@ namespace bias {
         updateTrigStateInfo();
     }
 
+    void JaabaPlugin::processFrames()
+    {
+
+        if (mesPass)
+        {
+            processFramePass();
+
+        }else {
+
+            processFrame_inPlugin();
+
+        }
+
+    }
+
+
+    void JaabaPlugin::processFrame_inPlugin()
+    {
+
+        cv::Mat sideImage;
+        cv::Mat frontImage;
+        cv::Mat greySide;
+        cv::Mat greyFront;
+        uInt32 read_buffer = 0, read_ondemand = 0;
+
+        bool process_frame_time = 0;
+
+        //DEVEL
+        int64_t pc_time, start_process, end_process;
+        
+
+        // initialize memory on the gpu 
+        if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
+        {
+            gpuInit();
+            
+        }
+
+        if (isSender() && !processScoresPtr_front->isHOGHOFInitialised)
+        {
+            gpuInit();
+           
+        }
+
+        if (pluginImageQueuePtr_ != nullptr)
+        {
+
+            pluginImageQueuePtr_->acquireLock();
+            pluginImageQueuePtr_->waitIfEmpty();
+
+            if (pluginImageQueuePtr_->empty())
+            {
+                pluginImageQueuePtr_->releaseLock();
+                std::cout << "Frame skipped" << std::endl;
+                return;
+            }
+
+            StampedImage stampedImage0 = pluginImageQueuePtr_->front();
+            if (!(pluginImageQueuePtr_->empty()))
+            {
+
+                if (isSender())
+                {
+# if DEBUG
+                    if (processScoresPtr_front->capture_front.isOpened())
+                    {
+                        frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
+                        processScoresPtr_front->vid_front->convertImagetoFloat(frontImage);
+                        greyFront = frontImage;
+
+                    }
+#else
+                    frontImage = stampedImage0.image.clone();               
+#endif
+                }
+
+                if (isReceiver())
+                {
+
+#if DEBUG
+                    if(processScoresPtr_side->capture_side.isOpened()) {
+                        sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
+                        processScoresPtr_side->vid_sde->convertImagetoFloat(sideImage);
+                        greySide = sideImage;
+                    } 
+#else
+                        
+                    sideImage = stampedImage0.image.clone();
+#endif                    
+                }
+
+                acquireLock();
+                frameCount_ = stampedImage0.frameCount;
+                releaseLock();
+
+                if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
+                {
+
+                    // preprocessing the frames
+                    // convert the frame into RGB2GRAY
+                    //std::cout << "frameCount: " << frameCount_ << " " 
+                    //    << stampedImage0.isSpike << std::endl;
+                    if (isSender() && detectStarted)
+                    {
+
+# if DEBUG                       
+                        if (frontImage.channels() == 3)
+                        {
+                            cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
+                        }
+
+                        // convert the frame into float32
+                        frontImage.convertTo(greyFront, CV_32FC1);
+                        greyFront = greyFront / 255;
+#endif
+
+                        if (processScoresPtr_front->isFront)
+                        {
+
+                            if (nDevices_ >= 2)
+                            {
+                                cudaSetDevice(1);
+                                processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
+
+                            }
+                            else {
+
+                                processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
+
+                            }
+
+                        }
+
+                    }
+
+                    if (isReceiver() && detectStarted)
+                    {
+
+#if DEBUG
+                        if (sideImage.channels() == 3)
+                        {
+                            cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
+                        }
+
+                        // convert the frame into float32
+                        sideImage.convertTo(greySide, CV_32FC1);
+                        greySide = greySide / 255;
+#endif
+
+                        if (processScoresPtr_side->isSide)
+                        {
+
+                            if (nDevices_ >= 2)
+                            {
+                                cudaSetDevice(0);
+                                processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
+
+                            }
+                            else {
+
+                                processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
+                            }
+                        }
+
+                    }
+
+                }
+
+                pluginImageQueuePtr_->pop();
+            }
+            pluginImageQueuePtr_->releaseLock();
+        }
+
+
+        if (nidaq_task_ != nullptr) {
+
+            if (frameCount_ <= testConfig_->numFrames) {
+
+                nidaq_task_->acquireLock();
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                nidaq_task_->releaseLock();
+
+            }
+
+        }
+
+        if (!testConfig_->nidaq_prefix.empty()) {
+
+            if (cameraNumber_ == 0)
+                time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_][0];
+            else
+                time_stamps3[frameCount_][0] = 0;
+
+            time_stamps3[frameCount_][1] = read_ondemand;
+        }
+
+        if (!testConfig_->f2f_prefix.empty()) {
+
+            pc_time = gettime_->getPCtime();
+
+            if (frameCount_ <= testConfig_->numFrames)
+                time_stamps2[frameCount_] = pc_time;
+        }
+
+        if (!testConfig_->queue_prefix.empty()) {
+
+            if (frameCount_ <= testConfig_->numFrames)
+                queue_size[frameCount_] = pluginImageQueuePtr_->size();
+
+        }
+
+        if (process_frame_time) {
+
+            if (frameCount_ <= testConfig_->numFrames)
+                time_stamps4[frameCount_] = (end_process - start_process);
+        }
+
+        if (frameCount_ == testConfig_->numFrames - 1
+            && !testConfig_->f2f_prefix.empty())
+        {
+
+            std::string filename = testConfig_->dir_list[0] + "/"
+                + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                + testConfig_->plugin_prefix
+                + "_" + testConfig_->f2f_prefix + "cam"
+                + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+            gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
+
+        }
+
+        if (frameCount_ == testConfig_->numFrames - 1
+            && !testConfig_->nidaq_prefix.empty())
+        {
+
+            std::string filename = testConfig_->dir_list[0] + "/"
+                + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                + testConfig_->plugin_prefix
+                + "_" + testConfig_->nidaq_prefix + "cam"
+                + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+            gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
+
+        }
+
+        if (frameCount_ == testConfig_->numFrames - 1
+            && !testConfig_->queue_prefix.empty()) {
+
+            string filename = testConfig_->dir_list[0] + "/"
+                + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                + testConfig_->plugin_prefix
+                + "_" + testConfig_->queue_prefix + "cam"
+                + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+            gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+
+        }
+
+        if (frameCount_ == testConfig_->numFrames - 1
+            && process_frame_time) {
+
+            string filename = testConfig_->dir_list[0] + "/"
+                + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                + testConfig_->plugin_prefix
+                + "_" + "jaaba_process_time" + "cam"
+                + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+            std::cout << filename << std::endl;
+            gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps4);
+
+        }
+
+    }
+
 
     //void JaabaPlugin::processFrames(QList<StampedImage> frameList)
-    void JaabaPlugin::processFrames()
+    void JaabaPlugin::processFramePass()
     {
 
         cv::Mat sideImage;
@@ -427,7 +719,7 @@ namespace bias {
                             greyFront = greyFront / 255;
 
 #endif
-                            
+     
                             if(nDevices_>=2)
                             {
                                     
@@ -500,14 +792,14 @@ namespace bias {
                                
 #if DEBUG
                                 //triggerLaser();
-                                /*visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
+                                visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
                                 visplots -> livePlotSignalVec_Lift.append(double(classifier->score[0]));
                                 visplots -> livePlotSignalVec_Handopen.append(double(classifier->score[1]));
                                 visplots -> livePlotSignalVec_Grab.append(double(classifier->score[2]));
                                 visplots -> livePlotSignalVec_Supinate.append(double(classifier->score[3]));
                                 visplots -> livePlotSignalVec_Chew.append(double(classifier->score[4]));
                                 visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
-                                visplots->livePlotPtr_->show();*/
+                                visplots->livePlotPtr_->show();
                                 processScoresPtr_side -> write_score("classifierscr.csv", frameCount_ , classifier->score[0]);
 #endif
 
@@ -535,20 +827,20 @@ namespace bias {
             partnerPluginImageQueuePtr_ -> releaseLock();            
             //end_process = gettime_->getPCtime();
             
-            if (testConfigEnabled_
+            if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()
                 && testConfig_->plugin_prefix == "jaaba_plugin")
             {
 
                 if (nidaq_task_ != nullptr) {
 
-                    if (cameraNumber_ == 0
+                    /*if (cameraNumber_ == 0
                         && frameCount_ <= unsigned long(testConfig_->numFrames)) {
 
                         nidaq_task_->acquireLock();
                         DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
                         nidaq_task_->releaseLock();
 
-                    }
+                    }*/
 
                     if (frameCount_ <= testConfig_->numFrames) {
 
@@ -563,7 +855,7 @@ namespace bias {
                 if (!testConfig_->nidaq_prefix.empty()) {
 
                     if (cameraNumber_ == 0)
-                        time_stamps3[frameCount_][0] = read_buffer;
+                        time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_][0];
                     else
                         time_stamps3[frameCount_][0] = 0;
 
@@ -650,7 +942,6 @@ namespace bias {
                 }
             }
         }        
-            
     }
 
 
@@ -703,12 +994,12 @@ namespace bias {
         processScoresPtr_side = new ProcessScores(this);   
         processScoresPtr_front = new ProcessScores(this);    
         visplots = new VisPlots(livePlotPtr,this);
-        std::cout << cameraNumber_ << std::endl;
  
         numMessageSent_=0;
         numMessageReceived_=0;
         frameCount_ = 0;
         laserOn = false;
+        mesPass = false;
 
         updateWidgetsOnLoad();
         setupHOGHOF();
@@ -797,18 +1088,26 @@ namespace bias {
             processScoresPtr_side -> vid_sde = new videoBackend(file_sde);
             processScoresPtr_side -> capture_sde = processScoresPtr_side ->vid_sde -> videoCapObject();
 #endif
-
-  
+            
             HOGHOF *hoghofside = new HOGHOF(this);
-            acquireLock();
-            processScoresPtr_side -> HOGHOF_frame = hoghofside;
-            processScoresPtr_side -> HOGHOF_frame -> HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-            processScoresPtr_side -> HOGHOF_frame -> HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-            processScoresPtr_side -> HOGHOF_frame -> CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
-            processScoresPtr_side -> HOGHOF_frame -> loadHOGParams();
-            processScoresPtr_side -> HOGHOF_frame -> loadHOFParams(); 
-            processScoresPtr_side -> HOGHOF_frame -> loadCropParams();
-            releaseLock();
+
+            if (processScoresPtr_side != nullptr)
+            {
+                printf("processScores Side allocated");
+                acquireLock();
+                processScoresPtr_side->HOGHOF_frame = hoghofside;
+                processScoresPtr_side->HOGHOF_frame->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+                processScoresPtr_side->HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+                processScoresPtr_side->HOGHOF_frame->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
+                processScoresPtr_side->HOGHOF_frame->loadHOGParams();
+                processScoresPtr_side->HOGHOF_frame->loadHOFParams();
+                processScoresPtr_side->HOGHOF_frame->loadCropParams();
+                releaseLock();
+
+            }else {
+
+                printf("processScores Side not allocated");
+            }
 
         }
 
@@ -830,36 +1129,43 @@ namespace bias {
 #endif
 
             HOGHOF *hoghoffront = new HOGHOF(this);  
-            acquireLock();
-            processScoresPtr_front -> HOGHOF_partner = hoghoffront;
-            processScoresPtr_front -> HOGHOF_partner -> HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-            processScoresPtr_front -> HOGHOF_partner -> HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-            processScoresPtr_front -> HOGHOF_partner -> CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
-            processScoresPtr_front -> HOGHOF_partner -> loadHOGParams();
-            processScoresPtr_front -> HOGHOF_partner -> loadHOFParams();
-            processScoresPtr_front -> HOGHOF_partner -> loadCropParams();
-            releaseLock();
- 
-        }
+            if (processScoresPtr_front != nullptr)
+            {
+                printf("processScores Front allocated");
+                acquireLock();
+                processScoresPtr_front->HOGHOF_partner = hoghoffront;
+                processScoresPtr_front->HOGHOF_partner->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+                processScoresPtr_front->HOGHOF_partner->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+                processScoresPtr_front->HOGHOF_partner->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
+                processScoresPtr_front->HOGHOF_partner->loadHOGParams();
+                processScoresPtr_front->HOGHOF_partner->loadHOFParams();
+                processScoresPtr_front->HOGHOF_partner->loadCropParams();
+                releaseLock();
 
+            } else {
+                printf("processScores Front not allocated");
+            }
+        }
     }
 
 
     void JaabaPlugin::setupClassifier() 
     {
+        if (frontRadioButtonPtr_->isChecked() || sideRadioButtonPtr_->isChecked()) {
+            
+            if (isReceiver())
+            {
 
-        if(sideRadioButtonPtr_->isChecked() || frontRadioButtonPtr_->isChecked())
-        {
-            
-            beh_class *cls = new beh_class(this);
-            classifier = cls;
-            classifier -> classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
-            //qDebug()  << classifier->classifier_file;
-            classifier -> allocate_model();
-            classifier -> loadclassifier_model();
-            
+                beh_class *cls = new beh_class(this);
+                classifier = cls;
+                classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+                //qDebug()  << classifier->classifier_file;
+                classifier->allocate_model();
+                classifier->loadclassifier_model();
+
+            }
         }
-      
+           
     }
 
     
@@ -889,7 +1195,7 @@ namespace bias {
     void JaabaPlugin::updateWidgetsOnLoad() 
     {
 
-        if( cameraNumber_ == 1 )
+        if(isSender() && mesPass)
         {
  
             this -> setEnabled(false);   
@@ -963,22 +1269,34 @@ namespace bias {
                 processScoresPtr_side -> detectOn();
                 processScoresPtr_side -> releaseLock();
 
-                /*if(isSender())
-                {
-                    processScoresPtr_ -> acquireLock();
-                    processScoresPtr_ -> isFront = true;
-                    processScoresPtr_ -> releaseLock();    
-                }*/
+                if (!mesPass) {
 
-                if(isReceiver())
-                {
-                    processScoresPtr_side -> acquireLock();
-                    processScoresPtr_side -> isSide = true;
-                    processScoresPtr_side -> releaseLock();
+                    if(isSender())
+                    {
+                        processScoresPtr_front -> acquireLock();
+                        processScoresPtr_front -> isFront = true;
+                        processScoresPtr_front -> releaseLock();
+                    }
 
-                    processScoresPtr_front -> acquireLock();
-                    processScoresPtr_front -> isFront = true;
-                    processScoresPtr_front -> releaseLock();
+                    if (isReceiver())
+                    {
+                        processScoresPtr_side->acquireLock();
+                        processScoresPtr_side->isSide = true;
+                        processScoresPtr_side->releaseLock();
+                    }
+                       
+                }else {
+
+                    if (isReceiver())
+                    {
+                        processScoresPtr_side->acquireLock();
+                        processScoresPtr_side->isSide = true;
+                        processScoresPtr_side->releaseLock();
+                    
+                        processScoresPtr_front->acquireLock();
+                        processScoresPtr_front->isFront = true;
+                        processScoresPtr_front->releaseLock();
+                    }
                 }
 
             }
@@ -1020,33 +1338,43 @@ namespace bias {
     
     void JaabaPlugin::detectEnabled() 
     {
-
-        if(sideRadioButtonPtr_->isChecked())
+        if (frontRadioButtonPtr_->isChecked() && sideRadioButtonPtr_->isChecked())
         {
-
-            if(processScoresPtr_side -> HOGHOF_frame->isHOGPathSet 
-                && processScoresPtr_side -> HOGHOF_frame->isHOFPathSet
+            
+            if (processScoresPtr_side->HOGHOF_frame->isHOGPathSet
+                && processScoresPtr_side->HOGHOF_frame->isHOFPathSet
+                && processScoresPtr_front->HOGHOF_partner->isHOGPathSet
+                && processScoresPtr_front->HOGHOF_partner->isHOFPathSet
                 && classifier->isClassifierPathSet)
             {
+
                 detectButtonPtr_->setEnabled(true);
                 saveButtonPtr_->setEnabled(true);
+
             }
-        
-        }
 
-        if(frontRadioButtonPtr_->isChecked())
-        {
+        }else if (frontRadioButtonPtr_->isChecked()) {
 
-            if(processScoresPtr_front -> HOGHOF_partner->isHOGPathSet 
-                && processScoresPtr_front -> HOGHOF_partner->isHOFPathSet
-                && classifier->isClassifierPathSet)
+            if (processScoresPtr_front->HOGHOF_partner->isHOGPathSet
+                && processScoresPtr_front->HOGHOF_partner->isHOFPathSet)
             {
+               
                 detectButtonPtr_->setEnabled(true);
                 saveButtonPtr_->setEnabled(true);
+                
             }
 
-        }
+        }else if (sideRadioButtonPtr_->isChecked()) {
 
+            if (processScoresPtr_side->HOGHOF_frame->isHOGPathSet
+                && processScoresPtr_side->HOGHOF_frame->isHOFPathSet)
+            {
+                
+                detectButtonPtr_->setEnabled(true);
+                saveButtonPtr_->setEnabled(true);
+
+            }
+        }
     }    
     
 
@@ -1092,17 +1420,24 @@ namespace bias {
         }
 
         //load classifier
-        if(classifier == nullptr)
+        if (frontRadioButtonPtr_->isChecked() || sideRadioButtonPtr_->isChecked())
         {
+            if (isReceiver()) {
 
-            setupClassifier();
+                if (classifier == nullptr)
+                {
 
-        } else {
+                    setupClassifier();
 
-            classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
-            classifier->allocate_model();
-            classifier->loadclassifier_model();
+                }
+                else {
 
+                    classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+                    classifier->allocate_model();
+                    classifier->loadclassifier_model();
+
+                }
+            }
         }
         detectEnabled();
        

@@ -73,6 +73,7 @@ namespace bias
         protected:
  
             bool laserOn; 
+            bool mesPass;
             unsigned int cameraNumber_;
             unsigned int partnerCameraNumber_;
  
@@ -153,6 +154,9 @@ namespace bias
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
             void getFormatSettings();            
             void gpuInit();
+
+            void processFrame_inPlugin();
+            void processFramePass();
             //void cameraOffsetTime();
             //TimeStamp getPCtime();
  
