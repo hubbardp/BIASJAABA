@@ -98,10 +98,10 @@ namespace bias {
 
             if (!testConfig_->nidaq_prefix.empty()) {
 
-                skippedFrames.resize(testConfig_->numFrames, std::vector<unsigned int>(2, 0));
+                skippedFrames.resize(testConfig_->numFrames,0);
                 time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
                 if (nidaq_task_ != nullptr) {
-                    nidaq_task_->cam_trigger.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+                    nidaq_task_->cam_trigger.resize(testConfig_->numFrames);
                 }
             }
             
@@ -373,18 +373,35 @@ namespace bias {
                         {
 
                             nidaq_task_->acquireLock();
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                            emit(triggerSignal(read_buffer_, frameCount));
                             DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
+                            nidaq_task_->getCamtrig(frameCount);
                             nidaq_task_->releaseLock();
                             
                             // latency calculation between 
                             // event and camera trigger, fast clock is 50khz
                             // hence multiplying factor is (1/50khz- period) 0.02 to calculate latency
-                            if (((read_ondemand_ - read_buffer_)*0.02) > testConfig_->latency_threshold)
+                            /*if (((read_ondemand_ - read_buffer_)*0.02) > testConfig_->latency_threshold)
                             {
                                 cameraPtr_->skipDetected(stampImg);
-                            }
+                            }*/
+                        }
+
+                        if (cameraNumber_ == 1
+                            && frameCount <= unsigned long(testConfig_->numFrames))
+                        {
+
+                            nidaq_task_->acquireLock();
+                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
+                            nidaq_task_->getCamtrig(frameCount);
+                            nidaq_task_->releaseLock();
+
+                            // latency calculation between 
+                            // event and camera trigger, fast clock is 50khz
+                            // hence multiplying factor is (1/50khz- period) 0.02 to calculate latency
+                            /*if (((read_ondemand_ - read_buffer_)*0.02) > testConfig_->latency_threshold)
+                            {
+                                cameraPtr_->skipDetected(stampImg);
+                            }*/
                         }
                         
                     }
@@ -394,13 +411,14 @@ namespace bias {
                         
                         if (!testConfig_->nidaq_prefix.empty()) 
                         {
-                            if (cameraNumber_ == 0) 
-                            {
-                                time_stamps3[frameCount - 1][0] = read_buffer_;
+                            //if (cameraNumber_ == 0) 
+                            //{
+                                //nidaq_task_->acquireLock();
+                                time_stamps3[frameCount - 1][0] = nidaq_task_->cam_trigger[frameCount-1];
+                                //nidaq_task_->releaseLock();
                                 time_stamps3[frameCount - 1][1] = read_ondemand_;
-                                nidaq_task_->cam_trigger[frameCount - 1][0] = read_buffer_;
-                                nidaq_task_->cam_trigger[frameCount - 1][1] = read_ondemand_;
-                            }
+                                spikeDetected(frameCount);
+                            //}
                             
                         }
 
@@ -467,7 +485,7 @@ namespace bias {
                                     + "_" + "skipped_frames" + "_cam"
                                     + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
-                            gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, cameraPtr_->skipFrames);
+                            gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, skippedFrames);
                             //gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
 
                         }
@@ -528,8 +546,9 @@ namespace bias {
 
     void ImageGrabber::spikeDetected(unsigned int frameCount) {
 
-        size_t sz = newImageQueuePtr_->size();
-        skippedFrames[frameCount][0] = sz;  
+        if(((time_stamps3[frameCount - 1][1] - time_stamps3[frameCount - 1][0]) * 0.02 )
+            > testConfig_->latency_threshold)
+            skippedFrames[frameCount - 1] = 2;  
 
     }
 
@@ -555,10 +574,10 @@ namespace bias {
             time_stamps3[frameCount - 1][0] = read_buffer;
             time_stamps3[frameCount - 1][1] = read_ondemand_;
 
-            if (((read_ondemand_ - read_buffer_) * 0.02) > testConfig_->latency_threshold)
+            /*if (((read_ondemand_ - read_buffer_) * 0.02) > testConfig_->latency_threshold)
             {
                 cameraPtr_->skipDetected(stampImg);
-            }
+            }*/
 
         }
        

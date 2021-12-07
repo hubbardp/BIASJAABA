@@ -26,7 +26,7 @@ namespace bias
 
         float64  dataf_high[1000], dataf_low[1000], datas_high[1000], datas_low[1000];
         uInt8 data[1000];
-        std::vector<std::vector<uInt32>>cam_trigger;
+        std::vector<uInt32>cam_trigger;
         uInt32 read_buffer;
         uInt32 read_ondemand;
         bool istrig = false;
@@ -43,6 +43,7 @@ namespace bias
         void startTasks();
         void start_trigger_signal();
         void Cleanup();
+        void getCamtrig(unsigned int frameCount);
         ~NIDAQUtils();
 
     /*signals:

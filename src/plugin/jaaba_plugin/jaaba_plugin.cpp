@@ -496,7 +496,7 @@ namespace bias {
         if (!testConfig_->nidaq_prefix.empty()) {
 
             if (cameraNumber_ == 0)
-                time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_][0];
+                time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
             else
                 time_stamps3[frameCount_][0] = 0;
 
@@ -855,7 +855,7 @@ namespace bias {
                 if (!testConfig_->nidaq_prefix.empty()) {
 
                     if (cameraNumber_ == 0)
-                        time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_][0];
+                        time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
                     else
                         time_stamps3[frameCount_][0] = 0;
 

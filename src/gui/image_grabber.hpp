@@ -107,7 +107,7 @@ namespace bias
             std::vector<int64_t> time_stamps2;
             std::vector<std::vector<uInt32>>time_stamps3;
             std::vector<unsigned int> queue_size;
-            std::vector<std::vector<unsigned int>> skippedFrames;
+            std::vector<unsigned int> skippedFrames;
 
             void spikeDetected(unsigned int frameCount);
 

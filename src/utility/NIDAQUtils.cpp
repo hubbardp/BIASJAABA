@@ -100,6 +100,16 @@ namespace bias {
 
     }
 
+    void NIDAQUtils::getCamtrig(unsigned int frameCount)
+    {
+        if(cam_trigger[frameCount-1] == 0)
+        {
+            DAQmxErrChk(DAQmxReadCounterScalarU32(taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+            cam_trigger[frameCount-1] = read_buffer;
+        }
+        
+    }
+
     /*void NIDAQUtils::newFrametrig(uInt32 read_buffer) {
 
         istrig = true;
