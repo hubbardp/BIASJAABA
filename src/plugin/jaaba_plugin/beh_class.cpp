@@ -28,6 +28,8 @@ namespace bias {
             this->translated_index.resize(num_beh);
             this->flag.resize(num_beh);
             this->score.resize(num_beh,0);
+            this->score_front.resize(num_beh, 0);
+            this->score_side.resize(num_beh, 0);
 
             for(unsigned int nbeh =0;nbeh < num_beh;nbeh++)
             {
@@ -159,9 +161,9 @@ namespace bias {
     {
 
 		//shape of hist side
-		unsigned int side_x = shape_side->x;
+        unsigned int side_x = shape_side->x;
         unsigned int side_y = shape_side->y;
-		unsigned int side_bin = shape_side->bin;
+        unsigned int side_bin = shape_side->bin;
 
 		//shape of hist front 
 		unsigned int front_x = shape_front->x;
@@ -220,8 +222,8 @@ namespace bias {
 
 					if(ind_i >= side_x) { // check view by comparing with size of first dim of the view
 
-					ind_i = ind_i - side_x;
-					flag = flag + 1;
+					    ind_i = ind_i - side_x;
+					    flag = flag + 1;
 
 					}
 
@@ -295,11 +297,10 @@ namespace bias {
     }
 
 
-    void beh_class::boost_classify(std::vector<float> &scr, std::vector<float> &hogs_features,
-			 std::vector<float> &hogf_features, std::vector<float> &hofs_features,
-			 std::vector<float> &hoff_features, struct HOGShape *shape_side,
-			 struct HOFShape *shape_front, int feat_len,
-			 std::vector<boost_classifier> &model) 
+    void beh_class::boost_classify_side(std::vector<float> &scr, std::vector<float> &hogs_features,
+			  std::vector<float> &hofs_features, struct HOGShape *shape_side,
+			  struct HOFShape *shape_front, int feat_len,
+			  std::vector<boost_classifier> &model) 
     {
 
 		//shape of hist side
@@ -346,24 +347,13 @@ namespace bias {
 						num_feat = side_x * side_y * side_bin;
 						boost_compute(scr[ncls], hofs_features, index, num_feat, feat_len, dir, tr, alpha);
 
-					} else if(this->flag[ncls][midx] == 2) {
-
-						index = this->translated_index[ncls][midx];
-						num_feat = front_x * front_y * front_bin;
-						boost_compute(scr[ncls], hoff_features, index, num_feat, feat_len, dir, tr, alpha);
-
 					} else if(this->flag[ncls][midx] == 3) {
 
 						index = this->translated_index[ncls][midx];
 						num_feat = side_x * side_y * side_bin;
 						boost_compute(scr[ncls], hogs_features, index, num_feat, feat_len, dir, tr, alpha);
 
-					} else if(this->flag[ncls][midx] == 4) {
-
-						index = this->translated_index[ncls][midx];
-						num_feat = front_x * front_y * front_bin;
-						boost_compute(scr[ncls], hogf_features, index, num_feat, feat_len, dir, tr, alpha);
-                    }
+					} 
 
 				}
 
@@ -371,6 +361,73 @@ namespace bias {
 
         }
  
+    }
+
+    void beh_class::boost_classify_front(std::vector<float> &scr, std::vector<float>& hogf_features,
+        std::vector<float>& hoff_features, struct HOGShape *shape_side,
+        struct HOFShape *shape_front, int feat_len,
+        std::vector<boost_classifier> &model)
+    {
+
+        //shape of hist side
+        unsigned int side_x = shape_side->x;
+        unsigned int side_y = shape_side->y;
+        unsigned int side_bin = shape_side->bin;
+
+        //shape of hist front 
+        unsigned int front_x = shape_front->x;
+        unsigned int front_y = shape_front->y;
+        unsigned int front_bin = shape_front->bin;
+
+        //index variables
+        //unsigned int rollout_index, rem;
+        //unsigned int ind_k, ind_j, ind_i;
+        unsigned int num_feat, index;
+        int dir, dim;
+        float alpha, tr;
+
+        //rem = 0;
+        //int flag = 0;
+
+        size_t numWkCls = model[0].cls_alpha.size();
+        size_t num_beh = beh_present.size();
+        std::fill(scr.begin(), scr.end(), 0.0);
+
+        for (int ncls = 0; ncls < num_beh; ncls++)
+        {
+
+            if (beh_present[ncls])
+            {
+
+                // translate index from matlab to C indexing
+                for (int midx = 0; midx < numWkCls; midx++) {
+
+                    dim = model[ncls].cls_dim[midx];
+                    dir = model[ncls].cls_dir[midx];
+                    alpha = model[ncls].cls_alpha[midx];
+                    tr = model[ncls].cls_tr[midx];
+
+                    if (this->flag[ncls][midx] == 2) {  // book keeping to check which feature to choose
+
+                        index = this->translated_index[ncls][midx];
+                        num_feat = side_x * side_y * side_bin;
+                        boost_compute(scr[ncls], hoff_features, index, num_feat, feat_len, dir, tr, alpha);
+
+                    }
+                    else if (this->flag[ncls][midx] == 4) {
+
+                        index = this->translated_index[ncls][midx];
+                        num_feat = side_x * side_y * side_bin;
+                        boost_compute(scr[ncls], hogf_features, index, num_feat, feat_len, dir, tr, alpha);
+
+                    }
+
+                }
+
+            }
+
+        }
+
     }
 
 

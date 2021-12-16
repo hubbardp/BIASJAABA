@@ -8,6 +8,8 @@
 //#include "timer.h"
 //#include <fstream>
 //#include <iostream>
+#include <queue>
+#include <stdlib.h>
 #include <QDebug>
 #include <QThreadPool>
 
@@ -74,7 +76,21 @@ int main(int argc, char* argv[]) {
 
     //nviews - temp should be command line arg
     const int nviews = 2;
-    int numFrames = 500000; //frames to process
+    int numFrames = 2498; //frames to process
+    srand(time(NULL));
+
+    int d = rand() % numFrames;
+    int no_of_skips = 10;
+    vector<int>skipframes_view1; // frames to skip 
+    vector<int>skipframes_view2;
+
+    for (int j = 0; j < no_of_skips; j++)
+    {
+        skipframes_view1.push_back(rand() % numFrames);
+        skipframes_view2.push_back(rand() % numFrames);
+    }
+  
+    int frameSkip = 5;
 
     //Initialize and load classifier model temporary , should be made command line arguments
 #ifdef WIN32
@@ -117,7 +133,7 @@ int main(int argc, char* argv[]) {
 
     // performance benchmark variables.
     std::vector<float> timeStamps(numFrames, 0.0);
-    bias::NIDAQUtils* nidaq_task = new NIDAQUtils();
+    bias::NIDAQUtils* nidaq_task;
     uInt32 read_buffer, read_ondemand;
 
     // Print out current library version
@@ -159,11 +175,13 @@ int main(int argc, char* argv[]) {
     // initialize camera, nidaq, HOGHOF params 
     if (numCameras != 0) {
 
+        std::cout << "Camera Initialized" << std::endl;
         hasValidInput = true;
         err = spinCameraListGet(hCameraList, 0, &hCamera);
         spin_handle.initialize_camera(hCamera, hNodeMap, hNodeMapTLDevice);
 
         //hNOdeMap.GetNode();
+        nidaq_task = new NIDAQUtils();
 
         if (nidaq_task != nullptr) {
 
@@ -184,6 +202,7 @@ int main(int argc, char* argv[]) {
 
     }else if (!vidFile->isEmpty()) {
 
+        std::cout << "Video File Input" << std::endl;
         hasValidInput = true;
         feat_side->initialize_vidparams(vid_sde, param_sde);
         feat_frt->initialize_vidparams(vid_frt , param_frt);
@@ -203,6 +222,7 @@ int main(int argc, char* argv[]) {
     // Finish if there are no cameras
     while (imageCnt < numFrames) {
 
+        //std::cout << "frameCount: " << imageCnt <<  std::endl;
         if (hasValidInput && numCameras != 0)
         {
             spinImage hResultImage = NULL;
@@ -287,8 +307,33 @@ int main(int argc, char* argv[]) {
 
             feat_side->getvid_frame(vid_sde);
             feat_side->process_vidFrame(imageCnt);
+            /*if (!skipframes_view1.empty())
+            {
+                if (imageCnt < skipframes_view1.back() || imageCnt > (skipframes_view1.back() + frameSkip))
+                {
+                    feat_side->process_vidFrame(imageCnt);
+                }
+                else {
+                    std::cout << "Framecount side view skipped: " 
+                        << imageCnt << std::endl;
+                }
+                if (imageCnt > (skipframes_view1.back() + frameSkip))
+                    skipframes_view1.pop_back();
+            }*/
             feat_frt->getvid_frame(vid_frt);
-            feat_frt->process_vidFrame(imageCnt);
+            //feat_frt->process_vidFrame(imageCnt);
+            /*if (!skipframes_view2.empty())
+            {
+                if (imageCnt < skipframes_view2.back() || imageCnt > (skipframes_view2.back() + frameSkip))
+                    feat_frt->process_vidFrame(imageCnt);
+                else {
+                    std::cout << "Framecount front view skipped: "
+                        << imageCnt << std::endl;
+                }
+                if (imageCnt > (skipframes_view2.back() + frameSkip))
+                    skipframes_view2.pop_back();
+            }*/
+            
 
         }else {
 
@@ -311,20 +356,20 @@ int main(int argc, char* argv[]) {
 
         }
 
-        /*if (imageCnt > 0) {
+        if (imageCnt > 0) {
 
             classifier->boost_classify(classifier->score, feat_side->hog_out,
                 feat_frt->hog_out, feat_side->hof_out,
                 feat_frt->hof_out, &feat_side->hog_shape,
                 &feat_frt->hof_shape, classifier->nframes, classifier->model);
-            //classifier->write_score("./lift_classifier.csv", imageCnt, classifier->score[0]);
-        }*/
+            classifier->write_score("./lift_classifier.csv", imageCnt, classifier->score[0]);
+        }
 
         
-        if (imageCnt == numFrames-1){
+        /*if (imageCnt == numFrames-1){
             write_time<float>("./cam2sys_latency.csv", numFrames, timeStamps);
             break;
-        }
+        }*/
         imageCnt++;
 
     }

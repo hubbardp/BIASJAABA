@@ -511,6 +511,9 @@ namespace bias
                 newImageQueuePtr_,
                 logImageQueuePtr_,
                 pluginImageQueuePtr_,
+                loadTestConfigEnabled,
+                trial_num,
+                testConfig,
                 gettime_,
                 this
                 );

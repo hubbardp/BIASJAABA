@@ -18,7 +18,7 @@ namespace bias
 
     ImageDispatcher::ImageDispatcher(QObject *parent) : QObject(parent)
     {
-        initialize(false,false,0,NULL,NULL,NULL,NULL,NULL);
+        initialize(false,false,0,NULL,NULL,NULL,NULL,false,"",NULL,NULL);
     }
 
     ImageDispatcher::ImageDispatcher( 
@@ -29,6 +29,9 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+            bool testConfigEnabled,
+            string trial_info,
+            std::shared_ptr<TestConfig> testConfig,
             std::shared_ptr<Lockable<GetTime>> gettime,
             QObject *parent
             ) : QObject(parent)
@@ -41,6 +44,9 @@ namespace bias
                 newImageQueuePtr,
                 logImageQueuePtr,
                 pluginImageQueuePtr,
+                testConfigEnabled,
+                trial_info,
+                testConfig,
                 gettime
                 );
     }
@@ -53,6 +59,9 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+            bool testConfigEnabled,
+            string trial_info,
+            std::shared_ptr<TestConfig> testConfig,
             std::shared_ptr<Lockable<GetTime>> gettime
             ) 
     {
@@ -84,8 +93,17 @@ namespace bias
 
         //DEVEL
         gettime_ = gettime;
-        //time_stamps1.resize(500000);
-        //queue_size.resize(500000);
+        testConfigEnabled_ = testConfigEnabled;
+        testConfig_ = testConfig;
+        trial_num = trial_info;
+
+        if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()) {
+            
+            if (!testConfig_->queue_prefix.empty()) {
+
+                queue_size.resize(testConfig_->numFrames,2);
+            }
+        }
         
     }
 
@@ -164,7 +182,7 @@ namespace bias
                 break;
             }
             newStampImage = newImageQueuePtr_ -> front();
-            newImageQueuePtr_ -> pop();//queue_size[frameCount_] = newImageQueuePtr_->size();
+            newImageQueuePtr_ -> pop();
             newImageQueuePtr_ -> releaseLock();
         
             
@@ -179,13 +197,20 @@ namespace bias
             if (pluginEnabled_)
             {
                 if (!newStampImage.isSpike) {
+
                     pluginImageQueuePtr_->acquireLock();
                     pluginImageQueuePtr_->push(newStampImage);
                     pluginImageQueuePtr_->signalNotEmpty();
                     pluginImageQueuePtr_->releaseLock();
+
                 }else {
-                    //std::cout << "frame skipped" << std::endl;
-                    //std::cout << "frame skipped" << std::endl;
+
+                    if (!testConfig_->queue_prefix.empty()) {
+
+                        if (frameCount_ < unsigned long(testConfig_->numFrames))
+                            queue_size[newStampImage.frameCount] = 1;
+
+                    }
                 }
             }
 
@@ -198,22 +223,18 @@ namespace bias
             releaseLock();
 
             /************************************************************************************************************/
-            /*gettime_->acquireLock();
-            pc_time = gettime_->getPCtime();
-            gettime_->releaseLock();
+            if (frameCount_ == testConfig_->numFrames-1
+                && !testConfig_->queue_prefix.empty()) {
 
-            if (frameCount_ < 500000)
-                time_stamps1[frameCount_] = pc_time;*/
-
-            /*if (frameCount_ == 500000)
-            {
-
-                std::string filename = "imagedispatch_f2f_" + std::to_string(cameraNumber_) + ".csv";
-                gettime_->write_time_1d<int64_t>(filename, 500000, time_stamps1);
-                Sleep(100);
-            }*/
-
-
+                string filename = testConfig_->dir_list[0] + "/"
+                    + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                    + testConfig_->imagegrab_prefix
+                    + "_" + testConfig_->queue_prefix + "cam"
+                    + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+                
+                gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+            }
             /************************************************************************************************************/
             // DEVEL
             // ----------------------------------------------------------------

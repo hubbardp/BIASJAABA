@@ -82,8 +82,9 @@ namespace bias
             QPointer<beh_class> classifier;
             QPointer<VisPlots> visplots;
             QPointer<QThreadPool> threadPoolPtr_;
-            std::shared_ptr<Lockable<GetTime>> gettime_;
-            QThread thread_vis;
+            QPointer<ProcessScores> processScoresPartner_;
+
+            std::shared_ptr<Lockable<GetTime>> gettime_;   
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;
 
@@ -165,6 +166,7 @@ namespace bias
             void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
             void processSide(bool side);
             void processFront(bool front);
+            void processedFramePartner(QPointer<ProcessScores> processScoresPartner);
 
         private slots:
 
@@ -176,7 +178,7 @@ namespace bias
             void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
             void trigResetPushButtonClicked();
             void trigEnabledCheckBoxStateChanged(int state);
-
+            void onFrameProcessed(QPointer<ProcessScores> processScoresPartner);
 
     };
 

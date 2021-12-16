@@ -13,6 +13,7 @@
 
 // DEVEL 
 #include "win_time.hpp"
+#include "test_config.hpp"
 
 namespace bias
 {
@@ -34,6 +35,9 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+                    bool testConfigEnabled,
+                    string trial_info,
+                    std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
                     QObject *parent = 0
                     );
@@ -46,6 +50,9 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr ,
                     std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+                    bool testConfigEnabled,
+                    string trial_info,
+                    std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime
                     );
 
@@ -63,13 +70,14 @@ namespace bias
             bool logging_;
             bool pluginEnabled_;
             unsigned int cameraNumber_;
+            bool testConfigEnabled_;
+            string trial_num;
+
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
-         
-            std::vector<std::vector<int64_t>> time_stamps;
-
+            
             // use lock when setting these values
             // -----------------------------------
             bool stopped_;
@@ -81,9 +89,11 @@ namespace bias
 
             void run();
 
+            std::shared_ptr<TestConfig>testConfig_;
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::vector<unsigned int>queue_size;
             std::vector<int64_t>time_stamps1;
+            std::vector<std::vector<int64_t>> time_stamps;
     };
 
 } // namespace bias

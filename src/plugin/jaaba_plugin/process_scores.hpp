@@ -59,7 +59,6 @@ namespace bias
                     );
 
            void stop();
-           void enqueueFrameData(FrameData frameData);
            void detectOn();
            void detectOff();
             
@@ -71,7 +70,6 @@ namespace bias
            cv::Mat curr_frame; 
            cv::Mat grey_frame;
 
-         
            void onProcessSide();
            void onProcessFront();
            void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
