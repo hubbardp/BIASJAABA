@@ -43,7 +43,7 @@ namespace bias {
         std::vector<int>beh_present = {0,0,0,0,0,0};
 	    std::vector<std::vector<int>> translated_index; //translated mat style 2 C style indexing
 	    std::vector<std::vector<int>> flag; // book kepping for features
-	    beh_class(QWidget *parent);
+        beh_class(QWidget *parent);
 
 	    void allocate_model();
 	    void loadclassifier_model();
@@ -60,7 +60,7 @@ namespace bias {
 	    void boost_compute(float &scr, std::vector<float> &features, int ind,
 			       int num_feat, int feat_len, int dir, float tr, float alpha);
         bool pathExists(hid_t id, const std::string& path);
-
+        void addScores();
 	
     };
 

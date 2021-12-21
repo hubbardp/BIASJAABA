@@ -196,14 +196,14 @@ namespace bias
 
             if (pluginEnabled_)
             {
-                if (!newStampImage.isSpike) {
+                //if (!newStampImage.isSpike) {
 
                     pluginImageQueuePtr_->acquireLock();
                     pluginImageQueuePtr_->push(newStampImage);
                     pluginImageQueuePtr_->signalNotEmpty();
                     pluginImageQueuePtr_->releaseLock();
 
-                }else {
+                /*}else {
 
                     if (!testConfig_->queue_prefix.empty()) {
 
@@ -211,7 +211,7 @@ namespace bias
                             queue_size[newStampImage.frameCount] = 1;
 
                     }
-                }
+                }*/
             }
 
             acquireLock();

@@ -76,13 +76,14 @@ namespace bias
             bool mesPass;
             unsigned int cameraNumber_;
             unsigned int partnerCameraNumber_;
+            HOGShape partner_hogshape_;
+            HOFShape partner_hofshape_;
  
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;
             QPointer<beh_class> classifier;
             QPointer<VisPlots> visplots;
             QPointer<QThreadPool> threadPoolPtr_;
-            QPointer<ProcessScores> processScoresPartner_;
 
             std::shared_ptr<Lockable<GetTime>> gettime_;   
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
@@ -135,7 +136,6 @@ namespace bias
             std::vector<unsigned int> queue_size;
             std::vector<int64_t> time_stamps4;
 
-            std::vector<float>classifier_score;
             std::vector<float>laserRead = { 0,0,0,0,0,0 };
             std::vector<double>timeofs;
             std::vector<double>timestd;
@@ -166,7 +166,9 @@ namespace bias
             void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
             void processSide(bool side);
             void processFront(bool front);
-            void processedFramePartner(QPointer<ProcessScores> processScoresPartner);
+            void passFrontHOFShape(QPointer<HOGHOF> partner_hogshape);
+            void passSideHOGShape(QPointer<HOGHOF> partner_hogshape);
+            void passScore(vector<float> scr_pred);
 
         private slots:
 
@@ -178,7 +180,9 @@ namespace bias
             void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
             void trigResetPushButtonClicked();
             void trigEnabledCheckBoxStateChanged(int state);
-            void onFrameProcessed(QPointer<ProcessScores> processScoresPartner);
+            void onFrameHOFShape(QPointer<HOGHOF> partner_hogshape);
+            void onFrameHOGShape(QPointer<HOGHOF> partner_hogshape);
+            void scoreCompute(vector<float> scr_pred);
 
     };
 

@@ -410,20 +410,37 @@ namespace bias {
                     if (this->flag[ncls][midx] == 2) {  // book keeping to check which feature to choose
 
                         index = this->translated_index[ncls][midx];
-                        num_feat = side_x * side_y * side_bin;
+                        num_feat = front_x * front_y * front_bin;
                         boost_compute(scr[ncls], hoff_features, index, num_feat, feat_len, dir, tr, alpha);
 
                     }
                     else if (this->flag[ncls][midx] == 4) {
 
                         index = this->translated_index[ncls][midx];
-                        num_feat = side_x * side_y * side_bin;
+                        num_feat = front_x * front_y * front_bin;
                         boost_compute(scr[ncls], hogf_features, index, num_feat, feat_len, dir, tr, alpha);
 
                     }
 
                 }
 
+            }
+
+        }
+
+    }
+
+    void beh_class::addScores()
+    {
+
+        size_t num_beh = beh_present.size();
+        for (int ncls = 0; ncls < num_beh; ncls++)
+        {
+
+            if (beh_present[ncls])
+            {
+                
+                score[ncls] = score_side[ncls] + score_front[ncls];
             }
 
         }

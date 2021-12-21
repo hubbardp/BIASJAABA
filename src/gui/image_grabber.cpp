@@ -482,6 +482,7 @@ namespace bias {
                 }
 
             }else {
+
                 if (errorCountEnabled_ ) 
                 {
                     errorCount++;
