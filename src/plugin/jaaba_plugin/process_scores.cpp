@@ -6,7 +6,7 @@ namespace bias {
 
     // public 
  
-    ProcessScores::ProcessScores(QObject *parent) : QObject(parent) 
+    ProcessScores::ProcessScores(QObject *parent, bool mesPass) : QObject(parent) 
     {
 
         stopped_ = true;
@@ -20,6 +20,9 @@ namespace bias {
         isProcessed_side = false;
         isProcessed_front = false;
         isHOGHOFInitialised = false;
+        mesPass_ = mesPass;
+        frameCount_ = -1;
+        partner_frameCount_ = -1;
 
     }
 
@@ -131,7 +134,7 @@ namespace bias {
         detectStarted_ = false;
 
     }
-    
+
           
     void ProcessScores::run()
     {
@@ -148,27 +151,67 @@ namespace bias {
         
         while (!done)
         {
-            
-            if(processSide)
+            if (mesPass_) 
             {
+
+                if (processSide)
+                {
+
+                    cudaSetDevice(0);
+                    genFeatures(HOGHOF_frame, processedFrameCount + 1);
+                    acquireLock();
+                    processSide = false;
+                    isProcessed_side = true;
+                    releaseLock();
+
+                }
+
+                if (processFront) {
+
+                    cudaSetDevice(1);
+                    genFeatures(HOGHOF_partner, processedFrameCount + 1);
+                    acquireLock();
+                    processFront = false;
+                    isProcessed_front = true;
+                    releaseLock();
+                }
+
+            }else {  
+
                 
-                cudaSetDevice(0);
-                genFeatures(HOGHOF_frame, processedFrameCount+1);
-                acquireLock();
-                processSide = false;
-                isProcessed_side = true;
-                releaseLock();
-                 
-            }
+                /*if ((frameCount_ == processedFrameCount+1))
+                {
+                    //std::cout << "frameCount_" << frameCount_ << "partnet_frameCount" << partner_frameCount_ << std::endl;
+                    if (isProcessed_side) {
 
-            if (processFront) {
+                        acquireLock();
+                        //classifier->score_front = predScore_.first;
+                        //classifier->addScores();
+                        isProcessed_front = 0;
+                        isProcessed_side = 0;
+                        write_score("classifierscr.csv", processedFrameCount, classifier->score_side[0]);
+                        releaseLock();
+                    }
+                    
+                    
+                } else if (processedFrameCount == partner_frameCount_) {
 
-                cudaSetDevice(1);
-                genFeatures(HOGHOF_partner, processedFrameCount + 1);
-                acquireLock();
-                processFront = false;
-                isProcessed_front = true;
-                releaseLock();
+                    classifier->score_front = predScore_.first;
+                    std::fill(classifier->score_side.begin(), classifier->score_side.end(), 0.0);
+                    classifier->addScores();
+
+                } else if (processedFrameCount == frameCount_) {
+
+                    std::fill(classifier->score_front.begin(), classifier->score_front.end(), 0.0);
+                    classifier->addScores();
+
+                } else {
+
+                    std::fill(classifier->score_front.begin(), classifier->score_front.end(), 0.0);
+                    std::fill(classifier->score_side.begin(), classifier->score_side.end(), 0.0);
+                }*/
+                
+                
             }
 
             acquireLock();

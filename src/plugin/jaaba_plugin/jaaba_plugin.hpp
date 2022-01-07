@@ -41,16 +41,19 @@ namespace bias
     class HOGHOF;
     class beh_class;
     class CameraWindow;
+    
 
     class JaabaPlugin : public BiasPlugin, public Ui::JaabaPluginDialog
     {
+        typedef std::pair<vector<float>, int> PredData;
+
         Q_OBJECT
 
         public:
 
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
-            int lastProcessedFrameCount = 0;
+            int scoreCount = 0;
 
             JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr,
                 std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parent=0);
@@ -81,7 +84,7 @@ namespace bias
  
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;
-            QPointer<beh_class> classifier;
+            //QPointer<beh_class> classifier;
             QPointer<VisPlots> visplots;
             QPointer<QThreadPool> threadPoolPtr_;
 
@@ -89,8 +92,11 @@ namespace bias
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;
 
-            QQueue<FrameData> sendImageQueue;
-            QQueue<FrameData> receiveImageQueue;
+            PredData predScoreSide_;
+            PredData predScoreFront_;
+
+            QQueue<PredData> frontScoreQueue;
+            QQueue<PredData> sideScoreQueue;
 
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
@@ -117,8 +123,9 @@ namespace bias
             double tStamp=0.0;
             int64_t process_time=0;
             TimeStamp cam_ofs={0,0};
-           
- 
+            int partner_frameCount_;
+            bool score_calculated_;
+
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
                          
@@ -129,7 +136,13 @@ namespace bias
             bool testConfigEnabled_;
             string trial_num_;
 
+            
             //test
+            QString file_frt; // video input for front
+            QString file_sde; // video input for side
+
+            int nframes_; // test video frames
+
             std::vector<float> time_stamps1;
             std::vector<int64_t> time_stamps2;
             std::vector<std::vector<uInt32>>time_stamps3;
@@ -168,7 +181,9 @@ namespace bias
             void processFront(bool front);
             void passFrontHOFShape(QPointer<HOGHOF> partner_hogshape);
             void passSideHOGShape(QPointer<HOGHOF> partner_hogshape);
-            void passScore(vector<float> scr_pred);
+            void passScore(PredData predSore);
+            void passFrame(unsigned int frameNum);
+            void passScoreDone(bool score_cal);
 
         private slots:
 
@@ -182,7 +197,9 @@ namespace bias
             void trigEnabledCheckBoxStateChanged(int state);
             void onFrameHOFShape(QPointer<HOGHOF> partner_hogshape);
             void onFrameHOGShape(QPointer<HOGHOF> partner_hogshape);
-            void scoreCompute(vector<float> scr_pred);
+            void scoreCompute(PredData predScore);
+            void receiveFrame(unsigned int frameNum);
+            void scoreCalculated(bool score_cal);
 
     };
 

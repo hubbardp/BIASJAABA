@@ -44,11 +44,10 @@ namespace bias {
             exit(-1);   
         }
         
-        if(!cap.read(frame)) {
+        cap.read(frame);
 
-            printf("Unable to Read Frame");
-            exit(-1);
-        }
+        if (frame.empty())
+            return frame;
 
         // convert the frame to grayscale
         cv::cvtColor(frame, grey, cv::COLOR_BGR2GRAY);
@@ -89,6 +88,11 @@ namespace bias {
 
         return cap.get(cv::CAP_PROP_FRAME_COUNT);
 
+    }
+
+    int videoBackend::getcurrentFrameNumber(cv::VideoCapture& cap) {
+
+        return cap.get(cv::CAP_PROP_POS_FRAMES);
     }
 
 }

@@ -28,6 +28,7 @@ namespace bias
 
     class ProcessScores : public QObject, public QRunnable, public Lockable<Empty>
     {
+        typedef std::pair<vector<float>, int> PredData;
 
         Q_OBJECT
 
@@ -39,16 +40,23 @@ namespace bias
            bool isFront;
            bool processSide;
            bool processFront;
+           bool mesPass_;
           
            bool isProcessed_side;
            bool isProcessed_front; 
            bool isHOGHOFInitialised;
            int processedFrameCount;
+           int frameCount_;
+           int partner_frameCount_;
+
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;
+           QPointer<beh_class> classifier;
+           PredData predScore_;
+           PredData partner_predScore_;
            //QPointer<beh_class> classifier; 
 
-           ProcessScores(QObject *parent=0);
+           ProcessScores(QObject *parent, bool mesPass);
            ProcessScores( 
                     bool logging,
                     bool pluginEnabled,
@@ -95,7 +103,6 @@ namespace bias
            void newShapeData(ShapeData data);
            void sideProcess(bool side);
            void frontProcess(bool front);
-        
 
     };
 

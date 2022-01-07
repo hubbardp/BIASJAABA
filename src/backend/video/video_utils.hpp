@@ -28,6 +28,7 @@ namespace bias {
         int getImageWidth(cv::VideoCapture& cap);
         float getfps(cv::VideoCapture& cap);
         int getNumFrames(cv::VideoCapture& cap);
+        int getcurrentFrameNumber(cv::VideoCapture& cap);
 
     };
 
