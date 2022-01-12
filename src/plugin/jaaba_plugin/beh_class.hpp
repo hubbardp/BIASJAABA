@@ -60,7 +60,8 @@ namespace bias {
 	    void boost_compute(float &scr, std::vector<float> &features, int ind,
 			       int num_feat, int feat_len, int dir, float tr, float alpha);
         bool pathExists(hid_t id, const std::string& path);
-        void addScores();
+        void addScores(std::vector<float>& scr_side,
+                       std::vector<float>& scr_front);
 	
     };
 

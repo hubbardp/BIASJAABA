@@ -81,6 +81,9 @@ namespace bias
             unsigned int partnerCameraNumber_;
             HOGShape partner_hogshape_;
             HOFShape partner_hofshape_;
+
+            PredData predScoreSide_;
+            PredData predScoreFront_;
  
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;
@@ -92,11 +95,6 @@ namespace bias
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;
 
-            PredData predScoreSide_;
-            PredData predScoreFront_;
-
-            QQueue<PredData> frontScoreQueue;
-            QQueue<PredData> sideScoreQueue;
 
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;

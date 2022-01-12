@@ -41,6 +41,8 @@ namespace bias
            bool processSide;
            bool processFront;
            bool mesPass_;
+           int scoreCount;
+           bool score_calculated_;
           
            bool isProcessed_side;
            bool isProcessed_front; 
@@ -55,6 +57,11 @@ namespace bias
            PredData predScore_;
            PredData partner_predScore_;
            //QPointer<beh_class> classifier; 
+
+           PredData predScoreSide_;
+           PredData predScoreFront_;
+           QQueue<PredData> frontScoreQueue;
+           QQueue<PredData> sideScoreQueue;
 
            ProcessScores(QObject *parent, bool mesPass);
            ProcessScores( 

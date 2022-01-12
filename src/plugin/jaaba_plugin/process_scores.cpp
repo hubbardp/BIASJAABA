@@ -23,6 +23,7 @@ namespace bias {
         mesPass_ = mesPass;
         frameCount_ = -1;
         partner_frameCount_ = -1;
+        scoreCount = 0;
 
     }
 
@@ -176,9 +177,41 @@ namespace bias {
                     releaseLock();
                 }
 
-            }else {  
-
+            }else { 
                 
+                if (!frontScoreQueue.empty() && !sideScoreQueue.empty())
+                {
+
+                    acquireLock();
+                    predScoreFront_ = frontScoreQueue.front();
+                    predScoreSide_ = sideScoreQueue.front();
+                    releaseLock();
+
+                    if (predScoreSide_.second == predScoreFront_.second)
+                    {
+
+                        classifier->addScores(predScoreSide_.first, predScoreFront_.first);
+
+                        isProcessed_front = 0;
+                        isProcessed_side = 0;
+                        score_calculated_ = 0;
+
+                        acquireLock();
+                        frontScoreQueue.pop_front();
+                        sideScoreQueue.pop_front();
+                        releaseLock();
+                        
+                        //emit(passScoreDone(score_calculated_));
+                        write_score("classifierscr.csv",
+                            scoreCount,
+                            classifier->score[0]);
+
+                        scoreCount++;
+
+                    }
+                
+                }
+
                 /*if ((frameCount_ == processedFrameCount+1))
                 {
                     //std::cout << "frameCount_" << frameCount_ << "partnet_frameCount" << partner_frameCount_ << std::endl;

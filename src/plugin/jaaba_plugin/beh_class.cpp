@@ -430,7 +430,8 @@ namespace bias {
 
     }
 
-    void beh_class::addScores()
+    void beh_class::addScores(std::vector<float>& scr_side, 
+                              std::vector<float>& scr_front)
     {
 
         size_t num_beh = beh_present.size();
@@ -440,7 +441,7 @@ namespace bias {
             if (beh_present[ncls])
             {
                 
-                score[ncls] = score_side[ncls] + score_front[ncls];
+                score[ncls] = scr_side[ncls] + scr_front[ncls];
             }
 
         }
