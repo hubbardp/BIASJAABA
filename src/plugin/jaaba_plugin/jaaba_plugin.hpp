@@ -117,12 +117,13 @@ namespace bias
             unsigned int numskippedFrames_=0;
             int image_height=0;
             int image_width=0;
-            float threshold_runtime = static_cast<float>(3000);
+            //float threshold_runtime = static_cast<float>(3000);
             double tStamp=0.0;
             int64_t process_time=0;
             TimeStamp cam_ofs={0,0};
             int partner_frameCount_;
             bool score_calculated_;
+            int frameSkip;
 
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
@@ -147,6 +148,9 @@ namespace bias
             std::vector<unsigned int> queue_size;
             std::vector<int64_t> time_stamps4;
 
+            priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips
+            priority_queue<int, vector<int>, greater<int>>skipframes_view2; // front skips
+
             std::vector<float>laserRead = { 0,0,0,0,0,0 };
             std::vector<double>timeofs;
             std::vector<double>timestd;
@@ -169,8 +173,7 @@ namespace bias
 
             void processFrame_inPlugin();
             void processFramePass();
-            //void cameraOffsetTime();
-            //TimeStamp getPCtime();
+            void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
  
         signals:
 
@@ -180,7 +183,7 @@ namespace bias
             void passFrontHOFShape(QPointer<HOGHOF> partner_hogshape);
             void passSideHOGShape(QPointer<HOGHOF> partner_hogshape);
             void passScore(PredData predSore);
-            void passFrame(unsigned int frameNum);
+            void passFrameRead(int64_t frameRead);
             void passScoreDone(bool score_cal);
 
         private slots:
@@ -196,7 +199,8 @@ namespace bias
             void onFrameHOFShape(QPointer<HOGHOF> partner_hogshape);
             void onFrameHOGShape(QPointer<HOGHOF> partner_hogshape);
             void scoreCompute(PredData predScore);
-            void receiveFrame(unsigned int frameNum);
+            void receiveFrameRead(int64_t frameReadtime);
+            void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);
 
     };

@@ -83,6 +83,7 @@ namespace bias {
             void loadHOFParams();
             void loadCropParams();
             void loadImageParams(int img_width, int img_height);
+            void setLastInput();
             //void genFeatures();
 
         private: 

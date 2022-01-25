@@ -386,6 +386,13 @@ namespace bias
     }
 
 
+    void HOGHOF::setLastInput() {
+
+        std::cout << "vid HOGHOF" << std::endl;
+        HOFSetLastInput(hof_ctx);
+    }
+
+
     /*void HOGHOF::allocateHOGoutput(float* out, HOGContext* hog_init) {
 
 	    size_t hog_nbytes = HOGOutputByteCount(hog_init);

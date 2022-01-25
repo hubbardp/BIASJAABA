@@ -476,6 +476,12 @@ float HOGHOF::copyValueFloat(QJsonObject& ob,
 	return 0.0;
 }
 
+void HOGHOF::setLastInput() {
+    
+    std::cout << "vid HOGHOF" << std::endl;
+    HOFSetLastInput(hof_ctx);
+}
+
 
 //Test
 

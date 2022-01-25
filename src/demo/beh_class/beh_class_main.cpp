@@ -12,6 +12,9 @@
 #include <stdlib.h>
 #include <QDebug>
 #include <QThreadPool>
+#include <QQueue>
+
+typedef std::pair<vector<float>, int> PredData;
 
 //using namespace bias;
 
@@ -72,25 +75,45 @@ void write_time(std::string filename, int framenum, std::vector<T> timeVec)
 
 }
 
+void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames,
+                      unsigned int numFrames)
+{
+
+    //srand(time(NULL));
+
+    int no_of_skips = 1;
+    int framenumber;
+
+    for (int j = 0; j < no_of_skips; j++)
+    {
+        framenumber = rand() % numFrames;
+        skip_frames.push(framenumber);
+        std::cout << framenumber << std::endl;
+
+    }
+
+}
+
 int main(int argc, char* argv[]) {
+
+    //srand(time(NULL));
 
     //nviews - temp should be command line arg
     const int nviews = 2;
     int numFrames = 2498; //frames to process
-    srand(time(NULL));
 
-    int d = rand() % numFrames;
-    int no_of_skips = 10;
-    vector<int>skipframes_view1; // frames to skip 
-    vector<int>skipframes_view2;
+    priority_queue<int, vector<int>, greater<int>>skipframes_view1; // frames to skip 
+    priority_queue<int, vector<int>, greater<int>>skipframes_view2;
 
-    for (int j = 0; j < no_of_skips; j++)
-    {
-        skipframes_view1.push_back(rand() % numFrames);
-        skipframes_view2.push_back(rand() % numFrames);
-    }
+    QQueue<PredData> frontScoreQueue; // front score buffers
+    QQueue<PredData> sideScoreQueue; // side score buffers
+
+    //initiateVidSkips(skipframes_view1, numFrames);
+    //initiateVidSkips(skipframes_view2, numFrames);
   
     int frameSkip = 5;
+    bool isSkipFront = 0;
+    bool isSkipSide = 0;
 
     //Initialize and load classifier model temporary , should be made command line arguments
 #ifdef WIN32
@@ -107,6 +130,7 @@ int main(int argc, char* argv[]) {
                                "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi" };
     videoBackend vid_sde(vidFile[0]);
     videoBackend vid_frt(vidFile[1]);
+
     //Initialize and load classifier model
     QString classifier_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/multiclassifier.mat";
 #endif    
@@ -212,10 +236,6 @@ int main(int argc, char* argv[]) {
         feat_frt->initializeHOGHOF(width, height, numFrames);
         classifier->translate_mat2C(&feat_side->hog_shape, &feat_frt->hog_shape);
 
-    }else {
-
-
-
     }
     
     bool isTriggered = false;
@@ -223,6 +243,9 @@ int main(int argc, char* argv[]) {
     while (imageCnt < numFrames) {
 
         //std::cout << "frameCount: " << imageCnt <<  std::endl;
+        isSkipFront = 0;
+        isSkipSide = 0;
+
         if (hasValidInput && numCameras != 0)
         {
             spinImage hResultImage = NULL;
@@ -240,7 +263,6 @@ int main(int argc, char* argv[]) {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 printf("skip frame...\n\n", err);
-
             }
 
             spinError err = SPINNAKER_ERR_SUCCESS;
@@ -259,7 +281,6 @@ int main(int argc, char* argv[]) {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 printf("Unable to convert image...\n\n", err);
-
             }
 
             ImageInfo_spin imageInfo = getImageInfo_spin(hSpinImageConv);
@@ -304,36 +325,62 @@ int main(int argc, char* argv[]) {
             //std::cout << imageCnt << std::endl;
 
         }else if (hasValidInput && !vidFile->isEmpty()) {
-
+            
             feat_side->getvid_frame(vid_sde);
-            feat_side->process_vidFrame(imageCnt);
             /*if (!skipframes_view1.empty())
             {
-                if (imageCnt < skipframes_view1.back() || imageCnt > (skipframes_view1.back() + frameSkip))
+                if (imageCnt < skipframes_view1.top())
                 {
+
                     feat_side->process_vidFrame(imageCnt);
+
+                } else if (imageCnt >= (skipframes_view1.top() + frameSkip)) {
+
+                    feat_side->setLastInput();
+                    feat_side->process_vidFrame(imageCnt);
+
+                } else {
+
+                    std::cout << "Framecount side view skipped: " << imageCnt << std::endl;
+                    isSkipSide = 1;
+                    classifier->score_side = { 0.0,0.0,0.0,0.0,0.0,0.0 };
+                    classifier->score_front = {0.0,0.0,0.0,0.0,0.0,0.0};
+                    classifier->addScores(classifier->score_side, classifier->score_front);
+                    classifier->write_score("./lift_classifier.csv", imageCnt, classifier->score[0]);
+                    imageCnt++;
+                    continue;
                 }
-                else {
-                    std::cout << "Framecount side view skipped: " 
-                        << imageCnt << std::endl;
-                }
-                if (imageCnt > (skipframes_view1.back() + frameSkip))
-                    skipframes_view1.pop_back();
+                if (imageCnt == (skipframes_view1.top() + frameSkip))
+                    skipframes_view1.pop();
             }*/
+            feat_side->process_vidFrame(imageCnt);
+
             feat_frt->getvid_frame(vid_frt);
-            //feat_frt->process_vidFrame(imageCnt);
             /*if (!skipframes_view2.empty())
             {
-                if (imageCnt < skipframes_view2.back() || imageCnt > (skipframes_view2.back() + frameSkip))
-                    feat_frt->process_vidFrame(imageCnt);
-                else {
-                    std::cout << "Framecount front view skipped: "
-                        << imageCnt << std::endl;
+                if ((imageCnt < skipframes_view2.top()))
+                {
+
+                }else if((imageCnt >= (skipframes_view2.top() + frameSkip))) {
+
+                    feat_frt->setLastInput();
+
+                }else {
+
+                    std::cout << "frameCnt: " << imageCnt << std::endl;
+                    isSkipFront = 1;
+                    classifier->score_side = { 0.0,0.0,0.0,0.0,0.0,0.0 };
+                    classifier->score_front = { 0.0,0.0,0.0,0.0,0.0,0.0 };
+                    classifier->addScores(classifier->score_side, classifier->score_front);
+                    classifier->write_score("./lift_classifier.csv", imageCnt, classifier->score[0]);
+                    imageCnt++;
+                    continue;
+
                 }
-                if (imageCnt > (skipframes_view2.back() + frameSkip))
-                    skipframes_view2.pop_back();
+                if (imageCnt == (skipframes_view2.top() + frameSkip))
+                    skipframes_view2.pop();
             }*/
-            
+            feat_frt->process_vidFrame(imageCnt);
 
         }else {
 
@@ -358,11 +405,33 @@ int main(int argc, char* argv[]) {
 
         if (imageCnt > 0) {
 
-            classifier->boost_classify(classifier->score, feat_side->hog_out,
-                feat_frt->hog_out, feat_side->hof_out,
-                feat_frt->hof_out, &feat_side->hog_shape,
-                &feat_frt->hof_shape, classifier->nframes, classifier->model);
-            classifier->write_score("./lift_classifier.csv", imageCnt, classifier->score[0]);
+            if (!isSkipSide)
+            {
+                classifier->boost_classify_side(classifier->score_side,
+                    feat_side->hog_out, feat_side->hof_out,
+                    &feat_side->hog_shape, &feat_frt->hof_shape, classifier->nframes,
+                    classifier->model);
+
+            } else {
+
+                classifier->score_side = {0.0,0.0,0.0,0.0,0.0,0.0};
+            }
+
+            if (!isSkipFront)
+            {
+                classifier->boost_classify_front(classifier->score_front,
+                    feat_frt->hog_out, feat_frt->hof_out,
+                    &feat_side->hog_shape, &feat_frt->hof_shape, classifier->nframes,
+                    classifier->model);
+
+            } else {
+
+                std::cout << "score: " << imageCnt << std::endl;
+                classifier->score_front = {0.0,0.0,0.0,0.0,0.0,0.0};
+            }
+
+            classifier->addScores(classifier->score_side, classifier->score_front);
+            classifier->write_score("./lift_classifier_noskip.csv", imageCnt, classifier->score[0]);
         }
 
         
@@ -409,8 +478,7 @@ int main(int argc, char* argv[]) {
         printf("Unable to release cameras. Aborting with error %d...\n\n", err);
         return err;
     }
-
-        
+   
 }
 
  

@@ -88,6 +88,7 @@ class HOGHOF {
     void process_vidFrame(int frame);
     void process_camFrame();
     void genFeatures(QString vidname, QString& CropFile);
+    void setLastInput();
 
     void copytoHOGParams(QJsonObject& obj);
     void copytoHOFParams(QJsonObject& obj);

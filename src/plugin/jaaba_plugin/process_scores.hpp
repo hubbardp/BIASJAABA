@@ -20,6 +20,8 @@
 #include <QQueue>
 #include <memory>
 
+#include "win_time.hpp"
+
 namespace bias 
 {
 
@@ -50,6 +52,7 @@ namespace bias
            int processedFrameCount;
            int frameCount_;
            int partner_frameCount_;
+           int64_t side_read_time_, front_read_time_;
 
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;
@@ -62,17 +65,10 @@ namespace bias
            PredData predScoreFront_;
            QQueue<PredData> frontScoreQueue;
            QQueue<PredData> sideScoreQueue;
-
-           ProcessScores(QObject *parent, bool mesPass);
-           ProcessScores( 
-                    bool logging,
-                    bool pluginEnabled,
-                    unsigned int cameraNumber,
-                    std::shared_ptr<Lockable<Camera>> cameraPtr,
-                    std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-                    QObject *parent = 0
-                    );
-
+           std::shared_ptr<Lockable<GetTime>> getTime_;
+           ProcessScores(QObject *parent, bool mesPass,
+                         std::shared_ptr<Lockable<GetTime>> getTime);
+          
            void stop();
            void detectOn();
            void detectOff();
@@ -97,6 +93,7 @@ namespace bias
 
            bool stopped_;
            bool ready_;
+           float threshold_runtime = static_cast<float>(3000);
  
            QQueue<FrameData> frameQueue_;
            QPointer<BiasPlugin> partnerPluginPtr_;
