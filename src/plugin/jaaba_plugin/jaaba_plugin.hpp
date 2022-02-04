@@ -134,7 +134,6 @@ namespace bias
 
             bool testConfigEnabled_;
             string trial_num_;
-
             
             //test
             QString file_frt; // video input for front
@@ -143,11 +142,13 @@ namespace bias
             int nframes_; // test video frames
 
             std::vector<float> time_stamps1;
-            std::vector<int64_t> time_stamps2;
-            std::vector<std::vector<uInt32>>time_stamps3;
-            std::vector<unsigned int> queue_size;
-            std::vector<int64_t> time_stamps4;
-
+            std::vector<int64_t> time_stamps2;// pc time
+            std::vector<std::vector<uInt32>>time_stamps3; // nidaq timings
+            std::vector<unsigned int> queue_size; // queue size
+            std::vector<int64_t> time_stamps4;// function diff timings
+            std::vector<int64_t> time_stamps5;// test
+            
+ 
             priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips
             priority_queue<int, vector<int>, greater<int>>skipframes_view2; // front skips
 
@@ -183,8 +184,9 @@ namespace bias
             void passFrontHOFShape(QPointer<HOGHOF> partner_hogshape);
             void passSideHOGShape(QPointer<HOGHOF> partner_hogshape);
             void passScore(PredData predSore);
-            void passFrameRead(int64_t frameRead);
+            void passFrameRead(int64_t frameRead, int);
             void passScoreDone(bool score_cal);
+            void doNotProcess();
 
         private slots:
 
@@ -199,9 +201,10 @@ namespace bias
             void onFrameHOFShape(QPointer<HOGHOF> partner_hogshape);
             void onFrameHOGShape(QPointer<HOGHOF> partner_hogshape);
             void scoreCompute(PredData predScore);
-            void receiveFrameRead(int64_t frameReadtime);
+            void receiveFrameRead(int64_t frameReadtime, int frameCount);
             void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);
+            void setSkipFrameProcess();
 
     };
 

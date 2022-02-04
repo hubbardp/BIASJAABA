@@ -45,6 +45,8 @@ namespace bias
            bool mesPass_;
            int scoreCount;
            bool score_calculated_;
+           bool skip_frameFront;
+           bool skip_frameSide;
           
            bool isProcessed_side;
            bool isProcessed_front; 
@@ -52,7 +54,7 @@ namespace bias
            int processedFrameCount;
            int frameCount_;
            int partner_frameCount_;
-           int64_t side_read_time_, front_read_time_;
+           uint64_t side_read_time_, front_read_time_;
 
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;
@@ -65,6 +67,7 @@ namespace bias
            PredData predScoreFront_;
            QQueue<PredData> frontScoreQueue;
            QQueue<PredData> sideScoreQueue;
+           std::vector<int64_t> frame_read_stamps; // frame read pass timings
            std::shared_ptr<Lockable<GetTime>> getTime_;
            ProcessScores(QObject *parent, bool mesPass,
                          std::shared_ptr<Lockable<GetTime>> getTime);
@@ -107,6 +110,7 @@ namespace bias
            void newShapeData(ShapeData data);
            void sideProcess(bool side);
            void frontProcess(bool front);
+
 
     };
 

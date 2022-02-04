@@ -303,10 +303,12 @@ namespace bias {
             
             connect(partnerPluginPtr, SIGNAL(passFrameNum(unsigned int)),
                     this, SLOT(receiveFrameNum(unsigned int)));
-            connect(partnerPluginPtr, SIGNAL(passFrameRead(int64_t)),
-                this, SLOT(receiveFrameRead(int64_t)));
+            connect(partnerPluginPtr, SIGNAL(passFrameRead(int64_t, int)),
+                this, SLOT(receiveFrameRead(int64_t, int)));
             connect(partnerPluginPtr, SIGNAL(passScoreDone(bool)),
                 this, SLOT(scoreCalculated(bool)));
+            connect(partnerPluginPtr, SIGNAL(doNotProcess()),
+                this, SLOT(setSkipFrameProcess()));
         }
 
     }
@@ -366,8 +368,8 @@ namespace bias {
 
         //DEVEL
         int64_t pc_time, start_process, end_process;
-        int64_t front_read_time;
-        
+        int64_t front_read_time, side_read_time, time_now;
+        string filename;
         
         // initialize memory on the gpu 
         if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
@@ -379,7 +381,6 @@ namespace bias {
         {
             gpuInit();  
         }
-
         
         if (pluginImageQueuePtr_ != nullptr)
         {
@@ -420,11 +421,13 @@ namespace bias {
                         emit(passFrame(frameCount_));
                     releaseLock();
 #endif
+
                     if (isSender() && detectStarted)
                     {
 #if DEBUG
                         if (!skipframes_view1.empty())
                         {
+
                             if (processScoresPtr_front->processedFrameCount < skipframes_view1.top()){
 
 
@@ -450,7 +453,7 @@ namespace bias {
                             if (processScoresPtr_front->processedFrameCount < nframes_)
                             {
                                 frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
-
+                               
                                 if (frontImage.empty())
                                     return;
 
@@ -458,8 +461,7 @@ namespace bias {
                                 frameCount_ = processScoresPtr_front->vid_front->getcurrentFrameNumber(processScoresPtr_front->capture_front);
                                 processScoresPtr_front->frameCount_ = frameCount_;
                                 greyFront = frontImage;
-                                front_read_time = gettime_->getPCtime();
-                                //emit(passFrameRead(front_read_time));
+                                
 
                             } else {
 
@@ -480,6 +482,7 @@ namespace bias {
                         greyFront = greyFront / 255;
 #endif
                     }
+
 
                     if (isReceiver() && detectStarted)
                     {
@@ -513,7 +516,7 @@ namespace bias {
                         {
                             if (processScoresPtr_side->processedFrameCount < nframes_)
                             {
-
+                                
                                 sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
                                 processScoresPtr_side->vid_sde->convertImagetoFloat(sideImage);
 
@@ -524,9 +527,6 @@ namespace bias {
                                 processScoresPtr_side->frameCount_ = frameCount_;
                                 greySide = sideImage;
 
-                                acquireLock();
-                                processScoresPtr_side->side_read_time_ = gettime_->getPCtime();
-                                releaseLock();
 
                             } else {
 
@@ -548,12 +548,33 @@ namespace bias {
                         greySide = greySide / 255;
 #endif                    
                     }
-                
+
+                    pc_time = gettime_->getPCtime();
+                    emit(passFrameRead(pc_time, frameCount_));
+
+                    if (frameCount_ == 100)
+                    {
+
+                        string filename;
+                        if (cameraNumber_ == 1) {
+
+                            filename = "C:/Users/27rut/BIAS/build/Release/front_read.csv";
+                            gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, processScoresPtr_front->frame_read_stamps);
+
+                        } else {
+
+                            filename = "C:/Users/27rut/BIAS/build/Release/side_read.csv";
+                            gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, processScoresPtr_side->frame_read_stamps);
+
+                        }
+
+                    }
 
                     if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
                     {
 
                         if (processScoresPtr_front->isFront)
+                            //&& !processScoresPtr_front->skip_frameFront)
                         {
 
                             if (nDevices_ >= 2)
@@ -582,15 +603,48 @@ namespace bias {
                                 processScoresPtr_front->predScore_ = std::pair<vector<float>, int>(processScoresPtr_front->classifier->score_front, 
                                                                      processScoresPtr_front->processedFrameCount);
                                 emit(passScore(processScoresPtr_front->predScore_));
+
                                 //score_calculated_ = 1;
+                               
+
+                            }
+
+                            while (cameraNumber_ == 1){
                                 
+                                if (processScoresPtr_front->frame_read_stamps[frameCount_] != 0) { break; }
+                            }
+
+
+                            if (cameraNumber_ == 1)
+                            {
+                                time_now = gettime_->getPCtime();
+                                time_stamps4[frameCount_] = time_now - processScoresPtr_front->frame_read_stamps[frameCount_];
+
+                                if (time_now - processScoresPtr_front->frame_read_stamps[frameCount_] >= 3000)
+                                {
+                                    emit(doNotProcess());
+                                }
+
+                                if (frameCount_ == 100)
+                                {
+                                    filename = "C:/Users/27rut/BIAS/build/Release/diff.csv";
+                                    gettime_->write_time_1d<int64_t>(filename, 2798, time_stamps4);
+                                }
                             }
                           
                             processScoresPtr_front->processedFrameCount++;
                             
-                        }
+                        } /*else {
 
-                        if (processScoresPtr_side->isSide)
+                            std::cout << "frame missed: " << 
+                                processScoresPtr_front->processedFrameCount << std::endl;
+                            processScoresPtr_front->skip_frameFront = 0;
+                            processScoresPtr_front->processedFrameCount++;
+
+                        }*/
+
+                        if (processScoresPtr_side->isSide )
+                            //&& !processScoresPtr_side->skip_frameSide)
                         {
 
                             if (nDevices_ >= 2)
@@ -624,12 +678,43 @@ namespace bias {
                                 processScoresPtr_side->sideScoreQueue.push_back(processScoresPtr_side->predScore_);                               
                                 //score_calculated_ = 1;
                                 processScoresPtr_side->releaseLock();
+
+
+                                while (cameraNumber_ == 0) {
+
+                                    if (processScoresPtr_side->frame_read_stamps[frameCount_] != 0) { break; }
+                                }
+
+
+                                if (cameraNumber_ == 0)
+                                {
+                                    time_now = gettime_->getPCtime();
+                                    time_stamps4[frameCount_] = time_now - processScoresPtr_side->frame_read_stamps[frameCount_];
+
+                                    if (time_now - processScoresPtr_side->frame_read_stamps[frameCount_] >= 3000)
+                                    {
+                                        emit(doNotProcess());
+                                    }
+
+                                    if (frameCount_ == 100)
+                                    {
+                                        filename = "C:/Users/27rut/BIAS/build/Release/diff.csv";
+                                        gettime_->write_time_1d<int64_t>(filename, 2798, time_stamps4);
+                                    }
+                                }
                                 
-                            }    
+                            } 
                             
                             processScoresPtr_side->processedFrameCount++;
 
-                        }
+                        } /*else {
+
+                            std::cout << "frame missed: " <<
+                                processScoresPtr_side->processedFrameCount << std::endl;
+                            processScoresPtr_side->skip_frameSide = 0;
+                            processScoresPtr_side->processedFrameCount++;
+
+                        }*/
 
                     }
 
@@ -868,7 +953,6 @@ namespace bias {
 
                                 processScoresPtr_front->vid_front->releaseCapObject(processScoresPtr_front->capture_front);
                                 
-
                             }
 
 #else
@@ -1291,7 +1375,7 @@ namespace bias {
             processScoresPtr_side -> capture_sde = processScoresPtr_side ->vid_sde -> videoCapObject();
             nframes_ = processScoresPtr_side->vid_sde->getNumFrames(processScoresPtr_side->capture_sde);
 
-            initiateVidSkips(skipframes_view2);
+            //initiateVidSkips(skipframes_view2);
 
 #endif
             
@@ -1303,7 +1387,7 @@ namespace bias {
                 acquireLock();
                 processScoresPtr_side->HOGHOF_frame = hoghofside;
                 processScoresPtr_side->HOGHOF_frame->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-                 processScoresPtr_side->HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+                processScoresPtr_side->HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
                 processScoresPtr_side->HOGHOF_frame->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
                 processScoresPtr_side->HOGHOF_frame->loadHOGParams();
                 processScoresPtr_side->HOGHOF_frame->loadHOFParams();
@@ -1333,7 +1417,7 @@ namespace bias {
             processScoresPtr_front -> vid_front = new videoBackend(file_frt); 
             processScoresPtr_front -> capture_front = processScoresPtr_front -> vid_front -> videoCapObject(); 
             nframes_ = processScoresPtr_front->vid_front->getNumFrames(processScoresPtr_front->capture_front);
-            initiateVidSkips(skipframes_view1);
+            //initiateVidSkips(skipframes_view1);
 
 #endif
 
@@ -1842,18 +1926,25 @@ namespace bias {
 
     }
 
-    void JaabaPlugin::receiveFrameRead(int64_t frameReadtime)
+    void JaabaPlugin::receiveFrameRead(int64_t frameReadtime, int frameCount)
     {
+
         if (isReceiver())
         {
             acquireLock();
-            processScoresPtr_front->front_read_time_= frameReadtime;
+            processScoresPtr_side->frame_read_stamps[frameCount] = frameReadtime;
             releaseLock();
            
         }
 
-    }
+        if (isSender())
+        {
+            acquireLock();
+            processScoresPtr_front->frame_read_stamps[frameCount] = frameReadtime;
+            releaseLock();
+        }
 
+    }
 
     void JaabaPlugin::receiveFrameNum(unsigned int frameReadNum)
     {
@@ -1870,6 +1961,19 @@ namespace bias {
     {
         if (isSender())
             score_calculated_ = score_cal;
+    }
+
+    void JaabaPlugin::setSkipFrameProcess()
+    {
+        if (isSender())
+        {
+            processScoresPtr_front->skip_frameFront = 1;
+        }
+
+        if (isReceiver())
+        {
+            processScoresPtr_side->skip_frameSide = 1;
+        }
     }
 
     void JaabaPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,

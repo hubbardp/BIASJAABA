@@ -26,6 +26,11 @@ namespace bias {
         partner_frameCount_ = -1;
         scoreCount = 1;
         getTime_ = getTime;
+        skip_frameFront = 0;
+        skip_frameSide = 0;
+        side_read_time_ = 0;
+        front_read_time_ = 0;
+        frame_read_stamps.resize(2798,0);
 
     }
 
@@ -164,7 +169,7 @@ namespace bias {
 
             }else { 
                 
-                if (!sideScoreQueue.empty() && !frontScoreQueue.empty())
+                /*if (!sideScoreQueue.empty() && !frontScoreQueue.empty())
                 {
 
                     acquireLock();
@@ -227,9 +232,9 @@ namespace bias {
                         scoreCount++;
                     }
                 
-                } /*else {
+                } else {
 
-                    //time_now = getTime_->getPCtime();
+                    time_now = getTime_->getPCtime();
 
                     if (!frontScoreQueue.empty()) {
 
@@ -238,19 +243,21 @@ namespace bias {
                         predScoreSide_ = std::make_pair<vector<float>, int>({ 0.0,0.0,0.0,0.0,0.0, 0.0 }, 0);
                         releaseLock();
 
-                        //if ((time_now - front_read_time_) > threshold_runtime) {
-                        if(scoreCount == predScoreFront_.second)
-                        { 
-                            classifier->addScores(predScoreSide_.first, predScoreFront_.first);
-                            
-                            acquireLock();
-                            frontScoreQueue.pop_front();
-                            releaseLock();
+                        //if ((time_now - side_read_time_) > threshold_runtime) {
 
-                            write_score("classifierscr.csv", scoreCount, classifier->score[0]);
+                            if (scoreCount == predScoreFront_.second)
+                            {
+                                classifier->addScores(predScoreSide_.first, predScoreFront_.first);
 
-                        }
-                        scoreCount++;
+                                acquireLock();
+                                frontScoreQueue.pop_front();
+                                releaseLock();
+                                std::cout << "Only Front" << std::endl;
+                                write_score("classifierscr.csv", scoreCount, classifier->score[0]);
+
+                            }
+                            scoreCount++;
+                        //}
 
                     }else if (!sideScoreQueue.empty()) {
 
@@ -260,17 +267,20 @@ namespace bias {
                         releaseLock();
 
                         //if ((time_now - front_read_time_) > threshold_runtime) {
-                        if (scoreCount == predScoreSide_.second)
-                        {
-                            classifier->addScores(predScoreSide_.first, predScoreFront_.first);
 
-                            acquireLock();
-                            sideScoreQueue.pop_front();
-                            releaseLock();
+                            if (scoreCount == predScoreSide_.second)
+                            {
+                                classifier->addScores(predScoreSide_.first, predScoreFront_.first);
 
-                            write_score("classifierscr.csv", scoreCount, classifier->score[0]);
-                        }
-                        scoreCount++;
+                                acquireLock();
+                                sideScoreQueue.pop_front();
+                                releaseLock();
+
+                                std::cout << "Only Side" << std::endl;
+                                write_score("classifierscr.csv", scoreCount, classifier->score[0]);
+                            }
+                            scoreCount++;
+                        //}
 
                     } else {}
 
