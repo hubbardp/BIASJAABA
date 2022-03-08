@@ -206,10 +206,12 @@ namespace bias
     }
 
     
-    void BiasPlugin::setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr) 
+    void BiasPlugin::setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr, 
+                                   std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr)
     {
 
         pluginImageQueuePtr_ = pluginImageQueuePtr;
+        skippedFramesPluginPtr_ = skippedFramesPluginPtr;
 
     }
 

@@ -45,7 +45,8 @@ namespace bias
             void stop();
 
             void setCameraNumber(unsigned int cameraNumber);
-            void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr);
+            void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+                               std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
             void setPlugin(BiasPlugin *pluginPtr);
             cv::Mat getImage() const;
 
@@ -58,6 +59,8 @@ namespace bias
             unsigned int cameraNumber_;
             QPointer<BiasPlugin> pluginPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
+            std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
+            std::vector<unsigned int>skippedFrames_;
 
             void run();
             void setReadyState();

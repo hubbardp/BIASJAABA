@@ -73,7 +73,8 @@ namespace bias
             virtual QString getLogFileName(bool includeAutoNaming);
             virtual QString getLogFileFullPath(bool includeAutoNaming);
 
-            virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr);
+            virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+                                       std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
             //TimeStamp getPCtime();
             TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
             virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
@@ -101,6 +102,7 @@ namespace bias
             //void write_delay(std::string file, int framenum, std::vector<int64_t> timeVec);
 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
+            std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
 
 

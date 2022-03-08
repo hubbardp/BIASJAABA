@@ -336,7 +336,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
-            
+            std::shared_ptr<LockableQueue<unsigned int>> plugin_skippedFrames_;
             
             //Test
             string trial_num;

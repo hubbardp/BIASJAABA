@@ -344,6 +344,7 @@ namespace bias
         newImageQueuePtr_ -> clear();
         logImageQueuePtr_ -> clear();
         pluginImageQueuePtr_ -> clear();
+        plugin_skippedFrames_->clear();
 
         QString autoNamingString = getAutoNamingString();
         unsigned int versionNumber = 0;
@@ -471,7 +472,7 @@ namespace bias
             }
             
             pluginHandlerPtr_ -> setCameraNumber(cameraNumber_);
-            pluginHandlerPtr_ -> setImageQueue(pluginImageQueuePtr_);
+            pluginHandlerPtr_ -> setImageQueue(pluginImageQueuePtr_, plugin_skippedFrames_);
             
             pluginHandlerPtr_ -> setPlugin(currentPluginPtr);
             pluginHandlerPtr_ -> setAutoDelete(false);
@@ -511,6 +512,7 @@ namespace bias
                 newImageQueuePtr_,
                 logImageQueuePtr_,
                 pluginImageQueuePtr_,
+                plugin_skippedFrames_,
                 loadTestConfigEnabled,
                 trial_num,
                 testConfig,
@@ -3011,6 +3013,7 @@ namespace bias
         newImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
         logImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
         pluginImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
+        plugin_skippedFrames_ = std::make_shared<LockableQueue<unsigned int>>();
 
         setDefaultFileDirs();
         currentVideoFileDir_ = defaultVideoFileDir_;

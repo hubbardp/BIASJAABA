@@ -240,7 +240,7 @@ int main(int argc, char* argv[]) {
     
     bool isTriggered = false;
     // Finish if there are no cameras
-    while (imageCnt < numFrames) {
+    while (imageCnt < 1) {
 
         //std::cout << "frameCount: " << imageCnt <<  std::endl;
         isSkipFront = 0;
@@ -355,7 +355,7 @@ int main(int argc, char* argv[]) {
             }*/
             feat_side->process_vidFrame(imageCnt);
 
-            feat_frt->getvid_frame(vid_frt);
+            //feat_frt->getvid_frame(vid_frt);
             /*if (!skipframes_view2.empty())
             {
                 if ((imageCnt < skipframes_view2.top()))
@@ -380,7 +380,7 @@ int main(int argc, char* argv[]) {
                 if (imageCnt == (skipframes_view2.top() + frameSkip))
                     skipframes_view2.pop();
             }*/
-            feat_frt->process_vidFrame(imageCnt);
+            //feat_frt->process_vidFrame(imageCnt);
 
         }else {
 
@@ -472,12 +472,12 @@ int main(int argc, char* argv[]) {
     }
         
     
-    err = spin_handle.ReleaseSystem(hSystem, hCameraList);
+    /*err = spin_handle.ReleaseSystem(hSystem, hCameraList);
     if (err != SPINNAKER_ERR_SUCCESS)
     {
         printf("Unable to release cameras. Aborting with error %d...\n\n", err);
         return err;
-    }
+    }*/
    
 }
 

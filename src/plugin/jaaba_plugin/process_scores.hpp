@@ -68,6 +68,7 @@ namespace bias
            QQueue<PredData> frontScoreQueue;
            QQueue<PredData> sideScoreQueue;
            std::vector<int64_t> frame_read_stamps; // frame read pass timings
+           std::vector<int64_t> partner_frame_read_stamps; // partner read pass timings
            std::shared_ptr<Lockable<GetTime>> getTime_;
            ProcessScores(QObject *parent, bool mesPass,
                          std::shared_ptr<Lockable<GetTime>> getTime);

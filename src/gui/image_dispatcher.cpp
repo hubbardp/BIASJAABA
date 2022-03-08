@@ -18,7 +18,7 @@ namespace bias
 
     ImageDispatcher::ImageDispatcher(QObject *parent) : QObject(parent)
     {
-        initialize(false,false,0,NULL,NULL,NULL,NULL,false,"",NULL,NULL);
+        initialize(false,false,0,NULL,NULL,NULL,NULL,NULL,false,"",NULL,NULL);
     }
 
     ImageDispatcher::ImageDispatcher( 
@@ -29,6 +29,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+            std::shared_ptr<LockableQueue<unsigned int>> plugin_skippedFramesPtr,
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
@@ -44,6 +45,7 @@ namespace bias
                 newImageQueuePtr,
                 logImageQueuePtr,
                 pluginImageQueuePtr,
+                plugin_skippedFramesPtr,
                 testConfigEnabled,
                 trial_info,
                 testConfig,
@@ -59,6 +61,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+            std::shared_ptr<LockableQueue<unsigned int>> plugin_skippedFramesPtr,
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
@@ -104,7 +107,6 @@ namespace bias
                 queue_size.resize(testConfig_->numFrames,2);
             }
         }
-        
     }
 
     cv::Mat ImageDispatcher::getImage() const
@@ -134,13 +136,11 @@ namespace bias
 
     }
 
-
     void ImageDispatcher::run()
     {
         bool done = false; 
         StampedImage newStampImage;
         int64_t pc_time;
-
 
         if (!ready_) 
         { 
@@ -170,7 +170,6 @@ namespace bias
         stampOutStream.open(stampFileName);*/
         // ---------------------------------------------------------------------------
         
- 
         while (!done) 
         {
 
@@ -203,15 +202,18 @@ namespace bias
                     pluginImageQueuePtr_->signalNotEmpty();
                     pluginImageQueuePtr_->releaseLock();
 
-                /*}else {
+                //}else {
 
-                    if (!testConfig_->queue_prefix.empty()) {
+                    /*if (!testConfig_->queue_prefix.empty()) {
 
                         if (frameCount_ < unsigned long(testConfig_->numFrames))
                             queue_size[newStampImage.frameCount] = 1;
 
-                    }
-                }*/
+                    }*/
+                    //acquireLock();
+                    //plugin_skippedFramesPtr_->push(newStampImage.frameCount);
+                    //releaseLock();
+                //}
             }
 
             acquireLock();

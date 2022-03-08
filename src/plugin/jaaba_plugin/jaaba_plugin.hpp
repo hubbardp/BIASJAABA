@@ -72,6 +72,8 @@ namespace bias
             virtual void setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
                                     bool testConfigEnabled, string trial_info,
                                     std::shared_ptr<TestConfig> testConfig);
+            virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+                                       std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
 
         protected:
  
@@ -94,6 +96,7 @@ namespace bias
             std::shared_ptr<Lockable<GetTime>> gettime_;   
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;
+            std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
 
 
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
@@ -146,9 +149,8 @@ namespace bias
             std::vector<std::vector<uInt32>>time_stamps3; // nidaq timings
             std::vector<unsigned int> queue_size; // queue size
             std::vector<int64_t> time_stamps4;// function diff timings
-            std::vector<int64_t> time_stamps5;// test
+            std::vector<unsigned int> time_stamps5;// test
             
- 
             priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips
             priority_queue<int, vector<int>, greater<int>>skipframes_view2; // front skips
 
@@ -186,7 +188,7 @@ namespace bias
             void passScore(PredData predSore);
             void passFrameRead(int64_t frameRead, int);
             void passScoreDone(bool score_cal);
-            void doNotProcess();
+            void doNotProcess(unsigned int frameCount);
 
         private slots:
 
@@ -204,7 +206,7 @@ namespace bias
             void receiveFrameRead(int64_t frameReadtime, int frameCount);
             void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);
-            void setSkipFrameProcess();
+            void setSkipFrameProcess(unsigned int frameCount);
 
     };
 
