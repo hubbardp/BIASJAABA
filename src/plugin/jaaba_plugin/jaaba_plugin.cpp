@@ -410,8 +410,11 @@ namespace bias {
                     nidaq_task_->acquireLock();
                     DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
                     nidaq_task_->releaseLock();
-                    time_stamps3[0][1] = read_ondemand;
-
+                    
+                    acquireLock();
+                    time_stamps3[frameCount_][0] = 0;//nidaq_task_->cam_trigger[frameCount_];
+                    time_stamps3[frameCount_][1] = read_ondemand;
+                    releaseLock();
                 }
 
                 if (frameCount_ == testConfig_->numFrames - 1
@@ -656,11 +659,10 @@ namespace bias {
 #endif                    
                     }
 
-
                     if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
                     {
 
-                        if (processScoresPtr_front->isFront)
+                        /*if (processScoresPtr_front->isFront)
                             //&& !processScoresPtr_front->skip_frameFront)
                         {
 
@@ -670,13 +672,13 @@ namespace bias {
                                 processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
                                 processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
 
-                            }else {
+                            }
+                            else {
 
                                 processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
                                 processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
 
                             }
-                            
                            
                             if (processScoresPtr_front->classifier->isClassifierPathSet &&
                                 processScoresPtr_front->processedFrameCount > 0)
@@ -749,7 +751,7 @@ namespace bias {
                             //processScoresPtr_side->HOGHOF_frame->setLastInput();
                             //processScoresPtr_side->processedFrameCount++;
 
-                        }
+                        }*/
 
                     }
 
@@ -2020,7 +2022,7 @@ namespace bias {
                                     bool testConfigEnabled, string trial_info,
                                     std::shared_ptr<TestConfig> testConfig) 
     {
-
+        std::cout << "adhi......." << std::endl;
         nidaq_task_ = nidaq_task;
         testConfig_ = testConfig;
         testConfigEnabled_ = testConfigEnabled;
@@ -2044,7 +2046,7 @@ namespace bias {
             }
 
             if (!testConfig_->nidaq_prefix.empty()) {
-
+                
                 time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
             }
 
