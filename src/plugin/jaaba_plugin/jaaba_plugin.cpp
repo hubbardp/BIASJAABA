@@ -662,11 +662,11 @@ namespace bias {
                     if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
                     {
 
-                        /*if (processScoresPtr_front->isFront)
+                        if (processScoresPtr_front->isFront)
                             //&& !processScoresPtr_front->skip_frameFront)
                         {
 
-                            if (nDevices_ >= 2)
+                            /*if (nDevices_ >= 2)
                             {
                                 cudaSetDevice(1);
                                 processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
@@ -694,7 +694,7 @@ namespace bias {
                                 emit(passScore(processScoresPtr_front->predScore_));
                                 //score_calculated_ = 1;
                                
-                            } 
+                            } */
                           
                             processScoresPtr_front->processedFrameCount++;
                             
@@ -710,7 +710,7 @@ namespace bias {
                             //&& !processScoresPtr_side->skip_frameSide)
                         {
 
-                            if (nDevices_ >= 2)
+                            /*if (nDevices_ >= 2)
                             {
                                 cudaSetDevice(0);
                                 processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
@@ -742,7 +742,7 @@ namespace bias {
                                 //score_calculated_ = 1;
                                 processScoresPtr_side->releaseLock();
 
-                            } 
+                            }*/ 
                             
                             processScoresPtr_side->processedFrameCount++;
 
@@ -751,7 +751,7 @@ namespace bias {
                             //processScoresPtr_side->HOGHOF_frame->setLastInput();
                             //processScoresPtr_side->processedFrameCount++;
 
-                        }*/
+                        }
 
                     }
 
