@@ -390,7 +390,9 @@ namespace bias {
                     }
                 }
                 //-------------------------------------------------------------------------
-
+                if (frameCount == 0) {
+                    fstfrmtStampRef_ = gettime_->getPCtime() / 1000;
+                }
 
                 // Set image data timestamp, framecount and frame interval estimate
                 stampImg.timeStamp = timeStampDbl;
@@ -398,6 +400,7 @@ namespace bias {
                 stampImg.timeStampVal = timeStamp;
                 stampImg.frameCount = frameCount;
                 stampImg.dtEstimate = dtEstimate;
+                stampImg.fstfrmtStampRef = fstfrmtStampRef_;
 
                 frameCount++;
 

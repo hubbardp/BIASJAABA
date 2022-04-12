@@ -18,6 +18,7 @@ namespace bias
         double dtEstimate;
         unsigned long frameCount;
         bool isSpike;
+        float fstfrmtStampRef;
     };
 
 }

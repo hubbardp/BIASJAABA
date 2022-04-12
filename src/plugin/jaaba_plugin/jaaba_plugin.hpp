@@ -127,6 +127,7 @@ namespace bias
             int partner_frameCount_;
             bool score_calculated_;
             int frameSkip;
+            float fstfrmtStampRef_;
 
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;

@@ -35,7 +35,7 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
                     std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-                    std::shared_ptr<LockableQueue<unsigned int>> plugin_skippedFramesPtr,
+                    std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr,
                     bool testConfigEnabled,
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
@@ -51,7 +51,7 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
                     std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr ,
                     std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-                    std::shared_ptr<LockableQueue<unsigned int>> plugin_skippedFramesPtr,
+                    std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr,
                     bool testConfigEnabled,
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
@@ -79,7 +79,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
-            std::shared_ptr<LockableQueue<unsigned int>> plugin_skippedFramesPtr_;
+            std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
             
             // use lock when setting these values
             // -----------------------------------

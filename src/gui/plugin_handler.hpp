@@ -9,7 +9,6 @@
 #include <opencv2/core/core.hpp>
 #include "bias_plugin.hpp"
 
-
 namespace bias
 {
     class StampedImage;

@@ -344,7 +344,7 @@ namespace bias
         newImageQueuePtr_ -> clear();
         logImageQueuePtr_ -> clear();
         pluginImageQueuePtr_ -> clear();
-        plugin_skippedFrames_->clear();
+        skippedFramesPluginPtr_->clear();
 
         QString autoNamingString = getAutoNamingString();
         unsigned int versionNumber = 0;
@@ -472,7 +472,7 @@ namespace bias
             }
             
             pluginHandlerPtr_ -> setCameraNumber(cameraNumber_);
-            pluginHandlerPtr_ -> setImageQueue(pluginImageQueuePtr_, plugin_skippedFrames_);
+            pluginHandlerPtr_ -> setImageQueue(pluginImageQueuePtr_, skippedFramesPluginPtr_);
             
             pluginHandlerPtr_ -> setPlugin(currentPluginPtr);
             pluginHandlerPtr_ -> setAutoDelete(false);
@@ -512,7 +512,7 @@ namespace bias
                 newImageQueuePtr_,
                 logImageQueuePtr_,
                 pluginImageQueuePtr_,
-                plugin_skippedFrames_,
+                skippedFramesPluginPtr_,
                 loadTestConfigEnabled,
                 trial_num,
                 testConfig,
@@ -3013,7 +3013,7 @@ namespace bias
         newImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
         logImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
         pluginImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
-        plugin_skippedFrames_ = std::make_shared<LockableQueue<unsigned int>>();
+        skippedFramesPluginPtr_ = std::make_shared<LockableQueue<unsigned int>>();
 
         setDefaultFileDirs();
         currentVideoFileDir_ = defaultVideoFileDir_;
@@ -3038,7 +3038,8 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_,
                                                                                  loadTestConfigEnabled, trial_num,
                                                                                  testConfig,this);
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_,this);
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, 
+                                                               this);
 
         //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();

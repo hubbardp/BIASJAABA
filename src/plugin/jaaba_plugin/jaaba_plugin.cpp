@@ -20,7 +20,8 @@ namespace bias {
 
     // Public Methods
     JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
-                             std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parent) : BiasPlugin(parent)
+                             std::shared_ptr<Lockable<GetTime>> gettime,
+                             QWidget *parent) : BiasPlugin(parent)
     {
 
         nviews_ = numberOfCameras;
@@ -356,7 +357,6 @@ namespace bias {
 
     }
 
-
     void JaabaPlugin::processFrame_inPlugin()
     {
 
@@ -372,6 +372,9 @@ namespace bias {
         int64_t pc_time, start_process, end_process;
         int64_t front_read_time, side_read_time, time_now;
         string filename;
+        float expTime = 0.0, curTime = 0.0;
+        float frameGrabAvgTime = 2.5;
+        float wait_thres = 1.0;
         
         // initialize memory on the gpu 
         if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
@@ -383,10 +386,82 @@ namespace bias {
         {
             gpuInit();  
         }
-        
+       
         if (pluginImageQueuePtr_ != nullptr)
         {
-            
+            /*if (cameraNumber_ == 1)
+            {
+                
+                //emit(passFrameRead(pc_time, 0));
+                processScoresPtr_front->frame_read_stamps[processScoresPtr_front->processedFrameCount] = pc_time;
+                if (processScoresPtr_front->processedFrameCount > 0)
+                {
+                    if (processScoresPtr_front->processedFrameCount == 0)
+                        std::cout << "hi......." << std::endl;
+                    while (processScoresPtr_front->frame_read_stamps[processScoresPtr_front->processedFrameCount - 1] == 0) {}
+
+                    time_stamps1[processScoresPtr_front->processedFrameCount] = static_cast<float>(pc_time -
+                         processScoresPtr_front->frame_read_stamps[processScoresPtr_front->processedFrameCount])/1000;
+
+                    if (time_stamps1[processScoresPtr_front->processedFrameCount] > 3.0)
+                    {
+                        time_stamps5[processScoresPtr_front->processedFrameCount] = 1;
+                        //acquireLock();
+                        //skippedFramesPluginPtr_->push(static_cast<unsigned int>(frameCount_));
+                        //releaseLock();
+                        //processScoresPtr_front->skip_frameFront = 1;
+                        //emit(doNotProcess(frameCount_));
+                    }
+
+                    if (processScoresPtr_front->processedFrameCount == 2000)
+                    {
+                        filename = "C:/Users/27rut/BIAS/build/Release/diff_side.csv";
+                        gettime_->write_time_1d<float>(filename, 2000, time_stamps1);
+                    }
+
+                    if (processScoresPtr_front->processedFrameCount == 2000) {
+
+                        string filename = "C:/Users/27rut/BIAS/build/Release/donot_process_front.csv";
+                        gettime_->write_time_1d<unsigned int>(filename, 2000, time_stamps5);
+                    }
+                }
+            }*/
+
+            // same code as above
+            /*if (cameraNumber_ == 0)
+            {
+                emit(passFrameRead(pc_time, processScoresPtr_side->processedFrameCount));
+                processScoresPtr_side->frame_read_stamps[processScoresPtr_side->processedFrameCount] = pc_time;
+                if (processScoresPtr_front->processedFrameCount > 0)
+                {
+                    //while (processScoresPtr_side->frame_read_stamps[frameCount_ - 1] == 0) {}
+
+                    time_stamps2[processScoresPtr_side->frame_read_stamps[processScoresPtr_side->processedFrameCount]] = static_cast<int64_t>(pc_time -
+                        processScoresPtr_side->frame_read_stamps[processScoresPtr_side->processedFrameCount-1]);
+
+                    if (time_stamps1[processScoresPtr_front->processedFrameCount] > 3.0)
+                    {
+                        time_stamps5[processScoresPtr_front->processedFrameCount] = 1;
+                        //acquireLock();
+                        //skippedFramesPluginPtr_->push(static_cast<unsigned int>(frameCount_));
+                        //releaseLock();
+                        //processScoresPtr_side->skip_frameSide = 1;
+                    }
+
+                    if (frameCount_ == 2000)
+                    {
+                        filename = "C:/Users/27rut/BIAS/build/Release/diff_front.csv";
+                        gettime_->write_time_1d<int64_t>(filename, 2000, time_stamps2);
+                    }
+
+                    if (frameCount_ == 2000) {
+
+                        string filename = "C:/Users/27rut/BIAS/build/Release/donot_process_side.csv";
+                        gettime_->write_time_1d<unsigned int>(filename, 2000, time_stamps5);
+                    }
+                }
+            }*/
+
             pluginImageQueuePtr_->acquireLock();
             pluginImageQueuePtr_->waitIfEmpty();
 
@@ -399,370 +474,328 @@ namespace bias {
             StampedImage stampedImage0 = pluginImageQueuePtr_->front();
             currentImage_ = stampedImage0.image.clone();
             frameCount_ = stampedImage0.frameCount;
-
-            //pc_time = gettime_->getPCtime();
-            //emit(passFrameRead(pc_time, frameCount_));
-
-            if (nidaq_task_ != nullptr) {
-
-                if (frameCount_ <= testConfig_->numFrames) {
-
-                    nidaq_task_->acquireLock();
-                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                    nidaq_task_->releaseLock();
-                    
-                    acquireLock();
-                    time_stamps3[frameCount_][0] = 0;//nidaq_task_->cam_trigger[frameCount_];
-                    time_stamps3[frameCount_][1] = read_ondemand;
-                    releaseLock();
-                }
-
-                if (frameCount_ == testConfig_->numFrames - 1
-                    && !testConfig_->nidaq_prefix.empty())
-                {
-
-                    std::string filename = testConfig_->dir_list[0] + "/"
-                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                        + testConfig_->plugin_prefix
-                        + "_" + testConfig_->nidaq_prefix + "cam"
-                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-
-                    gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
-
-                }
-            }
-
-            /*if (cameraNumber_ == 1)
-            {
-                processScoresPtr_front->frame_read_stamps[frameCount_] = read_ondemand;
-                if (frameCount_ >= 0)
-                {
-                    //while (processScoresPtr_front->frame_read_stamps[frameCount_ - 1] == 0) {}
-
-                    time_stamps1[frameCount_] = static_cast<float>((read_ondemand 
-                        - nidaq_task_->cam_trigger[frameCount_])*0.02);
-
-                    if (time_stamps1[frameCount_] > 3.0)
-                    {
-                        time_stamps5[frameCount_] = 1;
-                        acquireLock();
-                        skippedFramesPluginPtr_->push(static_cast<unsigned int>(frameCount_));
-                        releaseLock();
-                        processScoresPtr_front->skip_frameFront = 1;
-                        //emit(doNotProcess(frameCount_));
-                    }
-
-                    if (frameCount_ == 2000)
-                    {
-                        filename = "C:/Users/27rut/BIAS/build/Release/diff_side.csv";
-                        gettime_->write_time_1d<float>(filename, 2000, time_stamps1);
-                    }
-
-                    if (frameCount_ == 2000) {
-
-                        string filename = "C:/Users/27rut/BIAS/build/Release/donot_process_front.csv";
-                        gettime_->write_time_1d<unsigned int>(filename, 2000, time_stamps5);
-                    }
-                }
-            }
-
-            if (cameraNumber_ == 0)
-            {
-                processScoresPtr_side->frame_read_stamps[frameCount_] = read_ondemand;
-                if (frameCount_ >= 0)
-                {
-                    //while (processScoresPtr_side->frame_read_stamps[frameCount_ - 1] == 0) {}
-
-                    time_stamps1[frameCount_] = static_cast<float>((read_ondemand - 
-                        nidaq_task_->cam_trigger[frameCount_])*0.02);
-
-                    if (time_stamps1[frameCount_] > 3.0)
-                    {
-                        time_stamps5[frameCount_] = 1;
-                        acquireLock();
-                        skippedFramesPluginPtr_->push(static_cast<unsigned int>(frameCount_));
-                        releaseLock();
-                        processScoresPtr_side->skip_frameSide = 1;
-                    }
-
-                    if (frameCount_ == 2000)
-                    {
-                        filename = "C:/Users/27rut/BIAS/build/Release/diff_front.csv";
-                        gettime_->write_time_1d<float>(filename, 2000, time_stamps1);
-                    }
-
-                    if (frameCount_ == 2000) {
-
-                        string filename = "C:/Users/27rut/BIAS/build/Release/donot_process_side.csv";
-                        gettime_->write_time_1d<unsigned int>(filename, 2000, time_stamps5);
-                    }
-                }
-            }*/
-    
+            fstfrmtStampRef_ = stampedImage0.fstfrmtStampRef;
+            pc_time = gettime_->getPCtime();
+            
             if (!(pluginImageQueuePtr_->empty()))
             {
-
-                if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
+                /*if (fstfrmtStampRef_ != 0.0)
                 {
-                    emit(passFrontHOFShape(processScoresPtr_side->HOGHOF_frame));
-                }
+                    expTime = fstfrmtStampRef_ + (frameGrabAvgTime * frameCount_);
+                    curTime = pc_time / 1000;
 
-                if (isSender() && processScoresPtr_front->processedFrameCount == 0)
-                {
-                    emit(passSideHOGShape(processScoresPtr_front->HOGHOF_partner));
-                }
-
-                if (currentImage_.rows != 0 && currentImage_.cols != 0)
-                {
-
-#ifndef DEBUG
-                    acquireLock();
-                    frameCount_ = stampedImage0.frameCount;
-                    if(isSender())
-                        emit(passFrame(frameCount_));
-                    releaseLock();
-#endif
-
-                    if (isSender() && detectStarted)
+                    if ((abs(curTime - expTime)) > wait_thres)
                     {
-#if DEBUG
-                        /*if (!skipframes_view1.empty())
+                  
+                        if(cameraNumber_ == 0)
                         {
-
-                            if (processScoresPtr_front->processedFrameCount < skipframes_view1.top()){
-
-
-                            }else if (processScoresPtr_front->processedFrameCount >= (skipframes_view1.top() + frameSkip)){
-
-                                processScoresPtr_front->HOGHOF_partner->setLastInput();
-
-                            }else {
-#if DEBUG                                
-                                frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
-#endif         
-                                processScoresPtr_front->processedFrameCount++;
-                                pluginImageQueuePtr_->releaseLock();
-                                return;
-                            }
-
-                            if (processScoresPtr_front->processedFrameCount == (skipframes_view1.top() + frameSkip))
-                                skipframes_view1.pop();
-                        }*/
-
-                        //start_process = gettime_->getPCtime();
-                        if (processScoresPtr_front->capture_front.isOpened())
-                        {
-                            if (processScoresPtr_front->processedFrameCount < nframes_)
-                            {
-                                frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
-                               
-                                if (frontImage.empty())
-                                    return;
-
-                                processScoresPtr_front->vid_front->convertImagetoFloat(frontImage);
-                                //frameCount_ = processScoresPtr_front->vid_front->getcurrentFrameNumber(processScoresPtr_front->capture_front);
-                                processScoresPtr_front->frameCount_ = frameCount_;
-                                greyFront = frontImage;
-                                
-
-                            } else {
-
-                                return;
-                            }
-
-                        }
-                        /*end_process = gettime_->getPCtime();
-                        time_stamps4[frameCount_] = end_process - start_process;
-
-                        if (frameCount_ == 10) {
-
-                            string filename = "C:/Users/27rut/BIAS/build/Release/vid_read_time.csv";
-                            gettime_->write_time_1d<int64_t>(filename, 10, time_stamps4);
-
-                        }*/
-
-#else                   
-                        frontImage = stampedImage0.image.clone();
-                        if (frontImage.channels() == 3)
-                        {
-                            cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
-                        }
-
-                        // convert the frame into float32
-                        frontImage.convertTo(greyFront, CV_32FC1);
-                        greyFront = greyFront / 255;
-#endif
-                    }
-
-
-                    if (isReceiver() && detectStarted)
-                    {
-
-#if DEBUG
-                        /*if (!skipframes_view2.empty())
-                        {
-                            if (processScoresPtr_side->processedFrameCount < skipframes_view2.top())
-                            {
-
-                            } else if (processScoresPtr_side->processedFrameCount >= (skipframes_view2.top() + frameSkip)){
-
-                                processScoresPtr_side->HOGHOF_frame->setLastInput();
-
-                            } else {
-
-#if DEBUG
-                                sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
-#endif         
-                                processScoresPtr_side->processedFrameCount++;
-                                pluginImageQueuePtr_->releaseLock();
-                                return;
-                            }
-
-                            if (processScoresPtr_side->processedFrameCount == (skipframes_view2.top() + frameSkip))
-                                skipframes_view2.pop();
-                        }*/
-
-                        if (processScoresPtr_side->capture_sde.isOpened())
-                        {
-                            if (processScoresPtr_side->processedFrameCount < nframes_)
-                            {
-                                
-                                sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
-                                processScoresPtr_side->vid_sde->convertImagetoFloat(sideImage);
-
-                                if (sideImage.empty())
-                                    return;
-
-                                //frameCount_ = processScoresPtr_side->vid_sde->getcurrentFrameNumber(processScoresPtr_side->capture_sde);
-                                processScoresPtr_side->frameCount_ = frameCount_;
-                                greySide = sideImage;
-
-
-                            } else {
-
-                                return;
-                            }
-
-                        }
-
-#else
-                        sideImage = stampedImage0.image.clone();
-                        if (sideImage.channels() == 3)
-                        {
-                            cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
-                        }
-
-                        // convert the frame into float32
-                        sideImage.convertTo(greySide, CV_32FC1);
-                        greySide = greySide / 255;
-#endif                    
-                    }
-
-                    if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
-                    {
-
-                        if (processScoresPtr_front->isFront)
-                            //&& !processScoresPtr_front->skip_frameFront)
-                        {
-
-                            /*if (nDevices_ >= 2)
-                            {
-                                cudaSetDevice(1);
-                                processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
-
-                            }
-                            else {
-
-                                processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
-
-                            }
-                           
-                            if (processScoresPtr_front->classifier->isClassifierPathSet &&
-                                processScoresPtr_front->processedFrameCount > 0)
-                            {
-  
-                                processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->score_front, 
-                                    processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, &partner_hogshape_,
-                                    &processScoresPtr_front->HOGHOF_partner->hof_shape, processScoresPtr_front->classifier->nframes,
-                                    processScoresPtr_front->classifier->model);
-
-                                processScoresPtr_front->predScore_ = std::pair<vector<float>, int>(processScoresPtr_front->classifier->score_front, 
-                                                                     processScoresPtr_front->processedFrameCount);
-                                emit(passScore(processScoresPtr_front->predScore_));
-                                //score_calculated_ = 1;
-                               
-                            } */
-                          
-                            processScoresPtr_front->processedFrameCount++;
-                            
-                        } else {
-
-                            //processScoresPtr_front->HOGHOF_partner->setLastInput();
-                            //processScoresPtr_front->skip_frameFront = 0;
-                            //processScoresPtr_front->processedFrameCount++;
-
-                        }
-                   
-                        if (processScoresPtr_side->isSide )
-                            //&& !processScoresPtr_side->skip_frameSide)
-                        {
-
-                            /*if (nDevices_ >= 2)
-                            {
-                                cudaSetDevice(0);
-                                processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
-
-                            } else {
-
-                                processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
-                            }
-
-                           
-                            if (processScoresPtr_side->classifier->isClassifierPathSet &&
-                                processScoresPtr_side->processedFrameCount > 0)
-                            {
-                              
-                                processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->score_side, 
-                                    processScoresPtr_side->HOGHOF_frame->hog_out, processScoresPtr_side->HOGHOF_frame->hof_out, 
-                                    &processScoresPtr_side->HOGHOF_frame->hog_shape, &partner_hofshape_, processScoresPtr_side->classifier->nframes, 
-                                    processScoresPtr_side->classifier->model);
-                                
-                                processScoresPtr_side->predScore_ = std::pair<vector<float>, int>(processScoresPtr_side->classifier->score_side, 
-                                                                    processScoresPtr_side->processedFrameCount);
-                                processScoresPtr_side->isProcessed_side = 1;
-
-                                
-                                processScoresPtr_side->acquireLock();
-                                processScoresPtr_side->sideScoreQueue.push_back(processScoresPtr_side->predScore_);                               
-                                //score_calculated_ = 1;
-                                processScoresPtr_side->releaseLock();
-
-                            }*/ 
-                            
+                            //std::cout << "side skipped" << std::endl;
+                            queue_size[processScoresPtr_side->processedFrameCount] = 1;
                             processScoresPtr_side->processedFrameCount++;
 
-                        } else {
+                        }
+                        else {
 
-                            //processScoresPtr_side->HOGHOF_frame->setLastInput();
-                            //processScoresPtr_side->processedFrameCount++;
-
+                            //std::cout << "front skipped" << std::endl;
+                            queue_size[processScoresPtr_front->processedFrameCount] = 1;
+                            processScoresPtr_front->processedFrameCount++;
+                           
                         }
 
                     }
+                    else {*/
+                    if (!skippedFramesPluginPtr_->empty()) {
 
-                }
-                pluginImageQueuePtr_->pop();
-            }
+                        if (cameraNumber_ == 0 && skippedFramesPluginPtr_->front()
+                            == processScoresPtr_side->processedFrameCount)
+                        {
+                            queue_size[processScoresPtr_side->processedFrameCount] = 1;
+                            acquireLock();
+                            skippedFramesPluginPtr_->pop();
+                            releaseLock();
+                            processScoresPtr_side->processedFrameCount++;
+                            //std::cout << "side skipped" << std::endl;
+                        }
+                        else if (cameraNumber_ == 1 && skippedFramesPluginPtr_->front()
+                            == processScoresPtr_front->processedFrameCount)
+                        {
+                            queue_size[processScoresPtr_front->processedFrameCount] = 1;
+                            acquireLock();
+                            skippedFramesPluginPtr_->pop();
+                            releaseLock();
+                            processScoresPtr_front->processedFrameCount++;
+                            //std::cout << "front skipped" << std::endl;
+                        }
+                        else {}
 
+
+                    }
+                    else {
+
+                        if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
+                        {
+                            emit(passFrontHOFShape(processScoresPtr_side->HOGHOF_frame));
+                        }
+
+                        if (isSender() && processScoresPtr_front->processedFrameCount == 0)
+                        {
+                            emit(passSideHOGShape(processScoresPtr_front->HOGHOF_partner));
+                        }
+
+                        if (currentImage_.rows != 0 && currentImage_.cols != 0)
+                        {
+
+#ifndef DEBUG
+                            acquireLock();
+                            frameCount_ = stampedImage0.frameCount;
+                            if (isSender())
+                                emit(passFrame(frameCount_));
+                            releaseLock();
+#endif
+
+                            if (isSender() && detectStarted)
+                            {
+#if DEBUG
+                                /*if (!skipframes_view1.empty())
+                                {
+
+                                    if (processScoresPtr_front->processedFrameCount < skipframes_view1.top()){
+
+
+                                    }else if (processScoresPtr_front->processedFrameCount >= (skipframes_view1.top() + frameSkip)){
+
+                                        processScoresPtr_front->HOGHOF_partner->setLastInput();
+
+                                    }else {
+        #if DEBUG
+                                        frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
+        #endif
+                                        processScoresPtr_front->processedFrameCount++;
+                                        pluginImageQueuePtr_->releaseLock();
+                                        return;
+                                    }
+
+                                    if (processScoresPtr_front->processedFrameCount == (skipframes_view1.top() + frameSkip))
+                                        skipframes_view1.pop();
+                                }*/
+
+                                //start_process = gettime_->getPCtime();
+                                if (processScoresPtr_front->capture_front.isOpened())
+                                {
+                                    if (processScoresPtr_front->processedFrameCount < nframes_)
+                                    {
+                                        frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
+
+                                        if (frontImage.empty())
+                                            return;
+
+                                        processScoresPtr_front->vid_front->convertImagetoFloat(frontImage);
+                                        //frameCount_ = processScoresPtr_front->vid_front->getcurrentFrameNumber(processScoresPtr_front->capture_front);
+                                        processScoresPtr_front->frameCount_ = frameCount_;
+                                        greyFront = frontImage;
+
+
+                                    }
+                                    else {
+
+                                        return;
+                                    }
+
+                                }
+                                /*end_process = gettime_->getPCtime();
+                                time_stamps4[frameCount_] = end_process - start_process;
+
+                                if (frameCount_ == 10) {
+
+                                    string filename = "C:/Users/27rut/BIAS/build/Release/vid_read_time.csv";
+                                    gettime_->write_time_1d<int64_t>(filename, 10, time_stamps4);
+
+                                }*/
+
+#else                   
+                                frontImage = stampedImage0.image.clone();
+                                if (frontImage.channels() == 3)
+                                {
+                                    cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
+                                }
+
+                                // convert the frame into float32
+                                frontImage.convertTo(greyFront, CV_32FC1);
+                                greyFront = greyFront / 255;
+#endif
+                            }
+
+
+                            if (isReceiver() && detectStarted)
+                            {
+
+#if DEBUG
+                                /*if (!skipframes_view2.empty())
+                                {
+                                    if (processScoresPtr_side->processedFrameCount < skipframes_view2.top())
+                                    {
+
+                                    } else if (processScoresPtr_side->processedFrameCount >= (skipframes_view2.top() + frameSkip)){
+
+                                        processScoresPtr_side->HOGHOF_frame->setLastInput();
+
+                                    } else {
+
+        #if DEBUG
+                                        sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
+        #endif
+                                        processScoresPtr_side->processedFrameCount++;
+                                        pluginImageQueuePtr_->releaseLock();
+                                        return;
+                                    }
+
+                                    if (processScoresPtr_side->processedFrameCount == (skipframes_view2.top() + frameSkip))
+                                        skipframes_view2.pop();
+                                }*/
+
+                                if (processScoresPtr_side->capture_sde.isOpened())
+                                {
+                                    if (processScoresPtr_side->processedFrameCount < nframes_)
+                                    {
+
+                                        sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
+                                        processScoresPtr_side->vid_sde->convertImagetoFloat(sideImage);
+
+                                        if (sideImage.empty())
+                                            return;
+
+                                        //frameCount_ = processScoresPtr_side->vid_sde->getcurrentFrameNumber(processScoresPtr_side->capture_sde);
+                                        processScoresPtr_side->frameCount_ = frameCount_;
+                                        greySide = sideImage;
+
+
+                                    }
+                                    else {
+
+                                        return;
+                                    }
+
+                                }
+
+#else
+                                sideImage = stampedImage0.image.clone();
+                                if (sideImage.channels() == 3)
+                                {
+                                    cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
+                                }
+
+                                // convert the frame into float32
+                                sideImage.convertTo(greySide, CV_32FC1);
+                                greySide = greySide / 255;
+#endif                    
+                            }
+
+                            if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
+                            {
+
+                                if (processScoresPtr_front->isFront)
+                                {
+
+                                    if (nDevices_ >= 2)
+                                    {
+                                        cudaSetDevice(1);
+                                        processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                        processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
+
+                                    }
+                                    else {
+
+                                        processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                        processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
+
+                                    }
+
+                                    if (processScoresPtr_front->classifier->isClassifierPathSet &&
+                                        processScoresPtr_front->processedFrameCount > 0)
+                                    {
+
+                                        processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->score_front,
+                                            processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, &partner_hogshape_,
+                                            &processScoresPtr_front->HOGHOF_partner->hof_shape, processScoresPtr_front->classifier->nframes,
+                                            processScoresPtr_front->classifier->model);
+
+                                        processScoresPtr_front->predScore_ = std::pair<vector<float>, int>(processScoresPtr_front->classifier->score_front,
+                                                                             processScoresPtr_front->processedFrameCount);
+                                        emit(passScore(processScoresPtr_front->predScore_));
+                                        //score_calculated_ = 1;
+
+                                    } 
+
+                                    processScoresPtr_front->processedFrameCount++;
+
+                                }
+                                else {
+
+                                    //processScoresPtr_front->HOGHOF_partner->setLastInput();
+                                    //processScoresPtr_front->skip_frameFront = 0;
+                                    //processScoresPtr_front->processedFrameCount++;
+
+                                }
+
+                                if (processScoresPtr_side->isSide)
+                                {
+
+                                    if (nDevices_ >= 2)
+                                    {
+                                        cudaSetDevice(0);
+                                        processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                        processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
+
+                                    }
+                                    else {
+
+                                        processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                        processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
+                                    }
+
+
+                                    if (processScoresPtr_side->classifier->isClassifierPathSet &&
+                                        processScoresPtr_side->processedFrameCount > 0)
+                                    {
+
+                                        processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->score_side,
+                                            processScoresPtr_side->HOGHOF_frame->hog_out, processScoresPtr_side->HOGHOF_frame->hof_out,
+                                            &processScoresPtr_side->HOGHOF_frame->hog_shape, &partner_hofshape_, processScoresPtr_side->classifier->nframes,
+                                            processScoresPtr_side->classifier->model);
+
+                                        processScoresPtr_side->predScore_ = std::pair<vector<float>, int>(processScoresPtr_side->classifier->score_side,
+                                                                            processScoresPtr_side->processedFrameCount);
+                                        processScoresPtr_side->isProcessed_side = 1;
+
+
+                                        processScoresPtr_side->acquireLock();
+                                        processScoresPtr_side->sideScoreQueue.push_back(processScoresPtr_side->predScore_);
+                                        //score_calculated_ = 1;
+                                        processScoresPtr_side->releaseLock();
+
+                                    }
+
+                                    processScoresPtr_side->processedFrameCount++;
+
+                                }
+                                else {
+
+                                    //processScoresPtr_side->HOGHOF_frame->setLastInput();
+                                    //processScoresPtr_side->processedFrameCount++;
+
+                                }
+
+                            }
+
+                        }
+                        pluginImageQueuePtr_->pop();
+                    //}
+                } // if skip or process      
+            }// check if plugin queue empty
             pluginImageQueuePtr_->releaseLock();
         }
 
-        
+
         /*if (nidaq_task_ != nullptr) {
 
             if (frameCount_ <= testConfig_->numFrames) {
@@ -830,7 +863,7 @@ namespace bias {
 
             gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
 
-        }
+        }*/
 
         if (frameCount_ == testConfig_->numFrames - 1
             && !testConfig_->queue_prefix.empty()) {
@@ -841,12 +874,12 @@ namespace bias {
                 + testConfig_->plugin_prefix
                 + "_" + testConfig_->queue_prefix + "cam"
                 + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-
+            std::cout << frameCount_ << "" << filename << std::endl;
             gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
 
         }
 
-        if (frameCount_ == testConfig_->numFrames - 1
+        /*if (frameCount_ == testConfig_->numFrames - 1
             && process_frame_time) {
 
             string filename = testConfig_->dir_list[0] + "/"
@@ -2022,7 +2055,7 @@ namespace bias {
                                     bool testConfigEnabled, string trial_info,
                                     std::shared_ptr<TestConfig> testConfig) 
     {
-        std::cout << "adhi......." << std::endl;
+       
         nidaq_task_ = nidaq_task;
         testConfig_ = testConfig;
         testConfigEnabled_ = testConfigEnabled;
@@ -2052,19 +2085,19 @@ namespace bias {
 
             if (!testConfig_->queue_prefix.empty()) {
 
-                queue_size.resize(testConfig_->numFrames, 1);
+                queue_size.resize(testConfig_->numFrames, 0);
             }
 
         }
 
-        time_stamps1.resize(2000,0.0);
+        time_stamps1.resize(testConfig_->numFrames,0.0);
 
     }
 
     void JaabaPlugin::setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
                                     std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr)
     {
-        std::cout << "inside setImageQueue" << std::endl;
+        //std::cout << "inside setImageQueue" << std::endl;
         pluginImageQueuePtr_ = pluginImageQueuePtr;
         skippedFramesPluginPtr_ = skippedFramesPluginPtr;
 

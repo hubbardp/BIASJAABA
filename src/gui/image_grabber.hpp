@@ -84,6 +84,7 @@ namespace bias
             unsigned int cameraNumber_;
             bool testConfigEnabled_;
             string trial_num;
+            float fstfrmtStampRef_;
 
             unsigned int partnerCameraNumber_;
             uInt32 read_buffer_ = 0, read_ondemand_ = 0;

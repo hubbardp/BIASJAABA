@@ -29,7 +29,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-            std::shared_ptr<LockableQueue<unsigned int>> plugin_skippedFramesPtr,
+            std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr,
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
@@ -45,7 +45,7 @@ namespace bias
                 newImageQueuePtr,
                 logImageQueuePtr,
                 pluginImageQueuePtr,
-                plugin_skippedFramesPtr,
+                skippedFramesPluginPtr,
                 testConfigEnabled,
                 trial_info,
                 testConfig,
@@ -61,7 +61,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-            std::shared_ptr<LockableQueue<unsigned int>> plugin_skippedFramesPtr,
+            std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr,
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
@@ -71,6 +71,8 @@ namespace bias
         newImageQueuePtr_ = newImageQueuePtr;
         logImageQueuePtr_ = logImageQueuePtr;
         pluginImageQueuePtr_ = pluginImageQueuePtr;
+        skippedFramesPluginPtr_ = skippedFramesPluginPtr;
+
         if (
                 (newImageQueuePtr_     != NULL) && 
                 (logImageQueuePtr_     != NULL) &&
@@ -104,7 +106,7 @@ namespace bias
             
             if (!testConfig_->queue_prefix.empty()) {
 
-                queue_size.resize(testConfig_->numFrames,2);
+                queue_size.resize(testConfig_->numFrames,0);
             }
         }
     }
@@ -183,7 +185,6 @@ namespace bias
             newStampImage = newImageQueuePtr_ -> front();
             newImageQueuePtr_ -> pop();
             newImageQueuePtr_ -> releaseLock();
-        
             
             if (logging_ )
             {
@@ -195,25 +196,31 @@ namespace bias
 
             if (pluginEnabled_)
             {
-                //if (!newStampImage.isSpike) {
+                if (!newStampImage.isSpike) {
 
                     pluginImageQueuePtr_->acquireLock();
                     pluginImageQueuePtr_->push(newStampImage);
                     pluginImageQueuePtr_->signalNotEmpty();
                     pluginImageQueuePtr_->releaseLock();
 
-                //}else {
+                }else{
 
-                    /*if (!testConfig_->queue_prefix.empty()) {
+                    if (testConfigEnabled_) {
 
-                        if (frameCount_ < unsigned long(testConfig_->numFrames))
-                            queue_size[newStampImage.frameCount] = 1;
+                        if (!testConfig_->queue_prefix.empty()) {
 
-                    }*/
-                    //acquireLock();
-                    //plugin_skippedFramesPtr_->push(newStampImage.frameCount);
-                    //releaseLock();
-                //}
+                            if (frameCount_ < unsigned long(testConfig_->numFrames))
+                                queue_size[newStampImage.frameCount] = 1;
+
+                        }
+                    }
+
+                    acquireLock();
+                    skippedFramesPluginPtr_->push(newStampImage.frameCount);
+                    releaseLock();
+                    //std::cout << newStampImage.frameCount << "skipped " << std::endl;
+                    
+                }
             }
 
             acquireLock();
@@ -227,6 +234,7 @@ namespace bias
             /************************************************************************************************************/
             if (frameCount_ == testConfig_->numFrames-1
                 && !testConfig_->queue_prefix.empty()) {
+
 
                 string filename = testConfig_->dir_list[0] + "/"
                     + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
