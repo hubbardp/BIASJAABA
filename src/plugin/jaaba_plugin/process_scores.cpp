@@ -26,8 +26,8 @@ namespace bias {
         partner_frameCount_ = -1;
         scoreCount = 1;
         getTime_ = getTime;
-        skip_frameFront = 0;
-        skip_frameSide = 0;
+        skipFront = 0;
+        skipSide = 0;
         side_read_time_ = 0;
         front_read_time_ = 0;
         frame_read_stamps.resize(2798,0);
@@ -130,7 +130,8 @@ namespace bias {
     {
 
         bool done = false;
-        int64_t time_now;
+        int64_t time_now, score_ts;
+        float wait_threshold = 0.5;
  
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -167,24 +168,27 @@ namespace bias {
                     releaseLock();
                 }
 
-            } else { 
-                
-                /*if (!sideScoreQueue.empty() && !frontScoreQueue.empty())
-                {
+            }
+            else {
+
+                /*if(sideScoreQueue.empty() && frontScoreQueue.empty()){
+
+                    continue;
+
+                }else if (!sideScoreQueue.empty() && !frontScoreQueue.empty()){
 
                     acquireLock();
                     predScoreFront_ = frontScoreQueue.front();
                     predScoreSide_ = sideScoreQueue.front();
                     releaseLock();
 
-                    if (predScoreSide_.second == predScoreFront_.second) 
+                    if (predScoreSide_.frameCount == predScoreFront_.frameCount)
                     {
 
-                        classifier->addScores(predScoreSide_.first, predScoreFront_.first);
+                        classifier->addScores(predScoreSide_.score, predScoreFront_.score);
 
-                        isProcessed_front = 0;
-                        isProcessed_side = 0;
-                        score_calculated_ = 0;
+                        skipSide = false;
+                        skipFront = false;
 
                         acquireLock();
                         frontScoreQueue.pop_front();
@@ -196,94 +200,77 @@ namespace bias {
                         scoreCount++;
                         std::cout << "ScoreCount " << scoreCount << std::endl;
 
-                    } else if (scoreCount == predScoreFront_.second) {
-
-                        predScoreSide_ = std::make_pair<vector<float>, int>({ 0.0,0.0,0.0,0.0,0.0, 0.0 }, 0);
-                        classifier->addScores(predScoreSide_.first, predScoreFront_.first);
-
-                        acquireLock();
-                        frontScoreQueue.pop_front();
-                        releaseLock();
-
-                        std::cout << "ScoreCount front: " << scoreCount << std::endl;
-                        write_score("classifierscr.csv", scoreCount, classifier->score[0]);
-                        scoreCount++;
-
-                    } else if (scoreCount == predScoreSide_.second) {
-
-                        predScoreFront_ = std::make_pair<vector<float>, int>({ 0.0,0.0,0.0,0.0,0.0, 0.0 }, 0);
-                        classifier->addScores(predScoreSide_.first, predScoreFront_.first);
-
-                        acquireLock();
-                        sideScoreQueue.pop_front();
-                        releaseLock();
-
-                        std::cout << "ScoreCount side: " << scoreCount << std::endl;
-                        write_score("classifierscr.csv", scoreCount, classifier->score[0]);
-                        scoreCount++;
-
-                    } else {
-
-                        std::cout << "ScoreCount skipped: " << scoreCount << std::endl;
-                        predScoreFront_ = std::make_pair<vector<float>, int>({ 0.0,0.0,0.0,0.0,0.0, 0.0 }, 0);
-                        predScoreSide_ = std::make_pair<vector<float>, int>({ 0.0,0.0,0.0,0.0,0.0, 0.0 }, 0);
-                        classifier->addScores(predScoreSide_.first, predScoreFront_.first);
-                        write_score("classifierscr.csv", scoreCount, classifier->score[0]);
-                        scoreCount++;
                     }
-                
-                } else {
 
-                    if (!frontScoreQueue.empty() && skip_frameSide == 1) 
+                } else if (!frontScoreQueue.empty()) {
+
+                    acquireLock();
+                    predScoreFront_ = frontScoreQueue.front();
+                    releaseLock();
+
+                    time_now = getTime_->getPCtime();
+                    score_ts = predScoreFront_.score_ts;
+                    if (time_now - score_ts > wait_threshold)
                     {
+                        skipSide = true;
+                    }
 
-                        acquireLock();
-                        predScoreFront_ = frontScoreQueue.front();
-                        predScoreSide_ = std::make_pair<vector<float>, int>({ 0.0,0.0,0.0,0.0,0.0, 0.0 }, 0);
-                        releaseLock();
+                }else if (!sideScoreQueue.empty()) {
 
-                        if (scoreCount == predScoreFront_.second)
+                    acquireLock();
+                    predScoreSide_ = sideScoreQueue.front();
+                    releaseLock();
+
+                    time_now = getTime_->getPCtime();
+                    score_ts = predScoreSide_.score_ts;
+                    if (time_now - score_ts > wait_threshold)
+                    {
+                        skipFront = true;
+                    }
+                }
+
+                if (skipFront)
+                {
+                    if (!skipSide)
+                    {
+                        if (scoreCount == predScoreFront_.frameCount)
                         {
-                            classifier->addScores(predScoreSide_.first, predScoreFront_.first);
+                            predScoreFront_.score = { 0.0,0.0,0.0,0.0,0.0 };
+                            classifier->addScores(predScoreSide_.score, predScoreFront_.score);
 
                             acquireLock();
-                            frontScoreQueue.pop_front();
-                            //skip_frameSide = 0;
+                            sideScoreQueue.pop_front();
                             releaseLock();
 
+                            skipFront = false;
+                            std::cout << "Only Side" << std::endl;
+                            write_score("classifierscr.csv", scoreCount, classifier->score[0]);
+
+                        }
+                        scoreCount++;
+                    }
+
+                }else if (skipSide) {
+
+                    if (!skipFront)
+                    {
+                        if (scoreCount == predScoreSide_.frameCount)
+                        {
+                            predScoreSide_.score = { 0.0,0.0,0.0,0.0,0.0 };
+                            classifier->addScores(predScoreSide_.score, predScoreFront_.score);
+
+                            acquireLock();
+                            sideScoreQueue.pop_front();
+                            releaseLock();
+
+                            skipSide = false;
                             std::cout << "Only Front" << std::endl;
                             write_score("classifierscr.csv", scoreCount, classifier->score[0]);
 
                         }
                         scoreCount++;
-                        std::cout << "ScoreCount " << scoreCount << std::endl;
-                        
-                    }else if (!sideScoreQueue.empty() && skip_frameFront == 1) {
-
-                        acquireLock();
-                        predScoreFront_ = std::make_pair<vector<float>, int>({ 0.0,0.0,0.0,0.0,0.0, 0.0 }, 0); 
-                        predScoreSide_ = sideScoreQueue.front();
-                        releaseLock();
-
-                        if (scoreCount == predScoreSide_.second)
-                        {
-                            classifier->addScores(predScoreSide_.first, predScoreFront_.first);
-
-                            acquireLock();
-                            sideScoreQueue.pop_front();
-                            //skip_frameFront = 0;
-                            releaseLock();
-
-                            std::cout << "Only Side" << std::endl;
-                            write_score("classifierscr.csv", scoreCount, classifier->score[0]);
-                        }
-                        scoreCount++;
-                        std::cout << "ScoreCount " << scoreCount << std::endl;
-
-                    } else {}
-
+                    }
                 }*/
-                
             }
 
             acquireLock();

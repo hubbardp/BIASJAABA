@@ -45,8 +45,6 @@ namespace bias
 
     class JaabaPlugin : public BiasPlugin, public Ui::JaabaPluginDialog
     {
-        typedef std::pair<vector<float>, int> PredData;
-
         Q_OBJECT
 
         public:
@@ -54,6 +52,8 @@ namespace bias
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
             int scoreCount = 0;
+            int side_skip_count = 0;
+            int front_skip_count = 0;
 
             JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr,
                 std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parent=0);
@@ -127,7 +127,7 @@ namespace bias
             int partner_frameCount_;
             bool score_calculated_;
             int frameSkip;
-            float fstfrmtStampRef_;
+            uint64_t fstfrmtStampRef_;
 
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
@@ -145,11 +145,11 @@ namespace bias
 
             int nframes_; // test video frames
 
-            std::vector<float> time_stamps1;
+            std::vector<double> time_stamps1;
             std::vector<int64_t> time_stamps2;// pc time
             std::vector<std::vector<uInt32>>time_stamps3; // nidaq timings
             std::vector<unsigned int> queue_size; // queue size
-            std::vector<int64_t> time_stamps4;// function diff timings
+            std::vector<unsigned long> time_stamps4;// function diff timings
             std::vector<unsigned int> time_stamps5;// test
             
             priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips

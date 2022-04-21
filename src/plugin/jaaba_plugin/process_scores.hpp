@@ -28,9 +28,15 @@ namespace bias
     class HOGHOF;
     class beh_class;
 
+    struct PredData {
+
+        vector<float> score;
+        int64_t score_ts;
+        unsigned int frameCount;
+    };
+
     class ProcessScores : public QObject, public QRunnable, public Lockable<Empty>
     {
-        typedef std::pair<vector<float>, int> PredData;
 
         Q_OBJECT
 
@@ -45,8 +51,8 @@ namespace bias
            bool mesPass_;
            int scoreCount;
            bool score_calculated_;
-           bool skip_frameFront;
-           bool skip_frameSide;
+           bool skipFront;
+           bool skipSide;
           
            bool isProcessed_side;
            bool isProcessed_front; 

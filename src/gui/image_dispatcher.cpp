@@ -13,6 +13,8 @@
 #include <QtDebug>
 // ----------------------------------------------------------------------------
 
+#define DEBUG 1
+
 namespace bias
 {
 
@@ -135,7 +137,6 @@ namespace bias
     void ImageDispatcher::stop()
     {
         stopped_ = true;
-
     }
 
     void ImageDispatcher::run()
@@ -196,6 +197,7 @@ namespace bias
 
             if (pluginEnabled_)
             {
+#if DEBUG            
                 if (!newStampImage.isSpike) {
 
                     pluginImageQueuePtr_->acquireLock();
@@ -219,8 +221,13 @@ namespace bias
                     skippedFramesPluginPtr_->push(newStampImage.frameCount);
                     releaseLock();
                     //std::cout << newStampImage.frameCount << "skipped " << std::endl;
-                    
                 }
+#else 
+                pluginImageQueuePtr_->acquireLock();
+                pluginImageQueuePtr_->push(newStampImage);
+                pluginImageQueuePtr_->signalNotEmpty();
+                pluginImageQueuePtr_->releaseLock();
+#endif
             }
 
             acquireLock();
@@ -232,18 +239,22 @@ namespace bias
             releaseLock();
 
             /************************************************************************************************************/
-            if (frameCount_ == testConfig_->numFrames-1
-                && !testConfig_->queue_prefix.empty()) {
+            if (testConfigEnabled_) {
+
+                if (frameCount_ == testConfig_->numFrames - 1
+                    && !testConfig_->queue_prefix.empty()) {
 
 
-                string filename = testConfig_->dir_list[0] + "/"
-                    + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
-                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                    + testConfig_->imagegrab_prefix
-                    + "_" + testConfig_->queue_prefix + "cam"
-                    + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
-                
-                gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+                    string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->imagegrab_prefix
+                        + "_" + testConfig_->queue_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+
+                    gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+                }
+
             }
             /************************************************************************************************************/
             // DEVEL

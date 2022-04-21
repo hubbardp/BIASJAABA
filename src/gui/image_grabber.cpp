@@ -19,6 +19,8 @@
 #include "camera_device.hpp"
 // ----------------------------------------
 
+#define DEBUG 1 
+
 namespace bias {
 
     unsigned int ImageGrabber::DEFAULT_NUM_STARTUP_SKIP = 2;
@@ -70,6 +72,7 @@ namespace bias {
         testConfigEnabled_ = testConfigEnabled;
         testConfig_ = testConfig;
         trial_num = trial_info;
+        fstfrmtStampRef_ = 0.0;
         
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
@@ -383,7 +386,9 @@ namespace bias {
                             time_stamps3[frameCount][0] = nidaq_task_->cam_trigger[frameCount];
                             nidaq_task_->releaseLock();
                             time_stamps3[frameCount][1] = read_ondemand_;
+#if DEBUG
                             spikeDetected(frameCount);
+#endif
 
                         }
 
@@ -391,7 +396,12 @@ namespace bias {
                 }
                 //-------------------------------------------------------------------------
                 if (frameCount == 0) {
-                    fstfrmtStampRef_ = gettime_->getPCtime() / 1000;
+
+                    acquireLock();
+                    pc_time = gettime_->getPCtime();
+                    fstfrmtStampRef_ = static_cast<uint64_t>(pc_time);
+                    releaseLock();
+                    
                 }
 
                 // Set image data timestamp, framecount and frame interval estimate
