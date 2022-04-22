@@ -11,6 +11,10 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+namespace cv
+{
+    using std::vector;
+}
 
 // PositionData
 // ----------------------------------------------------------------------------
@@ -110,7 +114,8 @@ HogPositionFitter::HogPositionFitter(HogPositionFitterParam param) : HogPosition
         //        );
         cv::namedWindow(
                 "rotBoundingImageLUV",
-                CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED
+                //CV_WINDOW_AUTOSIZE | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED
+                cv::WINDOW_AUTOSIZE | cv::WINDOW_KEEPRATIO | cv::WINDOW_GUI_EXPANDED
                 );
     }
 };
@@ -234,7 +239,8 @@ HogPositionFitterData HogPositionFitter::fit(
             // Compute covariance matrix and mean values of x and y coordinates
             cv::Mat covMat; 
             cv::Mat meanMat;
-            int covarFlags = CV_COVAR_NORMAL | CV_COVAR_SCALE | CV_COVAR_COLS;
+            //int covarFlags = CV_COVAR_NORMAL | CV_COVAR_SCALE | CV_COVAR_COLS;
+            int covarFlags = cv::COVAR_NORMAL | cv::COVAR_SCALE | cv::COVAR_COLS;
             cv::calcCovarMatrix(samplesXY,covMat,meanMat,covarFlags);
             posData.meanXRel = meanMat.at<double>(0,0);
             posData.meanYRel = meanMat.at<double>(1,0);
