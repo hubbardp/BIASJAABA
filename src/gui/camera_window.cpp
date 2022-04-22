@@ -26,7 +26,7 @@
 #include "ext_ctl_http_server.hpp"
 #include "plugin_handler.hpp"
 
-#include <cstdlib>
+//#include <cstdlib>
 #include <cmath>
 #include <iostream>
 #include <fstream>

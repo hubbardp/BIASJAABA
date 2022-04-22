@@ -61,7 +61,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node availability, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_AVAILABLE, ssError.str());
         }
@@ -77,7 +77,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node readability, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_READABLE, ssError.str());
         }
@@ -97,7 +97,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node readability, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_WRITABLE, ssError.str());
         }
@@ -114,7 +114,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node type,  error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_TYPE, ssError.str());
 
@@ -159,7 +159,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node name, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_NAME, ssError.str());
         }
@@ -179,7 +179,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node display name, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_DISPLAY_NAME, ssError.str());
         }
@@ -199,7 +199,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node tooltip, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_TOOLTIP, ssError.str());
         }
@@ -219,7 +219,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node description, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_NODE_DESCRIPTION, ssError.str());
         }
@@ -239,7 +239,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get node value as string, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_VALUE_AS_STRING, ssError.str());
         }
@@ -274,7 +274,7 @@ namespace bias
         if (hNode_ == nullptr)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": node handle is null"; 
             throw RuntimeError(ERROR_SPIN_NULL_HANDLE, ssError.str());
         }
@@ -286,7 +286,7 @@ namespace bias
         if (!isAvailable())
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": node is not available";
             throw RuntimeError(ERROR_SPIN_NODE_NOT_AVAILABLE, ssError.str());
 
@@ -299,7 +299,7 @@ namespace bias
         if (!isReadable())
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": node is not readable";
             throw RuntimeError(ERROR_SPIN_NODE_NOT_READABLE, ssError.str());
 
@@ -311,7 +311,7 @@ namespace bias
         if (!isWritable())
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": node is not writable";
             throw RuntimeError(ERROR_SPIN_NODE_NOT_WRITABLE, ssError.str());
 

@@ -95,7 +95,7 @@ namespace bias
 
     RtnStatus BiasPlugin::runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg)
     {
-        qDebug() << __PRETTY_FUNCTION__;
+        qDebug() << __FUNCTION__;
         RtnStatus rtnStatus;
         return rtnStatus;
     }

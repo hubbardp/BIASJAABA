@@ -366,7 +366,7 @@ namespace bias
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert FrameRate to float";
             throw RuntimeError(ERROR_INVALID_FRAMERATE, ssError.str());
         }

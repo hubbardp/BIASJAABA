@@ -52,7 +52,7 @@ namespace bias
 
     void VideoWriter::addFrame(StampedImage stampedImg)
     {
-        std::cout << __PRETTY_FUNCTION__;
+        std::cout << __FUNCTION__;
         if (frameCount_%frameSkip_ == 0) 
         {
             std::cout << ", added frame: " << frameCount_;

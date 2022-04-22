@@ -31,7 +31,7 @@ namespace bias {
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to create Spinnaker context, error = " << err; 
             throw RuntimeError(ERROR_SPIN_CREATE_CONTEXT, ssError.str());
         }
@@ -54,7 +54,7 @@ namespace bias {
         if ( err != SPINNAKER_ERR_SUCCESS ) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to destroy Spinnaker context, error = " << err;
             throw RuntimeError(ERROR_SPIN_DESTROY_CONTEXT, ssError.str());
         }
@@ -79,7 +79,7 @@ namespace bias {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to create Spinnaker empty camera list, error=" << err;
                 throw RuntimeError(ERROR_SPIN_CREATE_CAMERA_LIST, ssError.str());
             }
@@ -89,7 +89,7 @@ namespace bias {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to enumerate Spinnaker cameras, error=" << err;
                 throw RuntimeError(ERROR_SPIN_ENUMERATE_CAMERAS, ssError.str());
             }
@@ -98,7 +98,7 @@ namespace bias {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get Spinnaker camera from list, error = " << err;
                 throw RuntimeError(ERROR_SPIN_GET_CAMERA, ssError.str());
             }
@@ -108,7 +108,7 @@ namespace bias {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to clear Spinnaker camera list, error=" << err;
                 throw RuntimeError(ERROR_SPIN_CLEAR_CAMERA_LIST, ssError.str());
             }
@@ -118,7 +118,7 @@ namespace bias {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to destroy Spinnaker camera list, error=" << err;
                 throw RuntimeError(ERROR_SPIN_DESTROY_CAMERA_LIST, ssError.str());
             }
@@ -129,7 +129,7 @@ namespace bias {
             {
                 hCamera_ = nullptr;
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to initialize Spinnaker camera, error=" << err;
                 throw RuntimeError(ERROR_SPIN_GET_TLDEVICE_NODE_MAP, ssError.str());
             }
@@ -234,7 +234,7 @@ namespace bias {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to deinitialize Spinnaker camera, error=" << err;
                 throw RuntimeError(ERROR_SPIN_RELEASE_CAMERA, ssError.str());
             }
@@ -244,7 +244,7 @@ namespace bias {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to get Spinnaker camera, error=" << err;
                 throw RuntimeError(ERROR_SPIN_RELEASE_CAMERA, ssError.str());
             }
@@ -256,12 +256,12 @@ namespace bias {
 
     void CameraDevice_spin::startCapture()
     {
-        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " begin" << std::endl;
+        std::cout << "DEBUG: " << __FUNCTION__ << " begin" << std::endl;
 
         if (!connected_) 
         { 
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to start Spinnaker capture - not connected";
             throw RuntimeError(ERROR_SPIN_START_CAPTURE, ssError.str());
         }
@@ -295,7 +295,7 @@ namespace bias {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to begin camera acquisition, error = " << err; 
                 throw RuntimeError(ERROR_SPIN_START_CAPTURE, ssError.str());
             }
@@ -304,8 +304,7 @@ namespace bias {
             //isFirst_ = true;
             //
         }
-
-        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " end" << std::endl;
+        std::cout << "DEBUG: " << __FUNCTION__ << " end" << std::endl; 
     }
 
 
@@ -318,7 +317,7 @@ namespace bias {
             if (!releaseSpinImage(hSpinImage_))
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": unable to release spinImage";
                 throw RuntimeError(ERROR_SPIN_RELEASE_SPIN_IMAGE, ssError.str());
             }
@@ -327,7 +326,7 @@ namespace bias {
             if (err != SPINNAKER_ERR_SUCCESS)
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError <<": unable to stop Spinnaker capture";
                 throw RuntimeError(ERROR_SPIN_STOP_CAPTURE, ssError.str());
             }
@@ -366,7 +365,7 @@ namespace bias {
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to create empty spinImage, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_CREATE_EMPTY, ssError.str());
         }
@@ -378,7 +377,7 @@ namespace bias {
         if (err != SPINNAKER_ERR_SUCCESS) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to convert spinImage, error = " << err; 
             throw RuntimeError(ERROR_SPIN_IMAGE_CONVERT, ssError.str());
         }
@@ -402,7 +401,7 @@ namespace bias {
         if (!destroySpinImage(hSpinImageConv))
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to release spinImage";
             throw RuntimeError(ERROR_SPIN_RELEASE_SPIN_IMAGE, ssError.str());
         }
@@ -433,7 +432,7 @@ namespace bias {
         if (allowedVideoModes.size() != 1)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": more than one video mode supported (DEVEL)";
             throw RuntimeError(ERROR_SPIN_VIDEOMODE_SUPPORT, ssError.str());
         }
@@ -449,7 +448,7 @@ namespace bias {
         if (allowedFrameRates.size() != 1)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": more than one framerate supported (DEVEL)";
             throw RuntimeError(ERROR_SPIN_FRAMERATE_SUPPORT, ssError.str());
         }
@@ -464,7 +463,7 @@ namespace bias {
         if (allowedModeList.size() != 1)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": more than one imagemode supported (DEVEL)";
             throw RuntimeError(ERROR_SPIN_FRAMERATE_SUPPORT, ssError.str());
         }
@@ -793,7 +792,7 @@ namespace bias {
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": triggerModeNode is not available or writable";
             throw RuntimeError(ERROR_SPIN_SET_TRIGGER_INTERNAL, ssError.str());
         }
@@ -807,7 +806,7 @@ namespace bias {
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": triggerSourceNode is not available or writable";
             throw RuntimeError(ERROR_SPIN_SET_TRIGGER_INTERNAL, ssError.str());
         }
@@ -825,7 +824,7 @@ namespace bias {
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": triggerModeNode is not available or writable";
             throw RuntimeError(ERROR_SPIN_SET_TRIGGER_EXTERNAL, ssError.str());
         }
@@ -838,7 +837,7 @@ namespace bias {
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": triggerSourceNode is not available or writable";
             throw RuntimeError(ERROR_SPIN_SET_TRIGGER_EXTERNAL, ssError.str());
         }
@@ -851,7 +850,7 @@ namespace bias {
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": triggerActivationNode is not available or writable";
             throw RuntimeError(ERROR_SPIN_SET_TRIGGER_EXTERNAL, ssError.str());
         }
@@ -865,7 +864,7 @@ namespace bias {
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": triggerModeNode is not available or writable";
             throw RuntimeError(ERROR_SPIN_SET_TRIGGER_EXTERNAL, ssError.str());
         }
@@ -886,7 +885,7 @@ namespace bias {
             else
             {
                 std::stringstream ssError;
-                ssError << __PRETTY_FUNCTION__;
+                ssError << __FUNCTION__;
                 ssError << ": triggerModeNode current entryNode is not available or readable";
                 throw RuntimeError(ERROR_SPIN_GET_TRIGGER_TYPE, ssError.str());
             }
@@ -894,7 +893,7 @@ namespace bias {
         else
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": triggerModeNode is not available or readable";
             throw RuntimeError(ERROR_SPIN_GET_TRIGGER_TYPE, ssError.str());
         }
@@ -952,7 +951,7 @@ namespace bias {
         if (!capturing_) 
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to grab Image - not capturing";
             errMsg = ssError.str();
             return false;
@@ -961,7 +960,7 @@ namespace bias {
         if (!releaseSpinImage(hSpinImage_))
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to release existing spinImage";
             errMsg = ssError.str();
             return false;
@@ -983,7 +982,7 @@ namespace bias {
         {
             //std::cout << "fail, " << (hSpinImage_ == nullptr) << std::endl;
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get next image";
             errMsg = ssError.str();
             return false;
@@ -995,7 +994,7 @@ namespace bias {
 		if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to determine if image is complete";
             errMsg = ssError.str();
             return false;
@@ -1004,7 +1003,7 @@ namespace bias {
         if (isIncomplete==True)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": image is incomplete";
             errMsg = ssError.str();
             return false;
@@ -1064,7 +1063,7 @@ namespace bias {
 
     void CameraDevice_spin::setupTimeStamping()
     {
-        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << std::endl;
+        std::cout << "DEBUG: " << __FUNCTION__ << std::endl;
 
         // Enable chunk mode 
         BoolNode_spin chunkModeActiveNode = nodeMapCamera_.getNodeByName<BoolNode_spin>("ChunkModeActive");
@@ -1110,7 +1109,7 @@ namespace bias {
             timeStampEnableNode.setValue(true);
         }
 
-        std::cout << "DEBUG: " << __PRETTY_FUNCTION__ << " end" << std::endl;
+        std::cout << "DEBUG: " << __FUNCTION__ << " end" << std::endl;
     }
 
 
@@ -1120,7 +1119,7 @@ namespace bias {
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to timestamp from image chunk data, error = " << err; 
             throw RuntimeError(ERROR_SPIN_CHUNKDATA_TIMESTAMP, ssError.str());
         }

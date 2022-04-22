@@ -26,7 +26,7 @@ namespace bias
         if (!isOfType(ExpectedType()))
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": incorrect node type";
             throw RuntimeError(ERROR_SPIN_INCORRECT_NODE_TYPE, ssError.str());
         }
@@ -51,7 +51,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to set boolean node  value, error = " << err;
             throw RuntimeError(ERROR_SPIN_SET_BOOLEAN_VALUE, ssError.str());
         }
@@ -70,7 +70,7 @@ namespace bias
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
-            ssError << __PRETTY_FUNCTION__;
+            ssError << __FUNCTION__;
             ssError << ": unable to get boolean node  value, error = " << err;
             throw RuntimeError(ERROR_SPIN_GET_BOOLEAN_VALUE, ssError.str());
         }
