@@ -34,7 +34,7 @@ namespace bias {
 
         // sample clock
         DAQmxErrChk(DAQmxCreateTask("", &taskHandle_sampout));
-        DAQmxErrChk(DAQmxCreateCOPulseChanTime(taskHandle_sampout, "Dev1/ctr2", "", DAQmx_Val_Seconds, DAQmx_Val_Low, 0.0, 0.001, 0.001));
+        DAQmxErrChk(DAQmxCreateCOPulseChanTime(taskHandle_sampout, "Dev1/ctr2", "", DAQmx_Val_Seconds, DAQmx_Val_Low, 0.0, 0.00125, 0.00125));
         DAQmxErrChk(DAQmxCfgImplicitTiming(taskHandle_sampout, DAQmx_Val_ContSamps, 1000));
         DAQmxErrChk(DAQmxWriteCtrTime(taskHandle_sampout, 1000, 0, 1.0, DAQmx_Val_GroupByChannel, datas_high, datas_low, NULL, NULL));
 
@@ -102,6 +102,7 @@ namespace bias {
 
     void NIDAQUtils::getCamtrig(unsigned int frameCount)
     {
+        //Fills cam_trigger vector depending on whichever camera gets to it first. 
         if(cam_trigger[frameCount] == 0)
         {
             DAQmxErrChk(DAQmxReadCounterScalarU32(taskHandle_trigger_in, 10.0, &read_buffer, NULL));

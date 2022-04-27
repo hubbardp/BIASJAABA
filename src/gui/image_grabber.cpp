@@ -100,7 +100,6 @@ namespace bias {
 
             if (!testConfig_->nidaq_prefix.empty()) {
 
-                skippedFrames.resize(testConfig_->numFrames,0);
                 time_stamps3.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
                 if (nidaq_task_ != nullptr) {
                     nidaq_task_->cam_trigger.resize(testConfig_->numFrames);
@@ -109,7 +108,8 @@ namespace bias {
             
             if (!testConfig_->queue_prefix.empty()) {
 
-                queue_size.resize(testConfig_->numFrames);
+                //queue_size.resize(testConfig_->numFrames);
+                time_stamps1.resize(testConfig_->numFrames);
             }
 
         }
@@ -398,8 +398,9 @@ namespace bias {
                 if (frameCount == 0) {
 
                     acquireLock();
-                    pc_time = gettime_->getPCtime();
-                    fstfrmtStampRef_ = static_cast<uint64_t>(pc_time);
+                    //pc_time = gettime_->getPCtime();
+                    //fstfrmtStampRef_ = static_cast<uint64_t>(pc_time);
+                    fstfrmtStampRef_ = nidaq_task_->cam_trigger[frameCount];
                     releaseLock();
                     
                 }
@@ -412,13 +413,12 @@ namespace bias {
                 stampImg.dtEstimate = dtEstimate;
                 stampImg.fstfrmtStampRef = fstfrmtStampRef_;
 
-                frameCount++;
-
                 newImageQueuePtr_->acquireLock();
                 newImageQueuePtr_->push(stampImg);
                 newImageQueuePtr_->signalNotEmpty();
                 newImageQueuePtr_->releaseLock();
 
+                frameCount++;
                 ///---------------------------------------------------------------
                 if (testConfigEnabled_) {
 
@@ -469,7 +469,7 @@ namespace bias {
 
                         }
 
-                        /*if (frameCount == testConfig_->numFrames
+                        if (frameCount == testConfig_->numFrames
                             && !testConfig_->queue_prefix.empty()) {
 
                             string filename = testConfig_->dir_list[0] + "/"
@@ -487,10 +487,10 @@ namespace bias {
                                     + "_" + "skipped_frames" + "_cam"
                                     + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
-                            gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, skippedFrames);
+                            gettime_->write_time_1d<float>(filename, testConfig_->numFrames, time_stamps1);
                             //gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
 
-                        }*/
+                        }
                     }
                 }
 
@@ -549,14 +549,15 @@ namespace bias {
 
     void ImageGrabber::spikeDetected(unsigned int frameCount) {
 
-        if (((time_stamps3[frameCount][1] - time_stamps3[frameCount][0]) * 0.02)
-            > testConfig_->latency_threshold)
+        float imgGrab_time = (time_stamps3[frameCount][1] - time_stamps3[frameCount][0]) * 0.02;
+        if (imgGrab_time > testConfig_->latency_threshold)
         {
-            skippedFrames[frameCount] = 2;
             //cameraPtr_->skipDetected(stampImg);
             acquireLock();
             stampImg.isSpike = true;
             releaseLock();
+            assert(stampImg.frameCount == frameCount);
+            time_stamps1[frameCount] = imgGrab_time;
         }
 
     }

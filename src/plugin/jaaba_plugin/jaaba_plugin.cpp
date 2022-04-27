@@ -372,9 +372,9 @@ namespace bias {
         int64_t pc_time, start_process, end_process;
         int64_t front_read_time, side_read_time, time_now;
         string filename;
-        uint64_t expTime = 0, curTime = 0;
-        uint64_t frameGrabAvgTime = 2500;
-        int64_t wait_thres = 2500;
+        float expTime = 0, curTime = 0;
+        uInt32 frameGrabAvgTime = 2500;
+        uInt32 wait_thres = 2500;
         
         // initialize memory on the gpu 
         if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
@@ -398,40 +398,53 @@ namespace bias {
                 pluginImageQueuePtr_->releaseLock();
                 return;
             }
-
-            StampedImage stampedImage0 = pluginImageQueuePtr_->front();
-            currentImage_ = stampedImage0.image.clone();
-            frameCount_ = stampedImage0.frameCount;
-            fstfrmtStampRef_ = stampedImage0.fstfrmtStampRef;
-            pc_time = gettime_->getPCtime();
-            if(frameCount_ == 0)
-                printf("jaaba reference,  %lu\n", fstfrmtStampRef_);
-            bool skip = false;
+            
             if (!(pluginImageQueuePtr_->empty()))
             {
+                StampedImage stampedImage0 = pluginImageQueuePtr_->front();
+                pluginImageQueuePtr_->pop();
+                pluginImageQueuePtr_->releaseLock();
+                currentImage_ = stampedImage0.image.clone();
+                frameCount_ = stampedImage0.frameCount;
+                fstfrmtStampRef_ = stampedImage0.fstfrmtStampRef;
+                bool skip = false;
+
+                if (testConfigEnabled_ && nidaq_task_ != nullptr) {
+                    nidaq_task_->acquireLock();
+                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                    nidaq_task_->releaseLock();
+                }
+
+                //pc_time = gettime_->getPCtime();
+                //if (frameCount_ == 0)
+                //    printf("jaaba reference,  %lu\n", fstfrmtStampRef_);
+
                 if (fstfrmtStampRef_ != 0)
                 {
-                    expTime = static_cast<uint64_t>(fstfrmtStampRef_ + (frameGrabAvgTime * frameCount_));
-                    curTime = static_cast<uint64_t>(pc_time);
+                    expTime = (fstfrmtStampRef_*0.02 + (2.5 * frameCount_));
+                    curTime = (read_ondemand)*0.02;
 
-                    if (llabs(curTime - expTime) > 1000)
+                    if (curTime - expTime > 4.0)
                     {
-                  
-                        if(cameraNumber_ == 0)
+
+                        if (cameraNumber_ == 0 && processScoresPtr_side->processedFrameCount == frameCount_)
                         {
                             side_skip_count++;
-                            time_stamps4[processScoresPtr_side->processedFrameCount] = side_skip_count;
+                            time_stamps4[processScoresPtr_side->processedFrameCount] = curTime - expTime;
                             processScoresPtr_side->processedFrameCount++;
-                        }
-                        else 
-                        {    
+                        
+                        }else { assert(processScoresPtr_side->processedFrameCount==frameCount_); }
+
+                        if (cameraNumber_ == 1 && processScoresPtr_front->processedFrameCount == frameCount_)
+                        {
                             front_skip_count++;
-                            time_stamps4[processScoresPtr_front->processedFrameCount] = front_skip_count;
+                            time_stamps4[processScoresPtr_front->processedFrameCount] = curTime - expTime;
                             processScoresPtr_front->processedFrameCount++;
-                        }
+
+                        }else{  assert(processScoresPtr_front->processedFrameCount==frameCount_);}
 
                     } else {
-                    
+
                         if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
                         {
                             emit(passFrontHOFShape(processScoresPtr_side->HOGHOF_frame));
@@ -594,7 +607,7 @@ namespace bias {
                                 if (processScoresPtr_front->isFront)
                                 {
 
-                                    if (nDevices_ >= 2)
+                                    /*if (nDevices_ >= 2)
                                     {
                                         cudaSetDevice(1);
                                         processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
@@ -624,7 +637,7 @@ namespace bias {
                                         emit(passScore(processScoresPtr_front->predScore_));
                                         //score_calculated_ = 1;
 
-                                    } 
+                                    } */
 
                                     processScoresPtr_front->processedFrameCount++;
 
@@ -640,7 +653,7 @@ namespace bias {
                                 if (processScoresPtr_side->isSide)
                                 {
 
-                                    if (nDevices_ >= 2)
+                                    /*if (nDevices_ >= 2)
                                     {
                                         cudaSetDevice(0);
                                         processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
@@ -675,7 +688,7 @@ namespace bias {
                                         //score_calculated_ = 1;
                                         processScoresPtr_side->releaseLock();
 
-                                    }
+                                    }*/
 
                                     processScoresPtr_side->processedFrameCount++;
 
@@ -692,10 +705,10 @@ namespace bias {
                         }
                         
                     }// if skip or process 
-                    pluginImageQueuePtr_->pop();
+                    //pluginImageQueuePtr_->pop();
                 }      
             }// check if plugin queue empty
-            pluginImageQueuePtr_->releaseLock();
+            //pluginImageQueuePtr_->releaseLock();
         }
 
 
@@ -780,7 +793,7 @@ namespace bias {
                 + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
             std::cout << frameCount_ << "" << filename << std::endl;
             //gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
-            gettime_->write_time_1d<unsigned long>(filename, testConfig_->numFrames, time_stamps4);
+            gettime_->write_time_1d<float>(filename, testConfig_->numFrames, time_stamps4);
         }
 
         /*if (frameCount_ == testConfig_->numFrames - 1

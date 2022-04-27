@@ -13,7 +13,7 @@
 #include <QtDebug>
 // ----------------------------------------------------------------------------
 
-#define DEBUG 1
+#define DEBUG 0
 
 namespace bias
 {
@@ -103,7 +103,7 @@ namespace bias
         testConfigEnabled_ = testConfigEnabled;
         testConfig_ = testConfig;
         trial_num = trial_info;
-
+#if DEBUG
         if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()) {
             
             if (!testConfig_->queue_prefix.empty()) {
@@ -111,6 +111,7 @@ namespace bias
                 queue_size.resize(testConfig_->numFrames,0);
             }
         }
+#endif
     }
 
     cv::Mat ImageDispatcher::getImage() const
@@ -197,15 +198,13 @@ namespace bias
 
             if (pluginEnabled_)
             {
+                pluginImageQueuePtr_->acquireLock();
+                pluginImageQueuePtr_->push(newStampImage);
+                pluginImageQueuePtr_->signalNotEmpty();
+                pluginImageQueuePtr_->releaseLock();
+
 #if DEBUG            
-                if (!newStampImage.isSpike) {
-
-                    pluginImageQueuePtr_->acquireLock();
-                    pluginImageQueuePtr_->push(newStampImage);
-                    pluginImageQueuePtr_->signalNotEmpty();
-                    pluginImageQueuePtr_->releaseLock();
-
-                }else{
+                if (newStampImage.isSpike) {
 
                     if (testConfigEnabled_) {
 
@@ -217,16 +216,11 @@ namespace bias
                         }
                     }
 
-                    acquireLock();
-                    skippedFramesPluginPtr_->push(newStampImage.frameCount);
-                    releaseLock();
-                    //std::cout << newStampImage.frameCount << "skipped " << std::endl;
+                    //acquireLock();
+                    //skippedFramesPluginPtr_->push(newStampImage.frameCount);
+                    //releaseLock();
+                    
                 }
-#else 
-                pluginImageQueuePtr_->acquireLock();
-                pluginImageQueuePtr_->push(newStampImage);
-                pluginImageQueuePtr_->signalNotEmpty();
-                pluginImageQueuePtr_->releaseLock();
 #endif
             }
 
@@ -239,6 +233,7 @@ namespace bias
             releaseLock();
 
             /************************************************************************************************************/
+#if DEBUG
             if (testConfigEnabled_) {
 
                 if (frameCount_ == testConfig_->numFrames - 1
@@ -256,6 +251,7 @@ namespace bias
                 }
 
             }
+#endif
             /************************************************************************************************************/
             // DEVEL
             // ----------------------------------------------------------------
