@@ -43,7 +43,7 @@ namespace bias {
         }
         
         std::cout << "initialized " << "skip " << std::endl;
-        skipFrames.resize(100000,0);
+        //skipFrames.resize(100000,0);
         //time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
         
     }
@@ -191,7 +191,6 @@ namespace bias {
             EnumNode_spin gainAutoNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("GainAuto");
             if (gainAutoNode.isAvailable() && gainAutoNode.isWritable())
             {
-
                 gainAutoNode.setEntryBySymbolic("Off");
             }
 
@@ -225,7 +224,7 @@ namespace bias {
 
             if (transferMode.isAvailable() && transferMode.isWritable())
             {
-                        transferMode.setEnumEntry("NewestOnly");
+                transferMode.setEnumEntry("NewestOnly");
 
             } else {
 

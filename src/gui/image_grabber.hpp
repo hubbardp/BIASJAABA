@@ -104,10 +104,10 @@ namespace bias
             std::shared_ptr<TestConfig>testConfig_;
 
             //test
-            std::vector<float> time_stamps1;
-            std::vector<int64_t> time_stamps2;
-            std::vector<std::vector<uInt32>>time_stamps3;
-            std::vector<unsigned int> queue_size;
+            std::vector<float> ts_nidaqThres; //nidaq thres
+            std::vector<int64_t> ts_pc; // pc timings
+            std::vector<std::vector<uInt32>>ts_nidaq; // nidaq timings
+            std::vector<unsigned int> queue_size; // queue size
 
             void spikeDetected(unsigned int frameCount);
 

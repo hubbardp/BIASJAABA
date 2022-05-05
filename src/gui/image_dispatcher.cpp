@@ -13,14 +13,14 @@
 #include <QtDebug>
 // ----------------------------------------------------------------------------
 
-#define DEBUG 0
+#define DEBUG 1
 
 namespace bias
 {
 
     ImageDispatcher::ImageDispatcher(QObject *parent) : QObject(parent)
     {
-        initialize(false,false,0,NULL,NULL,NULL,NULL,NULL,false,"",NULL,NULL);
+        initialize(false,false,0,NULL,NULL,NULL,NULL,NULL,false,"",NULL,NULL,NULL);
     }
 
     ImageDispatcher::ImageDispatcher( 
@@ -36,6 +36,7 @@ namespace bias
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
             std::shared_ptr<Lockable<GetTime>> gettime,
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
             QObject *parent
             ) : QObject(parent)
     {
@@ -51,7 +52,8 @@ namespace bias
                 testConfigEnabled,
                 trial_info,
                 testConfig,
-                gettime
+                gettime,
+                nidaq_task
                 );
     }
 
@@ -67,7 +69,8 @@ namespace bias
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
-            std::shared_ptr<Lockable<GetTime>> gettime
+            std::shared_ptr<Lockable<GetTime>> gettime,
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
             ) 
     {
         newImageQueuePtr_ = newImageQueuePtr;
@@ -103,13 +106,24 @@ namespace bias
         testConfigEnabled_ = testConfigEnabled;
         testConfig_ = testConfig;
         trial_num = trial_info;
-#if DEBUG
-        if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()) {
-            
-            if (!testConfig_->queue_prefix.empty()) {
+        nidaq_task_ = nidaq_task;
 
-                queue_size.resize(testConfig_->numFrames,0);
-            }
+#if DEBUG
+        /*if (testConfigEnabled_ && !testConfig_->queue_prefix.empty()) {
+            
+            queue_size.resize(testConfig_->numFrames,0);
+            
+        }*/
+
+        if (testConfigEnabled_ && !testConfig_->nidaq_prefix.empty()) {
+
+            //ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+            ts_nidaqThres.resize(testConfig_->numFrames, 0.0);
+        }
+
+        if (testConfigEnabled_ && !testConfig_->f2f_prefix.empty()) {
+
+            ts_pc.resize(testConfig_->numFrames, 0.0);
         }
 #endif
     }
@@ -145,6 +159,7 @@ namespace bias
         bool done = false; 
         StampedImage newStampImage;
         int64_t pc_time;
+        float imgDispatchTime;
 
         if (!ready_) 
         { 
@@ -199,12 +214,13 @@ namespace bias
             if (pluginEnabled_)
             {
                 pluginImageQueuePtr_->acquireLock();
+                frameCount_ = newStampImage.frameCount;
                 pluginImageQueuePtr_->push(newStampImage);
                 pluginImageQueuePtr_->signalNotEmpty();
                 pluginImageQueuePtr_->releaseLock();
 
 #if DEBUG            
-                if (newStampImage.isSpike) {
+                /*if (newStampImage.isSpike) {
 
                     if (testConfigEnabled_) {
 
@@ -214,13 +230,11 @@ namespace bias
                                 queue_size[newStampImage.frameCount] = 1;
 
                         }
-                    }
 
-                    //acquireLock();
-                    //skippedFramesPluginPtr_->push(newStampImage.frameCount);
-                    //releaseLock();
+                    }
                     
-                }
+                }*/
+
 #endif
             }
 
@@ -232,11 +246,40 @@ namespace bias
             done = stopped_;
             releaseLock();
 
-            /************************************************************************************************************/
 #if DEBUG
+            if (testConfigEnabled_ && nidaq_task_ != nullptr) {
+
+                if (frameCount_ <= testConfig_->numFrames) {
+
+                    nidaq_task_->acquireLock();
+                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                    nidaq_task_->releaseLock();
+
+                }
+
+            }
+
+            if (testConfigEnabled_ && !testConfig_->nidaq_prefix.empty()) {
+
+                imgDispatchTime = (read_ondemand - nidaq_task_->cam_trigger[frameCount_])*0.02;
+
+                if (imgDispatchTime > 4.0)
+                {
+                    ts_nidaqThres[frameCount_] = imgDispatchTime;
+                }
+            }
+
+            if (testConfigEnabled_ && !testConfig_->f2f_prefix.empty()) {
+
+                acquireLock();
+                ts_pc[frameCount_] = gettime_->getPCtime();
+                releaseLock();
+            }
+            /************************************************************************************************************/
+
             if (testConfigEnabled_) {
 
-                if (frameCount_ == testConfig_->numFrames - 1
+                /*if (frameCount_ == testConfig_->numFrames - 1
                     && !testConfig_->queue_prefix.empty()) {
 
 
@@ -248,8 +291,35 @@ namespace bias
                         + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
                     gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+                }*/
+
+                if (frameCount_ == testConfig_->numFrames - 1
+                    && !testConfig_->nidaq_prefix.empty()) {
+
+
+                    string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + "jaaba_plugin"
+                        + "_" + "nidaq_thres_" + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+
+                    gettime_->write_time_1d<float>(filename, testConfig_->numFrames, ts_nidaqThres);
                 }
 
+                if (frameCount_ == testConfig_->numFrames - 1
+                    && !testConfig_->f2f_prefix.empty()) {
+
+
+                    string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + "imagedispatch"
+                        + "_" + testConfig_->f2f_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+
+                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_pc);
+                }
             }
 #endif
             /************************************************************************************************************/

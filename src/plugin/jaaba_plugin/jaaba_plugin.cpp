@@ -5,6 +5,7 @@
 #include <string>
 
 #define DEBUG 0 
+#define compute 0
 
 //
 
@@ -401,6 +402,12 @@ namespace bias {
             
             if (!(pluginImageQueuePtr_->empty()))
             {
+                if (testConfigEnabled_ && nidaq_task_ != nullptr) {
+                    nidaq_task_->acquireLock();
+                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                    nidaq_task_->releaseLock();
+                }
+
                 StampedImage stampedImage0 = pluginImageQueuePtr_->front();
                 pluginImageQueuePtr_->pop();
                 pluginImageQueuePtr_->releaseLock();
@@ -409,25 +416,20 @@ namespace bias {
                 fstfrmtStampRef_ = stampedImage0.fstfrmtStampRef;
                 bool skip = false;
 
-                if (testConfigEnabled_ && nidaq_task_ != nullptr) {
-                    nidaq_task_->acquireLock();
-                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                    nidaq_task_->releaseLock();
-                }
-
                 //pc_time = gettime_->getPCtime();
                 //if (frameCount_ == 0)
                 //    printf("jaaba reference,  %lu\n", fstfrmtStampRef_);
 
                 if (fstfrmtStampRef_ != 0)
                 {
-                    expTime = (fstfrmtStampRef_*0.02 + (2.5 * frameCount_));
-                    curTime = (read_ondemand)*0.02;
+                    //expTime = (fstfrmtStampRef_*0.02 + (2.5 * frameCount_));
+                    expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
+                    curTime = (read_ondemand)*0.02; 
 
-                    if (curTime - expTime > 4.0)
+                    if ((curTime - expTime) > 4.0)
                     {
 
-                        if (cameraNumber_ == 0 && processScoresPtr_side->processedFrameCount == frameCount_)
+                        if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount == frameCount_))
                         {
                             side_skip_count++;
                             time_stamps4[processScoresPtr_side->processedFrameCount] = curTime - expTime;
@@ -435,7 +437,7 @@ namespace bias {
                         
                         }else { assert(processScoresPtr_side->processedFrameCount==frameCount_); }
 
-                        if (cameraNumber_ == 1 && processScoresPtr_front->processedFrameCount == frameCount_)
+                        if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount == frameCount_))
                         {
                             front_skip_count++;
                             time_stamps4[processScoresPtr_front->processedFrameCount] = curTime - expTime;
@@ -468,7 +470,7 @@ namespace bias {
                             if (isSender() && detectStarted)
                             {
 #if DEBUG
-                                /*if (!skipframes_view1.empty())
+                                if (!skipframes_view1.empty())
                                 {
 
                                     if (processScoresPtr_front->processedFrameCount < skipframes_view1.top()){
@@ -479,9 +481,9 @@ namespace bias {
                                         processScoresPtr_front->HOGHOF_partner->setLastInput();
 
                                     }else {
-        #if DEBUG
+   
                                         frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
-        #endif
+     
                                         processScoresPtr_front->processedFrameCount++;
                                         pluginImageQueuePtr_->releaseLock();
                                         return;
@@ -489,7 +491,7 @@ namespace bias {
 
                                     if (processScoresPtr_front->processedFrameCount == (skipframes_view1.top() + frameSkip))
                                         skipframes_view1.pop();
-                                }*/
+                                }
 
                                 //start_process = gettime_->getPCtime();
                                 if (processScoresPtr_front->capture_front.isOpened())
@@ -542,7 +544,7 @@ namespace bias {
                             {
 
 #if DEBUG
-                                /*if (!skipframes_view2.empty())
+                                if (!skipframes_view2.empty())
                                 {
                                     if (processScoresPtr_side->processedFrameCount < skipframes_view2.top())
                                     {
@@ -553,9 +555,8 @@ namespace bias {
 
                                     } else {
 
-        #if DEBUG
                                         sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
-        #endif
+      
                                         processScoresPtr_side->processedFrameCount++;
                                         pluginImageQueuePtr_->releaseLock();
                                         return;
@@ -563,7 +564,7 @@ namespace bias {
 
                                     if (processScoresPtr_side->processedFrameCount == (skipframes_view2.top() + frameSkip))
                                         skipframes_view2.pop();
-                                }*/
+                                }
 
                                 if (processScoresPtr_side->capture_sde.isOpened())
                                 {
@@ -606,8 +607,8 @@ namespace bias {
 
                                 if (processScoresPtr_front->isFront)
                                 {
-
-                                    /*if (nDevices_ >= 2)
+#if compute
+                                    if (nDevices_ >= 2)
                                     {
                                         cudaSetDevice(1);
                                         processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
@@ -637,8 +638,8 @@ namespace bias {
                                         emit(passScore(processScoresPtr_front->predScore_));
                                         //score_calculated_ = 1;
 
-                                    } */
-
+                                    } 
+#endif
                                     processScoresPtr_front->processedFrameCount++;
 
                                 }
@@ -652,8 +653,8 @@ namespace bias {
 
                                 if (processScoresPtr_side->isSide)
                                 {
-
-                                    /*if (nDevices_ >= 2)
+#if compute
+                                    if (nDevices_ >= 2)
                                     {
                                         cudaSetDevice(0);
                                         processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
@@ -688,8 +689,8 @@ namespace bias {
                                         //score_calculated_ = 1;
                                         processScoresPtr_side->releaseLock();
 
-                                    }*/
-
+                                    }
+#endif
                                     processScoresPtr_side->processedFrameCount++;
 
                                 }
@@ -711,8 +712,7 @@ namespace bias {
             //pluginImageQueuePtr_->releaseLock();
         }
 
-
-        /*if (nidaq_task_ != nullptr) {
+        if (nidaq_task_ != nullptr) {
 
             if (frameCount_ <= testConfig_->numFrames) {
 
@@ -724,91 +724,95 @@ namespace bias {
 
         }
 
-        if (!testConfig_->nidaq_prefix.empty()) {
-
-            time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
-            time_stamps3[frameCount_][1] = read_ondemand;
-        }
-
-        if (!testConfig_->f2f_prefix.empty()) {
-
-            pc_time = gettime_->getPCtime();
-
-            if (frameCount_ <= testConfig_->numFrames)
-                time_stamps2[frameCount_] = pc_time;
-        }
-
-        if (!testConfig_->queue_prefix.empty()) {
-
-            if (frameCount_ <= testConfig_->numFrames)
-                queue_size[frameCount_] = 2;// pluginImageQueuePtr_->size();
-
-        }
-
-        if (process_frame_time) {
-
-            if (frameCount_ <= testConfig_->numFrames)
-                time_stamps4[frameCount_] = (end_process - start_process);
-        }
-
-        if (frameCount_ == testConfig_->numFrames - 1
-            && !testConfig_->f2f_prefix.empty())
+        if (testConfigEnabled_)
         {
 
-            std::string filename = testConfig_->dir_list[0] + "/"
-                + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
-                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                + testConfig_->plugin_prefix
-                + "_" + testConfig_->f2f_prefix + "cam"
-                + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+            if (!testConfig_->nidaq_prefix.empty()) {
 
-            gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
+                time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
+                time_stamps3[frameCount_][1] = read_ondemand;
+            }
 
+            if (!testConfig_->f2f_prefix.empty()) {
+
+                pc_time = gettime_->getPCtime();
+
+                if (frameCount_ <= testConfig_->numFrames)
+                    time_stamps2[frameCount_] = pc_time;
+            }
+
+            if (!testConfig_->queue_prefix.empty()) {
+
+                if (frameCount_ <= testConfig_->numFrames)
+                    queue_size[frameCount_] = 2;// pluginImageQueuePtr_->size();
+
+            }
+
+            if (process_frame_time) {
+
+                if (frameCount_ <= testConfig_->numFrames)
+                    time_stamps4[frameCount_] = (end_process - start_process);
+            }
+
+            if (frameCount_ == testConfig_->numFrames - 1
+                && !testConfig_->f2f_prefix.empty())
+            {
+
+                std::string filename = testConfig_->dir_list[0] + "/"
+                    + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                    + testConfig_->plugin_prefix
+                    + "_" + testConfig_->f2f_prefix + "cam"
+                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
+
+            }
+
+            if (frameCount_ == testConfig_->numFrames - 1
+                && !testConfig_->nidaq_prefix.empty())
+            {
+
+                std::string filename = testConfig_->dir_list[0] + "/"
+                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                    + testConfig_->plugin_prefix
+                    + "_" + testConfig_->nidaq_prefix + "cam"
+                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
+
+            }
+
+            if (frameCount_ == testConfig_->numFrames - 1
+                && !testConfig_->queue_prefix.empty()) {
+
+
+                string filename = testConfig_->dir_list[0] + "/"
+                    + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                    + testConfig_->plugin_prefix
+                    + "_" + testConfig_->queue_prefix + "cam"
+                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+                std::cout << frameCount_ << "" << filename << std::endl;
+                gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+
+            }
+
+            if (frameCount_ == testConfig_->numFrames - 1
+                && process_frame_time) {
+
+                string filename = testConfig_->dir_list[0] + "/"
+                    + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                    + testConfig_->plugin_prefix
+                    + "_" + "jaaba_process_time" + "cam"
+                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+                std::cout << filename << std::endl;
+                gettime_->write_time_1d<float>(filename, testConfig_->numFrames, time_stamps4);
+
+            }
         }
-
-        if (frameCount_ == testConfig_->numFrames - 1
-            && !testConfig_->nidaq_prefix.empty())
-        {
-
-            std::string filename = testConfig_->dir_list[0] + "/"
-                + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                + testConfig_->plugin_prefix
-                + "_" + testConfig_->nidaq_prefix + "cam"
-                + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-
-            gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
-
-        }*/
-
-        if (frameCount_ == testConfig_->numFrames - 1
-            && !testConfig_->queue_prefix.empty()) {
-
-
-            string filename = testConfig_->dir_list[0] + "/"
-                + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
-                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                + testConfig_->plugin_prefix
-                + "_" + testConfig_->queue_prefix + "cam"
-                + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-            std::cout << frameCount_ << "" << filename << std::endl;
-            //gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
-            gettime_->write_time_1d<float>(filename, testConfig_->numFrames, time_stamps4);
-        }
-
-        /*if (frameCount_ == testConfig_->numFrames - 1
-            && process_frame_time) {
-
-            string filename = testConfig_->dir_list[0] + "/"
-                + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
-                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                + testConfig_->plugin_prefix
-                + "_" + "jaaba_process_time" + "cam"
-                + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-            std::cout << filename << std::endl;
-            gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps4);
-
-        }*/
 
     }
 
@@ -1972,7 +1976,7 @@ namespace bias {
                                     bool testConfigEnabled, string trial_info,
                                     std::shared_ptr<TestConfig> testConfig) 
     {
-       
+        std::cout << "nidaq setup for plugin " << std::endl;
         nidaq_task_ = nidaq_task;
         testConfig_ = testConfig;
         testConfigEnabled_ = testConfigEnabled;
@@ -1990,9 +1994,7 @@ namespace bias {
 
             if (!testConfig_->f2f_prefix.empty()) {
 
-                time_stamps2.resize(testConfig_->numFrames, 0);
-                time_stamps4.resize(testConfig_->numFrames, 0);
-                time_stamps5.resize(testConfig_->numFrames, 0);
+                time_stamps2.resize(testConfig_->numFrames, 0.0);
             }
 
             if (!testConfig_->nidaq_prefix.empty()) {
@@ -2007,9 +2009,11 @@ namespace bias {
 
         }
 
+#if DEBUG
         time_stamps1.resize(testConfig_->numFrames,0.0);
         time_stamps4.resize(testConfig_->numFrames, 0.0);
-        
+        time_stamps5.resize(testConfig_->numFrames, 0);
+#endif        
     }
 
     void JaabaPlugin::setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,

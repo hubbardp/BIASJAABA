@@ -9,6 +9,7 @@
 #include "fps_estimator.hpp"
 #include "lockable.hpp"
 #include "camera_fwd.hpp"
+#include "NIDAQUtils.hpp"
 
 
 // DEVEL 
@@ -40,6 +41,7 @@ namespace bias
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
+                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
                     QObject *parent = 0
                     );
 
@@ -55,7 +57,8 @@ namespace bias
                     bool testConfigEnabled,
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
-                    std::shared_ptr<Lockable<GetTime>> gettime
+                    std::shared_ptr<Lockable<GetTime>> gettime,
+                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
                     );
 
             // Use lock when calling these methods
@@ -75,6 +78,9 @@ namespace bias
             bool testConfigEnabled_;
             string trial_num;
 
+            uInt32 read_buffer = 0, read_ondemand = 0;
+
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
@@ -95,8 +101,10 @@ namespace bias
             std::shared_ptr<TestConfig>testConfig_;
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::vector<unsigned int>queue_size;
-            std::vector<float>time_stamps1;
-            std::vector<std::vector<int64_t>> time_stamps;
+            std::vector<std::vector<uInt32>> ts_nidaq;
+            std::vector<float>ts_nidaqThres;
+            std::vector<int64_t>ts_pc;
+            
     };
 
 } // namespace bias

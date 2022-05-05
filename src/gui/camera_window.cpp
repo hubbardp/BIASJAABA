@@ -517,6 +517,7 @@ namespace bias
                 trial_num,
                 testConfig,
                 gettime_,
+                nidaq_task,
                 this
                 );
         imageDispatcherPtr_ -> setAutoDelete(false);
@@ -1206,32 +1207,7 @@ namespace bias
         QString errMsgTitle("Load Configuration Error");
 
         rtnStatus = setConfigurationFromTestMap(testConfig, showErrorDlg);
-        //QVariantMap oldConfigMap = getConfigurationMap(rtnStatus);        
-
-        /*if (!rtnStatus.success)
-        {
-            QString origErrMsg = rtnStatus.message;
-
-            // Something went wrong - try to revert to old configuration
-            rtnStatus = setConfigurationFromMap(oldConfigMap, showErrorDlg);
-            if (!rtnStatus.success)
-            {
-                QString errMsgText("Unable to revert to previous configuration");
-                if (showErrorDlg)
-                {
-                    QMessageBox::critical(this, errMsgTitle, errMsgText);
-                }
-                rtnStatus.success = false;
-                rtnStatus.message = errMsgText;
-                return rtnStatus;
-            }
-            else
-            {
-                rtnStatus.success = false;
-                rtnStatus.message = origErrMsg;
-                return rtnStatus;
-            }
-        }*/
+ 
         updateAllMenus();
         updateStatusLabel();
         rtnStatus.success = true;
@@ -2110,8 +2086,6 @@ namespace bias
     {
 
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
-
-            this->imageGrabberPtr_->connectSlots();
             
             // start the nidaq tasks
             nidaq_task ->start_trigger_signal();
@@ -2486,13 +2460,11 @@ namespace bias
             cameraPtr_ -> releaseLock();
             nidaq_task = nullptr;
             QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
-            triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];
-            printf("nidaq initialized - %d ", triggerExternalType_);
+            triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];           
 
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
                                
                 nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();              
-                
 
             }else if (triggerExternalType_ == TRIGGER_ELSE && cameraNumber_ == 0) {
 
