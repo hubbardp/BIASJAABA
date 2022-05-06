@@ -109,15 +109,15 @@ namespace bias
         nidaq_task_ = nidaq_task;
 
 #if DEBUG
-        /*if (testConfigEnabled_ && !testConfig_->queue_prefix.empty()) {
+        if (testConfigEnabled_ && !testConfig_->queue_prefix.empty()) {
             
             queue_size.resize(testConfig_->numFrames,0);
             
-        }*/
+        }
 
         if (testConfigEnabled_ && !testConfig_->nidaq_prefix.empty()) {
 
-            //ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+            ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
             ts_nidaqThres.resize(testConfig_->numFrames, 0.0);
         }
 
@@ -189,26 +189,26 @@ namespace bias
         stampOutStream.open(stampFileName);*/
         // ---------------------------------------------------------------------------
         
-        while (!done) 
+        while (!done)
         {
 
-            newImageQueuePtr_ -> acquireLock();
-            newImageQueuePtr_ -> waitIfEmpty();
-            if (newImageQueuePtr_ -> empty())
+            newImageQueuePtr_->acquireLock();
+            newImageQueuePtr_->waitIfEmpty();
+            if (newImageQueuePtr_->empty())
             {
-                newImageQueuePtr_ -> releaseLock();
+                newImageQueuePtr_->releaseLock();
                 break;
             }
-            newStampImage = newImageQueuePtr_ -> front();
-            newImageQueuePtr_ -> pop();
-            newImageQueuePtr_ -> releaseLock();
-            
-            if (logging_ )
+            newStampImage = newImageQueuePtr_->front();
+            newImageQueuePtr_->pop();
+            newImageQueuePtr_->releaseLock();
+
+            if (logging_)
             {
-                logImageQueuePtr_ -> acquireLock();
-                logImageQueuePtr_ -> push(newStampImage);
-                logImageQueuePtr_ -> signalNotEmpty();
-                logImageQueuePtr_ -> releaseLock();
+                logImageQueuePtr_->acquireLock();
+                logImageQueuePtr_->push(newStampImage);
+                logImageQueuePtr_->signalNotEmpty();
+                logImageQueuePtr_->releaseLock();
             }
 
             if (pluginEnabled_)
@@ -232,7 +232,7 @@ namespace bias
                         }
 
                     }
-                    
+
                 }*/
 
 #endif
@@ -247,64 +247,70 @@ namespace bias
             releaseLock();
 
 #if DEBUG
-            if (testConfigEnabled_ && nidaq_task_ != nullptr) {
-
-                if (frameCount_ <= testConfig_->numFrames) {
-
-                    nidaq_task_->acquireLock();
-                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                    nidaq_task_->releaseLock();
-
-                }
-
-            }
-
-            if (testConfigEnabled_ && !testConfig_->nidaq_prefix.empty()) {
-
-                imgDispatchTime = (read_ondemand - nidaq_task_->cam_trigger[frameCount_])*0.02;
-
-                if (imgDispatchTime > 4.0)
-                {
-                    ts_nidaqThres[frameCount_] = imgDispatchTime;
-                }
-            }
-
-            if (testConfigEnabled_ && !testConfig_->f2f_prefix.empty()) {
-
-                acquireLock();
-                ts_pc[frameCount_] = gettime_->getPCtime();
-                releaseLock();
-            }
-            /************************************************************************************************************/
-
             if (testConfigEnabled_) {
 
-                /*if (frameCount_ == testConfig_->numFrames - 1
+                if (frameCount_ < testConfig_->numFrames) {
+
+                    if (nidaq_task_ != nullptr) {
+
+                        nidaq_task_->acquireLock();
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                        nidaq_task_->releaseLock();
+
+                    }
+
+                    if (!testConfig_->nidaq_prefix.empty()) {
+
+                        imgDispatchTime = (read_ondemand - nidaq_task_->cam_trigger[frameCount_])*0.02;
+                        ts_nidaq[frameCount_][1] = read_ondemand;
+                        if (imgDispatchTime > 4.0)
+                        {
+                            ts_nidaqThres[frameCount_] = imgDispatchTime;
+                        }
+                    }
+
+                    if (!testConfig_->f2f_prefix.empty()) {
+
+                        acquireLock();
+                        ts_pc[frameCount_] = gettime_->getPCtime();
+                        releaseLock();
+                    }
+                }
+
+                if (frameCount_ == testConfig_->numFrames - 1
                     && !testConfig_->queue_prefix.empty()) {
 
 
                     string filename = testConfig_->dir_list[0] + "/"
                         + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
                         + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                        + testConfig_->imagegrab_prefix
+                        + "imagedispatch"
                         + "_" + testConfig_->queue_prefix + "cam"
                         + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
                     gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
-                }*/
+                }
 
                 if (frameCount_ == testConfig_->numFrames - 1
                     && !testConfig_->nidaq_prefix.empty()) {
 
-
                     string filename = testConfig_->dir_list[0] + "/"
                         + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
                         + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                        + "jaaba_plugin"
-                        + "_" + "nidaq_thres_" + "cam"
+                        + "imagedispatch_"
+                        + testConfig_->nidaq_prefix + "cam"
                         + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
-                    gettime_->write_time_1d<float>(filename, testConfig_->numFrames, ts_nidaqThres);
+
+                    string filename1 = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + "imagedispatch"
+                        + "_" + "nidaq_thres" + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+
+                    gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, ts_nidaq);
+                    gettime_->write_time_1d<float>(filename1, testConfig_->numFrames, ts_nidaqThres);
                 }
 
                 if (frameCount_ == testConfig_->numFrames - 1
