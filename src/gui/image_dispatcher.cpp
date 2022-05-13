@@ -13,7 +13,7 @@
 #include <QtDebug>
 // ----------------------------------------------------------------------------
 
-#define DEBUG 1
+#define DEBUG 0
 
 namespace bias
 {
@@ -248,7 +248,7 @@ namespace bias
 
 #if DEBUG
             if (testConfigEnabled_) {
-
+                
                 if (frameCount_ < testConfig_->numFrames) {
 
                     if (nidaq_task_ != nullptr) {
@@ -262,6 +262,7 @@ namespace bias
                     if (!testConfig_->nidaq_prefix.empty()) {
 
                         imgDispatchTime = (read_ondemand - nidaq_task_->cam_trigger[frameCount_])*0.02;
+                        ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
                         ts_nidaq[frameCount_][1] = read_ondemand;
                         if (imgDispatchTime > 4.0)
                         {

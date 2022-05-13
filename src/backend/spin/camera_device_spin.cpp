@@ -440,7 +440,6 @@ namespace bias {
 
         imageTmp.copyTo(image);
 
-
         // ----------------------------------------------------------------------------
 
         if (!destroySpinImage(hSpinImageConv))

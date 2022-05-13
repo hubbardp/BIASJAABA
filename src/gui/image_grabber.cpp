@@ -19,7 +19,7 @@
 #include "camera_device.hpp"
 // ----------------------------------------
 
-#define DEBUG 1 
+#define DEBUG 0 
 
 namespace bias {
 
@@ -352,7 +352,7 @@ namespace bias {
                 // Test Configuration
                 //------------------------------------------------------------------------
                 if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
-
+                    
                     if (!testConfig_->imagegrab_prefix.empty()
                         && nidaq_task_ != nullptr) {
 
