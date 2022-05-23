@@ -14,6 +14,8 @@
 #endif
 #ifdef WITH_SPIN
 #include "SpinnakerC.h"
+#include "node_map_spin.hpp"
+#include "string_node_spin.hpp"
 #endif
 
 namespace bias {

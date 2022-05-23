@@ -1412,11 +1412,12 @@ namespace bias
         if (!testConfig->logging_prefix.empty())
         {
             logging_ = true;
-
+            actionLoggingEnabledPtr_->setChecked(true);
         }
         else {
 
             logging_ = false;
+            actionLoggingEnabledPtr_->setChecked(false);
         }
         std:cout << " logging " << logging_ << std::endl;
         // Get "isPlugin" value

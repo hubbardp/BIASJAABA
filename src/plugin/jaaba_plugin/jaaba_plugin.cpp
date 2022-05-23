@@ -712,7 +712,7 @@ namespace bias {
             //pluginImageQueuePtr_->releaseLock();
         }
 
-        if (nidaq_task_ != nullptr) {
+        /*if (nidaq_task_ != nullptr) {
 
             if (frameCount_ <= testConfig_->numFrames) {
 
@@ -722,7 +722,7 @@ namespace bias {
 
             }
 
-        }
+        }*/
 
         if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
         {
