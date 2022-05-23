@@ -318,10 +318,16 @@ namespace bias {
             throw RuntimeError(ERROR_SPIN_CAMERA_LIST_SIZE, ssError.str());
         }
 
+		
+
         for (int i=0; i<numCameras; i++) 
         {
             // Get camera
             spinCamera hCam = nullptr;
+			NodeMapCamera_spin nodeMapCamera_;
+            NodeMapTLDevice_spin nodeMapTLDevice_;
+            CameraInfo_spin cameraInfo_;
+
             error = spinCameraListGet(hCameraList, i, &hCam);
             if (error != SPINNAKER_ERR_SUCCESS)
             {
@@ -330,6 +336,14 @@ namespace bias {
                 ssError << ": unable to get Spinnaker camera, error=" << error;
                 throw RuntimeError(ERROR_SPIN_GET_CAMERA, ssError.str());
             }
+
+            //Rutuja
+            //Newer spinnaker has different guid and serialNumber. 
+            //Changed to get serialNumber to grab correct cameraPtr.
+            nodeMapTLDevice_ = NodeMapTLDevice_spin(hCam);
+            cameraInfo_ = nodeMapTLDevice_.cameraInfo();
+            std::string serialNumber = cameraInfo_.serialNumber();
+			
 
             // Get GUID from camera
             size_t bufSize = 64;
@@ -342,7 +356,8 @@ namespace bias {
                 ssError << ": unable to get GUID for Spinnaker camera, error=" << error;
                 throw RuntimeError(ERROR_SPIN_GET_CAMERA_GUID, ssError.str());
             }
-            std::string guidString = std::string(bufVec.data());
+            printf("GUID number %s ",serialNumber);
+            std::string guidString = std::string(serialNumber);
             guidSet_.insert(Guid(guidString));
 
             // Release Camera
