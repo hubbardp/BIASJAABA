@@ -1084,16 +1084,21 @@ namespace bias {
         if (chunkSelectorNode.isAvailable())
         {
             std::cout << "DEBUG: ChunkSelector available " << std::endl;
-            std::ofstream entries_file;
+			// Rutuja- Not exactly sure why writing this to file is important. 
+			// This is causing problems in newer BFS cameras as the ChunkSelector 
+			// enteries are more in the newer cameras. Not able to get values from new enteries??
+            /*std::ofstream entries_file;
             entries_file.open("chuckselector_entries.txt");
             entries_file << "DEBUG: ChunkSelector entries begin " << std::endl << std::endl;
+		
             for (auto entry : chunkSelectorNode.entries())
             {
+				std::cout << entry.toString() << std::endl;
                 entries_file << entry.toString();
             }
             entries_file << "DEBUG: ChunkSelector entries end " << std::endl;
-            entries_file.close();
-            chunkSelectorNode.setEntryBySymbolic("Timestamp");
+            entries_file.close();*/
+            //chunkSelectorNode.setEntryBySymbolic("Timestamp");
         }
         else
         {
