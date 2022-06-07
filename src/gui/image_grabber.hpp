@@ -85,6 +85,7 @@ namespace bias
             bool testConfigEnabled_;
             string trial_num;
             uint64_t fstfrmtStampRef_;
+            bool process_frame_time;
 
             unsigned int partnerCameraNumber_;
             uInt32 read_buffer_ = 0, read_ondemand_ = 0;
@@ -108,6 +109,7 @@ namespace bias
             std::vector<int64_t> ts_pc; // pc timings
             std::vector<std::vector<uInt32>>ts_nidaq; // nidaq timings
             std::vector<unsigned int> queue_size; // queue size
+            std::vector<int64_t>ts_process;
 
             void spikeDetected(unsigned int frameCount);
 

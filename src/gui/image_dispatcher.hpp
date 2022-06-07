@@ -77,7 +77,7 @@ namespace bias
             unsigned int cameraNumber_;
             bool testConfigEnabled_;
             string trial_num;
-
+            bool process_frame_time;
             uInt32 read_buffer = 0, read_ondemand = 0;
 
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
@@ -104,6 +104,7 @@ namespace bias
             std::vector<std::vector<uInt32>> ts_nidaq;
             std::vector<float>ts_nidaqThres;
             std::vector<int64_t>ts_pc;
+            std::vector<int64_t>ts_process;
             
     };
 

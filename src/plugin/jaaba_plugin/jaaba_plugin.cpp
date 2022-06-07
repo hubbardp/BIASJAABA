@@ -367,8 +367,6 @@ namespace bias {
         cv::Mat greySide;
         cv::Mat greyFront; 0;
 
-        bool process_frame_time = 0;
-
         //DEVEL
         int64_t pc_time, start_process, end_process;
         int64_t front_read_time, side_read_time, time_now;
@@ -390,7 +388,7 @@ namespace bias {
        
         if (pluginImageQueuePtr_ != nullptr)
         {
-
+            
             pluginImageQueuePtr_->acquireLock();
             pluginImageQueuePtr_->waitIfEmpty();
 
@@ -402,6 +400,7 @@ namespace bias {
             
             if (!(pluginImageQueuePtr_->empty()))
             {
+                start_process = gettime_->getPCtime();
                 if (testConfigEnabled_ && nidaq_task_ != nullptr) {
                     nidaq_task_->acquireLock();
                     DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
@@ -432,7 +431,7 @@ namespace bias {
                         if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount == frameCount_))
                         {
                             side_skip_count++;
-                            ts_nidaqThres[processScoresPtr_side->processedFrameCount] = curTime - expTime;
+                            //ts_nidaqThres[processScoresPtr_side->processedFrameCount] = curTime - expTime;
                             processScoresPtr_side->processedFrameCount++;
                         
                         }else { assert(processScoresPtr_side->processedFrameCount==frameCount_); }
@@ -440,7 +439,7 @@ namespace bias {
                         if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount == frameCount_))
                         {
                             front_skip_count++;
-                            ts_nidaqThres[processScoresPtr_front->processedFrameCount] = curTime - expTime;
+                            //ts_nidaqThres[processScoresPtr_front->processedFrameCount] = curTime - expTime;
                             processScoresPtr_front->processedFrameCount++;
 
                         }else{  assert(processScoresPtr_front->processedFrameCount==frameCount_);}
@@ -707,7 +706,8 @@ namespace bias {
                         
                     }// if skip or process 
                     //pluginImageQueuePtr_->pop();
-                }      
+                }  
+                end_process = gettime_->getPCtime();
             }// check if plugin queue empty
             //pluginImageQueuePtr_->releaseLock();
         }
@@ -745,7 +745,7 @@ namespace bias {
             }
 
             if (process_frame_time) {
-
+                
                 ts_gpuprocess_time[frameCount_] = (end_process - start_process);
             }
 
@@ -805,13 +805,13 @@ namespace bias {
                 && process_frame_time) {
 
                 string filename = testConfig_->dir_list[0] + "/"
-                    + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
                     + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
                     + testConfig_->plugin_prefix
-                    + "_" + "jaaba_process_time" + "cam"
+                    + "_" + "process_time" + "cam"
                     + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-                std::cout << filename << std::endl;
-                gettime_->write_time_1d<float>(filename, testConfig_->numFrames, ts_gpuprocess_time);
+                
+                gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_gpuprocess_time);
 
             }
         }
@@ -826,7 +826,6 @@ namespace bias {
         cv::Mat greySide;
         cv::Mat greyFront;
         uInt32 read_buffer = 0, read_ondemand = 0;
-        bool process_frame_time = 0;
 
         StampedImage stampedImage0 , stampedImage1;
 
@@ -865,7 +864,7 @@ namespace bias {
 
             }
 
-            //start_process = gettime_->getPCtime();
+            start_process = gettime_->getPCtime();
             if ( !(pluginImageQueuePtr_ -> empty()) && !(partnerPluginImageQueuePtr_ -> empty()))
             {
 
@@ -1079,7 +1078,7 @@ namespace bias {
 
             pluginImageQueuePtr_->releaseLock();
             partnerPluginImageQueuePtr_ -> releaseLock();         
-            //end_process = gettime_->getPCtime();
+            end_process = gettime_->getPCtime();
 #if DEBUG            
             if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()
                 && testConfig_->plugin_prefix == "jaaba_plugin")
@@ -1246,6 +1245,7 @@ namespace bias {
         score_calculated_ = 0;
         scoreCount = 0;
         frameSkip = 5;
+        process_frame_time = 1; 
 
         processScoresPtr_side = new ProcessScores(this, mesPass, gettime_);   
         processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);  
@@ -1992,7 +1992,8 @@ namespace bias {
             if (!testConfig_->nidaq_prefix.empty()) {
                 
                 ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
-                ts_nidaqThres.resize(testConfig_->numFrames, 0.0);
+                //ts_nidaqThres.resize(testConfig_->numFrames, 0.0);
+                ts_gpuprocess_time.resize(testConfig_->numFrames, 0);
             }
 
             if (!testConfig_->queue_prefix.empty()) {
@@ -2000,10 +2001,14 @@ namespace bias {
                 queue_size.resize(testConfig_->numFrames, 0);
             }
 
+            if (process_frame_time)
+            {
+                std::cout << "ts_gpuprocess_time........ " << cameraNumber_ << std::endl;
+                
+            }
         }
 
 #if DEBUG     
-        ts_gpuprocess_time.resize(testConfig_->numFrames, 0.0);
         time_stamps1.resize(testConfig_->numFrames, 0.0);
         time_stamps5.resize(testConfig_->numFrames, 0);
 #endif        

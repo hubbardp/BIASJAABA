@@ -128,6 +128,7 @@ namespace bias
             bool score_calculated_;
             int frameSkip;
             uInt32 fstfrmtStampRef_;
+            bool process_frame_time;
 
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
@@ -149,7 +150,7 @@ namespace bias
             std::vector<int64_t> ts_pc;// pc time
             std::vector<std::vector<uInt32>>ts_nidaq; // nidaq timings
             std::vector<unsigned int> queue_size; // queue size
-            std::vector<float> ts_gpuprocess_time;// gpu process timings
+            std::vector<int64_t> ts_gpuprocess_time;// gpu process timings
             std::vector<float> ts_nidaqThres;// nmidaq threshold for spiked frames
             std::vector<unsigned int> time_stamps5;// test
             
