@@ -504,7 +504,7 @@ namespace bias {
                                 + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
                                 + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
                                 + testConfig_->imagegrab_prefix
-                                + "_" + "process_frame_time" + "cam"
+                                + "_" + "process_time" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
                             std::cout << filename << std::endl;
                             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_process);

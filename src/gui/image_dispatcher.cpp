@@ -198,9 +198,7 @@ namespace bias
         
         while (!done)
         {
-            //acquireLock();
-            start_process = gettime_->getPCtime();
-            //releaseLock();
+
 
             newImageQueuePtr_->acquireLock();
             newImageQueuePtr_->waitIfEmpty();
@@ -213,6 +211,8 @@ namespace bias
             newImageQueuePtr_->pop();
             newImageQueuePtr_->releaseLock();
 
+            start_process = gettime_->getPCtime();
+           
             if (logging_)
             {
                 logImageQueuePtr_->acquireLock();
