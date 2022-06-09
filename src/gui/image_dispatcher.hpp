@@ -110,5 +110,4 @@ namespace bias
 
 } // namespace bias
 
-
 #endif // #ifndef BIAS_IMAGE_PROCESSOR_HPP

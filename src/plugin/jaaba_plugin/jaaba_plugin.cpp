@@ -401,6 +401,7 @@ namespace bias {
             if (!(pluginImageQueuePtr_->empty()))
             {
                 start_process = gettime_->getPCtime();
+
                 if (testConfigEnabled_ && nidaq_task_ != nullptr) {
                     nidaq_task_->acquireLock();
                     DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
@@ -431,7 +432,7 @@ namespace bias {
                         if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount == frameCount_))
                         {
                             side_skip_count++;
-                            //ts_nidaqThres[processScoresPtr_side->processedFrameCount] = curTime - expTime;
+                            ts_nidaqThres[processScoresPtr_side->processedFrameCount] = curTime - expTime;
                             processScoresPtr_side->processedFrameCount++;
                         
                         }else { assert(processScoresPtr_side->processedFrameCount==frameCount_); }
@@ -439,7 +440,7 @@ namespace bias {
                         if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount == frameCount_))
                         {
                             front_skip_count++;
-                            //ts_nidaqThres[processScoresPtr_front->processedFrameCount] = curTime - expTime;
+                            ts_nidaqThres[processScoresPtr_front->processedFrameCount] = curTime - expTime;
                             processScoresPtr_front->processedFrameCount++;
 
                         }else{  assert(processScoresPtr_front->processedFrameCount==frameCount_);}
@@ -1992,8 +1993,8 @@ namespace bias {
             if (!testConfig_->nidaq_prefix.empty()) {
                 
                 ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
-                //ts_nidaqThres.resize(testConfig_->numFrames, 0.0);
-                ts_gpuprocess_time.resize(testConfig_->numFrames, 0);
+                ts_nidaqThres.resize(testConfig_->numFrames, 0.0);
+                
             }
 
             if (!testConfig_->queue_prefix.empty()) {
@@ -2004,7 +2005,7 @@ namespace bias {
             if (process_frame_time)
             {
                 std::cout << "ts_gpuprocess_time........ " << cameraNumber_ << std::endl;
-                
+                ts_gpuprocess_time.resize(testConfig_->numFrames, 0);
             }
         }
 

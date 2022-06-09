@@ -119,7 +119,7 @@ namespace bias
         if (testConfigEnabled_ && !testConfig_->nidaq_prefix.empty()) {
 
             ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
-            //ts_nidaqThres.resize(testConfig_->numFrames, 0.0);
+            ts_nidaqThres.resize(testConfig_->numFrames, 0.0);
         }
 
         if (testConfigEnabled_ && !testConfig_->f2f_prefix.empty()) {
@@ -272,13 +272,13 @@ namespace bias
 
                     if (!testConfig_->nidaq_prefix.empty()) {
 
-                        //imgDispatchTime = (read_ondemand - nidaq_task_->cam_trigger[frameCount_])*0.02;
+                        imgDispatchTime = (read_ondemand - nidaq_task_->cam_trigger[frameCount_])*0.02;
                         ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
                         ts_nidaq[frameCount_][1] = read_ondemand;
-                        /*if (imgDispatchTime > 4.0)
+                        if (imgDispatchTime > 4.0)
                         {
                             ts_nidaqThres[frameCount_] = imgDispatchTime;
-                        }*/
+                        }
                     }
 
                     if (!testConfig_->f2f_prefix.empty()) {
@@ -326,7 +326,7 @@ namespace bias
                         + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
                     gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, ts_nidaq);
-                    //gettime_->write_time_1d<float>(filename1, testConfig_->numFrames, ts_nidaqThres);
+                    gettime_->write_time_1d<float>(filename1, testConfig_->numFrames, ts_nidaqThres);
                 }
 
                 if (frameCount_ == testConfig_->numFrames - 1

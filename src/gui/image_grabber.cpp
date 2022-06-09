@@ -73,6 +73,7 @@ namespace bias {
         testConfig_ = testConfig;
         trial_num = trial_info;
         fstfrmtStampRef_ = 0.0;
+        process_frame_time = 1;
         
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
@@ -104,7 +105,7 @@ namespace bias {
                 if (nidaq_task_ != nullptr) {
                     nidaq_task_->cam_trigger.resize(testConfig_->numFrames);
                 }
-                //ts_nidaqThres.resize(testConfig_->numFrames);
+                ts_nidaqThres.resize(testConfig_->numFrames);
             }
             
             if (!testConfig_->queue_prefix.empty()) {
@@ -386,7 +387,7 @@ namespace bias {
                             nidaq_task_->releaseLock();
                             ts_nidaq[frameCount][1] = read_ondemand_;
 #if DEBUG
-                            //spikeDetected(frameCount);
+                            spikeDetected(frameCount);
 #endif
 
                         }
@@ -479,7 +480,7 @@ namespace bias {
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
                             gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, ts_nidaq);
-                            //gettime_->write_time_1d<float>(filename1, testConfig_->numFrames, ts_nidaqThres);
+                            gettime_->write_time_1d<float>(filename1, testConfig_->numFrames, ts_nidaqThres);
                         }
 
                         if (frameCount == testConfig_->numFrames
@@ -505,7 +506,7 @@ namespace bias {
                                 + testConfig_->imagegrab_prefix
                                 + "_" + "process_frame_time" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
-                           
+                            std::cout << filename << std::endl;
                             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_process);
 
                         }
@@ -653,7 +654,6 @@ namespace bias {
         return partnerCameraWindowPtr;
     }
    
-
 } // namespace bias
 
 
