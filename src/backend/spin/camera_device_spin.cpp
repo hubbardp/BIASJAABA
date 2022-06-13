@@ -1098,7 +1098,7 @@ namespace bias {
             }
             entries_file << "DEBUG: ChunkSelector entries end " << std::endl;
             entries_file.close();*/
-            //chunkSelectorNode.setEntryBySymbolic("Timestamp");
+           chunkSelectorNode.setEntryBySymbolic("Timestamp");
         }
         else
         {
@@ -1121,6 +1121,7 @@ namespace bias {
     void CameraDevice_spin::updateTimeStamp()
     {
         spinError err = spinImageChunkDataGetIntValue(hSpinImage_, "ChunkTimestamp", &timeStamp_ns_);
+		
         if (err != SPINNAKER_ERR_SUCCESS)
         {
             std::stringstream ssError;
