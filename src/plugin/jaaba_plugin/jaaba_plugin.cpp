@@ -725,6 +725,7 @@ namespace bias {
 
         }*/
 
+
         if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
         {
 
@@ -816,6 +817,7 @@ namespace bias {
 
             }
         }
+
     }
 
     //void JaabaPlugin::processFrames(QList<StampedImage> frameList)

@@ -244,7 +244,6 @@ namespace bias {
 
                 nidaq_task_->startTasks();
                 istriggered = true;
-
             }
 
             start_process = gettime_->getPCtime();
@@ -253,12 +252,10 @@ namespace bias {
             cameraPtr_->acquireLock();
             try
             {
-
                 stampImg.image = cameraPtr_->grabImage();
                 stampImg.isSpike = false;
                 timeStamp = cameraPtr_->getImageTimeStamp();
                 error = false;
-
             }
             catch (RuntimeError &runtimeError)
             {

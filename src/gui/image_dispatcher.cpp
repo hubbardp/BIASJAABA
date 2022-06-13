@@ -199,7 +199,7 @@ namespace bias
         while (!done)
         {
 
-            
+            start_process = gettime_->getPCtime();
             newImageQueuePtr_->acquireLock();
             newImageQueuePtr_->waitIfEmpty();
             if (newImageQueuePtr_->empty())
@@ -208,11 +208,9 @@ namespace bias
                 break;
             }
 
-            start_process = gettime_->getPCtime();
             newStampImage = newImageQueuePtr_->front();
             newImageQueuePtr_->pop();
             newImageQueuePtr_->releaseLock();
-            end_process = gettime_->getPCtime();
             
             if (logging_)
             {
@@ -256,6 +254,7 @@ namespace bias
             fpsEstimator_.update(newStampImage.timeStamp);
             done = stopped_;
             releaseLock();
+            end_process = gettime_->getPCtime();
             
 #if DEBUG
             if (testConfigEnabled_) {
