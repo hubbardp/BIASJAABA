@@ -247,14 +247,14 @@ namespace bias
 #endif
             }
 
-            /*acquireLock();
+            acquireLock();
             currentImage_ = newStampImage.image;
             currentTimeStamp_ = newStampImage.timeStamp;
             frameCount_ = newStampImage.frameCount;
             fpsEstimator_.update(newStampImage.timeStamp);
             done = stopped_;
             releaseLock();
-            end_process = gettime_->getPCtime();*/
+            end_process = gettime_->getPCtime();
             
 #if DEBUG
             if (testConfigEnabled_) {

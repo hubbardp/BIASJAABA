@@ -5,7 +5,7 @@
 #include <string>
 
 #define DEBUG 0 
-#define compute 0
+#define compute 1
 
 //
 
@@ -181,7 +181,7 @@ namespace bias {
                     threadPoolPtr_->start(processScoresPtr_side);
             }
            
-            // this thread adds latencyF to process frames
+            // this thread adds latency to process frames
             /*if((threadPoolPtr_ != nullptr) && (visplots != nullptr))
             {
                 threadPoolPtr_->start(visplots);
