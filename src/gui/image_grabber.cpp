@@ -419,6 +419,7 @@ namespace bias {
                 end_process = gettime_->getPCtime();
 
                 ///---------------------------------------------------------------
+#if DEBUG
                 if (testConfigEnabled_ && ((frameCount-1) < testConfig_->numFrames)) {
 
                     if (!testConfig_->imagegrab_prefix.empty()){ 
@@ -509,7 +510,7 @@ namespace bias {
                         }
                     }
                 }
-
+#endif
             }else {
 
                 if (errorCountEnabled_ ) 

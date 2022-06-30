@@ -402,11 +402,11 @@ namespace bias {
             {
                 start_process = gettime_->getPCtime();
 
-                if (testConfigEnabled_ && nidaq_task_ != nullptr) {
+                /*if (testConfigEnabled_ && nidaq_task_ != nullptr) {
                     nidaq_task_->acquireLock();
                     DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
                     nidaq_task_->releaseLock();
-                }
+                }*/
 
                 StampedImage stampedImage0 = pluginImageQueuePtr_->front();
                 pluginImageQueuePtr_->pop();
@@ -426,7 +426,7 @@ namespace bias {
                     expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
                     curTime = (read_ondemand)*0.02; 
 
-                    if ((curTime - expTime) > 4.0)
+                    /*if ((curTime - expTime) > 4.0)
                     {
 
                         if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount == frameCount_))
@@ -445,7 +445,7 @@ namespace bias {
 
                         }else{  assert(processScoresPtr_front->processedFrameCount==frameCount_);}
 
-                    } else {
+                    } else {*/
 
                         if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
                         {
@@ -705,7 +705,7 @@ namespace bias {
 
                         }
                         
-                    }// if skip or process 
+                    //}// if skip or process 
                     //pluginImageQueuePtr_->pop();
                 }  
                 end_process = gettime_->getPCtime();
@@ -713,7 +713,7 @@ namespace bias {
             //pluginImageQueuePtr_->releaseLock();
         }
 
-        /*if (nidaq_task_ != nullptr) {
+        if (nidaq_task_ != nullptr) {
 
             if (frameCount_ <= testConfig_->numFrames) {
 
@@ -723,8 +723,7 @@ namespace bias {
 
             }
 
-        }*/
-
+        }
 
         if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
         {
