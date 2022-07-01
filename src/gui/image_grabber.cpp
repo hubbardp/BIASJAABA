@@ -361,8 +361,7 @@ namespace bias {
                 //------------------------------------------------------------------------
                 if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
                     
-                    if (!testConfig_->imagegrab_prefix.empty()
-                        && nidaq_task_ != nullptr) {
+                    if (nidaq_task_ != nullptr) {
 
                         if (cameraNumber_ == 0)
                         {
@@ -380,7 +379,7 @@ namespace bias {
                             nidaq_task_->releaseLock();
                         }
 
-                        if (!testConfig_->nidaq_prefix.empty())
+                        if (!testConfig_->imagegrab_prefix.empty() && !testConfig_->nidaq_prefix.empty())
                         {
 
                             nidaq_task_->acquireLock();
@@ -390,7 +389,6 @@ namespace bias {
 #if DEBUG
                             spikeDetected(frameCount);
 #endif
-
                         }
 
                     }
