@@ -1247,7 +1247,7 @@ namespace bias {
         score_calculated_ = 0;
         scoreCount = 0;
         frameSkip = 5;
-        process_frame_time = 1; 
+        process_frame_time = 0; 
 
         processScoresPtr_side = new ProcessScores(this, mesPass, gettime_);   
         processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);  

@@ -19,7 +19,7 @@
 #include "camera_device.hpp"
 // ----------------------------------------
 
-#define DEBUG 1 
+#define DEBUG 0 
 
 namespace bias {
 
@@ -90,8 +90,15 @@ namespace bias {
         errorCountEnabled_ = true;
 
         nidaq_task_ = nidaq_task;
-        gettime_ = gettime;
+        // needs to be allocated here outside the testConfig.Intend to record nidaq
+        // camera trigger timestamps for other threads even if imagegrab is 
+        // turned off in testConfig suite
+        if (nidaq_task_ != nullptr) {
+            nidaq_task_->cam_trigger.resize(testConfig_->numFrames);
+        }
 
+        gettime_ = gettime;
+#if DEBUG
         if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()) {
 
             if (!testConfig_->f2f_prefix.empty()) {
@@ -102,9 +109,6 @@ namespace bias {
             if (!testConfig_->nidaq_prefix.empty()) {
 
                 ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
-                if (nidaq_task_ != nullptr) {
-                    nidaq_task_->cam_trigger.resize(testConfig_->numFrames);
-                }
                 ts_nidaqThres.resize(testConfig_->numFrames);
             }
             
@@ -117,8 +121,8 @@ namespace bias {
             {
                 ts_process.resize(testConfig_->numFrames, 0);
             }
-
         }
+#endif
     }
 
     void ImageGrabber::stop()
