@@ -555,7 +555,6 @@ namespace bias {
 
     }
 
-
     double ImageGrabber::convertTimeStampToDouble(TimeStamp curr, TimeStamp init)
     {
         double timeStampDbl = 0; 
@@ -609,7 +608,6 @@ namespace bias {
         }
        
     }
-
 
     unsigned int ImageGrabber::getPartnerCameraNumber()
     {

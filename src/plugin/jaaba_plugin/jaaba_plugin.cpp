@@ -400,14 +400,7 @@ namespace bias {
             
             if (!(pluginImageQueuePtr_->empty()))
             {
-                start_process = gettime_->getPCtime();
-
-                /*if (testConfigEnabled_ && nidaq_task_ != nullptr) {
-                    nidaq_task_->acquireLock();
-                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                    nidaq_task_->releaseLock();
-                }*/
-
+  
                 StampedImage stampedImage0 = pluginImageQueuePtr_->front();
                 pluginImageQueuePtr_->pop();
                 pluginImageQueuePtr_->releaseLock();
@@ -416,9 +409,19 @@ namespace bias {
                 fstfrmtStampRef_ = stampedImage0.fstfrmtStampRef;
                 bool skip = false;
 
-                //pc_time = gettime_->getPCtime();
-                //if (frameCount_ == 0)
-                //    printf("jaaba reference,  %lu\n", fstfrmtStampRef_);
+                if (testConfigEnabled_ && nidaq_task_ != nullptr) {
+
+                    if (frameCount_ <= testConfig_->numFrames) {
+
+                        nidaq_task_->acquireLock();
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                        nidaq_task_->releaseLock();
+
+                    }
+
+                }
+
+                start_process = gettime_->getPCtime();
 
                 if (fstfrmtStampRef_ != 0)
                 {
@@ -713,7 +716,7 @@ namespace bias {
             //pluginImageQueuePtr_->releaseLock();
         }
 
-        if (nidaq_task_ != nullptr) {
+        /*if (nidaq_task_ != nullptr) {
 
             if (frameCount_ <= testConfig_->numFrames) {
 
@@ -723,7 +726,7 @@ namespace bias {
 
             }
 
-        }
+        }*/
 
         if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
         {
@@ -1247,7 +1250,7 @@ namespace bias {
         score_calculated_ = 0;
         scoreCount = 0;
         frameSkip = 5;
-        process_frame_time = 0; 
+        process_frame_time = 1; 
 
         processScoresPtr_side = new ProcessScores(this, mesPass, gettime_);   
         processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);  
