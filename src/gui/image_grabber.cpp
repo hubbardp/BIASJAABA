@@ -19,7 +19,7 @@
 #include "camera_device.hpp"
 // ----------------------------------------
 
-#define DEBUG 0 
+#define DEBUG 1 
 
 namespace bias {
 
@@ -73,7 +73,7 @@ namespace bias {
         testConfig_ = testConfig;
         trial_num = trial_info;
         fstfrmtStampRef_ = 0.0;
-        process_frame_time = 1;
+        process_frame_time = 0;
         
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
@@ -163,6 +163,7 @@ namespace bias {
         double timeStampDblLast = 0.0;
 
         int64_t pc_time, start_process, end_process;
+        StampedImage stampImg;
 
         QString errorMsg("no message");
 
@@ -386,9 +387,8 @@ namespace bias {
                             ts_nidaq[frameCount][0] = nidaq_task_->cam_trigger[frameCount];
                             nidaq_task_->releaseLock();
                             ts_nidaq[frameCount][1] = read_ondemand_;
-#if DEBUG
-                            spikeDetected(frameCount);
-#endif
+
+                            //spikeDetected(frameCount);
                         }
 
                     }
@@ -566,20 +566,18 @@ namespace bias {
         return timeStampDbl;
     }
 
-    void ImageGrabber::spikeDetected(unsigned int frameCount) {
+    /*void ImageGrabber::spikeDetected(unsigned int frameCount) {
 
         float imgGrab_time = (ts_nidaq[frameCount][1] - ts_nidaq[frameCount][0]) * 0.02;
         if (imgGrab_time > testConfig_->latency_threshold)
         {
             //cameraPtr_->skipDetected(stampImg);
-            acquireLock();
             stampImg.isSpike = true;
-            releaseLock();
             assert(stampImg.frameCount == frameCount);
             ts_nidaqThres[frameCount] = imgGrab_time;
         }
 
-    }
+    }*/
 
     void ImageGrabber::connectSlots() 
     {

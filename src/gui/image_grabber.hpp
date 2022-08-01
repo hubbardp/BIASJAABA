@@ -89,7 +89,7 @@ namespace bias
 
             unsigned int partnerCameraNumber_;
             uInt32 read_buffer_ = 0, read_ondemand_ = 0;
-            StampedImage stampImg;
+           
 
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
@@ -103,7 +103,7 @@ namespace bias
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;
-
+            
             //test
             std::vector<float> ts_nidaqThres; //nidaq thres
             std::vector<int64_t> ts_pc; // pc timings
