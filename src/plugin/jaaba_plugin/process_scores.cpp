@@ -1,6 +1,8 @@
 #include "process_scores.hpp"
 #include <cuda_runtime_api.h> 
 
+#define DEBUG 1
+
 namespace bias {
 
 
@@ -24,12 +26,16 @@ namespace bias {
         mesPass_ = mesPass;
         frameCount_ = 0;
         partner_frameCount_ = -1;
-        scoreCount = 0;
+        scoreCount = 1;
         getTime_ = getTime;
         skipFront = 0;
         skipSide = 0;
         side_read_time_ = 0;
         front_read_time_ = 0;
+
+#if DEBUG
+        scores.resize(10000);
+#endif
         frame_read_stamps.resize(2798,0);
         //predScoreFront_ = &classifier->predScoreFront;
         //predScoreSide_ = &classifier->predScoreSide;
@@ -179,7 +185,7 @@ namespace bias {
 
                     continue;
 
-                }else if (!frontScoreQueue.empty()) {
+                }/*else if (!frontScoreQueue.empty()) {
 
                     acquireLock();
                     predScorePartner = frontScoreQueue.front();
@@ -219,13 +225,13 @@ namespace bias {
                         //std::cout << "Front skipped" << std::endl;
                     }
 
-                }else if (!sideScoreQueue.empty() && !frontScoreQueue.empty()) {
+                }*/else if (!sideScoreQueue.empty() && !frontScoreQueue.empty()) {
 
                     acquireLock();
                     predScorePartner = frontScoreQueue.front();
                     predScore = sideScoreQueue.front();
                     releaseLock();
-
+                    
                     if (scoreCount > predScore.frameCount) {
                         sideScoreQueue.pop_front();
                         continue;
@@ -235,7 +241,7 @@ namespace bias {
                         frontScoreQueue.pop_front();
                         continue;
                     }
-
+                    
                     if (predScore.frameCount == predScorePartner.frameCount)
                     {
 
@@ -245,19 +251,22 @@ namespace bias {
                         skipFront = false;
                         sideScoreQueue.pop_front();
                         frontScoreQueue.pop_front();
-                        classifier->finalscore.view = 3;
-                        write_score("classifierscr.csv", scoreCount, classifier->finalscore);
+                        //write_score("classifierscr.csv", scoreCount, classifier->finalscore);
+                        scores[scoreCount-1].score[0] = predScore.score[0] + predScorePartner.score[0];
+                        scores[scoreCount-1].frameCount = predScorePartner.frameCount;
+                        scores[scoreCount-1].view = 3;
+                        scores[scoreCount-1].score_ts = predScorePartner.score_ts;
                         scoreCount++;
 
                     }
-                    else { std::cout << "Need to implement this " << std::endl; }
+                    //else { std::cout << "Need to implement this " << std::endl; }
                 }
 
-                if (skipFront)
+                /*if (skipFront)
                 {
                     if (!skipSide)
                     {
-                        if (scoreCount == predScorePartner.frameCount)
+                        if (scoreCount == predScore.frameCount)
                         {
                             predScorePartner.score = { 0.0,0.0,0.0,0.0,0.0 };
                             classifier->addScores(predScore.score, predScorePartner.score);
@@ -267,17 +276,21 @@ namespace bias {
                             releaseLock();
 
                             skipFront = false;
-                            write_score("classifierscr.csv", scoreCount, predScore);
-
+                            //write_score("classifierscr.csv", scoreCount, predScore);
+                            scores[scoreCount-1].score[0] = predScore.score[0];
+                            scores[scoreCount-1].frameCount = predScore.frameCount;
+                            scores[scoreCount-1].view = 1;
+                            scores[scoreCount-1].score_ts = predScore.frameCount;
+                            scoreCount++;
                         }
-                        scoreCount++;
+                        
                     }
 
                 }else if (skipSide) {
 
                     if (!skipFront)
                     {
-                        if (scoreCount == predScore.frameCount)
+                        if (scoreCount == predScorePartner.frameCount)
                         {
                             predScore.score = { 0.0,0.0,0.0,0.0,0.0 };
                             classifier->addScores(predScore.score, predScorePartner.score);
@@ -287,16 +300,22 @@ namespace bias {
                             releaseLock();
 
                             skipSide = false;
-                            write_score("classifierscr.csv", scoreCount, predScorePartner);
+                            //write_score("classifierscr.csv", scoreCount, predScorePartner);
+                            scores[scoreCount-1].score[0] = predScorePartner.score[0];
+                            scores[scoreCount-1].frameCount = predScorePartner.frameCount;
+                            scores[scoreCount-1].view = 2;
+                            scores[scoreCount-1].score_ts = predScorePartner.frameCount;
+                            scoreCount++;
 
                         }
-                        scoreCount++;
+                        
                     }
-                }
-                else {
-                    
-                }
+                }*/
+
             }
+
+            if (scoreCount == 10001)
+                write_score_final("classifier.csv", 10000, scores);
 
             acquireLock();
             done = stopped_;
@@ -345,6 +364,23 @@ namespace bias {
 
         x_out.close();
 
+    }
+
+    void ProcessScores::write_score_final(std::string file, unsigned int numFrames,
+                                          vector<PredData>& pred_score)
+    {
+        std::ofstream x_out;
+        x_out.open(file.c_str(), std::ios_base::app);
+
+        x_out << "Score ts," << "Score," << " FrameNumber," << "View" << "\n";
+
+        for (unsigned int frm_id = 0; frm_id < numFrames; frm_id++)
+        {
+            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score[0]
+                << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
+                "\n";
+        }
+        x_out.close();
     }
 
 }

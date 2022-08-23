@@ -205,7 +205,7 @@ namespace bias
             void trigEnabledCheckBoxStateChanged(int state);
             void onFrameHOFShape(QPointer<HOGHOF> partner_hogshape);
             void onFrameHOGShape(QPointer<HOGHOF> partner_hogshape);
-            void scoreCompute(PredData& predScore);
+            void scoreCompute(PredData predScore);
             void receiveFrameRead(int64_t frameReadtime, int frameCount);
             void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);

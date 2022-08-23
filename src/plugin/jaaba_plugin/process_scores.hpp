@@ -104,6 +104,12 @@ namespace bias
 
            void run();
 
+           //test
+           std::vector<PredData>scores;
+
+           void write_score_final(std::string file, unsigned int numFrames,
+               vector<PredData>& pred_score);
+
         signals:
 
            void newShapeData(ShapeData data);

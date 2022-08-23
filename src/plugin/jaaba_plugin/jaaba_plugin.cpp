@@ -301,7 +301,7 @@ namespace bias {
             connect(partnerPluginPtr, SIGNAL(passFrontHOFShape(QPointer<HOGHOF>)),
                 this, SLOT(onFrameHOFShape(QPointer<HOGHOF>)));
             connect(partnerPluginPtr, SIGNAL(passScore(PredData)),
-                this, SLOT(scoreCompute(PredData )));
+                this, SLOT(scoreCompute(PredData)));
             
             //connect(partnerPluginPtr, SIGNAL(passFrameNum(unsigned int)),
             //        this, SLOT(receiveFrameNum(unsigned int)));
@@ -425,14 +425,17 @@ namespace bias {
 
                 if (fstfrmtStampRef_ != 0)
                 {
+
+                    
                     expTime = (fstfrmtStampRef_*0.02 + (2.5 * frameCount_));
                     //expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
                     curTime = (read_ondemand)*0.02; 
 
-                    if ((curTime - expTime) > 4.0)
+                    /*if ((curTime - expTime) > 4.0)
                     {
                         if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount == frameCount_))
                         {
+
                             side_skip_count++;
                             //ts_nidaqThres[processScoresPtr_side->processedFrameCount] = curTime - expTime;
                             processScoresPtr_side->processedFrameCount++;
@@ -441,13 +444,14 @@ namespace bias {
 
                         if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount == frameCount_))
                         {
+
                             front_skip_count++;
                             //ts_nidaqThres[processScoresPtr_front->processedFrameCount] = curTime - expTime;
                             processScoresPtr_front->processedFrameCount++;
 
                         }else{  assert(processScoresPtr_front->processedFrameCount==frameCount_);}
 
-                    } else {
+                    } else {*/
 
                         if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
                         {
@@ -623,7 +627,7 @@ namespace bias {
                                             processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, &partner_hogshape_,
                                             &processScoresPtr_front->HOGHOF_partner->hof_shape, processScoresPtr_front->classifier->nframes,
                                             processScoresPtr_front->classifier->model);
-
+                                        
                                         time_now = gettime_->getPCtime();
                                         processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
                                         processScoresPtr_front->classifier->predScoreFront.score_ts = time_now;
@@ -664,14 +668,13 @@ namespace bias {
                                     if (processScoresPtr_side->classifier->isClassifierPathSet &&
                                         processScoresPtr_side->processedFrameCount > 0)
                                     {
-
+                                        
                                         processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
                                             processScoresPtr_side->HOGHOF_frame->hog_out, processScoresPtr_side->HOGHOF_frame->hof_out,
                                             &processScoresPtr_side->HOGHOF_frame->hog_shape, &partner_hofshape_, processScoresPtr_side->classifier->nframes,
                                             processScoresPtr_side->classifier->model);
                                         
                                         time_now = gettime_->getPCtime();
-                                        processScoresPtr_side->predScore.score = processScoresPtr_side->classifier->predScoreSide.score;
                                         processScoresPtr_side->classifier->predScoreSide.frameCount = processScoresPtr_side->processedFrameCount;
                                         processScoresPtr_side->classifier->predScoreSide.score_ts = time_now;
                                         processScoresPtr_side->classifier->predScoreSide.view = 1;
@@ -680,7 +683,7 @@ namespace bias {
                                         processScoresPtr_side->acquireLock();
                                         processScoresPtr_side->sideScoreQueue.push_back(processScoresPtr_side->classifier->predScoreSide);
                                         processScoresPtr_side->releaseLock();
-                                        //score_calculated_ = 1;
+                                        
                                     }
 #endif
                                     processScoresPtr_side->processedFrameCount++;
@@ -697,7 +700,7 @@ namespace bias {
 
                         }
                         
-                    }// if skip or process 
+                    //}// if skip or process 
                     //pluginImageQueuePtr_->pop();
                 }  
                 end_process = gettime_->getPCtime();
@@ -738,7 +741,7 @@ namespace bias {
                 if(cameraNumber_ == 0)
                     queue_size[frameCount_] = side_skip_count;
                 else if (cameraNumber_ == 1)
-                    queue_size[frameCount_] == front_skip_count;
+                    queue_size[frameCount_] = front_skip_count;
                   
             }
 
@@ -1244,7 +1247,7 @@ namespace bias {
         score_calculated_ = 0;
         scoreCount = 0;
         frameSkip = 5;
-        process_frame_time = 1; 
+        process_frame_time = 0; 
 
         processScoresPtr_side = new ProcessScores(this, mesPass, gettime_);   
         processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);  
@@ -1895,15 +1898,16 @@ namespace bias {
         }
     }
 
-    void JaabaPlugin::scoreCompute(PredData& predScore)
+    void JaabaPlugin::scoreCompute(PredData predScore)
     {
+        
         if (isReceiver())
         {
             processScoresPtr_side->isProcessed_front = 1;
             processScoresPtr_side->acquireLock();
             processScoresPtr_side->frontScoreQueue.push_back(predScore);
             processScoresPtr_side->releaseLock();
-            
+           
         } 
 
     }
@@ -2002,7 +2006,6 @@ namespace bias {
 
             if (process_frame_time)
             {
-                std::cout << "ts_gpuprocess_time........ " << cameraNumber_ << std::endl;
                 ts_gpuprocess_time.resize(testConfig_->numFrames, 0);
             }
         }
