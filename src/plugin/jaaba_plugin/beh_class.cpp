@@ -25,11 +25,11 @@ namespace bias {
             size_t num_beh = beh.size();
 
             //initialize other arrays
-            this->translated_index.resize(num_beh);
-            this->flag.resize(num_beh);
-            this->score.resize(num_beh,0);
-            this->score_front.resize(num_beh, 0);
-            this->score_side.resize(num_beh, 0);
+            translated_index.resize(num_beh);
+            flag.resize(num_beh);
+            finalscore.score.resize(num_beh,0);
+            predScoreSide.score.resize(num_beh, 0);
+            predScoreFront.score.resize(num_beh, 0);
 
             for(unsigned int nbeh =0;nbeh < num_beh;nbeh++)
             {
@@ -440,8 +440,8 @@ namespace bias {
 
             if (beh_present[ncls])
             {
-                
-                score[ncls] = scr_side[ncls] + scr_front[ncls];
+               
+                finalscore.score[ncls] = scr_side[ncls] + scr_front[ncls];
             }
 
         }

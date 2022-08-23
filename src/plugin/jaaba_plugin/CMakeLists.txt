@@ -18,6 +18,7 @@ set(
     beh_class.hpp
     process_scores.hpp
     vis_plots.hpp
+	jaaba_utils.hpp
     )
 
 set(

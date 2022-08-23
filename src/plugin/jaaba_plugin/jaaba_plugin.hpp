@@ -13,7 +13,7 @@
 #include "process_scores.hpp"
 #include "vis_plots.hpp"
 #include "image_label.hpp"
-#include "shape_data.hpp"
+//#include "shape_data.hpp"
 
 #include <QMainWindow>
 #include <QMessageBox>
@@ -205,7 +205,7 @@ namespace bias
             void trigEnabledCheckBoxStateChanged(int state);
             void onFrameHOFShape(QPointer<HOGHOF> partner_hogshape);
             void onFrameHOGShape(QPointer<HOGHOF> partner_hogshape);
-            void scoreCompute(PredData predScore);
+            void scoreCompute(PredData& predScore);
             void receiveFrameRead(int64_t frameReadtime, int frameCount);
             void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);

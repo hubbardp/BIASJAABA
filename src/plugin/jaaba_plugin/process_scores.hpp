@@ -12,6 +12,7 @@
 #include <fstream>
 #include "timer.h"
 #include "shape_data.hpp"
+#include "jaaba_utils.hpp"
 
 #include <opencv2/opencv.hpp>
 #include <QThreadPool>
@@ -27,13 +28,6 @@ namespace bias
 
     class HOGHOF;
     class beh_class;
-
-    struct PredData {
-
-        vector<float> score;
-        int64_t score_ts;
-        unsigned int frameCount;
-    };
 
     class ProcessScores : public QObject, public QRunnable, public Lockable<Empty>
     {
@@ -65,12 +59,10 @@ namespace bias
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;
            QPointer<beh_class> classifier;
-           PredData predScore_;
-           PredData partner_predScore_;
-           //QPointer<beh_class> classifier; 
 
-           PredData predScoreSide_;
-           PredData predScoreFront_;
+           PredData predScore;
+           PredData predScorePartner;
+           PredData predScoreFinal;
            QQueue<PredData> frontScoreQueue;
            QQueue<PredData> sideScoreQueue;
            std::vector<int64_t> frame_read_stamps; // frame read pass timings
@@ -95,7 +87,7 @@ namespace bias
            void onProcessFront();
            void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
-           void write_score(std::string file, int framenum, float score);
+           void write_score(std::string file, int framenum, PredData& score);
            void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
 
 

@@ -3,6 +3,7 @@
 
 #include "HOGHOF.hpp"
 #include "utils.hpp"
+#include "jaaba_utils.hpp"
 
 #include "H5Cpp.h"
 #include "H5Exception.h"
@@ -12,7 +13,6 @@
 
 
 namespace bias {
-
    
     struct boost_classifier {
 
@@ -24,19 +24,17 @@ namespace bias {
 
     };
 
-
     class beh_class : public QDialog {
 
       public:
 
-	
 	    int nframes = 2498; // nframe prediction
         int nbeh_present; // number of beh classification
         bool isClassifierPathSet = false;
-        std::vector<float> score_side = {0,0,0,0,0,0};
-        std::vector<float> score_front = { 0,0,0,0,0,0};
-        std::vector<float> score = { 0,0,0,0,0,0 };
-	    QString classifier_file;
+        PredData predScoreSide;
+        PredData predScoreFront;
+        PredData finalscore;
+        QString classifier_file;
 	    std::vector<boost_classifier> model = std::vector<boost_classifier>(6);
 	    std::vector<std::string> model_params{"alpha","dim","dir","error","tr"};
         std::vector<std::string> beh{"Lift","Handopen","Grab","Supinate","Chew","Atmouth"};

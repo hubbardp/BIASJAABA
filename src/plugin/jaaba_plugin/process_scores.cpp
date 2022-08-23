@@ -22,15 +22,17 @@ namespace bias {
         isProcessed_front = false;
         isHOGHOFInitialised = false;
         mesPass_ = mesPass;
-        frameCount_ = -1;
+        frameCount_ = 0;
         partner_frameCount_ = -1;
-        scoreCount = 1;
+        scoreCount = 0;
         getTime_ = getTime;
         skipFront = 0;
         skipSide = 0;
         side_read_time_ = 0;
         front_read_time_ = 0;
         frame_read_stamps.resize(2798,0);
+        //predScoreFront_ = &classifier->predScoreFront;
+        //predScoreSide_ = &classifier->predScoreSide;
 
     }
 
@@ -131,7 +133,7 @@ namespace bias {
 
         bool done = false;
         int64_t time_now, score_ts;
-        float wait_threshold = 0.5;
+        float wait_threshold = 1700;
  
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -170,81 +172,102 @@ namespace bias {
 
             }
             else {
-
-                /*if(sideScoreQueue.empty() && frontScoreQueue.empty()){
+                skipFront = false;
+                skipSide = false;
+                
+                if (sideScoreQueue.empty() && frontScoreQueue.empty()) {
 
                     continue;
 
-                }else if (!sideScoreQueue.empty() && !frontScoreQueue.empty()){
+                }else if (!frontScoreQueue.empty()) {
 
                     acquireLock();
-                    predScoreFront_ = frontScoreQueue.front();
-                    predScoreSide_ = sideScoreQueue.front();
+                    predScorePartner = frontScoreQueue.front();
                     releaseLock();
 
-                    if (predScoreSide_.frameCount == predScoreFront_.frameCount)
-                    {
-
-                        classifier->addScores(predScoreSide_.score, predScoreFront_.score);
-
-                        skipSide = false;
-                        skipFront = false;
-
-                        acquireLock();
+                    // check if this is not already a processed scoreCount
+                    if (scoreCount > predScorePartner.frameCount) {
                         frontScoreQueue.pop_front();
-                        sideScoreQueue.pop_front();
-                        releaseLock();
-
-                        std::cout << "side and front " << std::endl;
-                        write_score("classifierscr.csv", scoreCount, classifier->score[0]);
-                        scoreCount++;
-                        std::cout << "ScoreCount " << scoreCount << std::endl;
-
+                        continue;
                     }
 
-                } else if (!frontScoreQueue.empty()) {
-
-                    acquireLock();
-                    predScoreFront_ = frontScoreQueue.front();
-                    releaseLock();
-
                     time_now = getTime_->getPCtime();
-                    score_ts = predScoreFront_.score_ts;
-                    if (time_now - score_ts > wait_threshold)
+                    score_ts = predScorePartner.score_ts;
+                    if ((time_now - score_ts) > wait_threshold)
                     {
                         skipSide = true;
+                        //std::cout << "Side skipped" << std::endl;
                     }
 
                 }else if (!sideScoreQueue.empty()) {
 
                     acquireLock();
-                    predScoreSide_ = sideScoreQueue.front();
+                    predScore = sideScoreQueue.front();
                     releaseLock();
 
+                    // check if this is not already a processed scoreCount
+                    if (scoreCount > predScore.frameCount) {
+                        sideScoreQueue.pop_front();
+                        continue;
+                    }
+
                     time_now = getTime_->getPCtime();
-                    score_ts = predScoreSide_.score_ts;
-                    if (time_now - score_ts > wait_threshold)
+                    score_ts = predScore.score_ts;
+                    if ((time_now - score_ts) > wait_threshold)
                     {
                         skipFront = true;
+                        //std::cout << "Front skipped" << std::endl;
                     }
+
+                }else if (!sideScoreQueue.empty() && !frontScoreQueue.empty()) {
+
+                    acquireLock();
+                    predScorePartner = frontScoreQueue.front();
+                    predScore = sideScoreQueue.front();
+                    releaseLock();
+
+                    if (scoreCount > predScore.frameCount) {
+                        sideScoreQueue.pop_front();
+                        continue;
+                    }
+
+                    if (scoreCount > predScorePartner.frameCount) {
+                        frontScoreQueue.pop_front();
+                        continue;
+                    }
+
+                    if (predScore.frameCount == predScorePartner.frameCount)
+                    {
+
+                        classifier->addScores(predScore.score, predScorePartner.score);
+
+                        skipSide = false;
+                        skipFront = false;
+                        sideScoreQueue.pop_front();
+                        frontScoreQueue.pop_front();
+                        classifier->finalscore.view = 3;
+                        write_score("classifierscr.csv", scoreCount, classifier->finalscore);
+                        scoreCount++;
+
+                    }
+                    else { std::cout << "Need to implement this " << std::endl; }
                 }
 
                 if (skipFront)
                 {
                     if (!skipSide)
                     {
-                        if (scoreCount == predScoreFront_.frameCount)
+                        if (scoreCount == predScorePartner.frameCount)
                         {
-                            predScoreFront_.score = { 0.0,0.0,0.0,0.0,0.0 };
-                            classifier->addScores(predScoreSide_.score, predScoreFront_.score);
+                            predScorePartner.score = { 0.0,0.0,0.0,0.0,0.0 };
+                            classifier->addScores(predScore.score, predScorePartner.score);
 
                             acquireLock();
                             sideScoreQueue.pop_front();
                             releaseLock();
 
                             skipFront = false;
-                            std::cout << "Only Side" << std::endl;
-                            write_score("classifierscr.csv", scoreCount, classifier->score[0]);
+                            write_score("classifierscr.csv", scoreCount, predScore);
 
                         }
                         scoreCount++;
@@ -254,23 +277,25 @@ namespace bias {
 
                     if (!skipFront)
                     {
-                        if (scoreCount == predScoreSide_.frameCount)
+                        if (scoreCount == predScore.frameCount)
                         {
-                            predScoreSide_.score = { 0.0,0.0,0.0,0.0,0.0 };
-                            classifier->addScores(predScoreSide_.score, predScoreFront_.score);
+                            predScore.score = { 0.0,0.0,0.0,0.0,0.0 };
+                            classifier->addScores(predScore.score, predScorePartner.score);
 
                             acquireLock();
-                            sideScoreQueue.pop_front();
+                            frontScoreQueue.pop_front();
                             releaseLock();
 
                             skipSide = false;
-                            std::cout << "Only Front" << std::endl;
-                            write_score("classifierscr.csv", scoreCount, classifier->score[0]);
+                            write_score("classifierscr.csv", scoreCount, predScorePartner);
 
                         }
                         scoreCount++;
                     }
-                }*/
+                }
+                else {
+                    
+                }
             }
 
             acquireLock();
@@ -306,16 +331,17 @@ namespace bias {
         }
     }
 
-
-    void ProcessScores::write_score(std::string file, int framenum, float score)
+    void ProcessScores::write_score(std::string file, int framenum, PredData& score)
     {
 
         std::ofstream x_out;
         x_out.open(file.c_str(), std::ios_base::app);
-
+        if (framenum == 0)
+            x_out << "Score ts," << "Score," << " FrameNumber," << "View" << "\n";
+        
         // write score to csv file
-        //for(int frame_id = 0;frame_id < framenum;frame_id++)
-        x_out << framenum << "," << score << "\n";
+        x_out << score.score_ts << "," << score.score[0] << "," 
+            << score.frameCount << "," << score.view << "\n";
 
         x_out.close();
 
