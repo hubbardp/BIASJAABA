@@ -16,7 +16,17 @@
 #include "win_time.hpp"
 #include "NIDAQUtils.hpp"
 #include "test_config.hpp"
+#include "video_utils.hpp"
 
+// TEMPOERARY
+// ----------------------------------------
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
+#include "win_time.hpp"
+#include "camera_device.hpp"
+// ----------------------------------------
 
 namespace bias
 {
@@ -85,12 +95,13 @@ namespace bias
             bool testConfigEnabled_;
             string trial_num;
             uint64_t fstfrmtStampRef_;
-            bool process_frame_time;
+
+            //test
+            bool process_frame_time_;
 
             unsigned int partnerCameraNumber_;
             uInt32 read_buffer_ = 0, read_ondemand_ = 0;
            
-
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
@@ -111,8 +122,18 @@ namespace bias
             std::vector<unsigned int> queue_size; // queue size
             std::vector<int64_t>ts_process;
 
-            void spikeDetected(unsigned int frameCount);
+            priority_queue<int, vector<int>, greater<int>>delayFrames_view1; // side skips
+            priority_queue<int, vector<int>, greater<int>>delayFrames_view2; // front skips
+            vector<int> delay_view1;
+            vector<int> delay_view2;
 
+            videoBackend* vid_obj_;
+            cv::VideoCapture cap_obj_;
+
+            //void spikeDetected(unsigned int frameCount);
+            void initializeVidBackend();
+            void initiateVidFrameDelay(priority_queue<int, vector<int>, greater<int>>& skip_frames,
+                                       vector<int>& delay_frames);
             unsigned int getPartnerCameraNumber();
             QPointer<CameraWindow> getCameraWindow();
             QPointer<CameraWindow> getPartnerCameraWindowPtr();

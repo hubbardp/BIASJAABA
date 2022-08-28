@@ -7691,8 +7691,6 @@ namespace bias
         return timeString;
     }
 
-
-
     VideoMode convertStringToVideoMode(QString videoModeString)
     {
         QMap<QString,VideoMode> map = getStringToVideoModeMap();

@@ -47,7 +47,7 @@ namespace bias
 
          // Definition of a gettimeofday function
          //int getdaytime(struct timeval *tv, struct timezone *tz);
-         int64_t getPCtime();
+         uint64_t getPCtime();
 
          // this is a hack to avoid linker errors in VS2017
 

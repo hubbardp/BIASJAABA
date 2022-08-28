@@ -64,7 +64,7 @@ namespace bias
 	}*/
 
 
-	int64_t GetTime::getPCtime()
+	uint64_t GetTime::getPCtime()
 	{
 
             //GetTime* getTime = new GetTime(0,0);
@@ -80,7 +80,7 @@ namespace bias
             // https://www.cplusplus.com/reference/chrono/time_point/ 
             auto usec = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());     
 
-            return static_cast<int64_t>(usec.count());
+            return static_cast<uint64_t>(usec.count());
 	}
 
 }

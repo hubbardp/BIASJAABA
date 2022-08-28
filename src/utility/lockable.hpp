@@ -54,7 +54,8 @@ namespace bias
             void wakeAll()
             {
     
-                signal_to_process_.wakeAll();
+                //signal_to_process_.wakeAll();
+                wait_to_process_.wakeAll();
             }
 
         protected:

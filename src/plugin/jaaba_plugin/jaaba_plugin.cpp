@@ -5,10 +5,10 @@
 #include <string>
 
 #define DEBUG 0 
-#define compute 1
+#define compute 0
+#define isVidInput 1
 
 //
-
 //Camera 1 should always be front view
 //Camera 0 should always be side view
 //
@@ -64,13 +64,14 @@ namespace bias {
     void JaabaPlugin::getFormatSettings()
     {
 
+#ifndef isVidInput
         Format7Settings settings;
         settings = cameraPtr_->getFormat7Settings();
         image_height = settings.height;
         image_width = settings.width;
 
-#if DEBUG 
-        //DEVEL
+
+#else        //DEVEL
         
         if(processScoresPtr_side->vid_sde)
         {
@@ -178,7 +179,7 @@ namespace bias {
             
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
-                threadPoolPtr_->start(processScoresPtr_side);
+                //threadPoolPtr_->start(processScoresPtr_side);
             }
            
             // this thread adds latency to process frames
@@ -368,13 +369,21 @@ namespace bias {
         cv::Mat greyFront;
 
         //DEVEL
-        int64_t pc_time, start_process, end_process;
+        int64_t pc_time;
+        uint64_t start_process, end_process;
         int64_t front_read_time, side_read_time, time_now;
         string filename;
-        float expTime = 0, curTime = 0;
-        uInt32 frameGrabAvgTime = 2500;
-        uInt32 wait_thres = 2500;
-        
+        double expTime = 0, curTime = 0;
+        float frameGrabAvgTime;
+        float wait_thres;
+
+#if isVidInput
+        frameGrabAvgTime = static_cast<float>(9000);
+        wait_thres = static_cast<float>(20000);
+#else
+        frameGrabAvgTime = 2500;
+        wait_thres = static_cast<float>(4000/1000);
+#endif
         // initialize memory on the gpu 
         if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
         {
@@ -425,13 +434,20 @@ namespace bias {
 
                 if (fstfrmtStampRef_ != 0)
                 {
-
-                    
+#if isVidInput     
+                    expTime = static_cast<double>(fstfrmtStampRef_) + static_cast<double>(frameGrabAvgTime * (frameCount_+1));
+                    curTime = static_cast<double>(start_process);
+                    /*if (frameCount_ < 10 && cameraNumber_ == 0) {
+                        printf("FrameCount : %d, fstfrmref: %f, frame increments %f, curTime %f,  Wait Thres %f\n", frameCount_,
+                            static_cast<double>(fstfrmtStampRef_), static_cast<double>(frameGrabAvgTime * (frameCount_+1))
+                            , curTime, curTime - expTime);
+                    }*/
+#else                   
                     expTime = (fstfrmtStampRef_*0.02 + (2.5 * frameCount_));
                     //expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
                     curTime = (read_ondemand)*0.02; 
-
-                    /*if ((curTime - expTime) > 4.0)
+#endif
+                    if ((curTime - expTime) > wait_thres)
                     {
                         if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount == frameCount_))
                         {
@@ -439,7 +455,8 @@ namespace bias {
                             side_skip_count++;
                             //ts_nidaqThres[processScoresPtr_side->processedFrameCount] = curTime - expTime;
                             processScoresPtr_side->processedFrameCount++;
-                        
+                            //std::cout << "skip" << std::endl;
+
                         }else { assert(processScoresPtr_side->processedFrameCount==frameCount_); }
 
                         if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount == frameCount_))
@@ -448,10 +465,11 @@ namespace bias {
                             front_skip_count++;
                             //ts_nidaqThres[processScoresPtr_front->processedFrameCount] = curTime - expTime;
                             processScoresPtr_front->processedFrameCount++;
+                            //std::cout << "front " << frameCount_ << std::endl;
 
                         }else{  assert(processScoresPtr_front->processedFrameCount==frameCount_);}
 
-                    } else {*/
+                    } else { 
 
                         if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
                         {
@@ -700,10 +718,11 @@ namespace bias {
 
                         }
                         
-                    //}// if skip or process 
+                    }// if skip or process 
                     //pluginImageQueuePtr_->pop();
                 }  
                 end_process = gettime_->getPCtime();
+
             }// check if plugin queue empty
             //pluginImageQueuePtr_->releaseLock();
         }
