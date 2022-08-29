@@ -7,10 +7,19 @@
 #include <QTime>
 #include <QThread>
 #include <QFileInfo>
-#include <chrono>
-#include <thread>
+#include <opencv2/core/core.hpp>
 
-#define DEBUG 0 
+
+// TEMPOERARY
+// ----------------------------------------
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+
+#include "win_time.hpp"
+#include "camera_device.hpp"
+// ----------------------------------------
+
+#define DEBUG 1 
 #define isVidInput 1
 
 namespace bias {
@@ -40,12 +49,8 @@ namespace bias {
     {
         initialize(cameraNumber, cameraPtr, newImageQueuePtr, threadPoolPtr,
                    testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
-#if isVidInput
+#if isVidInput  
         initializeVidBackend();
-        /*if (cameraNumber == 0)
-            initiateVidFrameDelay(delayFrames_view1, delay_view1);
-        else
-            initiateVidFrameDelay(delayFrames_view2, delay_view2);*/
 #endif
     }
 
@@ -72,7 +77,6 @@ namespace bias {
         testConfig_ = testConfig;
         trial_num = trial_info;
         fstfrmtStampRef_ = 0.0;
-        process_frame_time_ = 1;
         
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
@@ -93,11 +97,12 @@ namespace bias {
         // camera trigger timestamps for other threads even if imagegrab is 
         // turned off in testConfig suite
         if (nidaq_task_ != nullptr) {
-            nidaq_task_->cam_trigger.resize(testConfig_->numFrames+2,0);
+            nidaq_task_->cam_trigger.resize(testConfig_->numFrames+2, 0);
         }
 
         gettime_ = gettime;
 #if DEBUG
+        process_frame_time_ = 1;
         if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()) {
 
             if (!testConfig_->f2f_prefix.empty()) {
@@ -130,12 +135,14 @@ namespace bias {
         if (cameraNumber_ == 0)
         {
             filename = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi";
-        }else if (cameraNumber_ == 1){
+        }
+        else if (cameraNumber_ == 1) {
             filename = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi";
         }
 
         vid_obj_ = new videoBackend(filename);
         cap_obj_ = vid_obj_->videoCapObject();
+        //vid_obj_->setBufferSize(cap_obj_);
     }
 
     void ImageGrabber::stop()
@@ -175,7 +182,6 @@ namespace bias {
         double timeStampDbl = 0.0;
         double timeStampDblLast = 0.0;
 
-        int delay_ms;
         int64_t pc_time, start_process, end_process;
         StampedImage stampImg;
 
@@ -264,66 +270,43 @@ namespace bias {
                 nidaq_task_->startTasks();
                 istriggered = true;
             }
-            
-            start_process = gettime_->getPCtime();
-#if isVidInput
 
+            start_process = gettime_->getPCtime();
+
+#if isVidInput
+            //the trigger signal has to be read to keep the camera running in triggered mode
+            // this has been skipped because of latency issues for the first few frames from camera
+            //Also to get accurate trigger timestamps after first frames have been skipped.
+            // maybe redundant??
+            if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
+
+                nidaq_task_->acquireLock();
+                if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {
+                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
+                    nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] = read_buffer_;
+                }
+                nidaq_task_->releaseLock();
+
+            }
             if (cap_obj_.isOpened()) {
 
                 //start_process = gettime_->getPCtime();
                 stampImg.image = vid_obj_->getImage(cap_obj_);
 
-                if (startUpCount < numStartUpSkip_ )
+                // need to skip first few frames as VideoCapture has huge latency in 
+                // returning the first frame
+                if (startUpCount < numStartUpSkip_)
                 {
-                    if (nidaq_task_ != nullptr && cameraNumber_ == 0) {
 
-                        if (nidaq_task_->cam_trigger[testConfig_->numFrames + startUpCount] == 0) {
-
-                            nidaq_task_->acquireLock();
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                            nidaq_task_->cam_trigger[testConfig_->numFrames + startUpCount] = read_buffer_;;
-                            nidaq_task_->releaseLock();
-                        }
-                    }
                     startUpCount++;
                     continue;
                 }
                 
-                if (cameraNumber_ == 0) {
-                    
-                    if (!delayFrames_view1.empty()) {
-
-                        if (delayFrames_view1.top() == frameCount)
-                        {
-                            delay_ms = delay_view1.back();
-                            delay_view1.pop_back();
-                            delayFrames_view1.pop();
-                            this_thread::sleep_for(chrono::milliseconds(delay_ms));
-                        }
-                    }
-                }else if (cameraNumber_ == 1) {
-
-                    if (!delayFrames_view2.empty())
-                    {
-                        if (delayFrames_view2.top() == frameCount)
-                        {
-                            delay_ms = delay_view2.back();
-                            delay_view2.pop_back();
-                            delayFrames_view2.pop();
-                            this_thread::sleep_for(chrono::milliseconds(delay_ms));
-                        }
-                    }
-                }
-
-                //end_process = gettime_->getPCtime();
-                /*if ((end_process - start_process) > 10000) {
-                    printf("%d\n", end_process-start_process);
-                }*/
-
             }
             else {
                 assert(cap_obj_.isOpened());
             }
+            //end_process = gettime_->getPCtime();
 
 #else
             // Grab an image
@@ -354,7 +337,7 @@ namespace bias {
             // Push image into new image queue
             if (!error)
             {
-#ifndef isVidInput
+#if !isVidInput
                 errorCount = 0;                  // Reset error count 
                 timeStampDblLast = timeStampDbl; // Save last timestamp
 
@@ -382,20 +365,18 @@ namespace bias {
                     }
                     startUpCount++;
 
-                    if (nidaq_task_ != nullptr && cameraNumber_ == 0) {
+                    if (cameraNumber_ == 0 && nidaq_task_ != nullptr) {
 
                         nidaq_task_->acquireLock();
-                        if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                            nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] = read_buffer_;
-                        }
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
                         nidaq_task_->releaseLock();
-                      
                     }
+
                     continue;
-                }           
-               
-                 //std::cout << "dt grabber: " << timeStampDbl - timeStampDblLast << std::endl;
+                }
+            
+
+                //std::cout << "dt grabber: " << timeStampDbl - timeStampDblLast << std::endl;
 
                 // Reset initial time stamp for image acquisition
                 if ((isFirst) && (startUpCount >= numStartUpSkip_))
@@ -406,8 +387,8 @@ namespace bias {
                     timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
                     emit startTimer();
                 }
-#endif             
-
+                //
+#endif
                 //// TEMPORARY - for mouse grab detector testing
                 //// --------------------------------------------------------------------- 
                 //cv::Mat fileMat;
@@ -436,7 +417,6 @@ namespace bias {
                 // ---------------------------------------------------------------------
                 // Test Configuration
                 //------------------------------------------------------------------------
-
                 if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
                     
                     if (nidaq_task_ != nullptr) {
@@ -444,7 +424,7 @@ namespace bias {
                         if (cameraNumber_ == 0)
                         {
                             nidaq_task_->acquireLock();
-                            //DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
+                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
                             nidaq_task_->getCamtrig(frameCount);
                             nidaq_task_->releaseLock();
                         }
@@ -452,11 +432,12 @@ namespace bias {
                         if (cameraNumber_ == 1)
                         {
                             nidaq_task_->acquireLock();
-                            //DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
+                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
                             nidaq_task_->getCamtrig(frameCount);
                             nidaq_task_->releaseLock();
                         }
 
+#if DEBUG
                         if (!testConfig_->imagegrab_prefix.empty() && !testConfig_->nidaq_prefix.empty())
                         {
 
@@ -465,25 +446,26 @@ namespace bias {
                             nidaq_task_->releaseLock();
                             ts_nidaq[frameCount][1] = read_ondemand_;
 
+                            //spikeDetected(frameCount);
                         }
-
+#endif
                     }
                 }
                 //-------------------------------------------------------------------------
-              
                 if (nidaq_task_ != nullptr && frameCount == 0) {
 
                     acquireLock();
                     //pc_time = gettime_->getPCtime();
                     //fstfrmtStampRef_ = static_cast<uint64_t>(pc_time);
+                    fstfrmtStampRef_ = nidaq_task_->cam_trigger[frameCount];
 #if isVidInput
                     fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
-                    
+
 #else
-                    fstfrmtStampRef_ = static_cast<uin64_t>(nidaq_task_->cam_trigger[frameCount]);
+                    fstfrmtStampRef_ = static_cast<uInt32>(nidaq_task_->cam_trigger[frameCount]);
 #endif
                     releaseLock();
-                    
+
                 }
 
                 // Set image data timestamp, framecount and frame interval estimate
@@ -501,9 +483,7 @@ namespace bias {
 
                 frameCount++;
                 end_process = gettime_->getPCtime();
-                if(cameraNumber_==0 && (frameCount-1) < 10)
-                    printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu \n", frameCount - 1, 
-                        start_process, end_process, end_process-start_process);
+                
                 ///---------------------------------------------------------------
 #if DEBUG
                 if (testConfigEnabled_ && ((frameCount-1) < testConfig_->numFrames)) {
@@ -664,28 +644,6 @@ namespace bias {
         }
 
     }*/
-
-    void ImageGrabber::initiateVidFrameDelay(priority_queue<int, vector<int>, greater<int>>& skip_frames,
-                                             vector<int>& delay_frames)
-    {
-
-        //srand(time(NULL)); 
-
-        int no_of_skips = 10;
-        int framenumber, delay;
-        int nframes_ = 2798;
-        int sleep_range = 20;
-
-        for (int j = 0; j < no_of_skips; j++)
-        {
-            framenumber = rand() % nframes_;
-            delay = rand() % sleep_range;
-            delay_frames.push_back(delay);
-            skip_frames.push(framenumber);
-            std::cout << "frame skipped " << framenumber << std::endl;
-        }
-
-    }
 
     void ImageGrabber::connectSlots() 
     {

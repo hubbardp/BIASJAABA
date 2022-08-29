@@ -95,6 +95,12 @@ namespace bias {
         return cap.get(cv::CAP_PROP_POS_FRAMES);
     }
 
+    void videoBackend::setBufferSize(cv::VideoCapture& cap) {
+
+        cap.set(cv::CAP_PROP_BUFFERSIZE, 3);
+
+    }
+
 }
 
 #endif

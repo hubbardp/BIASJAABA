@@ -23,10 +23,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-
-#include "win_time.hpp"
-#include "camera_device.hpp"
-// ----------------------------------------
+//------------------------------------------//
 
 namespace bias
 {
@@ -95,13 +92,12 @@ namespace bias
             bool testConfigEnabled_;
             string trial_num;
             uint64_t fstfrmtStampRef_;
-
-            //test
             bool process_frame_time_;
 
             unsigned int partnerCameraNumber_;
             uInt32 read_buffer_ = 0, read_ondemand_ = 0;
            
+
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
@@ -130,10 +126,11 @@ namespace bias
             videoBackend* vid_obj_;
             cv::VideoCapture cap_obj_;
 
-            //void spikeDetected(unsigned int frameCount);
             void initializeVidBackend();
             void initiateVidFrameDelay(priority_queue<int, vector<int>, greater<int>>& skip_frames,
-                                       vector<int>& delay_frames);
+                vector<int>& delay_frames);
+            //void spikeDetected(unsigned int frameCount);
+
             unsigned int getPartnerCameraNumber();
             QPointer<CameraWindow> getCameraWindow();
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
