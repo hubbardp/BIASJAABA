@@ -179,7 +179,7 @@ namespace bias
 
             void processFrame_inPlugin();
             void processFramePass();
-            void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
+            //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
  
         signals:
 
@@ -207,7 +207,7 @@ namespace bias
             void onFrameHOGShape(QPointer<HOGHOF> partner_hogshape);
             void scoreCompute(PredData predScore);
             void receiveFrameRead(int64_t frameReadtime, int frameCount);
-            void receiveFrameNum(unsigned int frameReadNum);
+            //void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);
             void setSkipFrameProcess(unsigned int frameCount);
 

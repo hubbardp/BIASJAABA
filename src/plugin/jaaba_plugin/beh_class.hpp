@@ -34,6 +34,7 @@ namespace bias {
         PredData predScoreSide;
         PredData predScoreFront;
         PredData finalscore;
+
         QString classifier_file;
 	    std::vector<boost_classifier> model = std::vector<boost_classifier>(6);
 	    std::vector<std::string> model_params{"alpha","dim","dir","error","tr"};
@@ -60,6 +61,10 @@ namespace bias {
         bool pathExists(hid_t id, const std::string& path);
         void addScores(std::vector<float>& scr_side,
                        std::vector<float>& scr_front);
+
+        //test 
+        vector<PredData> predscore_side = vector<PredData>(10000);
+        vector<PredData> predscore_front = vector<PredData>(10000);
 	
     };
 

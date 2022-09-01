@@ -34,7 +34,7 @@ namespace bias {
         front_read_time_ = 0;
 
 #if DEBUG
-        scores.resize(100000);
+        scores.resize(10000);
 #endif
         //frame_read_stamps.resize(2798,0);
         //predScoreFront_ = &classifier->predScoreFront;
@@ -139,7 +139,8 @@ namespace bias {
 
         bool done = false;
         int64_t time_now, score_ts;
-        float wait_threshold = 1700;
+        float wait_threshold = 5000;
+        unsigned int numFrames = 2498;
  
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -185,7 +186,69 @@ namespace bias {
 
                     continue;
 
-                }/*else if (!frontScoreQueue.empty()) {
+                }
+                else if (!sideScoreQueue.empty() && !frontScoreQueue.empty()) {
+
+                    acquireLock();
+                    predScorePartner = frontScoreQueue.front();
+                    predScore = sideScoreQueue.front();
+                    releaseLock();
+
+                    // not sure if this condition occurs
+                    /*if (scoreCount < predScore.frameCount)
+                    {
+                        if (predScore.frameCount > predScorePartner.frameCount)
+                            frontScoreQueue.pop_front();
+                        scoreCount++;
+                        continue;
+                    }*/
+                   
+                    if (scoreCount > predScore.frameCount) {
+                        sideScoreQueue.pop_front();
+                        continue;
+                    }
+
+                    // not sure if this condition occurs
+                    /*if (scoreCount < predScorePartner.frameCount)
+                    {
+                        if (predScorePartner.frameCount > predScore.frameCount)
+                            sideScoreQueue.pop_front();
+                        scoreCount++;
+                        continue;
+                    }*/
+                    if (scoreCount > predScorePartner.frameCount){
+                        frontScoreQueue.pop_front();
+                        continue;
+                    }
+                    
+                    
+                    if (predScore.frameCount == predScorePartner.frameCount)
+                    {
+
+                        classifier->addScores(predScore.score, predScorePartner.score);
+
+                        skipSide = false;
+                        skipFront = false;
+                        sideScoreQueue.pop_front();
+                        frontScoreQueue.pop_front();
+                        classifier->finalscore.frameCount = predScore.frameCount;
+                        classifier->finalscore.view = 3;
+                        classifier->finalscore.score_ts = predScore.score_ts;
+                        time_now = getTime_->getPCtime();
+                        //write_score("classifierscr.csv", scoreCount, classifier->finalscore);
+                        scores[scoreCount - 1].score[0] = classifier->finalscore.score[0];
+                        scores[scoreCount-1].frameCount = predScore.frameCount;
+                        scores[scoreCount-1].view = 3;
+                        scores[scoreCount-1].score_ts = time_now;
+
+                        scoreCount++;
+                        
+
+                    }
+                    //std::cout << "stuck here" << std::endl;
+                    
+                }
+                else if (!frontScoreQueue.empty()) {
 
                     acquireLock();
                     predScorePartner = frontScoreQueue.front();
@@ -196,6 +259,9 @@ namespace bias {
                         frontScoreQueue.pop_front();
                         continue;
                     }
+
+                    //if (predScorePartner.frameCount > scoreCount)
+                    //    std::cout << "Front ahead of score" << std::endl;
 
                     time_now = getTime_->getPCtime();
                     score_ts = predScorePartner.score_ts;
@@ -204,7 +270,8 @@ namespace bias {
                         skipSide = true;
                     }
 
-                }else if (!sideScoreQueue.empty()) {
+                }
+                else if (!sideScoreQueue.empty()) {
 
                     acquireLock();
                     predScore = sideScoreQueue.front();
@@ -212,75 +279,29 @@ namespace bias {
 
                     // check if this is not already a processed scoreCount
                     if (scoreCount > predScore.frameCount) {
+
                         sideScoreQueue.pop_front();
                         continue;
                     }
+
+                    //if (predScore.frameCount > scoreCount)
+                    //    std::cout << "side is ahead of score" << std::endl;
 
                     time_now = getTime_->getPCtime();
                     score_ts = predScore.score_ts;
                     if ((time_now - score_ts) > wait_threshold)
                     {
                         skipFront = true;
+                       
                     }
 
-                }*/else if (!sideScoreQueue.empty() && !frontScoreQueue.empty()) {
-
-                    acquireLock();
-                    predScorePartner = frontScoreQueue.front();
-                    predScore = sideScoreQueue.front();
-                    releaseLock();
-                    
-                    /*if (scoreCount > predScore.frameCount) {
-                        sideScoreQueue.pop_front();
-                        continue;
-                    }
-
-                    if (scoreCount > predScorePartner.frameCount) {
-                        frontScoreQueue.pop_front();
-                        continue;
-                    }*/
-
-                    if (scoreCount < predScore.frameCount)
-                    {
-                        if (predScore.frameCount > predScorePartner.frameCount)
-                            frontScoreQueue.pop_front();
-                        scoreCount++;
-                        continue;
-                    }
-
-                    if (scoreCount < predScorePartner.frameCount)
-                    {
-                        if(predScorePartner.frameCount > predScore.frameCount)
-                            sideScoreQueue.pop_front();
-                        scoreCount++;
-                        continue;
-                    }
-
-                    
-                    if (predScore.frameCount == predScorePartner.frameCount)
-                    {
-
-                        //classifier->addScores(predScore.score, predScorePartner.score);
-
-                        skipSide = false;
-                        skipFront = false;
-                        sideScoreQueue.pop_front();
-                        frontScoreQueue.pop_front();
-                        //write_score("classifierscr.csv", scoreCount, classifier->finalscore);
-                        //scores[scoreCount-1].score[0] = predScore.score[0] + predScorePartner.score[0];
-                        //scores[scoreCount-1].frameCount = 1;
-                        //scores[scoreCount-1].view = 3;
-                        //scores[scoreCount-1].score_ts = predScorePartner.score_ts;
-                        scoreCount++;
-
-                    }
-                    
                 }
 
-                /*if (skipFront)
+                if (skipFront)
                 {
                     if (!skipSide)
                     {
+                        skipFront = false;
                         if (scoreCount == predScore.frameCount)
                         {
                             //predScorePartner.score = { 0.0,0.0,0.0,0.0,0.0 };
@@ -290,12 +311,13 @@ namespace bias {
                             sideScoreQueue.pop_front();
                             releaseLock();
 
-                            skipFront = false;
                             //write_score("classifierscr.csv", scoreCount, predScore);
+
                             scores[scoreCount-1].score[0] = predScore.score[0];
                             scores[scoreCount-1].frameCount = predScore.frameCount;
                             scores[scoreCount-1].view = 1;
-                            scores[scoreCount-1].score_ts = predScore.score_ts;
+                            scores[scoreCount-1].score_ts = time_now;
+                           
                             scoreCount++;
                         }
                         
@@ -305,6 +327,7 @@ namespace bias {
 
                     if (!skipFront)
                     {
+                        skipSide = false;
                         if (scoreCount == predScorePartner.frameCount)
                         {
                             //predScore.score = { 0.0,0.0,0.0,0.0,0.0 };
@@ -313,28 +336,31 @@ namespace bias {
                             acquireLock();
                             frontScoreQueue.pop_front();
                             releaseLock();
-
-                            skipSide = false;
+                          
                             //write_score("classifierscr.csv", scoreCount, predScorePartner);
+
                             scores[scoreCount-1].score[0] = predScorePartner.score[0];
                             scores[scoreCount-1].frameCount = predScorePartner.frameCount;
                             scores[scoreCount-1].view = 2;
-                            scores[scoreCount-1].score_ts = predScorePartner.score_ts;
+                            scores[scoreCount-1].score_ts = time_now;
+                            
                             scoreCount++;
 
                         }
                         
                     }
-                }*/
-                //std::cout << scoreCount << std::endl;
+                }
+                
             }
-
-            if (scoreCount == 10001)
-                write_score_final("classifier.csv", 10000, scores);
 
             acquireLock();
             done = stopped_;
             releaseLock();
+
+            if (scoreCount == (numFrames-2)) {
+                write_score_final("classifier.csv", numFrames-2, scores);
+                break;
+            }
 
         }
      
@@ -386,12 +412,12 @@ namespace bias {
     {
         std::ofstream x_out;
         x_out.open(file.c_str(), std::ios_base::app);
-
+        std::cout << "once" << std::endl;
         x_out << "Score ts," << "Score," << " FrameNumber," << "View" << "\n";
 
         for (unsigned int frm_id = 0; frm_id < numFrames; frm_id++)
         {
-            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].view
+            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score[0]
                 << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
                 "\n";
         }

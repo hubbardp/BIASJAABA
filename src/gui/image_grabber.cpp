@@ -483,6 +483,9 @@ namespace bias {
 
                 frameCount++;
                 end_process = gettime_->getPCtime();
+                /*if (cameraNumber_ == 0 && (frameCount - 1) < 20)
+                    printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu \n", frameCount - 1,
+                        start_process, end_process, end_process - start_process);*/
                 
                 ///---------------------------------------------------------------
 #if DEBUG

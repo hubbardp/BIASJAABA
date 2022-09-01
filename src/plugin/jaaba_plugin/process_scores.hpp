@@ -75,10 +75,11 @@ namespace bias
            void detectOn();
            void detectOff();
             
-           videoBackend* vid_sde;
+           /*videoBackend* vid_sde;
            videoBackend* vid_front;
            cv::VideoCapture capture_sde;
-           cv::VideoCapture capture_front;
+           cv::VideoCapture capture_front;*/
+           bool isVid;
            
            cv::Mat curr_frame; 
            cv::Mat grey_frame;
@@ -89,13 +90,15 @@ namespace bias
            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
            void write_score(std::string file, int framenum, PredData& score);
            void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
-
+           void write_score_final(std::string file, unsigned int numFrames,
+               vector<PredData>& pred_score);
 
         private :
 
            bool stopped_;
            bool ready_;
            float threshold_runtime = static_cast<float>(3000);
+           
  
            QQueue<FrameData> frameQueue_;
            QPointer<BiasPlugin> partnerPluginPtr_;
@@ -107,8 +110,7 @@ namespace bias
            //test
            std::vector<PredData>scores;
 
-           void write_score_final(std::string file, unsigned int numFrames,
-               vector<PredData>& pred_score);
+           
 
         signals:
 
