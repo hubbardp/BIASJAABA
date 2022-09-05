@@ -10,6 +10,10 @@
 #include <opencv2/core/core.hpp>
 
 
+/*#include <cstdlib>
+#include<thread>
+#include<chrono>*/
+
 // TEMPOERARY
 // ----------------------------------------
 #include <opencv2/highgui/highgui.hpp>
@@ -183,9 +187,15 @@ namespace bias {
         double timeStampDblLast = 0.0;
 
         int64_t pc_time, start_process, end_process;
+        int64_t start_delay, end_delay = 0;
         StampedImage stampImg;
 
         QString errorMsg("no message");
+
+#if isVidInput
+        int wait_threshold = 30000;
+        int64_t delay_us = 0;
+#endif
 
         if (!ready_) 
         { 
@@ -297,10 +307,21 @@ namespace bias {
                 // returning the first frame
                 if (startUpCount < numStartUpSkip_)
                 {
-
                     startUpCount++;
                     continue;
                 }
+
+                start_delay = gettime_->getPCtime();
+                end_delay = start_delay;
+                delay_us = (wait_threshold - (start_delay - start_process));
+                while ((end_delay - start_delay) < delay_us)
+                {
+                    end_delay = gettime_->getPCtime();
+                }
+                //acquireLock();
+                //wait_for(delay_ms+5);
+                //releaseLock();                 
+                //thread->usleep(chrono::milliseconds(delay_ms));
                 
             }
             else {
@@ -483,9 +504,9 @@ namespace bias {
 
                 frameCount++;
                 end_process = gettime_->getPCtime();
-                /*if (cameraNumber_ == 0 && (frameCount - 1) < 20)
-                    printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu \n", frameCount - 1,
-                        start_process, end_process, end_process - start_process);*/
+                /*if (cameraNumber_ == 1 && (frameCount - 1) < 20)
+                    printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu, delay process: %d \n",
+                        frameCount - 1,start_delay-start_process, end_process, end_process - start_process, delay_us);*/
                 
                 ///---------------------------------------------------------------
 #if DEBUG

@@ -379,7 +379,7 @@ namespace bias {
         float wait_thres;
 
 #if isVidInput
-        frameGrabAvgTime = static_cast<float>(15000);
+        frameGrabAvgTime = static_cast<float>(31000);
         wait_thres = static_cast<float>(10000);
 #else
         frameGrabAvgTime = 2500;
