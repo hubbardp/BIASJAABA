@@ -139,8 +139,9 @@ namespace bias {
 
         bool done = false;
         int64_t time_now, score_ts;
-        float wait_threshold = 5000;
+        float wait_threshold = 10000;
         unsigned int numFrames = 2498;
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/acc2a_9_5_2022/classifier_trial2.csv";
  
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -243,9 +244,7 @@ namespace bias {
 
                         scoreCount++;
                         
-
                     }
-                    //std::cout << "stuck here" << std::endl;
                     
                 }
                 else if (!frontScoreQueue.empty()) {
@@ -304,8 +303,6 @@ namespace bias {
                         skipFront = false;
                         if (scoreCount == predScore.frameCount)
                         {
-                            //predScorePartner.score = { 0.0,0.0,0.0,0.0,0.0 };
-                            //classifier->addScores(predScore.score, predScorePartner.score);
 
                             acquireLock();
                             sideScoreQueue.pop_front();
@@ -330,8 +327,6 @@ namespace bias {
                         skipSide = false;
                         if (scoreCount == predScorePartner.frameCount)
                         {
-                            //predScore.score = { 0.0,0.0,0.0,0.0,0.0 };
-                            //classifier->addScores(predScore.score, predScorePartner.score);
 
                             acquireLock();
                             frontScoreQueue.pop_front();
@@ -358,7 +353,8 @@ namespace bias {
             releaseLock();
 
             if (scoreCount == (numFrames-2)) {
-                write_score_final("classifier.csv", numFrames-2, scores);
+
+                write_score_final(filename, numFrames-2, scores);
                 break;
             }
 

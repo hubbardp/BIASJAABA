@@ -379,8 +379,8 @@ namespace bias {
         float wait_thres;
 
 #if isVidInput
-        frameGrabAvgTime = static_cast<float>(31000);
-        wait_thres = static_cast<float>(10000);
+        frameGrabAvgTime = static_cast<float>(45000);
+        wait_thres = static_cast<float>(3000);
 #else
         frameGrabAvgTime = 2500;
         wait_thres = static_cast<float>(4000/1000);
@@ -1198,7 +1198,7 @@ namespace bias {
         score_calculated_ = 0;
         scoreCount = 0;
         frameSkip = 5;
-        process_frame_time = 0; 
+        process_frame_time = 1; 
 
         processScoresPtr_side = new ProcessScores(this, mesPass, gettime_);   
         processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);  
