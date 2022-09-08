@@ -118,17 +118,17 @@ namespace bias
             std::vector<unsigned int> queue_size; // queue size
             std::vector<int64_t>ts_process;
 
-            priority_queue<int, vector<int>, greater<int>>delayFrames_view1; // side skips
-            priority_queue<int, vector<int>, greater<int>>delayFrames_view2; // front skips
-            vector<int> delay_view1;
-            vector<int> delay_view2;
+            int no_of_skips;
+            int nframes_;
+            priority_queue<int, vector<int>, greater<int>>delayFrames; // side skips
+            vector<int> delay_view;
+
 
             videoBackend* vid_obj_;
             cv::VideoCapture cap_obj_;
 
             void initializeVidBackend();
-            void initiateVidFrameDelay(priority_queue<int, vector<int>, greater<int>>& skip_frames,
-                vector<int>& delay_frames);
+            void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
             //void spikeDetected(unsigned int frameCount);
 
             unsigned int getPartnerCameraNumber();

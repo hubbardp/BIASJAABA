@@ -69,15 +69,17 @@ namespace bias {
         settings = cameraPtr_->getFormat7Settings();
         image_height = settings.height;
         image_width = settings.width;
+        std::cout << "height " << image_height << std::endl;
+        std::cout << "width " << image_width << std::endl;
 
-
-#else        //DEVEL
-        
+# else    
+        //DEVEL
         if(processScoresPtr_side->isVid)
         {
             std::cout << "inside side " << std::endl;
             image_height = 384; //height of frame from video input
             image_width = 260;   //width of frame from video input 
+            
         }
 
         if (processScoresPtr_front->isVid)
@@ -87,6 +89,7 @@ namespace bias {
             image_width = 260;   //width of frame from video input 
         }
 #endif
+
     }
 
 
@@ -373,14 +376,16 @@ namespace bias {
         int64_t pc_time;
         uint64_t start_process, end_process;
         int64_t front_read_time, side_read_time, time_now;
+        uint64_t start_delay, end_delay;
         string filename;
         double expTime = 0, curTime = 0;
         float frameGrabAvgTime;
         float wait_thres;
 
 #if isVidInput
-        frameGrabAvgTime = static_cast<float>(45000);
-        wait_thres = static_cast<float>(3000);
+        frameGrabAvgTime = static_cast<float>(31000);
+        wait_thres = static_cast<float>(2000);
+        
 #else
         frameGrabAvgTime = 2500;
         wait_thres = static_cast<float>(4000/1000);
@@ -408,6 +413,7 @@ namespace bias {
                 return;
             }
             
+            //start_process = gettime_->getPCtime();
             if (!(pluginImageQueuePtr_->empty()))
             {
   
@@ -429,6 +435,7 @@ namespace bias {
                     emit(passSideHOGShape(processScoresPtr_front->HOGHOF_partner));
                 }
 
+#if !isVidInput
                 if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
                     if (frameCount_ <= testConfig_->numFrames) {
@@ -440,26 +447,22 @@ namespace bias {
                     }
 
                 }
-
-                start_process = gettime_->getPCtime();
-
+#endif
+                
                 if (fstfrmtStampRef_ != 0)
                 {
 #if isVidInput     
-                    expTime = static_cast<double>(fstfrmtStampRef_) + static_cast<double>(frameGrabAvgTime * (frameCount_+1));
-                    curTime = static_cast<double>(start_process);
-                    /*if (frameCount_ < 20 && cameraNumber_ == 0) {
-                        printf("FrameCount : %d, fstfrmref: %f, frame increments %f, curTime %f,  Wait Thres %f\n", frameCount_,
-                            static_cast<double>(fstfrmtStampRef_), static_cast<double>(frameGrabAvgTime * (frameCount_+1))
-                            , curTime, curTime - expTime);
-                    }*/
+
+                    time_now = gettime_->getPCtime();
+                    expTime = static_cast<double>(fstfrmtStampRef_) + static_cast<double>(frameGrabAvgTime * (frameCount_ + 1));
+                    curTime = static_cast<double>(time_now);
+
 #else                   
                     expTime = (fstfrmtStampRef_*0.02 + (2.5 * frameCount_));
                     //expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
                     curTime = (read_ondemand)*0.02; 
 #endif
                     if ((curTime - expTime) > wait_thres)
-                    //if(cameraNumber_ == 1)
                     {
                         if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount == frameCount_))
                         {
@@ -567,18 +570,16 @@ namespace bias {
                                             processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, &partner_hogshape_,
                                             &processScoresPtr_front->HOGHOF_partner->hof_shape, processScoresPtr_front->classifier->nframes,
                                             processScoresPtr_front->classifier->model);
-                                        
+
                                         time_now = gettime_->getPCtime();
                                         processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
                                         processScoresPtr_front->classifier->predScoreFront.score_ts = time_now;
-                                        processScoresPtr_front->classifier->predScoreFront.view = 2;                         
+                                        processScoresPtr_front->classifier->predScoreFront.view = 2;
                                         processScoresPtr_front->classifier->predscore_front[processScoresPtr_front->processedFrameCount]
                                             = processScoresPtr_front->classifier->predScoreFront;
                                         emit(passScore(processScoresPtr_front->classifier->predScoreFront));
 
-                                        //if (processScoresPtr_front->processedFrameCount == 2495)
-                                        //    processScoresPtr_front->write_score_final("classifier_front.csv", 2495, processScoresPtr_front->classifier->predscore_front);
-
+                                        
                                     }
 #endif
                                     processScoresPtr_front->processedFrameCount++;
@@ -630,10 +631,6 @@ namespace bias {
                                                                                     = processScoresPtr_side->classifier->predScoreSide;
                                         processScoresPtr_side->releaseLock();
                                        
-                                        //if (processScoresPtr_side->processedFrameCount == 2495)
-                                        //    processScoresPtr_side->write_score_final("classifier_side.csv", 2495, processScoresPtr_side->classifier->predscore_side);
-                                            
-                                        
                                     }
 #endif
                                     processScoresPtr_side->processedFrameCount++;
@@ -698,7 +695,7 @@ namespace bias {
 
             if (process_frame_time) {
                 
-                ts_gpuprocess_time[frameCount_] = (end_process - start_process);
+                ts_gpuprocess_time[frameCount_] = start_process;//(end_process - start_process);
             }
 
             if (frameCount_ == testConfig_->numFrames - 1
@@ -1209,15 +1206,15 @@ namespace bias {
         setupHOGHOF();
         setupClassifier();
 
+
     }
 
 
     /*void JaabaPlugin::initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames)
+                                      
     {
 
         //srand(time(NULL));
-
-        int no_of_skips = 10;
         int framenumber;
 
         for (int j = 0; j < no_of_skips; j++)
@@ -1472,7 +1469,6 @@ namespace bias {
         if (state == Qt::Checked)
         {   
             frontRadioButtonPtr_ -> setChecked(true);
-
         }
         else
         {   

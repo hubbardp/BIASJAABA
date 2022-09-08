@@ -92,6 +92,7 @@ namespace bias
            void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
            void write_score_final(std::string file, unsigned int numFrames,
                vector<PredData>& pred_score);
+           void write_frameNum(std::string filename, vector<int>& frame_vec, int numSkips);
 
         private :
 

@@ -154,8 +154,11 @@ namespace bias
             std::vector<float> ts_nidaqThres;// nmidaq threshold for spiked frames
             std::vector<unsigned int> time_stamps5;// test
             
-            priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips
-            priority_queue<int, vector<int>, greater<int>>skipframes_view2; // front skips
+            //int no_of_skips = 10;
+            //priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips
+            //priority_queue<int, vector<int>, greater<int>>skipframes_view2; // front skips
+            //std::vector<int> skipframes1;
+            //std::vector<int> skipframes2;
 
             std::vector<float>laserRead = { 0,0,0,0,0,0 };
             std::vector<double>timeofs;
@@ -180,6 +183,7 @@ namespace bias
             void processFrame_inPlugin();
             void processFramePass();
             //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
+                                 
  
         signals:
 

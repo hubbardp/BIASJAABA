@@ -141,7 +141,7 @@ namespace bias {
         int64_t time_now, score_ts;
         float wait_threshold = 10000;
         unsigned int numFrames = 2498;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/acc2a_9_5_2022/classifier_trial2.csv";
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/0969d_9_7_2022/classifier_trial5.csv";
  
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -418,6 +418,20 @@ namespace bias {
                 "\n";
         }
         x_out.close();
+    }
+
+
+    void ProcessScores::write_frameNum(std::string filename, vector<int>& frame_vec, int numSkips) {
+
+        std::ofstream x_out;
+        x_out.open(filename.c_str());
+
+        for (int i = 0; i < numSkips; i++)
+        {
+            x_out << frame_vec[i] << "\n";
+        }
+        x_out.close();
+
     }
 
 }

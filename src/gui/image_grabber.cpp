@@ -131,6 +131,14 @@ namespace bias {
             }
         }
 #endif
+
+#if isVidInput
+        nframes_ = 2495;
+        no_of_skips = 10;
+  
+        initiateVidSkips(delayFrames);
+        delay_view.resize(nframes_, 0);
+#endif
     }
 
     void ImageGrabber::initializeVidBackend()
@@ -186,7 +194,7 @@ namespace bias {
         double timeStampDbl = 0.0;
         double timeStampDblLast = 0.0;
 
-        int64_t pc_time, start_process, end_process;
+        int64_t pc_time, start_process, end_process, time_now;
         int64_t start_delay, end_delay = 0;
         StampedImage stampImg;
 
@@ -195,6 +203,7 @@ namespace bias {
 #if isVidInput
         int wait_threshold = 30000;
         int64_t delay_us = 0;
+        int delay_framethres = 5000;
 #endif
 
         if (!ready_) 
@@ -318,11 +327,24 @@ namespace bias {
                 {
                     end_delay = gettime_->getPCtime();
                 }
-                //acquireLock();
-                //wait_for(delay_ms+5);
-                //releaseLock();                 
-                //thread->usleep(chrono::milliseconds(delay_ms));
-                
+
+                // Introduce delay              
+                /*if (frameCount == delayFrames.top()) {
+
+                    delay_view[frameCount] = frameCount;
+
+                    start_delay = gettime_->getPCtime();
+                    end_delay = start_delay;
+                    while ((end_delay - start_delay) < delay_framethres)
+                    {
+                            end_delay = gettime_->getPCtime();
+                    }
+                    delayFrames.pop();
+                    //if (cameraNumber_ == 1)
+                    //    printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu, delay process: %d \n",
+                    //    frameCount - 1, start_delay - start_process, end_process, end_delay - start_process, delay_us);
+                }*/
+
             }
             else {
                 assert(cap_obj_.isOpened());
@@ -481,7 +503,7 @@ namespace bias {
                     fstfrmtStampRef_ = nidaq_task_->cam_trigger[frameCount];
 #if isVidInput
                     fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
-
+                 
 #else
                     fstfrmtStampRef_ = static_cast<uInt32>(nidaq_task_->cam_trigger[frameCount]);
 #endif
@@ -504,9 +526,10 @@ namespace bias {
 
                 frameCount++;
                 end_process = gettime_->getPCtime();
-                /*if (cameraNumber_ == 1 && (frameCount - 1) < 20)
-                    printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu, delay process: %d \n",
-                        frameCount - 1,start_delay-start_process, end_process, end_process - start_process, delay_us);*/
+                //if (cameraNumber_ == 1 && (frameCount - 1) < 20)
+                    //printf("fstfrm: %llu, start frame: %llu \n ", fstfrmtStampRef_, start_process);
+                    //printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu, delay process: %d \n",
+                    //    frameCount - 1,start_delay-start_process, end_process, end_process - start_process, delay_us);
                 
                 ///---------------------------------------------------------------
 #if DEBUG
@@ -531,7 +554,7 @@ namespace bias {
                         if (process_frame_time_)
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames))
-                                ts_process[frameCount - 1] = end_process - start_process;
+                                ts_process[frameCount - 1] = start_process;//end_process - start_process;
                         }
 
                         if (frameCount == testConfig_->numFrames
@@ -598,6 +621,19 @@ namespace bias {
                             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_process);
 
                         }
+#if isVidInput
+                        if (frameCount == 2495) {
+
+                            string filename = testConfig_->dir_list[0] + "/"
+                                + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                                + testConfig_->imagegrab_prefix
+                                + "_" + "skipped_frames" + "cam"
+                                + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+                            
+                            gettime_->write_time_1d<int>(filename, testConfig_->numFrames, delay_view);
+                        }
+#endif
                     }
                 }
 #endif
@@ -739,6 +775,22 @@ namespace bias {
             }
         }
         return partnerCameraWindowPtr;
+    }
+
+    void ImageGrabber::initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames)
+
+    {
+
+        //srand(time(NULL));
+        int framenumber;
+
+        for (int j = 0; j < no_of_skips; j++)
+        {
+            framenumber = rand() % nframes_;
+            skip_frames.push(framenumber);
+            std::cout << "frame skipped " << framenumber << std::endl;
+        }
+
     }
    
 } // namespace bias
