@@ -60,6 +60,7 @@
 #include "jaaba_plugin.hpp"
 #include "test_config.hpp"
 // -------------------------------------
+#define isVidInput 1
 
 namespace bias
 {
@@ -144,6 +145,7 @@ namespace bias
         setupUi(this);
         connectWidgets();
         initialize(cameraGuid, cameraNumber, numberOfCameras, cameraWindowPtrList);
+
     }
 
     void CameraWindow::finalSetup()
@@ -155,7 +157,6 @@ namespace bias
             pluginMap_[pluginName] -> finalSetup();
         }
     }
-
 
     RtnStatus CameraWindow::connectCamera(bool showErrorDlg) 
     {
@@ -228,6 +229,9 @@ namespace bias
         rtnStatus.success = true;
         rtnStatus.message = QString("");
 
+#if isVidInput
+        connectVidFrames();
+#endif
         return rtnStatus; 
     }
 
@@ -503,6 +507,7 @@ namespace bias
                 this
                 );
         imageGrabberPtr_ -> setAutoDelete(false);
+        //imageGrabberPtr_->initializeVid();
 
         imageDispatcherPtr_ = new ImageDispatcher(
                 logging_, 
@@ -3402,7 +3407,6 @@ namespace bias
                 this,
                 SLOT(enableFrametoFrame())
               );
-             
 
     }
 
@@ -7928,6 +7932,17 @@ namespace bias
         
     }
 
+    void CameraWindow::connectVidFrames()
+    {
+        QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
+        connect(this,
+            SIGNAL(finished_vidReading()),
+            partnerCameraWindowPtr,
+            SLOT(autostartTriggerSignal())
+        );
+
+    }
+
     void CameraWindow::enableFrametoFrame() {
 
         if (frametoframeLatencyVal) {
@@ -7936,6 +7951,20 @@ namespace bias
         }
 
     }
+
+    void CameraWindow::autostartTriggerSignal()
+    {
+
+        while (!vidFinsihed_reading && cameraNumber_ == 0) {}
+
+        if (nidaq_task != nullptr && cameraNumber_ == 0) {
+
+            // start the nidaq tasks
+            nidaq_task->start_trigger_signal();
+        }
+
+    }
+
 
 } // namespace bias
 

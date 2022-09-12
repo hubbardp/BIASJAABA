@@ -70,17 +70,13 @@ namespace bias
             static unsigned int MIN_STARTUP_SKIP;
             static unsigned int MAX_ERROR_COUNT;
 
-            void connectSlots();
+            void initializeVid();
 
         signals:
-            void triggerSignal(uInt32 read_buffer, int frameCount);
             void startTimer();
             void startCaptureError(unsigned int errorId, QString errorMsg);
             void stopCaptureError(unsigned int errorId, QString errorMsg);
             void captureError(unsigned int errorId, QString errorMsg);
-
-        private slots:
-            void partnerTriggerSignal(uInt32 read_buffer, int frameCount);
 
         private:
             bool ready_;
@@ -120,15 +116,19 @@ namespace bias
 
             int no_of_skips;
             int nframes_;
+            bool finished_reading_ = 0;
+            bool isOpen_ = 0;
+            bool start_reading = 0;
             priority_queue<int, vector<int>, greater<int>>delayFrames; // side skips
             vector<int> delay_view;
-
+            vector<StampedImage> vid_images;
 
             videoBackend* vid_obj_;
             cv::VideoCapture cap_obj_;
 
             void initializeVidBackend();
             void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
+            void readVidFrames();
             //void spikeDetected(unsigned int frameCount);
 
             unsigned int getPartnerCameraNumber();

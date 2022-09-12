@@ -53,9 +53,7 @@ namespace bias {
     {
         initialize(cameraNumber, cameraPtr, newImageQueuePtr, threadPoolPtr,
                    testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
-#if isVidInput  
-        initializeVidBackend();
-#endif
+
     }
 
     void ImageGrabber::initialize(
@@ -132,13 +130,6 @@ namespace bias {
         }
 #endif
 
-#if isVidInput
-        nframes_ = 2495;
-        no_of_skips = 10;
-  
-        initiateVidSkips(delayFrames);
-        delay_view.resize(nframes_, 0);
-#endif
     }
 
     void ImageGrabber::initializeVidBackend()
@@ -154,6 +145,11 @@ namespace bias {
 
         vid_obj_ = new videoBackend(filename);
         cap_obj_ = vid_obj_->videoCapObject();
+
+        if (cap_obj_.isOpened())
+            isOpen_ = 1;
+
+        std::cout << " IS OPEN ....." << isOpen_ << std::endl;
         //vid_obj_->setBufferSize(cap_obj_);
     }
 
@@ -254,6 +250,10 @@ namespace bias {
         stopped_ = false;
         releaseLock();
 
+# if isVidInput
+        initializeVid();
+#endif
+
         //// TEMPORARY - for mouse grab detector testing
         //// ------------------------------------------------------------------------------
 
@@ -283,7 +283,7 @@ namespace bias {
             acquireLock();
             done = stopped_;
             releaseLock();
-          
+
             if (!istriggered && nidaq_task_ != nullptr && cameraNumber_ == 0) {
 
                 nidaq_task_->startTasks();
@@ -293,24 +293,25 @@ namespace bias {
             start_process = gettime_->getPCtime();
 
 #if isVidInput
-            //the trigger signal has to be read to keep the camera running in triggered mode
-            // this has been skipped because of latency issues for the first few frames from camera
-            //Also to get accurate trigger timestamps after first frames have been skipped.
-            // maybe redundant??
-            if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
 
-                nidaq_task_->acquireLock();
-                if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {
-                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                    nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] = read_buffer_;
+            //if(finished_reading_){
+
+                stampImg.image = vid_images[frameCount].image;//vid_obj_->getImage(cap_obj_);
+
+                //the trigger signal has to be read to keep the camera running in triggered mode
+                // this has been skipped because of latency issues for the first few frames from camera
+                //Also to get accurate trigger timestamps after first frames have been skipped.
+                // maybe redundant??
+                if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
+
+                    nidaq_task_->acquireLock();
+                    if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
+                        nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] = read_buffer_;
+                    }
+                    nidaq_task_->releaseLock();
+
                 }
-                nidaq_task_->releaseLock();
-
-            }
-            if (cap_obj_.isOpened()) {
-
-                //start_process = gettime_->getPCtime();
-                stampImg.image = vid_obj_->getImage(cap_obj_);
 
                 // need to skip first few frames as VideoCapture has huge latency in 
                 // returning the first frame
@@ -345,10 +346,8 @@ namespace bias {
                     //    frameCount - 1, start_delay - start_process, end_process, end_delay - start_process, delay_us);
                 }*/
 
-            }
-            else {
-                assert(cap_obj_.isOpened());
-            }
+            //}
+           
             //end_process = gettime_->getPCtime();
 
 #else
@@ -524,8 +523,10 @@ namespace bias {
                 newImageQueuePtr_->signalNotEmpty();
                 newImageQueuePtr_->releaseLock();
 
-                frameCount++;
                 end_process = gettime_->getPCtime();
+                delay_view[frameCount] = end_process - start_process;
+                frameCount++;
+
                 //if (cameraNumber_ == 1 && (frameCount - 1) < 20)
                     //printf("fstfrm: %llu, start frame: %llu \n ", fstfrmtStampRef_, start_process);
                     //printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu, delay process: %d \n",
@@ -622,7 +623,7 @@ namespace bias {
 
                         }
 #if isVidInput
-                        if (frameCount == 2495) {
+                        if (frameCount == testConfig_->numFrames) {
 
                             string filename = testConfig_->dir_list[0] + "/"
                                 + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
@@ -632,6 +633,8 @@ namespace bias {
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
                             
                             gettime_->write_time_1d<int>(filename, testConfig_->numFrames, delay_view);
+                            //finished_reading_ = 0;
+                            std::cout << "finished reading**********" << finished_reading_ << std::endl;
                         }
 #endif
                     }
@@ -658,9 +661,9 @@ namespace bias {
         } // while (!done) 
 
         // Stop image capture
-#if isVidInput
-        vid_obj_->releaseCapObject(cap_obj_);
-#else
+//#if isVidInput
+//        vid_obj_->releaseCapObject(cap_obj_);
+//#else
         error = false;
         cameraPtr_ -> acquireLock();
         try
@@ -679,7 +682,7 @@ namespace bias {
         { 
             emit stopCaptureError(errorId, errorMsg);
         }
-#endif
+//#endif
     }
 
     double ImageGrabber::convertTimeStampToDouble(TimeStamp curr, TimeStamp init)
@@ -704,37 +707,6 @@ namespace bias {
         }
 
     }*/
-
-    void ImageGrabber::connectSlots() 
-    {
-        
-        QPointer<ImageGrabber>partnerImageGrabberPtr_ = partnerCameraWindowPtr->getImageGrabberPtr();
-        qRegisterMetaType<uInt32>("uInt32");
-        connect(this, SIGNAL(triggerSignal(uInt32, int)),
-            partnerImageGrabberPtr_, SLOT(partnerTriggerSignal(uInt32, int)));
-
-    }
-
-    void ImageGrabber::partnerTriggerSignal(uInt32 read_buffer, int frameCount)
-    {
- 
-        if (cameraNumber_ == 1) {
-
-            nidaq_task_->acquireLock();
-            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
-            nidaq_task_->releaseLock();
-
-            ts_nidaq[frameCount - 1][0] = read_buffer;
-            ts_nidaq[frameCount - 1][1] = read_ondemand_;
-
-            /*if (((read_ondemand_ - read_buffer_) * 0.02) > testConfig_->latency_threshold)
-            {
-                cameraPtr_->skipDetected(stampImg);
-            }*/
-
-        }
-       
-    }
 
     unsigned int ImageGrabber::getPartnerCameraNumber()
     {
@@ -791,6 +763,47 @@ namespace bias {
             std::cout << "frame skipped " << framenumber << std::endl;
         }
 
+    }
+
+    void ImageGrabber::readVidFrames()
+    {
+        StampedImage stampedImg;
+        vid_images.resize(nframes_);
+        int count = 0;
+   
+        while (isOpen_ && (count < nframes_))
+        {
+
+            stampedImg.image = vid_obj_->getImage(cap_obj_);
+            stampedImg.frameCount = count;
+            vid_images[count] = stampedImg;
+            count = count + 1;
+           
+        }
+        vid_obj_->releaseCapObject(cap_obj_);
+        
+        QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
+        cameraWindowPtr->vidFinsihed_reading = 1;
+        if (cameraNumber_ == 1)
+        {
+            emit cameraWindowPtr->finished_vidReading();
+        }
+    }
+
+    void ImageGrabber::initializeVid()
+    {
+        nframes_ = 2498;
+        no_of_skips = 10;
+
+        initializeVidBackend();
+        initiateVidSkips(delayFrames);
+        delay_view.resize(nframes_, 0);
+
+        //important this is the last function called before imagegrabber starts 
+        //grabbing frames. The camera trigger signal is on and the both threads
+        // want to read frames at the same time. 
+        readVidFrames();
+  
     }
    
 } // namespace bias

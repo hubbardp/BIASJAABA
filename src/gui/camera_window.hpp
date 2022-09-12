@@ -161,6 +161,9 @@ namespace bias
             float getFormat7PercentSpeed();
             QPointer<ImageGrabber> getImageGrabberPtr();
 
+            //DEVEL
+            bool vidFinsihed_reading;
+
         signals:
 
             void imageCaptureStarted(bool logging);
@@ -172,6 +175,7 @@ namespace bias
 
             // Test Configuration signal
             void valueChangedFrametoFrame(bool frametoframeLatencyVal);
+            void finished_vidReading();
 
         protected:
 
@@ -252,6 +256,7 @@ namespace bias
 
             //Test private slots
             void enableFrametoFrame();
+            void autostartTriggerSignal();
 
         private:
 
@@ -377,6 +382,7 @@ namespace bias
                     unsigned int numberOfCameras,
                     QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList
                     );
+            void connectVidFrames();
 
 
             void setDefaultFileDirs();
