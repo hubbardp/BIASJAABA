@@ -126,6 +126,7 @@ namespace bias {
             if (process_frame_time_)
             {
                 ts_process.resize(testConfig_->numFrames, 0);
+                ts_pc.resize(testConfig_->numFrames, 0);
             }
         }
 #endif
@@ -149,7 +150,6 @@ namespace bias {
         if (cap_obj_.isOpened())
             isOpen_ = 1;
 
-        std::cout << " IS OPEN ....." << isOpen_ << std::endl;
         //vid_obj_->setBufferSize(cap_obj_);
     }
 
@@ -197,7 +197,7 @@ namespace bias {
         QString errorMsg("no message");
 
 #if isVidInput
-        int wait_threshold = 30000;
+        int wait_threshold = 3000;
         int64_t delay_us = 0;
         int delay_framethres = 5000;
 #endif
@@ -290,19 +290,18 @@ namespace bias {
                 istriggered = true;
             }
 
-            start_process = gettime_->getPCtime();
+            
 
 #if isVidInput
 
-            //if(finished_reading_){
-
-                stampImg.image = vid_images[frameCount].image;//vid_obj_->getImage(cap_obj_);
+            if (frameCount < testConfig_->numFrames)
+            {
 
                 //the trigger signal has to be read to keep the camera running in triggered mode
                 // this has been skipped because of latency issues for the first few frames from camera
                 //Also to get accurate trigger timestamps after first frames have been skipped.
                 // maybe redundant??
-                if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
+               if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
 
                     nidaq_task_->acquireLock();
                     if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {
@@ -321,18 +320,21 @@ namespace bias {
                     continue;
                 }
 
-                start_delay = gettime_->getPCtime();
+                start_process = gettime_->getPCtime();
+                stampImg.image = vid_images[frameCount].image;//vid_obj_->getImage(cap_obj_);
+
+                /*start_delay = gettime_->getPCtime();
                 end_delay = start_delay;
                 delay_us = (wait_threshold - (start_delay - start_process));
                 while ((end_delay - start_delay) < delay_us)
                 {
                     end_delay = gettime_->getPCtime();
-                }
+                }*/
 
                 // Introduce delay              
                 /*if (frameCount == delayFrames.top()) {
 
-                    delay_view[frameCount] = frameCount;
+                    delay_view[frameCount] = 1000;
 
                     start_delay = gettime_->getPCtime();
                     end_delay = start_delay;
@@ -341,13 +343,10 @@ namespace bias {
                             end_delay = gettime_->getPCtime();
                     }
                     delayFrames.pop();
-                    //if (cameraNumber_ == 1)
-                    //    printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu, delay process: %d \n",
-                    //    frameCount - 1, start_delay - start_process, end_process, end_delay - start_process, delay_us);
+                    
                 }*/
 
-            //}
-           
+            }
             //end_process = gettime_->getPCtime();
 
 #else
@@ -499,7 +498,7 @@ namespace bias {
                     acquireLock();
                     //pc_time = gettime_->getPCtime();
                     //fstfrmtStampRef_ = static_cast<uint64_t>(pc_time);
-                    fstfrmtStampRef_ = nidaq_task_->cam_trigger[frameCount];
+                    //fstfrmtStampRef_ = nidaq_task_->cam_trigger[frameCount];
 #if isVidInput
                     fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
                  
@@ -524,7 +523,6 @@ namespace bias {
                 newImageQueuePtr_->releaseLock();
 
                 end_process = gettime_->getPCtime();
-                delay_view[frameCount] = end_process - start_process;
                 frameCount++;
 
                 //if (cameraNumber_ == 1 && (frameCount - 1) < 20)
@@ -554,8 +552,10 @@ namespace bias {
 
                         if (process_frame_time_)
                         {
-                            if (frameCount <= unsigned long(testConfig_->numFrames))
-                                ts_process[frameCount - 1] = start_process;//end_process - start_process;
+                            if (frameCount <= unsigned long(testConfig_->numFrames)) {
+                                ts_process[frameCount - 1] = end_process - start_process;
+                                ts_pc[frameCount - 1] = start_process;
+                            }
                         }
 
                         if (frameCount == testConfig_->numFrames
@@ -618,8 +618,17 @@ namespace bias {
                                 + testConfig_->imagegrab_prefix
                                 + "_" + "process_time" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
-                            std::cout << filename << std::endl;
+
+                            string filename1 = testConfig_->dir_list[0] + "/"
+                                + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                                + testConfig_->imagegrab_prefix
+                                + "_" + "start_time" + "cam"
+                                + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+                            
                             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_process);
+                            gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_pc);
+
 
                         }
 #if isVidInput
@@ -633,8 +642,7 @@ namespace bias {
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
                             
                             gettime_->write_time_1d<int>(filename, testConfig_->numFrames, delay_view);
-                            //finished_reading_ = 0;
-                            std::cout << "finished reading**********" << finished_reading_ << std::endl;
+                           
                         }
 #endif
                     }
@@ -753,14 +761,13 @@ namespace bias {
 
     {
 
-        //srand(time(NULL));
+        srand(time(NULL));
         int framenumber;
 
         for (int j = 0; j < no_of_skips; j++)
         {
             framenumber = rand() % nframes_;
             skip_frames.push(framenumber);
-            std::cout << "frame skipped " << framenumber << std::endl;
         }
 
     }
@@ -784,6 +791,7 @@ namespace bias {
         
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtr->vidFinsihed_reading = 1;
+        
         if (cameraNumber_ == 1)
         {
             emit cameraWindowPtr->finished_vidReading();

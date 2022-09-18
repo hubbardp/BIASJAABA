@@ -76,7 +76,7 @@ namespace bias
             void startTimer();
             void startCaptureError(unsigned int errorId, QString errorMsg);
             void stopCaptureError(unsigned int errorId, QString errorMsg);
-            void captureError(unsigned int errorId, QString errorMsg);
+            void captureError(unsigned int errorId, QString errorMsg); 
 
         private:
             bool ready_;

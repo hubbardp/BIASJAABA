@@ -139,10 +139,11 @@ namespace bias {
 
         bool done = false;
         int64_t time_now, score_ts;
-        float wait_threshold = 10000;
+        float wait_threshold = 2000;
         unsigned int numFrames = 2498;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/0969d_9_7_2022/classifier_trial5.csv";
- 
+        uint64_t ts_last_score = 0, cur_time=0;
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial1.csv";
+    
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
@@ -352,9 +353,9 @@ namespace bias {
             done = stopped_;
             releaseLock();
 
-            if (scoreCount == (numFrames-2)) {
+            if (scoreCount == (numFrames-3)) {
 
-                write_score_final(filename, numFrames-2, scores);
+                write_score_final(filename, numFrames-3, scores);
                 break;
             }
 

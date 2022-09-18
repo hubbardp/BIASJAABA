@@ -507,7 +507,6 @@ namespace bias
                 this
                 );
         imageGrabberPtr_ -> setAutoDelete(false);
-        //imageGrabberPtr_->initializeVid();
 
         imageDispatcherPtr_ = new ImageDispatcher(
                 logging_, 
@@ -2341,7 +2340,7 @@ namespace bias
 
     void CameraWindow::actionCameraLongTestTrialTriggered() {
 
-        std::cout << "inside long" << std::endl;
+        
         QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
         trialType_ = actionToTrialType_[actionPtr];
         printf("trial type %d", trialType_);

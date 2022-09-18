@@ -74,7 +74,7 @@ namespace bias
                                     std::shared_ptr<TestConfig> testConfig);
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
                                        std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
-
+          
         protected:
  
             bool laserOn; 
@@ -151,7 +151,7 @@ namespace bias
             std::vector<std::vector<uInt32>>ts_nidaq; // nidaq timings
             std::vector<unsigned int> queue_size; // queue size
             std::vector<int64_t> ts_gpuprocess_time;// gpu process timings
-            std::vector<float> ts_nidaqThres;// nmidaq threshold for spiked frames
+            std::vector<int64_t> ts_nidaqThres;// nmidaq threshold for spiked frames
             std::vector<unsigned int> time_stamps5;// test
             
             //int no_of_skips = 10;
@@ -177,8 +177,8 @@ namespace bias
             void connectWidgets();
             void detectEnabled();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
-            void getFormatSettings();            
-            void gpuInit();
+            void getFormatSettings();
+            //void gpuInit();
 
             void processFrame_inPlugin();
             void processFramePass();
@@ -214,6 +214,7 @@ namespace bias
             //void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);
             void setSkipFrameProcess(unsigned int frameCount);
+            void gpuInit();
 
     };
 

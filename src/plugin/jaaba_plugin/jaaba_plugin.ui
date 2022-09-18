@@ -462,6 +462,19 @@
             </property>
            </widget>
           </item>
+          <item>
+            <widget class="QPushButton" name="gpuInitButtonPtr_">
+              <property name="text">
+                <string>GPU Initilize</string>
+              </property>
+              <property name="maximumSize">
+                <size>
+                  <width>100</width>
+                  <height>100</height>
+                </size>
+              </property>
+            </widget>
+          </item> 
          </layout> 
         </widget>           
         <widget class="QWidget" name="triggerTabPtr">

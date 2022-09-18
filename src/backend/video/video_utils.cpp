@@ -9,7 +9,6 @@ namespace bias {
 
 
     //videoBackend::videoBackend() {}
-    
 
     videoBackend::videoBackend(QString file) {
 
