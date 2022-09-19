@@ -5,7 +5,7 @@
 #include <string>
 
 #define DEBUG 0 
-#define compute 1
+#define compute 0
 #define isVidInput 1
 
 //
@@ -183,7 +183,7 @@ namespace bias {
             
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
-                threadPoolPtr_->start(processScoresPtr_side);
+                //threadPoolPtr_->start(processScoresPtr_side);
             }
            
             // this thread adds latency to process frames
@@ -219,11 +219,12 @@ namespace bias {
                     processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
                     //processScoresPtr_side->HOGHOF_frame->img.buf = dummyImage.ptr<float>(0);
                     //processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, 0);
+                    //emit(passFrontHOFShape(processScoresPtr_side->HOGHOF_frame));
 
                 }else {
 
                     processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
-
+                    //emit(passSideHOGShape(processScoresPtr_front->HOGHOF_partner));
                 }
 
             }
@@ -399,20 +400,6 @@ namespace bias {
         frameGrabAvgTime = 2500;
         wait_thres = static_cast<float>(4000/1000);
 #endif
-
-        // initialize memory on the gpu 
-        /*if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
-        {
-            gpuInit();
-          
-        }
-
-        if (isSender() && !processScoresPtr_front->isHOGHOFInitialised)
-        {
-            gpuInit();
-           
-        }*/
-
        
         if (pluginImageQueuePtr_ != nullptr)
         {
@@ -428,14 +415,14 @@ namespace bias {
             
             if (!(pluginImageQueuePtr_->empty()))
             {
-  
+                
                 StampedImage stampedImage0 = pluginImageQueuePtr_->front();
                 pluginImageQueuePtr_->pop();
                 pluginImageQueuePtr_->releaseLock();
                 currentImage_ = stampedImage0.image.clone();
                 frameCount_ = stampedImage0.frameCount;
                 fstfrmtStampRef_ = stampedImage0.fstfrmtStampRef;
-
+                
 #if !isVidInput
                 if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
@@ -482,8 +469,7 @@ namespace bias {
 
                             side_skip_count++;
                             //ts_nidaqThres[processScoresPtr_side->processedFrameCount] = side_skip_count;
-                            processScoresPtr_side->processedFrameCount++;
-                            //std::cout << "side " << frameCount_ << std::endl;
+                            processScoresPtr_side->processedFrameCount++;                           
 
                         }else { assert(processScoresPtr_side->processedFrameCount==frameCount_); }
 
@@ -493,7 +479,6 @@ namespace bias {
                             front_skip_count++;
                             //ts_nidaqThres[processScoresPtr_front->processedFrameCount] = front_skip_count;
                             processScoresPtr_front->processedFrameCount++;
-                            //std::cout << "front " << frameCount_ << std::endl;
 
                         }else{  assert(processScoresPtr_front->processedFrameCount==frameCount_);}
 

@@ -228,23 +228,6 @@ namespace bias
                 pluginImageQueuePtr_->signalNotEmpty();
                 pluginImageQueuePtr_->releaseLock();
 
-#if DEBUG            
-                /*if (newStampImage.isSpike) {
-
-                    if (testConfigEnabled_) {
-
-                        if (!testConfig_->queue_prefix.empty()) {
-
-                            if (frameCount_ < unsigned long(testConfig_->numFrames))
-                                queue_size[newStampImage.frameCount] = 1;
-
-                        }
-
-                    }
-
-                }*/
-
-#endif
             }
 
             acquireLock();

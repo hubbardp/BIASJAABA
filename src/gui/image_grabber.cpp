@@ -32,27 +32,27 @@ namespace bias {
     unsigned int ImageGrabber::MIN_STARTUP_SKIP = 2;
     unsigned int ImageGrabber::MAX_ERROR_COUNT = 500;
 
-    ImageGrabber::ImageGrabber(QObject *parent) : QObject(parent) 
+    ImageGrabber::ImageGrabber(QObject *parent) : QObject(parent)
     {
-        
-        initialize(0,NULL,NULL,NULL,false,"",NULL,NULL,NULL);
+
+        initialize(0, NULL, NULL, NULL, false, "", NULL, NULL, NULL);
     }
 
-    ImageGrabber::ImageGrabber (
-            unsigned int cameraNumber,
-            std::shared_ptr<Lockable<Camera>> cameraPtr,
-            std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
-            QPointer<QThreadPool> threadPoolPtr,
-            bool testConfigEnabled,
-            string trial_info,
-            std::shared_ptr<TestConfig> testConfig,
-            std::shared_ptr<Lockable<GetTime>> gettime,
-            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
-            QObject *parent
-            ) : QObject(parent)
+    ImageGrabber::ImageGrabber(
+        unsigned int cameraNumber,
+        std::shared_ptr<Lockable<Camera>> cameraPtr,
+        std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
+        QPointer<QThreadPool> threadPoolPtr,
+        bool testConfigEnabled,
+        string trial_info,
+        std::shared_ptr<TestConfig> testConfig,
+        std::shared_ptr<Lockable<GetTime>> gettime,
+        std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+        QObject *parent
+    ) : QObject(parent)
     {
         initialize(cameraNumber, cameraPtr, newImageQueuePtr, threadPoolPtr,
-                   testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
+            testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
 
     }
 
@@ -66,7 +66,7 @@ namespace bias {
         std::shared_ptr<TestConfig> testConfig,
         std::shared_ptr<Lockable<GetTime>> gettime,
         std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
-        ) 
+    )
     {
         capturing_ = false;
         stopped_ = true;
@@ -79,11 +79,11 @@ namespace bias {
         testConfig_ = testConfig;
         trial_num = trial_info;
         fstfrmtStampRef_ = 0.0;
-        
+
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
         partnerCameraWindowPtr = getPartnerCameraWindowPtr();
-      
+
         if ((cameraPtr_ != NULL) && (newImageQueuePtr_ != NULL))
         {
             ready_ = true;
@@ -99,7 +99,7 @@ namespace bias {
         // camera trigger timestamps for other threads even if imagegrab is 
         // turned off in testConfig suite
         if (nidaq_task_ != nullptr) {
-            nidaq_task_->cam_trigger.resize(testConfig_->numFrames+2, 0);
+            nidaq_task_->cam_trigger.resize(testConfig_->numFrames + 2, 0);
         }
 
         gettime_ = gettime;
@@ -117,7 +117,7 @@ namespace bias {
                 ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
                 ts_nidaqThres.resize(testConfig_->numFrames);
             }
-            
+
             if (!testConfig_->queue_prefix.empty()) {
 
                 queue_size.resize(testConfig_->numFrames);
@@ -155,7 +155,7 @@ namespace bias {
 
     void ImageGrabber::stop()
     {
-        stopped_ = true;   
+        stopped_ = true;
     }
 
 
@@ -163,14 +163,14 @@ namespace bias {
     {
         errorCountEnabled_ = true;
     }
-   
+
     void ImageGrabber::disableErrorCount()
     {
         errorCountEnabled_ = false;
     }
 
     void ImageGrabber::run()
-    { 
+    {
 
         bool isFirst = true;
         bool istriggered = false;
@@ -185,7 +185,7 @@ namespace bias {
         TriggerType trig;
 
         TimeStamp timeStamp;
-        TimeStamp timeStampInit; 
+        TimeStamp timeStampInit;
 
         double timeStampDbl = 0.0;
         double timeStampDblLast = 0.0;
@@ -200,34 +200,37 @@ namespace bias {
         int wait_threshold = 3000;
         int64_t delay_us = 0;
         int delay_framethres = 5000;
+
+        int delay = 0, avgFrameTime_us = 2500, avgFramewaitThres=3500;
+        int num_delayFrames = 0;
 #endif
 
-        if (!ready_) 
-        { 
-            return; 
+        if (!ready_)
+        {
+            return;
         }
 
         // Set thread priority to "time critical" and assign cpu affinity
         QThread *thisThread = QThread::currentThread();
-        thisThread -> setPriority(QThread::TimeCriticalPriority);
-        ThreadAffinityService::assignThreadAffinity(true,cameraNumber_);
+        thisThread->setPriority(QThread::TimeCriticalPriority);
+        ThreadAffinityService::assignThreadAffinity(true, cameraNumber_);
 
         trig = cameraPtr_->getTriggerType();
-        
+
         // Start image capture
-        cameraPtr_ -> acquireLock();
+        cameraPtr_->acquireLock();
         try
         {
-            cameraPtr_ -> startCapture();
+            cameraPtr_->startCapture();
             if (nidaq_task_ != nullptr) {
-                
+
                 cameraPtr_->setupNIDAQ(nidaq_task_, testConfigEnabled_,
-                                       trial_num, testConfig_,
-                                       gettime_, cameraNumber_);
-               
+                    trial_num, testConfig_,
+                    gettime_, cameraNumber_);
+
             }
             else {
-                printf("nidaq not set");      
+                printf("nidaq not set");
             }
         }
         catch (RuntimeError &runtimeError)
@@ -236,7 +239,7 @@ namespace bias {
             errorId = runtimeError.id();
             errorMsg = QString::fromStdString(runtimeError.what());
         }
-        cameraPtr_ -> releaseLock();
+        cameraPtr_->releaseLock();
 
         if (error)
         {
@@ -244,7 +247,7 @@ namespace bias {
             errorEmitted = true;
             return;
 
-        } 
+        }
 
         acquireLock();
         stopped_ = false;
@@ -275,7 +278,7 @@ namespace bias {
         //    }
         //}
         //// -------------------------------------------------------------------------------
-                
+
         // Grab images from camera until the done signal is given
         while (!done)
         {
@@ -290,7 +293,7 @@ namespace bias {
                 istriggered = true;
             }
 
-            
+
 
 #if isVidInput
 
@@ -301,7 +304,7 @@ namespace bias {
                 // this has been skipped because of latency issues for the first few frames from camera
                 //Also to get accurate trigger timestamps after first frames have been skipped.
                 // maybe redundant??
-               if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
+                if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
 
                     nidaq_task_->acquireLock();
                     if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {
@@ -343,7 +346,7 @@ namespace bias {
                             end_delay = gettime_->getPCtime();
                     }
                     delayFrames.pop();
-                    
+
                 }*/
 
             }
@@ -415,7 +418,7 @@ namespace bias {
 
                     continue;
                 }
-            
+
 
                 //std::cout << "dt grabber: " << timeStampDbl - timeStampDblLast << std::endl;
 
@@ -459,7 +462,7 @@ namespace bias {
                 // Test Configuration
                 //------------------------------------------------------------------------
                 if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
-                    
+
                     if (nidaq_task_ != nullptr) {
 
                         if (cameraNumber_ == 0)
@@ -496,12 +499,10 @@ namespace bias {
                 if (nidaq_task_ != nullptr && frameCount == 0) {
 
                     acquireLock();
-                    //pc_time = gettime_->getPCtime();
-                    //fstfrmtStampRef_ = static_cast<uint64_t>(pc_time);
                     //fstfrmtStampRef_ = nidaq_task_->cam_trigger[frameCount];
 #if isVidInput
                     fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
-                 
+
 #else
                     fstfrmtStampRef_ = static_cast<uInt32>(nidaq_task_->cam_trigger[frameCount]);
 #endif
@@ -523,18 +524,14 @@ namespace bias {
                 newImageQueuePtr_->releaseLock();
 
                 end_process = gettime_->getPCtime();
+                delay = end_process - start_process;
                 frameCount++;
 
-                //if (cameraNumber_ == 1 && (frameCount - 1) < 20)
-                    //printf("fstfrm: %llu, start frame: %llu \n ", fstfrmtStampRef_, start_process);
-                    //printf("FrameCount: %d, start: %llu, end process: %llu, process time:  %llu, delay process: %d \n",
-                    //    frameCount - 1,start_delay-start_process, end_process, end_process - start_process, delay_us);
-                
                 ///---------------------------------------------------------------
 #if DEBUG
-                if (testConfigEnabled_ && ((frameCount-1) < testConfig_->numFrames)) {
+                if (testConfigEnabled_ && ((frameCount - 1) < testConfig_->numFrames)) {
 
-                    if (!testConfig_->imagegrab_prefix.empty()){ 
+                    if (!testConfig_->imagegrab_prefix.empty()) {
 
                         if (!testConfig_->f2f_prefix.empty()) {
 
@@ -557,7 +554,39 @@ namespace bias {
                                 ts_pc[frameCount - 1] = start_process;
                             }
                         }
+#endif
 
+#if isVidInput
+
+                        // to speed up frame read to keep up with delay
+                        if (delay > avgFramewaitThres) {
+                            num_delayFrames = delay / avgFrameTime_us;
+
+                            for (int j = 0; j < num_delayFrames; j++)
+                            {
+                                stampImg.image = vid_images[frameCount].image;
+                                nidaq_task_->acquireLock();
+                                nidaq_task_->getCamtrig(frameCount);
+                                nidaq_task_->releaseLock();
+
+                                stampImg.timeStamp = timeStampDbl;
+                                stampImg.timeStampInit = timeStampInit;
+                                stampImg.timeStampVal = timeStamp;
+                                stampImg.frameCount = frameCount;
+                                stampImg.dtEstimate = dtEstimate;
+                                stampImg.fstfrmtStampRef = fstfrmtStampRef_;
+
+                                newImageQueuePtr_->acquireLock();
+                                newImageQueuePtr_->push(stampImg);
+                                newImageQueuePtr_->signalNotEmpty();
+                                newImageQueuePtr_->releaseLock();
+
+                                frameCount++;
+                            }
+                        }
+#endif
+
+#if DEBUG
                         if (frameCount == testConfig_->numFrames
                             && !testConfig_->f2f_prefix.empty())
                         {
@@ -568,9 +597,9 @@ namespace bias {
                                 + testConfig_->imagegrab_prefix
                                 + "_" + testConfig_->f2f_prefix + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
-                            
+
                             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_pc);
-                            
+
                         }
 
                         if (frameCount == testConfig_->numFrames
@@ -625,12 +654,13 @@ namespace bias {
                                 + testConfig_->imagegrab_prefix
                                 + "_" + "start_time" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
-                            
+
                             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_process);
                             gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_pc);
 
-
                         }
+#endif
+
 #if isVidInput
                         if (frameCount == testConfig_->numFrames) {
 
@@ -640,24 +670,25 @@ namespace bias {
                                 + testConfig_->imagegrab_prefix
                                 + "_" + "skipped_frames" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
-                            
+
                             gettime_->write_time_1d<int>(filename, testConfig_->numFrames, delay_view);
-                           
+
                         }
 #endif
                     }
-                }
-#endif
-            }else {
 
-                if (errorCountEnabled_ ) 
+                }
+            }
+            else {
+
+                if (errorCountEnabled_)
                 {
                     errorCount++;
                     if (errorCount > MAX_ERROR_COUNT)
                     {
                         errorId = ERROR_CAPTURE_MAX_ERROR_COUNT;
                         errorMsg = QString("Maximum allowed capture error count reached");
-                        if (!errorEmitted) 
+                        if (!errorEmitted)
                         {
                             emit captureError(errorId, errorMsg);
                             errorEmitted = true;
@@ -673,10 +704,10 @@ namespace bias {
 //        vid_obj_->releaseCapObject(cap_obj_);
 //#else
         error = false;
-        cameraPtr_ -> acquireLock();
+        cameraPtr_->acquireLock();
         try
         {
-            cameraPtr_ -> stopCapture();
+            cameraPtr_->stopCapture();
         }
         catch (RuntimeError &runtimeError)
         {
@@ -684,19 +715,19 @@ namespace bias {
             errorId = runtimeError.id();
             errorMsg = QString::fromStdString(runtimeError.what());
         }
-        cameraPtr_ -> releaseLock();
+        cameraPtr_->releaseLock();
 
         if ((error) && (!errorEmitted))
-        { 
+        {
             emit stopCaptureError(errorId, errorMsg);
         }
-//#endif
+        //#endif
     }
 
     double ImageGrabber::convertTimeStampToDouble(TimeStamp curr, TimeStamp init)
     {
-        double timeStampDbl = 0; 
-        timeStampDbl  = double(curr.seconds);
+        double timeStampDbl = 0;
+        timeStampDbl = double(curr.seconds);
         timeStampDbl -= double(init.seconds);
         timeStampDbl += (1.0e-6)*double(curr.microSeconds);
         timeStampDbl -= (1.0e-6)*double(init.microSeconds);
@@ -725,7 +756,8 @@ namespace bias {
         {
             return 1;
 
-        }else {
+        }
+        else {
 
             return 0;
 
@@ -746,10 +778,10 @@ namespace bias {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
                 partnerCameraNumber_ = getPartnerCameraNumber();
-               
+
                 if ((cameraWindowPtr->getCameraNumber()) == partnerCameraNumber_)
                 {
-                   
+
                     partnerCameraWindowPtr = cameraWindowPtr;
                 }
             }
@@ -777,7 +809,7 @@ namespace bias {
         StampedImage stampedImg;
         vid_images.resize(nframes_);
         int count = 0;
-   
+
         while (isOpen_ && (count < nframes_))
         {
 
@@ -785,13 +817,13 @@ namespace bias {
             stampedImg.frameCount = count;
             vid_images[count] = stampedImg;
             count = count + 1;
-           
+
         }
         vid_obj_->releaseCapObject(cap_obj_);
-        
+
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtr->vidFinsihed_reading = 1;
-        
+
         if (cameraNumber_ == 1)
         {
             emit cameraWindowPtr->finished_vidReading();
@@ -811,7 +843,7 @@ namespace bias {
         //grabbing frames. The camera trigger signal is on and the both threads
         // want to read frames at the same time. 
         readVidFrames();
-  
+
     }
    
 } // namespace bias
