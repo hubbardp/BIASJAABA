@@ -5,7 +5,7 @@
 #include <string>
 
 #define DEBUG 0 
-#define compute 0
+#define compute 1
 #define isVidInput 1
 
 //
@@ -183,7 +183,7 @@ namespace bias {
             
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
-                //threadPoolPtr_->start(processScoresPtr_side);
+                threadPoolPtr_->start(processScoresPtr_side);
             }
            
             // this thread adds latency to process frames
@@ -392,7 +392,7 @@ namespace bias {
 
 #if isVidInput
         frameGrabAvgTime = 2500;
-        max_jaaba_compute_time = 500;
+        max_jaaba_compute_time = 2000;
         wait_thres = 2000;
         avgwait_time = 0;
         
@@ -468,7 +468,7 @@ namespace bias {
                         {
 
                             side_skip_count++;
-                            //ts_nidaqThres[processScoresPtr_side->processedFrameCount] = side_skip_count;
+                            ts_nidaqThres[processScoresPtr_side->processedFrameCount] = side_skip_count;
                             processScoresPtr_side->processedFrameCount++;                           
 
                         }else { assert(processScoresPtr_side->processedFrameCount==frameCount_); }
@@ -477,7 +477,7 @@ namespace bias {
                         {
 
                             front_skip_count++;
-                            //ts_nidaqThres[processScoresPtr_front->processedFrameCount] = front_skip_count;
+                            ts_nidaqThres[processScoresPtr_front->processedFrameCount] = front_skip_count;
                             processScoresPtr_front->processedFrameCount++;
 
                         }else{  assert(processScoresPtr_front->processedFrameCount==frameCount_);}
@@ -695,7 +695,7 @@ namespace bias {
                 
                 ts_gpuprocess_time[frameCount_] = (end_process - start_process);
                 ts_pc[frameCount_] = start_process;
-                ts_nidaqThres[frameCount_] = curTime_vid - expTime_vid;
+                //ts_nidaqThres[frameCount_] = curTime_vid - expTime_vid;
                 
             }
 

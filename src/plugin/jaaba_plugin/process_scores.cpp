@@ -139,10 +139,10 @@ namespace bias {
 
         bool done = false;
         int64_t time_now, score_ts;
-        float wait_threshold = 2000;
+        float wait_threshold = 3000;
         unsigned int numFrames = 2498;
-        uint64_t ts_last_score = 0, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial1.csv";
+        uint64_t ts_last_score = INT_MAX, cur_time=0;
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial3.csv";
     
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -186,6 +186,14 @@ namespace bias {
                 
                 if (sideScoreQueue.empty() && frontScoreQueue.empty()) {
 
+                    /*cur_time = getTime_->getPCtime();
+                    if ((cur_time - ts_last_score) > wait_threshold) {
+                        scoreCount++;
+                        ts_last_score = cur_time;
+                    }
+                    else {
+                        continue;
+                    }*/
                     continue;
 
                 }
@@ -197,27 +205,29 @@ namespace bias {
                     releaseLock();
 
                     // not sure if this condition occurs
-                    /*if (scoreCount < predScore.frameCount)
+                    if (scoreCount < predScore.frameCount)
                     {
                         if (predScore.frameCount > predScorePartner.frameCount)
                             frontScoreQueue.pop_front();
                         scoreCount++;
                         continue;
-                    }*/
+                    }
+
+                    // not sure if this condition occurs
+                    if (scoreCount < predScorePartner.frameCount)
+                    {
+                        if (predScorePartner.frameCount > predScore.frameCount)
+                            sideScoreQueue.pop_front();
+                        scoreCount++;
+                        continue;
+                    }
                    
                     if (scoreCount > predScore.frameCount) {
                         sideScoreQueue.pop_front();
                         continue;
                     }
 
-                    // not sure if this condition occurs
-                    /*if (scoreCount < predScorePartner.frameCount)
-                    {
-                        if (predScorePartner.frameCount > predScore.frameCount)
-                            sideScoreQueue.pop_front();
-                        scoreCount++;
-                        continue;
-                    }*/
+
                     if (scoreCount > predScorePartner.frameCount){
                         frontScoreQueue.pop_front();
                         continue;
@@ -237,12 +247,12 @@ namespace bias {
                         classifier->finalscore.view = 3;
                         classifier->finalscore.score_ts = predScore.score_ts;
                         time_now = getTime_->getPCtime();
-                        //write_score("classifierscr.csv", scoreCount, classifier->finalscore);
+                        
                         scores[scoreCount - 1].score[0] = classifier->finalscore.score[0];
                         scores[scoreCount-1].frameCount = predScore.frameCount;
                         scores[scoreCount-1].view = 3;
                         scores[scoreCount-1].score_ts = time_now;
-
+                        //write_score("classifierscr.csv", scoreCount, scores[scoreCount-1]);
                         scoreCount++;
                         
                     }
@@ -279,7 +289,6 @@ namespace bias {
 
                     // check if this is not already a processed scoreCount
                     if (scoreCount > predScore.frameCount) {
-
                         sideScoreQueue.pop_front();
                         continue;
                     }
@@ -346,6 +355,7 @@ namespace bias {
                         
                     }
                 }
+                std::cout << scoreCount << std::endl;
                 
             }
 
@@ -353,9 +363,11 @@ namespace bias {
             done = stopped_;
             releaseLock();
 
-            if (scoreCount == (numFrames-3)) {
+            if (scoreCount >= (numFrames)) {
 
-                write_score_final(filename, numFrames-3, scores);
+                std::cout << "Writing ...." << std::endl;
+                write_score_final(filename,numFrames, scores);
+                std::cout << "Written ...." << std::endl;
                 break;
             }
 

@@ -240,7 +240,7 @@ int main(int argc, char* argv[]) {
     
     bool isTriggered = false;
     // Finish if there are no cameras
-    while (imageCnt < 1) {
+    while (imageCnt < numFrames) {
 
         //std::cout << "frameCount: " << imageCnt <<  std::endl;
         isSkipFront = 0;
@@ -326,7 +326,7 @@ int main(int argc, char* argv[]) {
 
         }else if (hasValidInput && !vidFile->isEmpty()) {
             
-            feat_side->getvid_frame(vid_sde);
+            //feat_side->getvid_frame(vid_sde);
             /*if (!skipframes_view1.empty())
             {
                 if (imageCnt < skipframes_view1.top())
@@ -353,9 +353,9 @@ int main(int argc, char* argv[]) {
                 if (imageCnt == (skipframes_view1.top() + frameSkip))
                     skipframes_view1.pop();
             }*/
-            feat_side->process_vidFrame(imageCnt);
+            //feat_side->process_vidFrame(imageCnt);
 
-            //feat_frt->getvid_frame(vid_frt);
+            feat_frt->getvid_frame(vid_frt);
             /*if (!skipframes_view2.empty())
             {
                 if ((imageCnt < skipframes_view2.top()))
@@ -380,7 +380,7 @@ int main(int argc, char* argv[]) {
                 if (imageCnt == (skipframes_view2.top() + frameSkip))
                     skipframes_view2.pop();
             }*/
-            //feat_frt->process_vidFrame(imageCnt);
+            feat_frt->process_vidFrame(imageCnt);
 
         }else {
 
@@ -405,7 +405,7 @@ int main(int argc, char* argv[]) {
 
         if (imageCnt > 0) {
 
-            if (!isSkipSide)
+            /*if (!isSkipSide)
             {
                 classifier->boost_classify_side(classifier->score_side,
                     feat_side->hog_out, feat_side->hof_out,
@@ -415,7 +415,7 @@ int main(int argc, char* argv[]) {
             } else {
 
                 classifier->score_side = {0.0,0.0,0.0,0.0,0.0,0.0};
-            }
+            }*/
 
             if (!isSkipFront)
             {
@@ -431,7 +431,9 @@ int main(int argc, char* argv[]) {
             }
 
             classifier->addScores(classifier->score_side, classifier->score_front);
-            classifier->write_score("./lift_classifier_noskip.csv", imageCnt, classifier->score[0]);
+            classifier->write_score("./lift_classifier_front.csv", imageCnt, classifier->score[0]);
+            
+            
         }
 
         
@@ -444,11 +446,11 @@ int main(int argc, char* argv[]) {
     }
 
     
-    /*createh5("./hoghof", ".h5", 2498,
+    createh5("./hoghof", ".h5", 2498,
                  2400, 2400,
                  1600, 1600,
                  feat_side->hog_out, feat_frt->hog_out,
-                 feat_side->hof_out, feat_frt->hof_out);*/
+                 feat_side->hof_out, feat_frt->hof_out);
 
     if (numCameras != 0) {
 

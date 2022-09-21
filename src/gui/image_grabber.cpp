@@ -255,6 +255,7 @@ namespace bias {
 
 # if isVidInput
         initializeVid();
+        //stampImg.image = vid_images[frameCount].image;
 #endif
 
         //// TEMPORARY - for mouse grab detector testing
@@ -293,8 +294,6 @@ namespace bias {
                 istriggered = true;
             }
 
-
-
 #if isVidInput
 
             if (frameCount < testConfig_->numFrames)
@@ -324,7 +323,7 @@ namespace bias {
                 }
 
                 start_process = gettime_->getPCtime();
-                stampImg.image = vid_images[frameCount].image;//vid_obj_->getImage(cap_obj_);
+                stampImg.image = vid_images[frameCount].image;  //vid_obj_->getImage(cap_obj_);
 
                 /*start_delay = gettime_->getPCtime();
                 end_delay = start_delay;
@@ -349,8 +348,11 @@ namespace bias {
 
                 }*/
 
+            }else{
+                QThread::yieldCurrentThread();
+                std::cout << "Yield Thread"  << std::endl;
+                continue;
             }
-            //end_process = gettime_->getPCtime();
 
 #else
             // Grab an image
@@ -370,13 +372,14 @@ namespace bias {
                 error = true;
             }
             cameraPtr_->releaseLock();
-#endif
+
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty())
             {
                 QThread::yieldCurrentThread();
                 continue;
             }
+#endif
 
             // Push image into new image queue
             if (!error)
