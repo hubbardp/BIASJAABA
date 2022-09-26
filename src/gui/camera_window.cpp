@@ -558,7 +558,7 @@ namespace bias
         }
         
         threadPoolPtr_ -> start(imageGrabberPtr_);
-        threadPoolPtr_ -> start(imageDispatcherPtr_);
+        //threadPoolPtr_ -> start(imageDispatcherPtr_);
         
         // ------------------------------------------------------------------------------
 
@@ -696,6 +696,11 @@ namespace bias
             {
                 currentPluginPtr -> stop();
             }
+        }
+
+        if (nidaq_task != nullptr)
+        {
+            nidaq_task->Cleanup();
         }
 
         // Update data GUI information
@@ -2094,6 +2099,7 @@ namespace bias
             
             // start the nidaq tasks
             nidaq_task ->start_trigger_signal();
+
         }
 
     }
@@ -2102,7 +2108,7 @@ namespace bias
     {
         //std::cout << "update display on timer" << std::endl;
 
-        if (capturing_) 
+        /*if (capturing_) 
         {
             bool haveNewImage = false;
             cv::Mat cameraImageMat;
@@ -2198,7 +2204,7 @@ namespace bias
             }
         }
        
-        updateAllImageLabels();
+        updateAllImageLabels();*/
     }
 
 
@@ -3496,7 +3502,7 @@ namespace bias
                 );
 
         unsigned int imageDisplayDt = int(1000.0/imageDisplayFreq_);
-        imageDisplayTimerPtr_ -> start(imageDisplayDt);
+        //imageDisplayTimerPtr_ -> start(imageDisplayDt);
     }
 
 
@@ -7959,6 +7965,7 @@ namespace bias
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
 
             // start the nidaq tasks
+            //nidaq_task->startTasks();
             nidaq_task->start_trigger_signal();
         }
 

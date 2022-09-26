@@ -127,6 +127,7 @@ namespace bias {
             {
                 ts_process.resize(testConfig_->numFrames, 0);
                 ts_pc.resize(testConfig_->numFrames, 0);
+                queue_size.resize(testConfig_->numFrames, 0);
             }
         }
 #endif
@@ -190,7 +191,9 @@ namespace bias {
         double timeStampDbl = 0.0;
         double timeStampDblLast = 0.0;
 
-        int64_t pc_time, start_process, end_process, time_now;
+        int64_t pc_time=0, start_process=0, end_process=0, time_now=0;
+        int64_t start_read_delay=0, end_read_delay = 0;
+        int64_t start_push_delay = 0, end_push_delay = 0;
         int64_t start_delay, end_delay = 0;
         StampedImage stampImg;
 
@@ -199,7 +202,7 @@ namespace bias {
 #if isVidInput
         int wait_threshold = 3000;
         int64_t delay_us = 0;
-        int delay_framethres = 5000;
+        int delay_framethres = 2500;
 
         int delay = 0, avgFrameTime_us = 2500, avgFramewaitThres=3500;
         int num_delayFrames = 0;
@@ -295,7 +298,7 @@ namespace bias {
             }
 
 #if isVidInput
-
+            //start_process = gettime_->getPCtime();
             if (frameCount < testConfig_->numFrames)
             {
 
@@ -322,16 +325,22 @@ namespace bias {
                     continue;
                 }
 
-                start_process = gettime_->getPCtime();
-                stampImg.image = vid_images[frameCount].image;  //vid_obj_->getImage(cap_obj_);
+                /*if (nidaq_task_ != nullptr) {
+                    nidaq_task_->acquireLock();
+                    nidaq_task_->getCamtrig(frameCount);
+                    nidaq_task_->releaseLock();
+                }*/
 
-                /*start_delay = gettime_->getPCtime();
+                start_read_delay = gettime_->getPCtime();
+                start_delay = gettime_->getPCtime();
                 end_delay = start_delay;
-                delay_us = (wait_threshold - (start_delay - start_process));
-                while ((end_delay - start_delay) < delay_us)
+                while ((end_delay - start_delay) < avgFrameTime_us)
                 {
                     end_delay = gettime_->getPCtime();
-                }*/
+                }
+
+                //start_process = gettime_->getPCtime();
+                stampImg.image = vid_images[frameCount].image;  //vid_obj_->getImage(cap_obj_);
 
                 // Introduce delay              
                 /*if (frameCount == delayFrames.top()) {
@@ -350,10 +359,10 @@ namespace bias {
 
             }else{
                 QThread::yieldCurrentThread();
-                std::cout << "Yield Thread"  << std::endl;
                 continue;
             }
-
+            end_read_delay = gettime_->getPCtime();
+            //delay = end_process - start_process;
 #else
             // Grab an image
             cameraPtr_->acquireLock();
@@ -435,7 +444,7 @@ namespace bias {
                     emit startTimer();
                 }
                 //
-#endif
+
                 //// TEMPORARY - for mouse grab detector testing
                 //// --------------------------------------------------------------------- 
                 //cv::Mat fileMat;
@@ -464,6 +473,7 @@ namespace bias {
                 // ---------------------------------------------------------------------
                 // Test Configuration
                 //------------------------------------------------------------------------
+                start_process = gettime_->getPCtime();
                 if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
 
                     if (nidaq_task_ != nullptr) {
@@ -498,23 +508,24 @@ namespace bias {
 #endif
                     }
                 }
+#endif
+                //end_process = gettime_->getPCtime();
+                //delay = end_process - start_process;
                 //-------------------------------------------------------------------------
                 if (nidaq_task_ != nullptr && frameCount == 0) {
 
-                    acquireLock();
-                    //fstfrmtStampRef_ = nidaq_task_->cam_trigger[frameCount];
 #if isVidInput
                     fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
 
 #else
                     fstfrmtStampRef_ = static_cast<uInt32>(nidaq_task_->cam_trigger[frameCount]);
 #endif
-                    releaseLock();
 
                 }
 
+                start_push_delay = gettime_->getPCtime();
                 // Set image data timestamp, framecount and frame interval estimate
-                stampImg.timeStamp = timeStampDbl;
+                /*stampImg.timeStamp = timeStampDbl;
                 stampImg.timeStampInit = timeStampInit;
                 stampImg.timeStampVal = timeStamp;
                 stampImg.frameCount = frameCount;
@@ -524,11 +535,12 @@ namespace bias {
                 newImageQueuePtr_->acquireLock();
                 newImageQueuePtr_->push(stampImg);
                 newImageQueuePtr_->signalNotEmpty();
-                newImageQueuePtr_->releaseLock();
+                newImageQueuePtr_->releaseLock();*/
 
-                end_process = gettime_->getPCtime();
-                delay = end_process - start_process;
+                end_push_delay = gettime_->getPCtime();
+                //delay = end_process - start_process;
                 frameCount++;
+                
 
                 ///---------------------------------------------------------------
 #if DEBUG
@@ -553,8 +565,9 @@ namespace bias {
                         if (process_frame_time_)
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
-                                ts_process[frameCount - 1] = end_process - start_process;
-                                ts_pc[frameCount - 1] = start_process;
+                                ts_process[frameCount - 1] = end_push_delay - start_read_delay;
+                                ts_pc[frameCount - 1] = end_read_delay - start_read_delay;
+                                queue_size[frameCount - 1] = end_push_delay - start_push_delay;
                             }
                         }
 #endif
@@ -562,7 +575,7 @@ namespace bias {
 #if isVidInput
 
                         // to speed up frame read to keep up with delay
-                        if (delay > avgFramewaitThres) {
+                        /*if (delay > avgFramewaitThres) {
                             num_delayFrames = delay / avgFrameTime_us;
 
                             for (int j = 0; j < num_delayFrames; j++)
@@ -586,7 +599,7 @@ namespace bias {
 
                                 frameCount++;
                             }
-                        }
+                        }*/
 #endif
 
 #if DEBUG
@@ -658,9 +671,18 @@ namespace bias {
                                 + "_" + "start_time" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
+
+                            string filename2 = testConfig_->dir_list[0] + "/"
+                                + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                                + testConfig_->imagegrab_prefix
+                                + "_" + "push_time" + "cam"
+                                + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+                            std::cout << "Writing" << std::endl;
                             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_process);
                             gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_pc);
-
+                            gettime_->write_time_1d<unsigned int>(filename2, testConfig_->numFrames, queue_size);
+                            std::cout << "Written" << std::endl;
                         }
 #endif
 
@@ -826,6 +848,7 @@ namespace bias {
 
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtr->vidFinsihed_reading = 1;
+        std::cout << "finished reading" << std::endl;
 
         if (cameraNumber_ == 1)
         {
