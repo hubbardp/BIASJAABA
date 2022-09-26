@@ -104,7 +104,7 @@ namespace bias {
 
         gettime_ = gettime;
 #if DEBUG
-        process_frame_time_ = 1;
+        process_frame_time_ = 0;
         if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()) {
 
             if (!testConfig_->f2f_prefix.empty()) {
@@ -190,6 +190,8 @@ namespace bias {
 
         double timeStampDbl = 0.0;
         double timeStampDblLast = 0.0;
+
+        uInt32 read_start=0, read_end=0;
 
         int64_t pc_time=0, start_process=0, end_process=0, time_now=0;
         int64_t start_read_delay=0, end_read_delay = 0;
@@ -325,19 +327,20 @@ namespace bias {
                     continue;
                 }
 
-                /*if (nidaq_task_ != nullptr) {
+                if (nidaq_task_ != nullptr) {
+                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_start, NULL));
                     nidaq_task_->acquireLock();
                     nidaq_task_->getCamtrig(frameCount);
                     nidaq_task_->releaseLock();
-                }*/
+                }
 
-                start_read_delay = gettime_->getPCtime();
+                /*start_read_delay = gettime_->getPCtime();
                 start_delay = gettime_->getPCtime();
                 end_delay = start_delay;
                 while ((end_delay - start_delay) < avgFrameTime_us)
                 {
                     end_delay = gettime_->getPCtime();
-                }
+                }*/
 
                 //start_process = gettime_->getPCtime();
                 stampImg.image = vid_images[frameCount].image;  //vid_obj_->getImage(cap_obj_);
@@ -361,8 +364,12 @@ namespace bias {
                 QThread::yieldCurrentThread();
                 continue;
             }
-            end_read_delay = gettime_->getPCtime();
+            //end_read_delay = gettime_->getPCtime();
             //delay = end_process - start_process;
+
+            if (nidaq_task_ != nullptr) {
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_end, NULL));
+            }
 #else
             // Grab an image
             cameraPtr_->acquireLock();
@@ -443,6 +450,7 @@ namespace bias {
                     timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
                     emit startTimer();
                 }
+#endif
                 //
 
                 //// TEMPORARY - for mouse grab detector testing
@@ -473,11 +481,11 @@ namespace bias {
                 // ---------------------------------------------------------------------
                 // Test Configuration
                 //------------------------------------------------------------------------
-                start_process = gettime_->getPCtime();
+                //start_process = gettime_->getPCtime();
                 if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
 
                     if (nidaq_task_ != nullptr) {
-
+#if !isVidInput
                         if (cameraNumber_ == 0)
                         {
                             nidaq_task_->acquireLock();
@@ -493,6 +501,7 @@ namespace bias {
                             nidaq_task_->getCamtrig(frameCount);
                             nidaq_task_->releaseLock();
                         }
+#endif
 
 #if DEBUG
                         if (!testConfig_->imagegrab_prefix.empty() && !testConfig_->nidaq_prefix.empty())
@@ -501,14 +510,14 @@ namespace bias {
                             nidaq_task_->acquireLock();
                             ts_nidaq[frameCount][0] = nidaq_task_->cam_trigger[frameCount];
                             nidaq_task_->releaseLock();
-                            ts_nidaq[frameCount][1] = read_ondemand_;
+                            ts_nidaq[frameCount][1] = (read_end- read_start);
 
                             //spikeDetected(frameCount);
                         }
 #endif
                     }
                 }
-#endif
+
                 //end_process = gettime_->getPCtime();
                 //delay = end_process - start_process;
                 //-------------------------------------------------------------------------
@@ -523,7 +532,7 @@ namespace bias {
 
                 }
 
-                start_push_delay = gettime_->getPCtime();
+                //start_push_delay = gettime_->getPCtime();
                 // Set image data timestamp, framecount and frame interval estimate
                 /*stampImg.timeStamp = timeStampDbl;
                 stampImg.timeStampInit = timeStampInit;
@@ -537,7 +546,7 @@ namespace bias {
                 newImageQueuePtr_->signalNotEmpty();
                 newImageQueuePtr_->releaseLock();*/
 
-                end_push_delay = gettime_->getPCtime();
+                //end_push_delay = gettime_->getPCtime();
                 //delay = end_process - start_process;
                 frameCount++;
                 
@@ -848,7 +857,6 @@ namespace bias {
 
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtr->vidFinsihed_reading = 1;
-        std::cout << "finished reading" << std::endl;
 
         if (cameraNumber_ == 1)
         {
