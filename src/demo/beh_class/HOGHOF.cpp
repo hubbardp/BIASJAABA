@@ -160,15 +160,43 @@ void HOGHOF::initialize_vidparams(bias::videoBackend& vid, Params& param_file) {
 
 }
 
+void HOGHOF::deInitialize_vidparams(bias::videoBackend& vid) {
+
+    if(capture.isOpened())
+        vid.releaseCapObject(capture);
+
+}
+
 
 void HOGHOF::getvid_frame(bias::videoBackend& vid) {
 
     cv::Mat cur_frame;
-    cur_frame = vid.getImage(capture);
+    if (capture.isOpened())
+        cur_frame = vid.getImage(capture);
+    else
+        assert("Video capture is closed");
     //convert to Float and normalize
     vid.convertImagetoFloat(cur_frame);
     img.buf = cur_frame.ptr<float>(0);
 
+}
+
+void HOGHOF::readVidFrames(bias::videoBackend& vid) {
+
+    int num_frames = vid.getNumFrames(capture);
+    int height = vid.getImageHeight(capture);
+    int width = vid.getImageWidth(capture);
+    
+    vid_frames.resize(num_frames,cv::Mat());
+
+    for (int frm_id = 0; frm_id < num_frames; frm_id++)
+    {
+        if (capture.isOpened())
+            vid_frames[frm_id] = vid.getImage(capture);
+        else
+            assert("Video capture is closed");
+    }
+    std::cout << "Finished reading movie" << std::endl;
 }
 
 void HOGHOF::initializeHOGHOF(int& width, int& height, 

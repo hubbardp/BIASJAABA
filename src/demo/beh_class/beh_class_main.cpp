@@ -14,6 +14,8 @@
 #include <QThreadPool>
 #include <QQueue>
 
+#define isSkip 0
+
 typedef std::pair<vector<float>, int> PredData;
 
 //using namespace bias;
@@ -59,7 +61,7 @@ bool destroySpinImage(spinImage &hImage)
 }
 
 template <typename T>
-void write_time(std::string filename, int framenum, std::vector<T> timeVec)
+void write_time(std::string filename, int framenum, std::vector<T>& timeVec)
 {
 
     std::ofstream x_out;
@@ -135,6 +137,9 @@ int main(int argc, char* argv[]) {
     QString classifier_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/multiclassifier.mat";
 #endif    
 
+    // Output dir filepath
+    string output_dir = "C:/Users/27rut/BIAS/misc/spinnaker_toy_example/bias_demo_example/cam2sys_lat/single_camera/";
+
     //HOG HOF Params
     HOGHOF* feat_side = new HOGHOF();
     HOGHOF* feat_frt = new HOGHOF();
@@ -156,9 +161,16 @@ int main(int argc, char* argv[]) {
     //QPointer<QThreadPool> threadPoolPtr_ = new QThreadPool();
 
     // performance benchmark variables.
-    std::vector<float> timeStamps(numFrames, 0.0);
-    bias::NIDAQUtils* nidaq_task;
+    std::vector<float> ts_nidaq(numFrames, 0.0);
+    std::vector<int64_t>ts_pc(numFrames, 0);
+    std::vector<int64_t>delay(10, 0);
+    bias::NIDAQUtils* nidaq_task; // nidaq timing object 
+    bias::GetTime* gettime; // pc time stamps object
     uInt32 read_buffer, read_ondemand;
+    uInt32 read_start=0, read_end=0;
+    int64_t start_delay = 0, end_delay = 0 ,avgWaitThres = 2500;
+    int64_t start_process=0, end_process=0;
+    bool isNIDAQ= 1;
 
     // Print out current library version
     spinLibraryVersion hLibraryVersion;
@@ -196,6 +208,18 @@ int main(int argc, char* argv[]) {
         return err;
     }
 
+    if (isNIDAQ) {
+
+        nidaq_task = new NIDAQUtils();
+        if (nidaq_task != nullptr) {
+
+            nidaq_task->startTasks();
+        }
+    }
+    else {
+        gettime = new bias::GetTime();
+
+    }
     // initialize camera, nidaq, HOGHOF params 
     if (numCameras != 0) {
 
@@ -205,13 +229,6 @@ int main(int argc, char* argv[]) {
         spin_handle.initialize_camera(hCamera, hNodeMap, hNodeMapTLDevice);
 
         //hNOdeMap.GetNode();
-        nidaq_task = new NIDAQUtils();
-
-        if (nidaq_task != nullptr) {
-
-            nidaq_task->startTasks();
-            
-        }
 
         feat_side->initialize_params(param_sde);
         feat_frt->initialize_params(param_frt);               
@@ -226,10 +243,15 @@ int main(int argc, char* argv[]) {
 
     }else if (!vidFile->isEmpty()) {
 
+        // Vid params
         std::cout << "Video File Input" << std::endl;
         hasValidInput = true;
         feat_side->initialize_vidparams(vid_sde, param_sde);
         feat_frt->initialize_vidparams(vid_frt , param_frt);
+        feat_side->readVidFrames(vid_sde);
+        feat_frt->readVidFrames(vid_frt);
+        
+        //HOGHOF params
         int height = feat_side->HOFParams.input.h;
         int width = feat_side->HOFParams.input.w;
         feat_side->initializeHOGHOF(width, height, numFrames);
@@ -302,11 +324,11 @@ int main(int argc, char* argv[]) {
             feat_side->img.buf = image.data;
             
             //printf("%d\n", imageCnt);
-            if (nidaq_task != nullptr) {
+            if (nidaq_task != nullptr && isNIDAQ) {
 
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                timeStamps[imageCnt] = static_cast<float>((read_ondemand - read_buffer)*0.02);
+                ts_nidaq[imageCnt] = static_cast<float>((read_ondemand - read_buffer)*0.02);
 
             }
           
@@ -324,27 +346,73 @@ int main(int argc, char* argv[]) {
             }
             //std::cout << imageCnt << std::endl;
 
-        }else if (hasValidInput && !vidFile->isEmpty()) {
+        }
+        else if (hasValidInput && !vidFile->isEmpty()) {
+
+            cv::Mat curImg_side;
+            cv::Mat curImg_frt;
+
+            if (isNIDAQ && !isTriggered && nidaq_task != nullptr) {
+
+                printf("Started NIDAQ Trigger Signal");
+                nidaq_task->start_trigger_signal();
+                isTriggered = true;
+            }
+
+            if (isNIDAQ)
+            {
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_start, NULL));
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+               
+            }
+            else {
+                start_process = gettime->getPCtime();
+            }
+
+            curImg_side = feat_side->vid_frames[imageCnt];
+            curImg_frt = feat_frt->vid_frames[imageCnt];
+
+            if(!isNIDAQ){
+
+                /*start_delay = gettime->getPCtime();
+                end_delay = start_delay;
+                while ((end_delay - start_delay) < avgWaitThres)
+                {
+                    end_delay = gettime->getPCtime();
+                }*/
+                write_time<int64_t>("./temp.csv", 1, delay);
+                write_time<int64_t>("./temp1.csv", 1, delay);
+                end_process = gettime->getPCtime();
+            }
+            else if (isNIDAQ) {
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_end, NULL));
+            }
             
-            //feat_side->getvid_frame(vid_sde);
-            /*if (!skipframes_view1.empty())
+            if (isNIDAQ)
+                ts_nidaq[imageCnt] = (read_end - read_start)*0.02;
+            else
+                ts_pc[imageCnt] = end_process - start_process;
+#if isSkip            
+            if (!skipframes_view1.empty())
             {
                 if (imageCnt < skipframes_view1.top())
                 {
 
                     feat_side->process_vidFrame(imageCnt);
 
-                } else if (imageCnt >= (skipframes_view1.top() + frameSkip)) {
+                }
+                else if (imageCnt >= (skipframes_view1.top() + frameSkip)) {
 
                     feat_side->setLastInput();
                     feat_side->process_vidFrame(imageCnt);
 
-                } else {
+                }
+                else {
 
                     std::cout << "Framecount side view skipped: " << imageCnt << std::endl;
                     isSkipSide = 1;
                     classifier->score_side = { 0.0,0.0,0.0,0.0,0.0,0.0 };
-                    classifier->score_front = {0.0,0.0,0.0,0.0,0.0,0.0};
+                    classifier->score_front = { 0.0,0.0,0.0,0.0,0.0,0.0 };
                     classifier->addScores(classifier->score_side, classifier->score_front);
                     classifier->write_score("./lift_classifier.csv", imageCnt, classifier->score[0]);
                     imageCnt++;
@@ -352,11 +420,14 @@ int main(int argc, char* argv[]) {
                 }
                 if (imageCnt == (skipframes_view1.top() + frameSkip))
                     skipframes_view1.pop();
-            }*/
+            }
+#else            
+            //feat_side->getvid_frame(vid_sde);
             //feat_side->process_vidFrame(imageCnt);
+#endif      
 
-            feat_frt->getvid_frame(vid_frt);
-            /*if (!skipframes_view2.empty())
+#if isSkip
+            if (!skipframes_view2.empty())
             {
                 if ((imageCnt < skipframes_view2.top()))
                 {
@@ -379,8 +450,11 @@ int main(int argc, char* argv[]) {
                 }
                 if (imageCnt == (skipframes_view2.top() + frameSkip))
                     skipframes_view2.pop();
-            }*/
-            feat_frt->process_vidFrame(imageCnt);
+            }
+#else
+            //feat_frt->getvid_frame(vid_frt);
+            //feat_frt->process_vidFrame(imageCnt);
+#endif
 
         }else {
 
@@ -403,9 +477,9 @@ int main(int argc, char* argv[]) {
 
         }
 
-        if (imageCnt > 0) {
+        /*if (imageCnt > 0) {
 
-            /*if (!isSkipSide)
+            if (!isSkipSide)
             {
                 classifier->boost_classify_side(classifier->score_side,
                     feat_side->hog_out, feat_side->hof_out,
@@ -415,7 +489,7 @@ int main(int argc, char* argv[]) {
             } else {
 
                 classifier->score_side = {0.0,0.0,0.0,0.0,0.0,0.0};
-            }*/
+            }
 
             if (!isSkipFront)
             {
@@ -431,26 +505,27 @@ int main(int argc, char* argv[]) {
             }
 
             classifier->addScores(classifier->score_side, classifier->score_front);
-            classifier->write_score("./lift_classifier_front.csv", imageCnt, classifier->score[0]);
-            
-            
-        }
+            //classifier->write_score("./lift_classifier_front.csv", imageCnt, classifier->score[0]);
+                   
+        }*/
 
         
-        /*if (imageCnt == numFrames-1){
-            write_time<float>("./cam2sys_latency.csv", numFrames, timeStamps);
+        if (isNIDAQ && imageCnt == numFrames-1){
+            write_time<float>(output_dir + "/cam2sys_latency.csv", numFrames, ts_nidaq);
             break;
-        }*/
+        }
+        else if(imageCnt == numFrames - 1) {
+            write_time<int64_t>(output_dir + "/ts_pc_latency_vidread_wfopen.csv", numFrames, ts_pc);
+        }
         imageCnt++;
 
     }
 
-    
-    createh5("./hoghof", ".h5", 2498,
+    /*createh5("./hoghof", ".h5", 2498,
                  2400, 2400,
                  1600, 1600,
                  feat_side->hog_out, feat_frt->hog_out,
-                 feat_side->hof_out, feat_frt->hof_out);
+                 feat_side->hof_out, feat_frt->hof_out);*/
 
     if (numCameras != 0) {
 
@@ -470,7 +545,12 @@ int main(int argc, char* argv[]) {
             errReturn = err;
         }
 
-        nidaq_task->Cleanup();
+        if (isNIDAQ) {
+            nidaq_task->Cleanup();
+        }
+        else {
+            delete gettime;
+        }
     }
         
     

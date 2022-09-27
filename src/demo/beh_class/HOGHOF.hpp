@@ -77,6 +77,9 @@ class HOGHOF {
     std::vector<float> hog_out;
     std::vector<float> hof_out;
 
+    // frame read buffer
+    std::vector<cv::Mat>vid_frames;
+
     void initialize_params(Params& param_file);
     void initialize_vidparams(bias::videoBackend& vid, Params& param_file);
     void initializeHOGHOF(int& width, int& height, int& num_frames);
@@ -89,6 +92,8 @@ class HOGHOF {
     void process_camFrame();
     void genFeatures(QString vidname, QString& CropFile);
     void setLastInput();
+    void readVidFrames(bias::videoBackend& vid);
+    void deInitialize_vidparams(bias::videoBackend& vid);
 
     void copytoHOGParams(QJsonObject& obj);
     void copytoHOFParams(QJsonObject& obj);
