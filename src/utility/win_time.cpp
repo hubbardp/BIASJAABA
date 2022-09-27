@@ -78,6 +78,7 @@ namespace bias
 
             // returns a time_point object 
             // https://www.cplusplus.com/reference/chrono/time_point/ 
+            //https://stackoverflow.com/questions/46740302/where-does-the-time-from-stdchronosystem-clocknow-time-since-epoch-c   
             auto usec = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());     
 
             return static_cast<uint64_t>(usec.count());
