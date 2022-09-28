@@ -20,7 +20,7 @@ namespace bias
 
     ImageDispatcher::ImageDispatcher(QObject *parent) : QObject(parent)
     {
-        initialize(false,false,0,NULL,NULL,NULL,NULL,NULL,false,"",NULL,NULL,NULL);
+        initialize(false,false,0,NULL,NULL,NULL,NULL,false,"",NULL,NULL,NULL);
     }
 
     ImageDispatcher::ImageDispatcher( 
@@ -31,7 +31,6 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-            std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr,
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
@@ -48,7 +47,6 @@ namespace bias
                 newImageQueuePtr,
                 logImageQueuePtr,
                 pluginImageQueuePtr,
-                skippedFramesPluginPtr,
                 testConfigEnabled,
                 trial_info,
                 testConfig,
@@ -65,7 +63,6 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-            std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr,
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
@@ -76,7 +73,6 @@ namespace bias
         newImageQueuePtr_ = newImageQueuePtr;
         logImageQueuePtr_ = logImageQueuePtr;
         pluginImageQueuePtr_ = pluginImageQueuePtr;
-        skippedFramesPluginPtr_ = skippedFramesPluginPtr;
 
         if (
                 (newImageQueuePtr_     != NULL) && 

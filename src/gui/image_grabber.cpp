@@ -327,14 +327,9 @@ namespace bias {
                     continue;
                 }
 
-                /*if (nidaq_task_ != nullptr) {
-                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_start, NULL));
-                    nidaq_task_->acquireLock();
-                    nidaq_task_->getCamtrig(frameCount);
-                    nidaq_task_->releaseLock();
-                }*/
-
                 start_read_delay = gettime_->getPCtime();
+
+                //to simulate wait without nidaq trigger 
                 /*start_delay = gettime_->getPCtime();
                 end_delay = start_delay;
                 while ((end_delay - start_delay) < avgFrameTime_us)
@@ -342,10 +337,11 @@ namespace bias {
                     end_delay = gettime_->getPCtime();
                 }*/
 
-                string filename = "./temp.csv";
-                string filename1 = "./temp.csv";
+                //function to simulate some past time before reading frame 
+                /*string filename = "./temp.csv";
+                string filename1 = "./temp1.csv";
                 gettime_->write_time_1d<int>(filename, 1, delay_view);
-                gettime_->write_time_1d<int>(filename1, 1, delay_view);
+                gettime_->write_time_1d<int>(filename1, 1, delay_view);*/
 
                 stampImg.image = vid_images[frameCount].image;
 

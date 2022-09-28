@@ -516,7 +516,6 @@ namespace bias
                 newImageQueuePtr_,
                 logImageQueuePtr_,
                 pluginImageQueuePtr_,
-                skippedFramesPluginPtr_,
                 loadTestConfigEnabled,
                 trial_num,
                 testConfig,
@@ -3012,8 +3011,6 @@ namespace bias
 
         // Temporary - plugin development
         // -------------------------------------------------------------------------------        
-        if(frametoframeLatencyVal)
-            gettime_ = std::make_shared<Lockable<GetTime>>();
 
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
