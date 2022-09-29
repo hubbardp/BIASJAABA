@@ -80,9 +80,9 @@ namespace bias {
         trial_num = trial_info;
         fstfrmtStampRef_ = 0.0;
 
-        //QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
-        //cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
-        //partnerCameraWindowPtr = getPartnerCameraWindowPtr();
+        QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
+        cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
+        partnerCameraWindowPtr = getPartnerCameraWindowPtr();
 
         if ((cameraPtr_ != NULL) && (newImageQueuePtr_ != NULL))
         {
@@ -126,8 +126,8 @@ namespace bias {
             if (process_frame_time_)
             {
                 ts_process.resize(testConfig_->numFrames, 0);
-                //ts_pc.resize(testConfig_->numFrames, 0);
-                //queue_size.resize(testConfig_->numFrames, 0);
+                ts_pc.resize(testConfig_->numFrames, 0);
+                queue_size.resize(testConfig_->numFrames, 0);
             }
         }
 #endif
@@ -151,7 +151,6 @@ namespace bias {
         if (cap_obj_.isOpened())
             isOpen_ = 1;
 
-        //vid_obj_->setBufferSize(cap_obj_);
     }
 
     void ImageGrabber::stop()
@@ -170,7 +169,7 @@ namespace bias {
         errorCountEnabled_ = false;
     }
 
-    /*void ImageGrabber::run()
+    void ImageGrabber::run()
     {
 
         bool isFirst = true;
@@ -218,7 +217,7 @@ namespace bias {
         // Set thread priority to "time critical" and assign cpu affinity
         QThread *thisThread = QThread::currentThread();
         thisThread->setPriority(QThread::TimeCriticalPriority);
-        ThreadAffinityService::assignThreadAffinity(true, cameraNumber_);
+        //ThreadAffinityService::assignThreadAffinity(true, cameraNumber_);
 
         trig = cameraPtr_->getTriggerType();
 
@@ -327,21 +326,26 @@ namespace bias {
                     continue;
                 }
 
-                start_read_delay = gettime_->getPCtime();
+                start_process = gettime_->getPCtime();
 
                 //to simulate wait without nidaq trigger 
-                start_delay = gettime_->getPCtime();
-                end_delay = start_delay;
-                while ((end_delay - start_delay) < avgFrameTime_us)
+                /*start_process = gettime_->getPCtime();
+                end_process = start_process;
+                while ((end_process - start_process) < avgFrameTime_us)
                 {
-                    end_delay = gettime_->getPCtime();
-                }
+                    end_process = gettime_->getPCtime();
+                }*/
 
                 //function to simulate some past time before reading frame 
                 //string filename = "./temp.csv";
                 //string filename1 = "./temp1.csv";
                 //gettime_->write_time_1d<int>(filename, 1, delay_view);
                 //gettime_->write_time_1d<int>(filename1, 1, delay_view);
+
+                // wait for nidaq trigger signal
+                nidaq_task_->acquireLock();
+                nidaq_task_->getCamtrig(frameCount);
+                nidaq_task_->releaseLock();
 
                 stampImg.image = vid_images[frameCount].image;
 
@@ -364,7 +368,7 @@ namespace bias {
                 QThread::yieldCurrentThread();
                 continue;
             }
-            end_read_delay = gettime_->getPCtime();
+           
             
 #else
             // Grab an image
@@ -481,6 +485,7 @@ namespace bias {
                 if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
 
                     if (nidaq_task_ != nullptr) {
+
 #if !isVidInput
                         if (cameraNumber_ == 0)
                         {
@@ -506,16 +511,14 @@ namespace bias {
                             nidaq_task_->acquireLock();
                             ts_nidaq[frameCount][0] = nidaq_task_->cam_trigger[frameCount];
                             nidaq_task_->releaseLock();
-                            ts_nidaq[frameCount][1] = (read_end- read_start);
+                            ts_nidaq[frameCount][1] = read_ondemand_;
 
-                            //spikeDetected(frameCount);
                         }
 #endif
                     }
                 }
 
-                //end_process = gettime_->getPCtime();
-                //delay = end_process - start_process;
+               
                 //-------------------------------------------------------------------------
                 if (nidaq_task_ != nullptr && frameCount == 0) {
 
@@ -543,6 +546,7 @@ namespace bias {
                 newImageQueuePtr_->releaseLock();
 
                 //end_push_delay = gettime_->getPCtime();
+                end_process = gettime_->getPCtime();
                 //delay = end_process - start_process;
                 frameCount++;
                 
@@ -570,7 +574,7 @@ namespace bias {
                         if (process_frame_time_)
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
-                                ts_process[frameCount - 1] = end_push_delay - start_read_delay;
+                                ts_process[frameCount - 1] = end_process - start_process;
                                 ts_pc[frameCount - 1] = end_read_delay - start_read_delay;
                                 queue_size[frameCount - 1] = end_push_delay - start_push_delay;
                             }
@@ -750,9 +754,9 @@ namespace bias {
             emit stopCaptureError(errorId, errorMsg);
         }
         //#endif
-    }*/
+    }
 
-    void ImageGrabber::run()
+    /*void ImageGrabber::run()
     {
         unsigned long frameCount = 0;
         cv::Mat img;
@@ -805,7 +809,7 @@ namespace bias {
    
         }
 
-    }
+    }*/
 
     double ImageGrabber::convertTimeStampToDouble(TimeStamp curr, TimeStamp init)
     {
@@ -830,7 +834,7 @@ namespace bias {
 
     }*/
 
-    /*unsigned int ImageGrabber::getPartnerCameraNumber()
+    unsigned int ImageGrabber::getPartnerCameraNumber()
     {
         // Returns camera number of partner camera. For this example
         // we just use camera 0 and 1. In another setting you might do
@@ -865,7 +869,7 @@ namespace bias {
             }
         }
         return partnerCameraWindowPtr;
-    }*/
+    }
 
     void ImageGrabber::initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames)
 
@@ -899,13 +903,13 @@ namespace bias {
         }
         vid_obj_->releaseCapObject(cap_obj_);
 
-        /*QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
+        QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtr->vidFinsihed_reading = 1;
 
         if (cameraNumber_ == 1)
         {
             emit cameraWindowPtr->finished_vidReading();
-        }*/
+        }
     }
 
     void ImageGrabber::initializeVid()
