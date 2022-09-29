@@ -131,9 +131,9 @@ namespace bias
             void readVidFrames();
             //void spikeDetected(unsigned int frameCount);
 
-            unsigned int getPartnerCameraNumber();
-            QPointer<CameraWindow> getCameraWindow();
-            QPointer<CameraWindow> getPartnerCameraWindowPtr();
+            //unsigned int getPartnerCameraNumber();
+            //QPointer<CameraWindow> getCameraWindow();
+            //QPointer<CameraWindow> getPartnerCameraWindowPtr();
     };
 
 

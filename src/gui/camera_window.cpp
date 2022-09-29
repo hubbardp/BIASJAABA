@@ -354,7 +354,7 @@ namespace bias
         unsigned int versionNumber = 0;
 
         //set nidaq pointer for cam 1
-        if (cameraNumber_ == 1)
+        /*if (cameraNumber_ == 1)
         {
             QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
             if (partnerCameraWindowPtr->nidaq_task != nullptr) {
@@ -368,7 +368,7 @@ namespace bias
             if (nidaq_task != nullptr)
                 printf(" nidaq set - %d\n", cameraNumber_);
             
-        }
+        }*/
 
         if (logging_)
         {
@@ -2070,12 +2070,12 @@ namespace bias
 
     void CameraWindow::startCaptureDurationTimer()
     {
-        if (actionTimerEnabledPtr_ -> isChecked())
+        /*if (actionTimerEnabledPtr_ -> isChecked())
         {
             captureStartDateTime_ = QDateTime::currentDateTime();
             captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
             captureDurationTimerPtr_ -> start();
-        }
+        }*/
     }
 
 
@@ -2094,12 +2094,12 @@ namespace bias
     void CameraWindow::startTriggerButtonClicked()
     {
 
-        if (nidaq_task != nullptr && cameraNumber_ == 0) {
+        /*if (nidaq_task != nullptr && cameraNumber_ == 0) {
             
             // start the nidaq tasks
             nidaq_task ->start_trigger_signal();
 
-        }
+        }*/
 
     }
 
@@ -2472,7 +2472,7 @@ namespace bias
             QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];           
 
-            if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
+            /*if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
                                
                 nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();              
 
@@ -2485,7 +2485,7 @@ namespace bias
 
                 startTriggerButtonPtr_->setEnabled(true);
                               
-            }
+            }*/
                         
         }
         else
@@ -3013,13 +3013,13 @@ namespace bias
         // -------------------------------------------------------------------------------        
 
         pluginHandlerPtr_  = new PluginHandler(this);
-        pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
-        pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
+        //pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
+        //pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_,
                                                                                  loadTestConfigEnabled, trial_num,
                                                                                  testConfig,this);
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, 
-                                                               this);
+        //pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, 
+        //                                                       this);
 
         //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
@@ -3029,8 +3029,8 @@ namespace bias
         setupCameraMenu();
         setupLoggingMenu();
         setupDisplayMenu();
-        setupImageDisplayTimer();
-        setupCaptureDurationTimer();
+        //setupImageDisplayTimer();
+        //setupCaptureDurationTimer();
         setupImageLabels();
         setupPluginMenu();
         setupShortTrialTestMenu();

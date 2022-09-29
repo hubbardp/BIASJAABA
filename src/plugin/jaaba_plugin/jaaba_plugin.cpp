@@ -1210,7 +1210,7 @@ namespace bias {
         processScoresPtr_side = new ProcessScores(this, mesPass, gettime_);   
         processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);  
 
-        visplots = new VisPlots(livePlotPtr,this);
+        //visplots = new VisPlots(livePlotPtr,this);
  
         updateWidgetsOnLoad();
         setupHOGHOF();
