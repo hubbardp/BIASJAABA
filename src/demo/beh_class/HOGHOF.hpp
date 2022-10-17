@@ -94,6 +94,7 @@ class HOGHOF {
     void setLastInput();
     void readVidFrames(bias::videoBackend& vid);
     void deInitialize_vidparams(bias::videoBackend& vid);
+    void preprocess_vidFrame(bias::videoBackend& vid, cv::Mat& cur_Img);
 
     void copytoHOGParams(QJsonObject& obj);
     void copytoHOFParams(QJsonObject& obj);

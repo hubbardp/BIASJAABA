@@ -181,6 +181,13 @@ void HOGHOF::getvid_frame(bias::videoBackend& vid) {
 
 }
 
+void HOGHOF::preprocess_vidFrame(bias::videoBackend& vid, cv::Mat& cur_Img)
+{
+    cv::Mat greyImg;
+    vid.convertImagetoFloat(cur_Img);
+    img.buf = cur_Img.ptr<float>(0);
+}
+
 void HOGHOF::readVidFrames(bias::videoBackend& vid) {
 
     int num_frames = vid.getNumFrames(capture);
@@ -227,7 +234,6 @@ void HOGHOF::initializeHOGHOF(int& width, int& height,
 
 void  HOGHOF::process_vidFrame(int frame) {
 
-    
     size_t hog_outputbytes = HOGOutputByteCount(hog_ctx);
     size_t hof_outputbytes = HOFOutputByteCount(hof_ctx);
 

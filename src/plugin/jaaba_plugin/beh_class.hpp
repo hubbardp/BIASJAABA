@@ -28,12 +28,13 @@ namespace bias {
 
       public:
 
-	    int nframes = 2498; // nframe prediction
+	    int nframes = 100000; // nframe prediction
         int nbeh_present; // number of beh classification
         bool isClassifierPathSet = false;
         PredData predScoreSide;
         PredData predScoreFront;
         PredData finalscore;
+
 
         QString classifier_file;
 	    std::vector<boost_classifier> model = std::vector<boost_classifier>(6);
@@ -63,8 +64,8 @@ namespace bias {
                        std::vector<float>& scr_front);
 
         //test 
-        vector<PredData> predscore_side = vector<PredData>(10000);
-        vector<PredData> predscore_front = vector<PredData>(10000);
+        vector<PredData> predscore_side = vector<PredData>(nframes);
+        vector<PredData> predscore_front = vector<PredData>(nframes);
 	
     };
 

@@ -129,6 +129,7 @@ namespace bias
             void initializeVidBackend();
             void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
             void readVidFrames();
+            void add_delay(int delay_us);
             //void spikeDetected(unsigned int frameCount);
 
             unsigned int getPartnerCameraNumber();

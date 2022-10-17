@@ -3,6 +3,7 @@
 #include "spin_utils.hpp"
 #include "utils_spin.hpp"
 #include "SpinnakerC.h"
+#include "cuda_runtime_api.h"
 
 //#include <vector>
 //#include "timer.h"
@@ -254,6 +255,7 @@ int main(int argc, char* argv[]) {
         //HOGHOF params
         int height = feat_side->HOFParams.input.h;
         int width = feat_side->HOFParams.input.w;
+
         feat_side->initializeHOGHOF(width, height, numFrames);
         feat_frt->initializeHOGHOF(width, height, numFrames);
         classifier->translate_mat2C(&feat_side->hog_shape, &feat_frt->hog_shape);
@@ -351,6 +353,8 @@ int main(int argc, char* argv[]) {
 
             cv::Mat curImg_side;
             cv::Mat curImg_frt;
+            cv::Mat greySide;
+            cv::Mat greyFront;
 
             if (isNIDAQ && !isTriggered && nidaq_task != nullptr) {
 
@@ -370,7 +374,9 @@ int main(int argc, char* argv[]) {
             }
 
             curImg_side = feat_side->vid_frames[imageCnt];
+            feat_side->preprocess_vidFrame(vid_sde, curImg_side);
             curImg_frt = feat_frt->vid_frames[imageCnt];
+            feat_frt->preprocess_vidFrame(vid_frt, curImg_frt);
 
             if(!isNIDAQ){
 
@@ -388,10 +394,12 @@ int main(int argc, char* argv[]) {
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_end, NULL));
             }
             
-            if (isNIDAQ)
+            /*if (isNIDAQ)
                 ts_nidaq[imageCnt] = (read_end - read_start)*0.02;
             else
-                ts_pc[imageCnt] = end_process - start_process;
+                ts_pc[imageCnt] = end_process - start_process;*/
+
+            start_process = gettime->getPCtime();
 #if isSkip            
             if (!skipframes_view1.empty())
             {
@@ -423,7 +431,7 @@ int main(int argc, char* argv[]) {
             }
 #else            
             //feat_side->getvid_frame(vid_sde);
-            //feat_side->process_vidFrame(imageCnt);
+            feat_side->process_vidFrame(imageCnt);
 #endif      
 
 #if isSkip
@@ -453,8 +461,9 @@ int main(int argc, char* argv[]) {
             }
 #else
             //feat_frt->getvid_frame(vid_frt);
-            //feat_frt->process_vidFrame(imageCnt);
+            feat_frt->process_vidFrame(imageCnt);
 #endif
+
 
         }else {
 
@@ -477,7 +486,7 @@ int main(int argc, char* argv[]) {
 
         }
 
-        /*if (imageCnt > 0) {
+        if (imageCnt > 0) {
 
             if (!isSkipSide)
             {
@@ -505,17 +514,19 @@ int main(int argc, char* argv[]) {
             }
 
             classifier->addScores(classifier->score_side, classifier->score_front);
-            //classifier->write_score("./lift_classifier_front.csv", imageCnt, classifier->score[0]);
-                   
-        }*/
+            classifier->write_score(output_dir + "/lift_classifier_front.csv", imageCnt, classifier->score[0]);
 
+        }
+        end_process = gettime->getPCtime();
+        ts_pc[imageCnt] = end_process - start_process;
         
-        if (isNIDAQ && imageCnt == numFrames-1){
+        /*if (isNIDAQ && imageCnt == numFrames-1){
             write_time<float>(output_dir + "/cam2sys_latency.csv", numFrames, ts_nidaq);
             break;
-        }
-        else if(imageCnt == numFrames - 1) {
-            write_time<int64_t>(output_dir + "/ts_pc_latency_vidread_wfopen.csv", numFrames, ts_pc);
+        }*/
+        if(imageCnt == numFrames - 1) {
+            write_time<int64_t>(output_dir + "/ts_pc_latency_vidread_processjaaba_.csv", numFrames, ts_pc);
+            break;
         }
         imageCnt++;
 

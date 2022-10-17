@@ -29,6 +29,7 @@ namespace bias
         std::vector<uInt32>cam_trigger;
         uInt32 read_buffer;
         uInt32 read_ondemand;
+        bool start_tasks = false;
         bool istrig = false;
 
         TaskHandle taskHandle_fout = 0;

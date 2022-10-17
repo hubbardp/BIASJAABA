@@ -370,6 +370,37 @@ namespace bias
             
         }
 
+        imageGrabberPtr_ = new ImageGrabber(
+            cameraNumber_,
+            cameraPtr_,
+            newImageQueuePtr_,
+            threadPoolPtr_,
+            loadTestConfigEnabled,
+            trial_num,
+            testConfig,
+            gettime_,
+            nidaq_task,
+            this
+        );
+        imageGrabberPtr_->setAutoDelete(false);
+
+        imageDispatcherPtr_ = new ImageDispatcher(
+            logging_,
+            isPluginEnabled(),
+            cameraNumber_,
+            cameraPtr_,
+            newImageQueuePtr_,
+            logImageQueuePtr_,
+            pluginImageQueuePtr_,
+            loadTestConfigEnabled,
+            trial_num,
+            testConfig,
+            gettime_,
+            nidaq_task,
+            this
+        );
+        imageDispatcherPtr_->setAutoDelete(false);
+
         if (logging_)
         {
             // Create video writer based on video file format type
@@ -494,7 +525,7 @@ namespace bias
 
         // Set image Grabber and image dispatcher
         // ------------------------------------------------------------------------------
-        imageGrabberPtr_ = new ImageGrabber(
+        /*imageGrabberPtr_ = new ImageGrabber(
                 cameraNumber_, 
                 cameraPtr_, 
                 newImageQueuePtr_,
@@ -523,7 +554,7 @@ namespace bias
                 nidaq_task,
                 this
                 );
-        imageDispatcherPtr_ -> setAutoDelete(false);
+        imageDispatcherPtr_ -> setAutoDelete(false);*/
 
         connect(
                 imageGrabberPtr_, 
@@ -555,6 +586,7 @@ namespace bias
                     SLOT(startCaptureDurationTimer())
                    );
         }
+        
         
         threadPoolPtr_ -> start(imageGrabberPtr_);
         threadPoolPtr_ -> start(imageDispatcherPtr_);
@@ -2117,6 +2149,7 @@ namespace bias
 
             if (imageDispatcherPtr_ -> tryLock(IMAGE_DISPLAY_CAMERA_LOCK_TRY_DT))
             {
+               
                 cameraImageMat = imageDispatcherPtr_ -> getImage();
                 framesPerSec_ = imageDispatcherPtr_ -> getFPS();
                 timeStamp_ = imageDispatcherPtr_ -> getTimeStamp();
@@ -2184,6 +2217,7 @@ namespace bias
             {
                 if (pluginHandlerPtr_ -> tryLock(IMAGE_DISPLAY_CAMERA_LOCK_TRY_DT))
                 {
+                    std::cout << "Plugin Preview is called***********" << std::endl;
                     pluginImageMat = pluginHandlerPtr_ -> getImage();
                     pluginHandlerPtr_ -> releaseLock();
                     haveNewImage = true;
@@ -3011,6 +3045,7 @@ namespace bias
 
         // Temporary - plugin development
         // -------------------------------------------------------------------------------        
+        gettime_ = make_shared<Lockable<GetTime>>();
 
         pluginHandlerPtr_  = new PluginHandler(this);
         //pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
@@ -3018,8 +3053,8 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_,
                                                                                  loadTestConfigEnabled, trial_num,
                                                                                  testConfig,this);
-        //pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, 
-        //                                                       this);
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, 
+                                                               this);
 
         //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();

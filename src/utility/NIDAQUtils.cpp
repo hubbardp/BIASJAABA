@@ -1,4 +1,5 @@
 #include "NIDAQUtils.hpp"
+#include <stdio.h>
 
 namespace bias {
 
@@ -11,6 +12,7 @@ namespace bias {
 
     void NIDAQUtils::initialize()
     {
+        istrig = false;
         // initialize data buffers 
         for (int i = 0; i < 1000; ++i) {
 
@@ -74,6 +76,9 @@ namespace bias {
     void NIDAQUtils::start_trigger_signal() {
 
         DAQmxErrChk(DAQmxStartTask(taskHandle_start_signal));
+        istrig = true;
+        printf("istrig******************************\n ", istrig); 
+
     }
 
     void NIDAQUtils::Cleanup() {
