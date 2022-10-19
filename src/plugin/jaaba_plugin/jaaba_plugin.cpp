@@ -6,7 +6,7 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 0
+#define isVidInput 1
 
 //
 //Camera 1 should always be front view
@@ -183,7 +183,7 @@ namespace bias {
             
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
-                //threadPoolPtr_->start(processScoresPtr_side);
+                threadPoolPtr_->start(processScoresPtr_side);
             }
            
             // this thread adds latency to process frames
@@ -199,14 +199,11 @@ namespace bias {
     void JaabaPlugin::gpuInit()
     {
 
-        //cv::Mat dummyImage;
-
         // intitialize the HOGHOF context for the GPU memory
         getFormatSettings();
         std::cout << image_height << " " << image_width << std::endl;
-        //dummyImage.zeros(image_width, image_height, 0.0);
 
-        if (!processScoresPtr_side->isHOGHOFInitialised)
+        if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
         {
             
             if (!(processScoresPtr_side->HOGHOF_frame.isNull()))
@@ -214,24 +211,21 @@ namespace bias {
                 
                 if (nDevices_ >= 2)
                 {
-
+                    std::cout << "Gpu initialized side******" << std::endl;
                     cudaSetDevice(0);
                     processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
-                    //processScoresPtr_side->HOGHOF_frame->img.buf = dummyImage.ptr<float>(0);
-                    //processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, 0);
-                    //emit(passFrontHOFShape(processScoresPtr_side->HOGHOF_frame));
 
                 }else {
 
                     processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
-                    //emit(passSideHOGShape(processScoresPtr_front->HOGHOF_partner));
+
                 }
 
             }
             
         }
 
-        if (!processScoresPtr_front->isHOGHOFInitialised)
+        if (isSender() && !processScoresPtr_front->isHOGHOFInitialised)
         {
             
             if (!(processScoresPtr_front->HOGHOF_partner.isNull()))
@@ -239,10 +233,9 @@ namespace bias {
                 
                 if (nDevices_ >= 2)
                 {
+                    std::cout << "Gpu initialized front******" << std::endl;
                     cudaSetDevice(1);
                     processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
-                    //processScoresPtr_front->HOGHOF_partner->img.buf = dummyImage.ptr<float>(0);
-                    //processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, 0);
                 
                 }else {
 
@@ -400,18 +393,7 @@ namespace bias {
         frameGrabAvgTime = 2500;
         wait_thres = static_cast<float>(4000/1000);
 #endif
-        
-        if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
-        {
-            gpuInit();
-        }
 
-        if (isSender() && !processScoresPtr_front->isHOGHOFInitialised)
-        {
-            gpuInit();
-        }
-
-       
         if (pluginImageQueuePtr_ != nullptr)
         {
             
@@ -420,13 +402,14 @@ namespace bias {
 
             if (pluginImageQueuePtr_->empty())
             {
+                //QThread::yieldCurrentThread();
                 pluginImageQueuePtr_->releaseLock();
                 return;
             }
             
             if (!(pluginImageQueuePtr_->empty()))
             {
-                
+                start_process = gettime_->getPCtime();
                 StampedImage stampedImage0 = pluginImageQueuePtr_->front();
                 pluginImageQueuePtr_->pop();
                 pluginImageQueuePtr_->releaseLock();
@@ -446,12 +429,10 @@ namespace bias {
                     }
 
                 }
-
 #endif
                 if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
                 {
-                    emit(passFrontHOFShape(processScoresPtr_side->HOGHOF_frame));
-                    
+                    emit(passFrontHOFShape(processScoresPtr_side->HOGHOF_frame));                  
                 }
 
                 if (isSender() && processScoresPtr_front->processedFrameCount == 0)
@@ -459,7 +440,6 @@ namespace bias {
                     emit(passSideHOGShape(processScoresPtr_front->HOGHOF_partner));
                 }
 
-                start_process = gettime_->getPCtime();
                 if (fstfrmtStampRef_ != 0)
                 {
 #if isVidInput     
@@ -597,7 +577,7 @@ namespace bias {
                                         processScoresPtr_front->classifier->predscore_front[processScoresPtr_front->processedFrameCount]
                                            = processScoresPtr_front->classifier->predScoreFront;
                                         emit(passScore(processScoresPtr_front->classifier->predScoreFront));
-
+                                        
                                         
                                     }
 #endif
@@ -1282,7 +1262,7 @@ namespace bias {
         );
 
         connect(
-            detectButtonPtr_,
+            gpuButtonPtr_,
             SIGNAL(clicked()),
             this,
             SLOT(detectClicked())
@@ -1294,19 +1274,12 @@ namespace bias {
             this,
             SLOT(saveClicked())
         );
-  
  
         connect(
             tabWidgetPtr,
             SIGNAL(currentChanged(currentIndex())),
             this,
             SLOT(setCurrentIndex(currentIndex()))
-        );
-
-        connect(gpuInitButtonPtr_,
-            SIGNAL(clicked()),
-            this,
-            SLOT(gpuInit())
         );
 
         /*connect(
@@ -1469,7 +1442,7 @@ namespace bias {
 
             sideRadioButtonPtr_ -> setChecked(false);
             frontRadioButtonPtr_ -> setChecked(false);
-            detectButtonPtr_ -> setEnabled(false);
+            gpuButtonPtr_ -> setEnabled(false);
             saveButtonPtr_-> setEnabled(false);
             save = false;        
 
@@ -1523,8 +1496,10 @@ namespace bias {
         
         if(!detectStarted) 
         {
-            detectButtonPtr_->setText(QString("Stop Detecting"));
+            gpuButtonPtr_->setText(QString("Stop Detecting"));
             detectStarted = true;
+
+            gpuInit();
 
             if (processScoresPtr_side != nullptr)
             {
@@ -1537,9 +1512,9 @@ namespace bias {
 
                     if(isSender())
                     {
-                        processScoresPtr_front -> acquireLock();
-                        processScoresPtr_front -> isFront = true;
-                        processScoresPtr_front -> releaseLock();
+                        processScoresPtr_front->acquireLock();
+                        processScoresPtr_front->isFront = true;
+                        processScoresPtr_front->releaseLock();
                     }
 
                     if (isReceiver())
@@ -1567,7 +1542,7 @@ namespace bias {
 
         } else {
 
-            detectButtonPtr_->setText(QString("Detect"));
+            gpuButtonPtr_->setText(QString("Detect"));
             detectStarted = false;
              
             if (processScoresPtr_side != nullptr)
@@ -1612,7 +1587,7 @@ namespace bias {
                 && processScoresPtr_side->classifier->isClassifierPathSet)
             {
 
-                detectButtonPtr_->setEnabled(true);
+                gpuButtonPtr_->setEnabled(true);
                 saveButtonPtr_->setEnabled(true);
 
             }
@@ -1623,7 +1598,7 @@ namespace bias {
                 && processScoresPtr_front->HOGHOF_partner->isHOFPathSet)
             {
                
-                detectButtonPtr_->setEnabled(true);
+                gpuButtonPtr_->setEnabled(true);
                 saveButtonPtr_->setEnabled(true);
                 
             }
@@ -1634,7 +1609,7 @@ namespace bias {
                 && processScoresPtr_side->HOGHOF_frame->isHOFPathSet)
             {
                 
-                detectButtonPtr_->setEnabled(true);
+                gpuButtonPtr_->setEnabled(true);
                 saveButtonPtr_->setEnabled(true);
 
             }

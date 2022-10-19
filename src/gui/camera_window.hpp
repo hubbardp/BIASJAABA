@@ -71,6 +71,7 @@ namespace bias
             RtnStatus disconnectCamera(bool showErrorDlg=true);
             RtnStatus startImageCapture(bool showErrorDlg=true);
             RtnStatus stopImageCapture(bool showErrorDlg=true);
+            
 
             RtnStatus setConfigurationFromJson(
                     QByteArray jsonConfig, 
@@ -257,6 +258,7 @@ namespace bias
             //Test private slots
             void enableFrametoFrame();
             void autostartTriggerSignal();
+            RtnStatus startThreads(bool showErrorDlg = true);
 
         private:
 

@@ -74,7 +74,7 @@ namespace bias
                                     std::shared_ptr<TestConfig> testConfig);
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
                                        std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
-          
+            virtual void gpuInit();
         protected:
  
             bool laserOn; 
@@ -178,7 +178,7 @@ namespace bias
             void detectEnabled();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
             void getFormatSettings();
-            //void gpuInit();
+            //void gpuInit(); 
 
             void processFrame_inPlugin();
             void processFramePass();
@@ -214,8 +214,7 @@ namespace bias
             //void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);
             void setSkipFrameProcess(unsigned int frameCount);
-            void gpuInit();
-
+            //void gpuInit();
     };
 
 }

@@ -226,12 +226,13 @@ namespace bias
         updateCameraInfoMessage();
         updateAllMenus();
 
-        rtnStatus.success = true;
-        rtnStatus.message = QString("");
-
 #if isVidInput
         connectVidFrames();
 #endif
+
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+
         return rtnStatus; 
     }
 
@@ -510,18 +511,16 @@ namespace bias
             pluginHandlerPtr_ -> setImageQueue(pluginImageQueuePtr_, skippedFramesPluginPtr_);
             
             pluginHandlerPtr_ -> setPlugin(currentPluginPtr);
-            pluginHandlerPtr_ -> setAutoDelete(false);
-
+            
 
             if (currentPluginPtr->getName() == "signalSlotDemo" || 
                 currentPluginPtr->getName() == "jaabaPlugin")
                 currentPluginPtr->setupNIDAQ(nidaq_task, loadTestConfigEnabled,
                                              trial_num, testConfig);
+            pluginHandlerPtr_->setAutoDelete(false);
 
-            threadPoolPtr_ -> start(pluginHandlerPtr_);
         } 
         actionPluginsEnabledPtr_ -> setEnabled(false);
- 
 
         // Set image Grabber and image dispatcher
         // ------------------------------------------------------------------------------
@@ -586,21 +585,56 @@ namespace bias
                     SLOT(startCaptureDurationTimer())
                    );
         }
-        
-        
+
+
+#if !isVidInput        
         threadPoolPtr_ -> start(imageGrabberPtr_);
         threadPoolPtr_ -> start(imageDispatcherPtr_);
-        
-        // ------------------------------------------------------------------------------
+        if(isPluginEnabled())
+            threadPoolPtr_-> start(pluginHandlerPtr_);
 
         // Set Capture start and stop time
         captureStartDateTime_ = QDateTime::currentDateTime();
         captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
 
         // Update GUI widget for capturing state
-        startButtonPtr_ -> setText(QString("Stop"));
-        connectButtonPtr_ -> setEnabled(false);
-        pluginActionGroupPtr_ -> setEnabled(false);
+        startButtonPtr_->setText(QString("Stop"));
+        connectButtonPtr_->setEnabled(false);
+        pluginActionGroupPtr_->setEnabled(false);
+        updateStatusLabel();
+
+        capturing_ = true;
+        showCameraLockFailMsg_ = false;
+
+        updateAllMenus();
+
+        showCameraLockFailMsg_ = true;
+
+        emit imageCaptureStarted(logging_);
+#endif        
+        // ------------------------------------------------------------------------------
+
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+    }
+
+    RtnStatus CameraWindow::startThreads(bool showErrorDlg)
+    {
+        RtnStatus rtnStatus;   
+        threadPoolPtr_ -> start(imageGrabberPtr_);
+        threadPoolPtr_ -> start(imageDispatcherPtr_);
+        if (isPluginEnabled())
+            threadPoolPtr_->start(pluginHandlerPtr_);
+        
+        // Set Capture start and stop time
+        captureStartDateTime_ = QDateTime::currentDateTime();
+        captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
+
+        // Update GUI widget for capturing state
+        startButtonPtr_->setText(QString("Stop"));
+        connectButtonPtr_->setEnabled(false);
+        pluginActionGroupPtr_->setEnabled(false);
         updateStatusLabel();
 
         capturing_ = true;
@@ -616,6 +650,7 @@ namespace bias
         rtnStatus.message = QString("");
         return rtnStatus;
     }
+
 
 
     RtnStatus CameraWindow::stopImageCapture(bool showErrorDlg)
@@ -2125,7 +2160,10 @@ namespace bias
 
     void CameraWindow::startTriggerButtonClicked()
     {
-
+#if isVidInput
+        QMetaObject::invokeMethod(this, "startThreads", Q_ARG(bool,true));
+        emit this->finished_vidReading();
+#endif
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
             
             // start the nidaq tasks
@@ -7972,10 +8010,15 @@ namespace bias
     void CameraWindow::connectVidFrames()
     {
         QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
-        connect(this,
+        /*connect(this,
             SIGNAL(finished_vidReading()),
             partnerCameraWindowPtr,
             SLOT(autostartTriggerSignal())
+        );*/
+        connect(this,
+            SIGNAL(finished_vidReading()),
+            partnerCameraWindowPtr,
+            SLOT(startThreads())
         );
 
     }
