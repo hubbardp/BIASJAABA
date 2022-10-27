@@ -372,10 +372,12 @@ namespace bias {
             
 #else
             // Grab an image
+            start_process = gettime_->getPCtime();
             cameraPtr_->acquireLock();
             try
             {
                 stampImg.image = cameraPtr_->grabImage();
+                //stampImg.image = vid_images[frameCount].image;
                 stampImg.isSpike = false;
                 timeStamp = cameraPtr_->getImageTimeStamp();
                 error = false;
@@ -437,7 +439,6 @@ namespace bias {
 
                     continue;
                 }
-
 
                 //std::cout << "dt grabber: " << timeStampDbl - timeStampDblLast << std::endl;
 
@@ -575,7 +576,7 @@ namespace bias {
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
                                 ts_process[frameCount - 1] = end_process - start_process;
-                                ts_pc[frameCount - 1] = end_read_delay - start_read_delay;
+                                ts_pc[frameCount - 1] = start_process;
                                 queue_size[frameCount - 1] = end_push_delay - start_push_delay;
                             }
                         }

@@ -181,7 +181,8 @@ namespace bias {
         if (isReceiver())
         {
             
-            if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
+            if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr)
+                && cameraNumber_ == 0)
             {
                 threadPoolPtr_->start(processScoresPtr_side);
             }
@@ -626,10 +627,9 @@ namespace bias {
 
                                         processScoresPtr_side->acquireLock();
                                         processScoresPtr_side->sideScoreQueue.push_back(processScoresPtr_side->classifier->predScoreSide);
-                                        processScoresPtr_side->classifier->predscore_side[processScoresPtr_side->processedFrameCount] 
-                                                                                    = processScoresPtr_side->classifier->predScoreSide;
                                         processScoresPtr_side->releaseLock();
-                                       
+                                        processScoresPtr_side->classifier->predscore_side[processScoresPtr_side->processedFrameCount]
+                                            = processScoresPtr_side->classifier->predScoreSide;
                                     }
 #endif
                                     processScoresPtr_side->processedFrameCount++;

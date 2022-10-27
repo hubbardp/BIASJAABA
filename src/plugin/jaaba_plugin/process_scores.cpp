@@ -138,15 +138,16 @@ namespace bias {
     {
 
         bool done = false;
-        int64_t time_now, score_ts;
-        float wait_threshold = 10000;
+        uint64_t time_now;
+        double score_ts;
+        double wait_threshold = 10000;
         unsigned int numFrames = 2498;
         uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial5.csv";
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial1.csv";
     
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
-        thisThread -> setPriority(QThread::NormalPriority);
+        thisThread -> setPriority(QThread::TimeCriticalPriority);
           
         acquireLock();
         stopped_ = false;
@@ -243,15 +244,13 @@ namespace bias {
                         skipFront = false;
                         sideScoreQueue.pop_front();
                         frontScoreQueue.pop_front();
-                        classifier->finalscore.frameCount = predScore.frameCount;
-                        classifier->finalscore.view = 3;
-                        classifier->finalscore.score_ts = predScore.score_ts;
                         time_now = getTime_->getPCtime();
                         
                         scores[scoreCount - 1].score[0] = classifier->finalscore.score[0];
                         scores[scoreCount-1].frameCount = predScore.frameCount;
                         scores[scoreCount-1].view = 3;
-                        scores[scoreCount-1].score_ts = time_now;
+                        scores[scoreCount - 1].score_ts = time_now;
+                                              // - max(predScore.score_ts, predScorePartner.score_ts);
                         //write_score("classifierscr.csv", scoreCount, scores[scoreCount-1]);
                         scoreCount++;
                         
@@ -265,20 +264,21 @@ namespace bias {
                     releaseLock();
 
                     // check if this is not already a processed scoreCount
-                    if (scoreCount > predScorePartner.frameCount) {
+                    /*if (scoreCount > predScorePartner.frameCount) {
                         frontScoreQueue.pop_front();
                         continue;
-                    }
+                    }*/
 
                     //if (predScorePartner.frameCount > scoreCount)
                     //    std::cout << "Front ahead of score" << std::endl;
 
                     time_now = getTime_->getPCtime();
                     score_ts = predScorePartner.score_ts;
-                    if ((time_now - score_ts) > wait_threshold)
+                    scores[scoreCount - 1].score_front_ts = score_ts;
+                    /*if ((time_now - score_ts) > wait_threshold)
                     {
                         skipSide = true;
-                    }
+                    }*/
 
                 }
                 else if (!sideScoreQueue.empty()) {
@@ -288,25 +288,26 @@ namespace bias {
                     releaseLock();
 
                     // check if this is not already a processed scoreCount
-                    if (scoreCount > predScore.frameCount) {
+                    /*if (scoreCount > predScore.frameCount) {
                         sideScoreQueue.pop_front();
                         continue;
-                    }
+                    }*/
 
                     //if (predScore.frameCount > scoreCount)
                     //    std::cout << "side is ahead of score" << std::endl;
 
                     time_now = getTime_->getPCtime();
                     score_ts = predScore.score_ts;
-                    if ((time_now - score_ts) > wait_threshold)
+                    scores[scoreCount - 1].score_side_ts = score_ts;
+                    /*if ((time_now - score_ts) > wait_threshold)
                     {
                         skipFront = true;
                        
-                    }
+                    }*/
 
                 }
 
-                if (skipFront)
+                /*if (skipFront)
                 {
                     if (!skipSide)
                     {
@@ -323,7 +324,7 @@ namespace bias {
                             scores[scoreCount-1].score[0] = predScore.score[0];
                             scores[scoreCount-1].frameCount = predScore.frameCount;
                             scores[scoreCount-1].view = 1;
-                            scores[scoreCount-1].score_ts = time_now;
+                            scores[scoreCount-1].score_ts = predScore.score_ts;
                            
                             scoreCount++;
                         }
@@ -347,14 +348,14 @@ namespace bias {
                             scores[scoreCount-1].score[0] = predScorePartner.score[0];
                             scores[scoreCount-1].frameCount = predScorePartner.frameCount;
                             scores[scoreCount-1].view = 2;
-                            scores[scoreCount-1].score_ts = time_now;
+                            scores[scoreCount-1].score_ts = predScorePartner.score_ts;
                             
                             scoreCount++;
 
                         }
                         
                     }
-                }
+                }*/
                 
             }
 
@@ -421,11 +422,12 @@ namespace bias {
         std::ofstream x_out;
         x_out.open(file.c_str(), std::ios_base::app);
         std::cout << "once" << std::endl;
-        x_out << "Score ts," << "Score," << " FrameNumber," << "View" << "\n";
+        x_out << "Score ts," << "Score ts side," << "Score ts front," << "Score," << " FrameNumber," << "View" << "\n";
 
         for (unsigned int frm_id = 0; frm_id < numFrames; frm_id++)
         {
-            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score[0]
+            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_side_ts 
+                << "," << pred_score[frm_id].score_front_ts << "," << pred_score[frm_id].score[0]
                 << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
                 "\n";
         }
