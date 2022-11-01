@@ -24,7 +24,7 @@
 // ----------------------------------------
 
 #define DEBUG 1 
-#define isVidInput 1
+#define isVidInput 0
 
 namespace bias {
 
@@ -104,9 +104,9 @@ namespace bias {
 
         gettime_ = gettime;
 
-# if isVidInput
+//#if isVidInput
         initializeVid();
-#endif
+//#endif
 
 #if DEBUG
         process_frame_time_ = 1;
@@ -304,13 +304,13 @@ namespace bias {
             {
 
                 //the trigger signal has to be read to keep the camera running in triggered mode
-                // this has been skipped because of latency issues for the first few frames from camera
+                //this has been skipped because of latency issues for the first few frames from camera
                 //Also to get accurate trigger timestamps after first frames have been skipped.
                 // maybe redundant??
                 if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
 
                     nidaq_task_->acquireLock();
-                    if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {
+                    if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {                    
                         DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
                         nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] = read_buffer_;
                     }
@@ -336,16 +336,8 @@ namespace bias {
                     end_process = gettime_->getPCtime();
                 }*/
 
-                //function to simulate some past time before reading frame 
-                //string filename = "./temp.csv";
-                //string filename1 = "./temp1.csv";
-                //gettime_->write_time_1d<int>(filename, 1, delay_view);
-                //gettime_->write_time_1d<int>(filename1, 1, delay_view);
-
                 // wait for nidaq trigger signal
-                nidaq_task_->acquireLock();
                 nidaq_task_->getCamtrig(frameCount);
-                nidaq_task_->releaseLock();
 
                 stampImg.image = vid_images[frameCount].image;
 
@@ -371,13 +363,20 @@ namespace bias {
            
             
 #else
-            // Grab an image
             start_process = gettime_->getPCtime();
+
+            // wait for nidaq trigger signal
+            nidaq_task_->getCamtrig(frameCount);
+#if !isVidInput            
+            if (nidaq_task_->istrig) {
+                stampImg.image = vid_images[frameCount].image;
+            }
+#else
             cameraPtr_->acquireLock();
             try
-            {
+            { 
+        
                 stampImg.image = cameraPtr_->grabImage();
-                //stampImg.image = vid_images[frameCount].image;
                 stampImg.isSpike = false;
                 timeStamp = cameraPtr_->getImageTimeStamp();
                 error = false;
@@ -390,7 +389,7 @@ namespace bias {
                 error = true;
             }
             cameraPtr_->releaseLock();
-
+#endif
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty())
             {
@@ -430,16 +429,16 @@ namespace bias {
                     }
                     startUpCount++;
 
-                    if (cameraNumber_ == 0 && nidaq_task_ != nullptr) {
+                    /*if (cameraNumber_ == 0 && nidaq_task_ != nullptr) {
 
                         nidaq_task_->acquireLock();
                         DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
                         nidaq_task_->releaseLock();
-                    }
+                    }*/
 
                     continue;
                 }
-
+#endif
                 //std::cout << "dt grabber: " << timeStampDbl - timeStampDblLast << std::endl;
 
                 // Reset initial time stamp for image acquisition
@@ -451,7 +450,7 @@ namespace bias {
                     timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
                     emit startTimer();
                 }
-#endif
+
                 //
 
                 //// TEMPORARY - for mouse grab detector testing
@@ -492,7 +491,7 @@ namespace bias {
                         {
                             nidaq_task_->acquireLock();
                             DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
-                            nidaq_task_->getCamtrig(frameCount);
+                            //nidaq_task_->getCamtrig(frameCount);
                             nidaq_task_->releaseLock();
                         }
 
@@ -500,7 +499,7 @@ namespace bias {
                         {
                             nidaq_task_->acquireLock();
                             DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
-                            nidaq_task_->getCamtrig(frameCount);
+                            //nidaq_task_->getCamtrig(frameCount);
                             nidaq_task_->releaseLock();
                         }
 #endif
@@ -577,7 +576,6 @@ namespace bias {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
                                 ts_process[frameCount - 1] = end_process - start_process;
                                 ts_pc[frameCount - 1] = start_process;
-                                queue_size[frameCount - 1] = end_push_delay - start_push_delay;
                             }
                         }
 #endif
@@ -681,17 +679,9 @@ namespace bias {
                                 + "_" + "start_time" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
-
-                            string filename2 = testConfig_->dir_list[0] + "/"
-                                + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                                + testConfig_->imagegrab_prefix
-                                + "_" + "push_time" + "cam"
-                                + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
                             std::cout << "Writing" << std::endl;
                             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_process);
                             gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_pc);
-                            gettime_->write_time_1d<unsigned int>(filename2, testConfig_->numFrames, queue_size);
                             std::cout << "Written" << std::endl;
                         }
 #endif

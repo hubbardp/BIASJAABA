@@ -184,7 +184,7 @@ namespace bias {
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr)
                 && cameraNumber_ == 0)
             {
-                threadPoolPtr_->start(processScoresPtr_side);
+                //threadPoolPtr_->start(processScoresPtr_side);
             }
            
             // this thread adds latency to process frames

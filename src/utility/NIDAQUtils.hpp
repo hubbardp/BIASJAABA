@@ -3,6 +3,8 @@
 #include "stdio.h"
 #include "NIDAQmx.h"
 #include <vector>
+#include "lockable.hpp"
+
 
 static void NIDAQError(int err);
 #define DAQmxErrChk(functionCall) {int error = 0; if (DAQmxFailed(error = (functionCall))) NIDAQError(error);}
@@ -19,10 +21,10 @@ static void NIDAQError(int error)
 namespace bias
 {
    
-    class NIDAQUtils {
-    
-
-    public:
+    class NIDAQUtils: public Lockable<Empty>
+    {
+   
+      public:
 
         float64  dataf_high[1000], dataf_low[1000], datas_high[1000], datas_low[1000];
         uInt8 data[1000];
