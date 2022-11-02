@@ -223,7 +223,6 @@ namespace bias
                 pluginImageQueuePtr_->push(newStampImage);
                 pluginImageQueuePtr_->signalNotEmpty();
                 pluginImageQueuePtr_->releaseLock();
-
             }
 
             acquireLock();

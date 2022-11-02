@@ -398,22 +398,22 @@ namespace bias {
         if (pluginImageQueuePtr_ != nullptr)
         {
             
-            pluginImageQueuePtr_->acquireLock();
-            pluginImageQueuePtr_->waitIfEmpty();
+            //pluginImageQueuePtr_->acquireLock();
+            /*pluginImageQueuePtr_->waitIfEmpty();
 
             if (pluginImageQueuePtr_->empty())
             {
                 //QThread::yieldCurrentThread();
                 pluginImageQueuePtr_->releaseLock();
                 return;
-            }
+            }*/
             
             if (!(pluginImageQueuePtr_->empty()))
             {
                 start_process = gettime_->getPCtime();
                 StampedImage stampedImage0 = pluginImageQueuePtr_->front();
                 pluginImageQueuePtr_->pop();
-                pluginImageQueuePtr_->releaseLock();
+                //pluginImageQueuePtr_->releaseLock();
                 currentImage_ = stampedImage0.image.clone();
                 frameCount_ = stampedImage0.frameCount;
                 fstfrmtStampRef_ = stampedImage0.fstfrmtStampRef;

@@ -531,7 +531,6 @@ namespace bias {
 
                 }
 
-                //start_push_delay = gettime_->getPCtime();
                 // Set image data timestamp, framecount and frame interval estimate
                 stampImg.timeStamp = timeStampDbl;
                 stampImg.timeStampInit = timeStampInit;
@@ -545,7 +544,6 @@ namespace bias {
                 newImageQueuePtr_->signalNotEmpty();
                 newImageQueuePtr_->releaseLock();
 
-                //end_push_delay = gettime_->getPCtime();
                 end_process = gettime_->getPCtime();
                 //delay = end_process - start_process;
                 frameCount++;

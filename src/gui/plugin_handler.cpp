@@ -138,7 +138,7 @@ namespace bias
         //timer.Start();
         while (!done)
         {
-            /*QList<StampedImage> frameList;
+            //QList<StampedImage> frameList;
 
             // Grab frame from image queue
             pluginImageQueuePtr_ -> acquireLock();
@@ -148,15 +148,16 @@ namespace bias
                 pluginImageQueuePtr_ -> releaseLock();
                 break;
             }
-            while ( !(pluginImageQueuePtr_ ->  empty()) )
+
+            /*while ( !(pluginImageQueuePtr_ ->  empty()) )
             {
                 StampedImage stampedImage = pluginImageQueuePtr_ -> front();
                 frameList.append(stampedImage);
                 pluginImageQueuePtr_ -> pop();
-            }
+            }*/
 
 
-            pluginImageQueuePtr_ -> releaseLock();*/
+            pluginImageQueuePtr_ -> releaseLock();
 
             // Process Frame with plugin
             if (!pluginPtr_.isNull())
