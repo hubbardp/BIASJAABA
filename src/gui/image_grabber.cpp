@@ -104,9 +104,9 @@ namespace bias {
 
         gettime_ = gettime;
 
-//#if isVidInput
+#if isVidInput
         initializeVid();
-//#endif
+#endif
 
 #if DEBUG
         process_frame_time_ = 1;
@@ -298,80 +298,17 @@ namespace bias {
                 istriggered = true;
             }
 
-#if isVidInput
-            //start_process = gettime_->getPCtime();
-            if (frameCount < testConfig_->numFrames)
-            {
-
-                //the trigger signal has to be read to keep the camera running in triggered mode
-                //this has been skipped because of latency issues for the first few frames from camera
-                //Also to get accurate trigger timestamps after first frames have been skipped.
-                // maybe redundant??
-                if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
-
-                    nidaq_task_->acquireLock();
-                    if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {                    
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                        nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] = read_buffer_;
-                    }
-                    nidaq_task_->releaseLock();
-
-                }
-
-                // need to skip first few frames as VideoCapture has huge latency in 
-                // returning the first frame
-                if (startUpCount < numStartUpSkip_)
-                {
-                    startUpCount++;
-                    continue;
-                }
-
-                start_process = gettime_->getPCtime();
-
-                //to simulate wait without nidaq trigger 
-                /*start_process = gettime_->getPCtime();
-                end_process = start_process;
-                while ((end_process - start_process) < avgFrameTime_us)
-                {
-                    end_process = gettime_->getPCtime();
-                }*/
-
-                // wait for nidaq trigger signal
-                nidaq_task_->getCamtrig(frameCount);
-
-                stampImg.image = vid_images[frameCount].image;
-
-                // Introduce delay              
-                //if (frameCount == delayFrames.top()) {
-
-                //    delay_view[frameCount] = 1000;
-
-                //    start_delay = gettime_->getPCtime();
-                //    end_delay = start_delay;
-                //    while ((end_delay - start_delay) < delay_framethres)
-                //    {
-                //            end_delay = gettime_->getPCtime();
-                //    }
-                //    delayFrames.pop();
-
-                //}
-
-            }else{
-                QThread::yieldCurrentThread();
-                continue;
-            }
-           
-            
-#else
-            start_process = gettime_->getPCtime();
-
+            start_process = gettime_->getPCtime();           
+#if isVidInput  
             // wait for nidaq trigger signal
             nidaq_task_->getCamtrig(frameCount);
-#if !isVidInput            
             if (nidaq_task_->istrig) {
                 stampImg.image = vid_images[frameCount].image;
             }
 #else
+            if(startUpCount >= numStartUpSkip_)
+                nidaq_task_->getCamtrig(frameCount);
+
             cameraPtr_->acquireLock();
             try
             { 
@@ -396,7 +333,6 @@ namespace bias {
                 QThread::yieldCurrentThread();
                 continue;
             }
-#endif
 
             // Push image into new image queue
             if (!error)
@@ -429,12 +365,12 @@ namespace bias {
                     }
                     startUpCount++;
 
-                    /*if (cameraNumber_ == 0 && nidaq_task_ != nullptr) {
+                    if (cameraNumber_ == 0 && nidaq_task_ != nullptr) {
 
                         nidaq_task_->acquireLock();
                         DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
                         nidaq_task_->releaseLock();
-                    }*/
+                    }
 
                     continue;
                 }
@@ -482,43 +418,6 @@ namespace bias {
                 // Test Configuration
                 //------------------------------------------------------------------------
                 //start_process = gettime_->getPCtime();
-                if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
-
-                    if (nidaq_task_ != nullptr) {
-
-#if !isVidInput
-                        if (cameraNumber_ == 0)
-                        {
-                            nidaq_task_->acquireLock();
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
-                            //nidaq_task_->getCamtrig(frameCount);
-                            nidaq_task_->releaseLock();
-                        }
-
-                        if (cameraNumber_ == 1)
-                        {
-                            nidaq_task_->acquireLock();
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
-                            //nidaq_task_->getCamtrig(frameCount);
-                            nidaq_task_->releaseLock();
-                        }
-#endif
-
-#if DEBUG
-                        if (!testConfig_->imagegrab_prefix.empty() && !testConfig_->nidaq_prefix.empty())
-                        {
-
-                            nidaq_task_->acquireLock();
-                            ts_nidaq[frameCount][0] = nidaq_task_->cam_trigger[frameCount];
-                            nidaq_task_->releaseLock();
-                            ts_nidaq[frameCount][1] = read_ondemand_;
-
-                        }
-#endif
-                    }
-                }
-
-               
                 //-------------------------------------------------------------------------
                 if (nidaq_task_ != nullptr && frameCount == 0) {
 
@@ -546,6 +445,31 @@ namespace bias {
 
                 end_process = gettime_->getPCtime();
                 //delay = end_process - start_process;
+
+                if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
+
+                    if (nidaq_task_ != nullptr) {
+
+#if !isVidInput
+                        nidaq_task_->acquireLock();
+                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
+                        nidaq_task_->releaseLock();
+#endif
+
+#if DEBUG
+                        if (!testConfig_->imagegrab_prefix.empty() && !testConfig_->nidaq_prefix.empty())
+                        {
+
+                            nidaq_task_->acquireLock();
+                            ts_nidaq[frameCount][0] = nidaq_task_->cam_trigger[frameCount];
+                            nidaq_task_->releaseLock();
+                            ts_nidaq[frameCount][1] = read_ondemand_;
+
+                        }
+#endif
+                    }
+                }
+
                 frameCount++;
                 
 

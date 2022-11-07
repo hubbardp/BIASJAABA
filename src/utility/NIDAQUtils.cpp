@@ -119,6 +119,14 @@ namespace bias {
         
     }
 
+    /*void NIDAQUtils::getNidaqTimeNow()
+    {
+        float64 timeout_seconds = 10.0;
+        acquireLock();
+        DAQmxErrChk(DAQmxReadCounterScalarU32(taskHandle_trigger_in, timeout_seconds, &read_buffer, NULL));
+        releaseLock();
+    }*/
+
     /*void NIDAQUtils::newFrametrig(uInt32 read_buffer) {
 
         istrig = true;

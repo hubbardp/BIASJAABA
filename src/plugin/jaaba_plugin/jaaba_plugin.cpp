@@ -6,7 +6,7 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 1
+#define isVidInput 0
 
 //
 //Camera 1 should always be front view
@@ -35,6 +35,7 @@ namespace bias {
         setupUi(this);
         connectWidgets();
         initialize();
+        currentImage_ = cv::Mat::zeros(cv::Size(384, 260), CV_64FC1);
 
     }
 
@@ -398,7 +399,7 @@ namespace bias {
         if (pluginImageQueuePtr_ != nullptr)
         {
             
-            //pluginImageQueuePtr_->acquireLock();
+            pluginImageQueuePtr_->acquireLock();
             /*pluginImageQueuePtr_->waitIfEmpty();
 
             if (pluginImageQueuePtr_->empty())
@@ -413,11 +414,22 @@ namespace bias {
                 start_process = gettime_->getPCtime();
                 StampedImage stampedImage0 = pluginImageQueuePtr_->front();
                 pluginImageQueuePtr_->pop();
-                //pluginImageQueuePtr_->releaseLock();
+                pluginImageQueuePtr_->releaseLock();
+                
                 currentImage_ = stampedImage0.image.clone();
                 frameCount_ = stampedImage0.frameCount;
                 fstfrmtStampRef_ = stampedImage0.fstfrmtStampRef;
                 
+                if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
+                {
+                    emit(passFrontHOFShape(processScoresPtr_side->HOGHOF_frame));                  
+                }
+
+                if (isSender() && processScoresPtr_front->processedFrameCount == 0)
+                {
+                    emit(passSideHOGShape(processScoresPtr_front->HOGHOF_partner));
+                }
+
 #if !isVidInput
                 if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
@@ -431,15 +443,6 @@ namespace bias {
 
                 }
 #endif
-                if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
-                {
-                    emit(passFrontHOFShape(processScoresPtr_side->HOGHOF_frame));                  
-                }
-
-                if (isSender() && processScoresPtr_front->processedFrameCount == 0)
-                {
-                    emit(passSideHOGShape(processScoresPtr_front->HOGHOF_partner));
-                }
 
                 if (fstfrmtStampRef_ != 0)
                 {
@@ -489,20 +492,8 @@ namespace bias {
 
                             if (isSender() && detectStarted)
                             {
-#if isVidInput                     
-                                // convert the frame into float32
-
-                                frontImage = currentImage_;                            
-                                if (frontImage.channels() == 3)
-                                {
-                                    cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
-                                }
-                                frontImage.convertTo(greyFront, CV_32FC1);
-                                greyFront = greyFront / 255;
-                  
-
-#else                   
-                                frontImage = stampedImage0.image.clone();
+                
+                                frontImage = currentImage_;
                                 if (frontImage.channels() == 3)
                                 {
                                     cv::cvtColor(frontImage, frontImage, cv::COLOR_BGR2GRAY);
@@ -511,34 +502,24 @@ namespace bias {
                                 // convert the frame into float32
                                 frontImage.convertTo(greyFront, CV_32FC1);
                                 greyFront = greyFront / 255;
-#endif
+
                             }
 
 
                             if (isReceiver() && detectStarted)
                             {
 
-#if isVidInput                               
+
                                 sideImage = currentImage_;
                                 if (sideImage.channels() == 3)
                                 {
                                     cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
                                 }
-                                // convert the frame into float32
-                                sideImage.convertTo(greySide, CV_32FC1);
-                                greySide = greySide / 255;
-
-#else
-                                sideImage = stampedImage0.image.clone();
-                                if (sideImage.channels() == 3)
-                                {
-                                    cv::cvtColor(sideImage, sideImage, cv::COLOR_BGR2GRAY);
-                                }
 
                                 // convert the frame into float32
                                 sideImage.convertTo(greySide, CV_32FC1);
                                 greySide = greySide / 255;
-#endif                    
+                  
                             }
                             
                             if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
