@@ -119,13 +119,13 @@ namespace bias {
         
     }
 
-    /*void NIDAQUtils::getNidaqTimeNow()
+    void NIDAQUtils::getNidaqTimeNow(uInt32& read_ondemand)
     {
         float64 timeout_seconds = 10.0;
         acquireLock();
-        DAQmxErrChk(DAQmxReadCounterScalarU32(taskHandle_trigger_in, timeout_seconds, &read_buffer, NULL));
+        DAQmxErrChk(DAQmxReadCounterScalarU32(taskHandle_grab_in, timeout_seconds, &read_ondemand, NULL));
         releaseLock();
-    }*/
+    }
 
     /*void NIDAQUtils::newFrametrig(uInt32 read_buffer) {
 

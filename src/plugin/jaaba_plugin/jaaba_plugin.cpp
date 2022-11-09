@@ -35,7 +35,7 @@ namespace bias {
         setupUi(this);
         connectWidgets();
         initialize();
-        currentImage_ = cv::Mat::zeros(cv::Size(384, 260), CV_64FC1);
+        //currentImage_ = cv::Mat::zeros(cv::Size(384, 260), CV_64FC1);
 
     }
 
@@ -394,12 +394,13 @@ namespace bias {
 #else
         frameGrabAvgTime = 2500;
         wait_thres = static_cast<float>(4000/1000);
+        max_jaaba_compute_time = 2000;
+
 #endif
 
         if (pluginImageQueuePtr_ != nullptr)
         {
             
-            pluginImageQueuePtr_->acquireLock();
             /*pluginImageQueuePtr_->waitIfEmpty();
 
             if (pluginImageQueuePtr_->empty())
@@ -411,13 +412,16 @@ namespace bias {
             
             if (!(pluginImageQueuePtr_->empty()))
             {
-                start_process = gettime_->getPCtime();
+
+                pluginImageQueuePtr_->acquireLock();
                 StampedImage stampedImage0 = pluginImageQueuePtr_->front();
                 pluginImageQueuePtr_->pop();
                 pluginImageQueuePtr_->releaseLock();
                 
-                currentImage_ = stampedImage0.image.clone();
+                acquireLock();
+                currentImage_ = stampedImage0.image;
                 frameCount_ = stampedImage0.frameCount;
+                releaseLock();
                 fstfrmtStampRef_ = stampedImage0.fstfrmtStampRef;
                 
                 if (isReceiver() && processScoresPtr_side->processedFrameCount == 0)
@@ -435,15 +439,13 @@ namespace bias {
 
                     if (frameCount_ <= testConfig_->numFrames) {
 
-                        nidaq_task_->acquireLock();
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                        nidaq_task_->releaseLock();
+                        nidaq_task_->getNidaqTimeNow(read_ondemand);
 
                     }
 
                 }
 #endif
-
+                start_process = gettime_->getPCtime();
                 if (fstfrmtStampRef_ != 0)
                 {
 #if isVidInput     
@@ -453,9 +455,11 @@ namespace bias {
                     avgwait_time = curTime_vid - expTime_vid;
 
 #else                   
-                    expTime = (fstfrmtStampRef_*0.02 + (2.5 * frameCount_));
+                    expTime = fstfrmtStampRef_*0.02 + (static_cast<double>(frameGrabAvgTime) * (frameCount_+ 1)) 
+                                                    + (static_cast<double>(max_jaaba_compute_time)/1000.0);
                     //expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
                     curTime = (read_ondemand)*0.02; 
+                    avgwait_time = curTime_vid - expTime_vid;
 #endif
                     
                     /*if (avgwait_time > wait_thres)
@@ -478,7 +482,7 @@ namespace bias {
 
                         }else{  assert(processScoresPtr_front->processedFrameCount==frameCount_);}
 
-                    } else { */
+                    } else {*/ 
                         
                         if (currentImage_.rows != 0 && currentImage_.cols != 0)
                         {
@@ -814,8 +818,8 @@ namespace bias {
                 stampedImage0 = pluginImageQueuePtr_ -> front();
                 stampedImage1 = partnerPluginImageQueuePtr_ -> front();
 
-                sideImage = stampedImage0.image.clone();
-                frontImage = stampedImage1.image.clone();
+                sideImage = stampedImage0.image;
+                frontImage = stampedImage1.image;
 
                 if((sideImage.rows != 0) && (sideImage.cols != 0) 
                     && (frontImage.rows != 0) && (frontImage.cols != 0))

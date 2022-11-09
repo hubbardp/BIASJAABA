@@ -47,6 +47,7 @@ namespace bias
         void start_trigger_signal();
         void Cleanup();
         void getCamtrig(unsigned int frameCount);
+        void getNidaqTimeNow(uInt32& read_ondemand);
         ~NIDAQUtils();
 
     /*signals:
