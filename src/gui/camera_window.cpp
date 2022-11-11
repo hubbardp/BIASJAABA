@@ -226,9 +226,9 @@ namespace bias
         updateCameraInfoMessage();
         updateAllMenus();
 
-#if isVidInput
+//#if isVidInput
         connectVidFrames();
-#endif
+//#endif
 
         rtnStatus.success = true;
         rtnStatus.message = QString("");
@@ -585,10 +585,8 @@ namespace bias
                     SLOT(startCaptureDurationTimer())
                    );
         }
-
-
-#if !isVidInput        
-        threadPoolPtr_ -> start(imageGrabberPtr_);
+        
+       /*threadPoolPtr_ -> start(imageGrabberPtr_);
         threadPoolPtr_ -> start(imageDispatcherPtr_);
         if(isPluginEnabled())
             threadPoolPtr_-> start(pluginHandlerPtr_);
@@ -610,8 +608,8 @@ namespace bias
 
         showCameraLockFailMsg_ = true;
 
-        emit imageCaptureStarted(logging_);
-#endif        
+        emit imageCaptureStarted(logging_);*/
+        
         // ------------------------------------------------------------------------------
 
         rtnStatus.success = true;
@@ -2160,10 +2158,10 @@ namespace bias
 
     void CameraWindow::startTriggerButtonClicked()
     {
-#if isVidInput
+//#if isVidInput
         QMetaObject::invokeMethod(this, "startThreads", Q_ARG(bool,true));
         emit this->finished_vidReading();
-#endif
+//#endif
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
             
             // start the nidaq tasks

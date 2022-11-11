@@ -222,7 +222,7 @@ namespace bias {
         // Set thread priority to "time critical" and assign cpu affinity
         QThread *thisThread = QThread::currentThread();
         thisThread->setPriority(QThread::TimeCriticalPriority);
-        //ThreadAffinityService::assignThreadAffinity(true, cameraNumber_);
+        ThreadAffinityService::assignThreadAffinity(true, cameraNumber_);
 
         trig = cameraPtr_->getTriggerType();
 
