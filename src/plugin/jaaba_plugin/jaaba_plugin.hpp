@@ -146,13 +146,14 @@ namespace bias
 
             int nframes_; // test video frames
 
-            std::vector<double> time_stamps1;
+            std::vector<int64_t> time_cur;
             std::vector<int64_t> ts_pc;// pc time
             std::vector<std::vector<uInt32>>ts_nidaq; // nidaq timings
             std::vector<unsigned int> queue_size; // queue size
             std::vector<int64_t> ts_gpuprocess_time;// gpu process timings
             std::vector<int64_t> ts_nidaqThres;// nmidaq threshold for spiked frames
-            std::vector<unsigned int> time_stamps5;// test
+            std::vector<int64_t> ts_jaaba_start;// test
+            std::vector<int64_t> ts_jaaba_end;
             
             //int no_of_skips = 10;
             //priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips

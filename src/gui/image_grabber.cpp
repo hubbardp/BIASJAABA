@@ -212,6 +212,9 @@ namespace bias {
 
         int delay = 0, avgFrameTime_us = 2500, avgFramewaitThres=3500;
         int num_delayFrames = 0;
+#else 
+        float cur_latency = 0.0;
+        float avg_latency = 3.00;
 #endif
 
         if (!ready_)
@@ -222,7 +225,7 @@ namespace bias {
         // Set thread priority to "time critical" and assign cpu affinity
         QThread *thisThread = QThread::currentThread();
         thisThread->setPriority(QThread::TimeCriticalPriority);
-        ThreadAffinityService::assignThreadAffinity(true, cameraNumber_);
+        //ThreadAffinityService::assignThreadAffinity(true, cameraNumber_);
 
         trig = cameraPtr_->getTriggerType();
 
@@ -425,7 +428,7 @@ namespace bias {
                     fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
 
 #else
-                    fstfrmtStampRef_ = static_cast<uInt32>(nidaq_task_->cam_trigger[frameCount]);
+                    fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
 #endif
 
                 }
@@ -464,6 +467,9 @@ namespace bias {
                             ts_nidaq[frameCount][0] = nidaq_task_->cam_trigger[frameCount];
                             nidaq_task_->releaseLock();
                             ts_nidaq[frameCount][1] = read_ondemand_;
+                            cur_latency = (read_ondemand_ - nidaq_task_->cam_trigger[frameCount])*0.02;
+                            if (cur_latency > avg_latency)
+                                ts_nidaqThres[frameCount] = cur_latency;
 
                         }
 #endif
