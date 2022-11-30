@@ -58,7 +58,7 @@ namespace bias
             virtual void stop();
             virtual void setActive(bool value);
             //virtual void processFrames(QList<StampedImage> frameList);
-            virtual void processFrames();
+            virtual void processFrames(StampedImage stampedImage);
             virtual void setFileAutoNamingString(QString autoNamingString);
             virtual void setFileVersionNumber(unsigned verNum);
             virtual cv::Mat getCurrentImage();

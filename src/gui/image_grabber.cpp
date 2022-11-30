@@ -35,7 +35,7 @@ namespace bias {
     ImageGrabber::ImageGrabber(QObject *parent) : QObject(parent)
     {
 
-        initialize(0, NULL, NULL, NULL, false, "", NULL, NULL, NULL);
+        initialize(0, NULL, NULL, NULL,NULL, false, NULL, NULL, NULL);
     }
 
     ImageGrabber::ImageGrabber(
@@ -51,8 +51,8 @@ namespace bias {
         QObject *parent
     ) : QObject(parent)
     {
-        initialize(cameraNumber, cameraPtr, newImageQueuePtr, threadPoolPtr,
-            testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
+        initialize(cameraNumber, cameraPtr, newImageQueuePtr,
+            threadPoolPtr,testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
 
     }
 
@@ -445,8 +445,8 @@ namespace bias {
                 newImageQueuePtr_->push(stampImg);
                 newImageQueuePtr_->signalNotEmpty();
                 newImageQueuePtr_->releaseLock();
-
-                end_process = gettime_->getPCtime();
+                
+                
                 //delay = end_process - start_process;
 
                 if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
@@ -454,9 +454,7 @@ namespace bias {
                     if (nidaq_task_ != nullptr) {
 
 #if !isVidInput
-                        nidaq_task_->acquireLock();
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
-                        nidaq_task_->releaseLock();
+                        nidaq_task_->getNidaqTimeNow(read_ondemand_);
 #endif
 
 #if DEBUG
@@ -467,15 +465,15 @@ namespace bias {
                             ts_nidaq[frameCount][0] = nidaq_task_->cam_trigger[frameCount];
                             nidaq_task_->releaseLock();
                             ts_nidaq[frameCount][1] = read_ondemand_;
-                            cur_latency = (read_ondemand_ - nidaq_task_->cam_trigger[frameCount])*0.02;
+                            /*cur_latency = (read_ondemand_ - nidaq_task_->cam_trigger[frameCount])*0.02;
                             if (cur_latency > avg_latency)
-                                ts_nidaqThres[frameCount] = cur_latency;
+                                ts_nidaqThres[frameCount] = cur_latency;*/
 
                         }
 #endif
                     }
                 }
-
+                end_process = gettime_->getPCtime();
                 frameCount++;
                 
 
@@ -503,7 +501,7 @@ namespace bias {
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
                                 ts_process[frameCount - 1] = end_process - start_process;
-                                ts_pc[frameCount - 1] = start_process;
+                                ts_pc[frameCount - 1] = end_process;
                             }
                         }
 #endif

@@ -60,7 +60,7 @@
 #include "jaaba_plugin.hpp"
 #include "test_config.hpp"
 // -------------------------------------
-#define isVidInput 1
+#define isVidInput 0
 
 namespace bias
 {
@@ -586,7 +586,7 @@ namespace bias
                    );
         }
         
-       /*threadPoolPtr_ -> start(imageGrabberPtr_);
+        /*threadPoolPtr_ -> start(imageGrabberPtr_);
         threadPoolPtr_ -> start(imageDispatcherPtr_);
         if(isPluginEnabled())
             threadPoolPtr_-> start(pluginHandlerPtr_);
@@ -2158,10 +2158,10 @@ namespace bias
 
     void CameraWindow::startTriggerButtonClicked()
     {
-//#if isVidInput
+
         QMetaObject::invokeMethod(this, "startThreads", Q_ARG(bool,true));
         emit this->finished_vidReading();
-//#endif
+
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
             
             // start the nidaq tasks

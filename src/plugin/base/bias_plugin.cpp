@@ -59,11 +59,11 @@ namespace bias
     }
 
     //void BiasPlugin::processFrames(QList<StampedImage> frameList) 
-    void BiasPlugin::processFrames()
+    void BiasPlugin::processFrames(StampedImage stampedImage)
     { 
 
 
-        pluginImageQueuePtr_ -> acquireLock();
+        /*pluginImageQueuePtr_ -> acquireLock();
         pluginImageQueuePtr_ -> waitIfEmpty();
         if (pluginImageQueuePtr_ -> empty())
         {
@@ -85,14 +85,15 @@ namespace bias
 
         }
 
-        pluginImageQueuePtr_ -> releaseLock(); 
-        /*acquireLock();
-        StampedImage latestFrame = frameList.back();
-        frameList.clear();
-        currentImage_ = latestFrame.image;
-        timeStamp_ = latestFrame.timeStamp;
-        frameCount_ = latestFrame.frameCount;
-        releaseLock();*/
+        pluginImageQueuePtr_ -> releaseLock(); */
+        
+        acquireLock();
+        //StampedImage latestFrame = frameList.back();
+        //frameList.clear();
+        currentImage_ = stampedImage.image;
+        timeStamp_ = stampedImage.timeStamp;
+        frameCount_ = stampedImage.frameCount;
+        releaseLock();
     } 
 
 

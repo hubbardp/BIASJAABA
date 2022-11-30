@@ -120,6 +120,7 @@ namespace bias
     {
 
         bool done = false;
+        StampedImage stampedImage;
 
         if (!ready_) 
         { 
@@ -156,14 +157,18 @@ namespace bias
                 pluginImageQueuePtr_ -> pop();
             }*/
 
-
+            if (!(pluginImageQueuePtr_->empty()))
+            {
+                stampedImage = pluginImageQueuePtr_->front();
+                pluginImageQueuePtr_->pop();
+            }
             pluginImageQueuePtr_ -> releaseLock();
 
             // Process Frame with plugin
             if (!pluginPtr_.isNull())
             { 
                 //pluginPtr_ -> processFrames(frameList);
-                pluginPtr_ -> processFrames();
+                pluginPtr_ -> processFrames(stampedImage);
             }
 
             acquireLock();

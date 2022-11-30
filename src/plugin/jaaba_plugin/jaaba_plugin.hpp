@@ -63,8 +63,8 @@ namespace bias
             virtual void finalSetup();
             virtual QString getName();
             virtual QString getDisplayName();
-            //virtual void processFrames(QList<StampedImage> frameList);
-            virtual void processFrames();
+            virtual void processFrames(StampedImage stampedImage);
+            //virtual void processFrames();
             virtual void reset();
             virtual void stop();
             cv::Mat getCurrentImage();
@@ -181,7 +181,7 @@ namespace bias
             void getFormatSettings();
             //void gpuInit(); 
 
-            void processFrame_inPlugin();
+            void processFrame_inPlugin(StampedImage stampedImage);
             void processFramePass();
             //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
                                  

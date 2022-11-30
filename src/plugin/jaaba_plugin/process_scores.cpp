@@ -155,7 +155,7 @@ namespace bias {
         
         while (!done)
         {
-            if (mesPass_) 
+            /*if (mesPass_) 
             {
 
                 if (processSide)
@@ -187,14 +187,14 @@ namespace bias {
                 
                 if (sideScoreQueue.empty() && frontScoreQueue.empty()) {
 
-                    /*cur_time = getTime_->getPCtime();
-                    if ((cur_time - ts_last_score) > wait_threshold) {
-                        scoreCount++;
-                        ts_last_score = cur_time;
-                    }
-                    else {
-                        continue;
-                    }*/
+                    //cur_time = getTime_->getPCtime();
+                    //if ((cur_time - ts_last_score) > wait_threshold) {
+                    //    scoreCount++;
+                    //    ts_last_score = cur_time;
+                    //}
+                    //else {
+                    //    continue;
+                    //}
                     continue;
 
                 }
@@ -264,10 +264,10 @@ namespace bias {
                     releaseLock();
 
                     // check if this is not already a processed scoreCount
-                    /*if (scoreCount > predScorePartner.frameCount) {
-                        frontScoreQueue.pop_front();
-                        continue;
-                    }*/
+                    //if (scoreCount > predScorePartner.frameCount) {
+                    //    frontScoreQueue.pop_front();
+                    //    continue;
+                    //}
 
                     //if (predScorePartner.frameCount > scoreCount)
                     //    std::cout << "Front ahead of score" << std::endl;
@@ -275,10 +275,10 @@ namespace bias {
                     time_now = getTime_->getPCtime();
                     score_ts = predScorePartner.score_ts;
                     scores[scoreCount - 1].score_front_ts = score_ts;
-                    /*if ((time_now - score_ts) > wait_threshold)
-                    {
-                        skipSide = true;
-                    }*/
+                    //if ((time_now - score_ts) > wait_threshold)
+                    //{
+                    //    skipSide = true;
+                    //}
 
                 }
                 else if (!sideScoreQueue.empty()) {
@@ -288,10 +288,10 @@ namespace bias {
                     releaseLock();
 
                     // check if this is not already a processed scoreCount
-                    /*if (scoreCount > predScore.frameCount) {
-                        sideScoreQueue.pop_front();
-                        continue;
-                    }*/
+                    //if (scoreCount > predScore.frameCount) {
+                    //    sideScoreQueue.pop_front();
+                    //    continue;
+                    //}
 
                     //if (predScore.frameCount > scoreCount)
                     //    std::cout << "side is ahead of score" << std::endl;
@@ -299,15 +299,15 @@ namespace bias {
                     time_now = getTime_->getPCtime();
                     score_ts = predScore.score_ts;
                     scores[scoreCount - 1].score_side_ts = score_ts;
-                    /*if ((time_now - score_ts) > wait_threshold)
-                    {
-                        skipFront = true;
+                    //if ((time_now - score_ts) > wait_threshold)
+                    //{
+                    //    skipFront = true;
                        
-                    }*/
+                    //}
 
                 }
 
-                /*if (skipFront)
+                if (skipFront)
                 {
                     if (!skipSide)
                     {
@@ -355,21 +355,21 @@ namespace bias {
                         }
                         
                     }
-                }*/
+                }
                 
-            }
+            }*/
 
             acquireLock();
             done = stopped_;
             releaseLock();
 
-            if (scoreCount >= (numFrames)) {
+            /*if (scoreCount >= (numFrames)) {
 
                 std::cout << "Writing ...." << std::endl;
                 write_score_final(filename,numFrames, scores);
                 std::cout << "Written ...." << std::endl;
                 break;
-            }
+            }*/
 
         }
      
