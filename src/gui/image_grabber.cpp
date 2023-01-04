@@ -24,7 +24,7 @@
 // ----------------------------------------
 
 #define DEBUG 1 
-#define isVidInput 0
+#define isVidInput 1
 
 namespace bias {
 
@@ -304,7 +304,8 @@ namespace bias {
             start_process = gettime_->getPCtime();           
 #if isVidInput  
             // wait for nidaq trigger signal
-            nidaq_task_->getCamtrig(frameCount);
+            if (startUpCount >= numStartUpSkip_)
+                nidaq_task_->getCamtrig(frameCount);
             if (nidaq_task_->istrig) {
                 stampImg.image = vid_images[frameCount].image;
             }
@@ -340,7 +341,6 @@ namespace bias {
             // Push image into new image queue
             if (!error)
             {
-#if !isVidInput
                 errorCount = 0;                  // Reset error count 
                 timeStampDblLast = timeStampDbl; // Save last timestamp
 
@@ -366,18 +366,23 @@ namespace bias {
                         double c1 = double(1.0) / double(startUpCount);
                         dtEstimate = c0 * dtEstimate + c1 * dt;
                     }
-                    startUpCount++;
 
-                    if (cameraNumber_ == 0 && nidaq_task_ != nullptr) {
-
+                    if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
+                        
                         nidaq_task_->acquireLock();
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
+                        if (nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] == 0) {
+                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
+                            nidaq_task_->cam_trigger[testConfig_->numFrames - 1 + startUpCount] = read_buffer_;
+                           
+                        }
                         nidaq_task_->releaseLock();
+                       
                     }
 
+                    startUpCount++;
                     continue;
                 }
-#endif
+
                 //std::cout << "dt grabber: " << timeStampDbl - timeStampDblLast << std::endl;
 
                 // Reset initial time stamp for image acquisition

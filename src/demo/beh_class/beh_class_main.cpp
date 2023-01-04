@@ -202,12 +202,12 @@ int main(int argc, char* argv[]) {
     int imageCnt = 0;    
     vector<vector<float>>score_cls(6,vector<float>(numFrames, 0.0));
 
-    err = spinCameraListGetSize(hCameraList, &numCameras);
+    /*err = spinCameraListGetSize(hCameraList, &numCameras);
     if (err != SPINNAKER_ERR_SUCCESS)
     {
         printf("Unable to retrieve number of cameras. Aborting with error %d...\n\n", err);
         return err;
-    }
+    }*/
 
     if (isNIDAQ) {
 
@@ -222,7 +222,7 @@ int main(int argc, char* argv[]) {
 
     }
     // initialize camera, nidaq, HOGHOF params 
-    if (numCameras != 0) {
+    /*if (numCameras != 0) {
 
         std::cout << "Camera Initialized" << std::endl;
         hasValidInput = true;
@@ -242,7 +242,7 @@ int main(int argc, char* argv[]) {
         //have to load ImageParams from width and height information
         //printf("Number of cameras detected: %u\n\n", (unsigned int)numCameras);
 
-    }else if (!vidFile->isEmpty()) {
+    }else if (!vidFile->isEmpty()) {*/
 
         // Vid params
         std::cout << "Video File Input" << std::endl;
@@ -260,7 +260,7 @@ int main(int argc, char* argv[]) {
         feat_frt->initializeHOGHOF(width, height, numFrames);
         classifier->translate_mat2C(&feat_side->hog_shape, &feat_frt->hog_shape);
 
-    }
+    //}
     
     bool isTriggered = false;
     // Finish if there are no cameras
@@ -512,9 +512,9 @@ int main(int argc, char* argv[]) {
                 std::cout << "score: " << imageCnt << std::endl;
                 classifier->score_front = {0.0,0.0,0.0,0.0,0.0,0.0};
             }
-
+            
             classifier->addScores(classifier->score_side, classifier->score_front);
-            classifier->write_score(output_dir + "/lift_classifier_front.csv", imageCnt, classifier->score[0]);
+            classifier->write_score(output_dir + "/lift_classifier.csv", imageCnt, classifier->score[0]);
 
         }
         end_process = gettime->getPCtime();

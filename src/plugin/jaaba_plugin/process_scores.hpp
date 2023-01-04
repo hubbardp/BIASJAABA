@@ -37,7 +37,7 @@ namespace bias
         public :
 
            bool save;
-           bool detectStarted_;
+           //bool detectStarted_;
            bool isSide;
            bool isFront;
            bool processSide;
@@ -72,8 +72,8 @@ namespace bias
                          std::shared_ptr<Lockable<GetTime>> getTime);
           
            void stop();
-           void detectOn();
-           void detectOff();
+           //void detectOn();
+           //void detectOff();
             
            /*videoBackend* vid_sde;
            videoBackend* vid_front;
@@ -118,7 +118,6 @@ namespace bias
            void newShapeData(ShapeData data);
            void sideProcess(bool side);
            void frontProcess(bool front);
-
 
     };
 

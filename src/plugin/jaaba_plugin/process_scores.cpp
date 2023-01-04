@@ -13,7 +13,7 @@ namespace bias {
     {
 
         stopped_ = true;
-        detectStarted_ = false; 
+        //detectStarted_ = false;
         save = false;
         isSide= false;
         isFront = false;
@@ -71,8 +71,10 @@ namespace bias {
         hoghof->hof_shape = hofshape;
         hoghof->hog_out.resize(hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin);
         hoghof->hof_out.resize(hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin);
-    
+
         isHOGHOFInitialised = true;
+
+
 
     }
 
@@ -118,7 +120,7 @@ namespace bias {
     }
 
 
-    void ProcessScores::detectOn()
+    /*void ProcessScores::detectOn()
     {
 
         detectStarted_ = true;
@@ -131,7 +133,7 @@ namespace bias {
 
         detectStarted_ = false;
 
-    }
+    }*/
 
           
     void ProcessScores::run()
@@ -140,14 +142,14 @@ namespace bias {
         bool done = false;
         uint64_t time_now;
         double score_ts;
-        double wait_threshold = 10000;
+        double wait_threshold = 3000;
         unsigned int numFrames = 2498;
         uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial1.csv";
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial3.csv";
     
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
-        thisThread -> setPriority(QThread::TimeCriticalPriority);
+        thisThread -> setPriority(QThread::NormalPriority);
           
         acquireLock();
         stopped_ = false;
@@ -155,7 +157,7 @@ namespace bias {
         
         while (!done)
         {
-            /*if (mesPass_) 
+            if (mesPass_) 
             {
 
                 if (processSide)
@@ -242,8 +244,10 @@ namespace bias {
 
                         skipSide = false;
                         skipFront = false;
+                        acquireLock();
                         sideScoreQueue.pop_front();
                         frontScoreQueue.pop_front();
+                        releaseLock();
                         time_now = getTime_->getPCtime();
                         
                         scores[scoreCount - 1].score[0] = classifier->finalscore.score[0];
@@ -275,10 +279,10 @@ namespace bias {
                     time_now = getTime_->getPCtime();
                     score_ts = predScorePartner.score_ts;
                     scores[scoreCount - 1].score_front_ts = score_ts;
-                    //if ((time_now - score_ts) > wait_threshold)
-                    //{
-                    //    skipSide = true;
-                    //}
+                    if ((time_now - score_ts) > wait_threshold)
+                    {
+                        skipSide = true;
+                    }
 
                 }
                 else if (!sideScoreQueue.empty()) {
@@ -299,15 +303,15 @@ namespace bias {
                     time_now = getTime_->getPCtime();
                     score_ts = predScore.score_ts;
                     scores[scoreCount - 1].score_side_ts = score_ts;
-                    //if ((time_now - score_ts) > wait_threshold)
-                    //{
-                    //    skipFront = true;
+                    if ((time_now - score_ts) > wait_threshold)
+                    {
+                        skipFront = true;
                        
-                    //}
+                    }
 
                 }
 
-                if (skipFront)
+                /*if (skipFront)
                 {
                     if (!skipSide)
                     {
@@ -321,10 +325,10 @@ namespace bias {
 
                             //write_score("classifierscr.csv", scoreCount, predScore);
 
-                            scores[scoreCount-1].score[0] = predScore.score[0];
-                            scores[scoreCount-1].frameCount = predScore.frameCount;
-                            scores[scoreCount-1].view = 1;
-                            scores[scoreCount-1].score_ts = predScore.score_ts;
+                            //scores[scoreCount-1].score[0] = predScore.score[0];
+                            //scores[scoreCount-1].frameCount = predScore.frameCount;
+                            //scores[scoreCount-1].view = 1;
+                            //scores[scoreCount-1].score_ts = predScore.score_ts;
                            
                             scoreCount++;
                         }
@@ -345,31 +349,32 @@ namespace bias {
                           
                             //write_score("classifierscr.csv", scoreCount, predScorePartner);
 
-                            scores[scoreCount-1].score[0] = predScorePartner.score[0];
-                            scores[scoreCount-1].frameCount = predScorePartner.frameCount;
-                            scores[scoreCount-1].view = 2;
-                            scores[scoreCount-1].score_ts = predScorePartner.score_ts;
+                            //scores[scoreCount-1].score[0] = predScorePartner.score[0];
+                            //scores[scoreCount-1].frameCount = predScorePartner.frameCount;
+                            //scores[scoreCount-1].view = 2;
+                            //scores[scoreCount-1].score_ts = predScorePartner.score_ts;
                             
                             scoreCount++;
 
                         }
                         
                     }
-                }
-                
-            }*/
+                }*/
+               
+            }
 
+            //std::cout << scoreCount << std::endl;
             acquireLock();
             done = stopped_;
             releaseLock();
 
-            /*if (scoreCount >= (numFrames)) {
+            if (scoreCount >= (numFrames)) {
 
-                std::cout << "Writing ...." << std::endl;
-                write_score_final(filename,numFrames, scores);
-                std::cout << "Written ...." << std::endl;
+                //std::cout << "Writing ...." << std::endl;
+                write_score_final(filename,numFrames-1, scores);
+                //std::cout << "Written ...." << std::endl;
                 break;
-            }*/
+            }
 
         }
      

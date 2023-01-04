@@ -51,9 +51,6 @@ namespace bias
 
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
-            int scoreCount = 0;
-            int side_skip_count = 0;
-            int front_skip_count = 0;
 
             JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr,
                 std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parent=0);
@@ -74,7 +71,17 @@ namespace bias
                                     std::shared_ptr<TestConfig> testConfig);
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
                                        std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
+            //made it virtual void because of the need to access the function through base class pointer.
             virtual void gpuInit();
+
+            QPointer<ProcessScores> processScoresPtr_side;
+            QPointer<ProcessScores> processScoresPtr_front;
+
+            int scoreCount = 0;
+            int side_skip_count = 0;
+            int front_skip_count = 0;
+            bool gpuInitialized = false;
+
         protected:
  
             bool laserOn; 
@@ -83,12 +90,11 @@ namespace bias
             unsigned int partnerCameraNumber_;
             HOGShape partner_hogshape_;
             HOFShape partner_hofshape_;
+            HOGShape hogshape_;
 
             PredData predScoreSide_;
             PredData predScoreFront_;
  
-            QPointer<ProcessScores> processScoresPtr_side;
-            QPointer<ProcessScores> processScoresPtr_front;
             //QPointer<beh_class> classifier;
             QPointer<VisPlots> visplots;
             QPointer<QThreadPool> threadPoolPtr_;
@@ -154,6 +160,8 @@ namespace bias
             std::vector<int64_t> ts_nidaqThres;// nmidaq threshold for spiked frames
             std::vector<int64_t> ts_jaaba_start;// test
             std::vector<int64_t> ts_jaaba_end;
+            //test
+            std::vector<PredData>scores;
             
             //int no_of_skips = 10;
             //priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips
@@ -184,15 +192,15 @@ namespace bias
             void processFrame_inPlugin(StampedImage stampedImage);
             void processFramePass();
             //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
-                                 
+            void write_score_final(std::string file, unsigned int numFrames,
+                vector<PredData>& pred_score);
  
         signals:
 
             void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
             void processSide(bool side);
             void processFront(bool front);
-            void passFrontHOFShape(QPointer<HOGHOF> partner_hogshape);
-            void passSideHOGShape(QPointer<HOGHOF> partner_hogshape);
+            void passHOGShape(QPointer<HOGHOF> partner_hogshape);
             void passScore(PredData predSore);
             void passFrameRead(int64_t frameRead, int);
             void passScoreDone(bool score_cal);
@@ -208,14 +216,14 @@ namespace bias
             void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
             void trigResetPushButtonClicked();
             void trigEnabledCheckBoxStateChanged(int state);
-            void onFrameHOFShape(QPointer<HOGHOF> partner_hogshape);
-            void onFrameHOGShape(QPointer<HOGHOF> partner_hogshape);
+            void receiveHOGShape(QPointer<HOGHOF> partner_hogshape);
             void scoreCompute(PredData predScore);
             void receiveFrameRead(int64_t frameReadtime, int frameCount);
             //void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);
             void setSkipFrameProcess(unsigned int frameCount);
             //void gpuInit();
+            void initialize_classifier();
     };
 
 }

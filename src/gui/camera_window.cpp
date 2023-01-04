@@ -60,7 +60,7 @@
 #include "jaaba_plugin.hpp"
 #include "test_config.hpp"
 // -------------------------------------
-#define isVidInput 0
+#define isVidInput 1
 
 namespace bias
 {

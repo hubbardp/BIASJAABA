@@ -220,6 +220,8 @@ namespace bias
                                 bool testConfigEnabled, string trial_info,
                                 std::shared_ptr<TestConfig> testConfig){}
 
+    void BiasPlugin::gpuInit() {}
+
 
     /*TimeStamp BiasPlugin::getPCtime()
     {
@@ -264,7 +266,7 @@ namespace bias
     }*/
 
 
-    TimeStamp BiasPlugin::cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr)
+    /*TimeStamp BiasPlugin::cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr)
     {
 
         TimeStamp cam_ofs={0,0};
@@ -320,7 +322,7 @@ namespace bias
 
         return cam_ofs;
 
-    }
+    }*/
 
 
     /*void BiasPlugin::write_time(std::string file, int framenum, std::vector<double> timeVec)
