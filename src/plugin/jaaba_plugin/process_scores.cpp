@@ -2,6 +2,7 @@
 #include <cuda_runtime_api.h> 
 
 #define DEBUG 1
+#define visualize 1
 
 namespace bias {
 
@@ -27,11 +28,12 @@ namespace bias {
         frameCount_ = 0;
         partner_frameCount_ = -1;
         scoreCount = 1;
-        getTime_ = getTime;
+        gettime = getTime;
         skipFront = 0;
         skipSide = 0;
         side_read_time_ = 0;
         front_read_time_ = 0;
+        fstfrmStampRef = 0;
 
 #if DEBUG
         scores.resize(10000);
@@ -77,7 +79,6 @@ namespace bias {
 
 
     }
-
 
     void ProcessScores::genFeatures(QPointer<HOGHOF> hoghof,int frame)
     {
@@ -135,6 +136,22 @@ namespace bias {
 
     }*/
 
+    void ProcessScores::visualizeScores(vector<float>& scr_vec)
+    {
+        uint64_t time_now = 0;
+        double vis_ts = 0.0;
+        time_now = gettime->getPCtime();
+        vis_ts = (time_now - fstfrmStampRef)*(1.0e-6);
+
+        visplots->livePlotTimeVec_.append(vis_ts);
+        visplots->livePlotSignalVec_Lift.append(double(scr_vec[0]));
+        visplots->livePlotSignalVec_Handopen.append(double(scr_vec[1]));
+        visplots->livePlotSignalVec_Grab.append(double(scr_vec[2]));
+        visplots->livePlotSignalVec_Supinate.append(double(scr_vec[3]));
+        visplots->livePlotSignalVec_Chew.append(double(scr_vec[4]));
+        visplots->livePlotSignalVec_Atmouth.append(double(scr_vec[5]));
+        visplots->livePlotPtr_->show();
+    }
           
     void ProcessScores::run()
     {
@@ -142,10 +159,10 @@ namespace bias {
         bool done = false;
         uint64_t time_now;
         double score_ts;
-        double wait_threshold = 3000;
+        double wait_threshold = 14000;
         unsigned int numFrames = 2498;
         uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial3.csv";
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial2.csv";
     
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -248,15 +265,20 @@ namespace bias {
                         sideScoreQueue.pop_front();
                         frontScoreQueue.pop_front();
                         releaseLock();
-                        time_now = getTime_->getPCtime();
+                        time_now = gettime->getPCtime();
                         
                         scores[scoreCount - 1].score[0] = classifier->finalscore.score[0];
                         scores[scoreCount-1].frameCount = predScore.frameCount;
                         scores[scoreCount-1].view = 3;
-                        scores[scoreCount - 1].score_ts = time_now;
+                        scores[scoreCount-1].score_ts = time_now;
                                               // - max(predScore.score_ts, predScorePartner.score_ts);
                         //write_score("classifierscr.csv", scoreCount, scores[scoreCount-1]);
+
+#if visualize
+                        visualizeScores(classifier->finalscore.score);
+#endif
                         scoreCount++;
+                        
                         
                     }
                     
@@ -276,9 +298,9 @@ namespace bias {
                     //if (predScorePartner.frameCount > scoreCount)
                     //    std::cout << "Front ahead of score" << std::endl;
 
-                    time_now = getTime_->getPCtime();
+                    time_now = gettime->getPCtime();
                     score_ts = predScorePartner.score_ts;
-                    scores[scoreCount - 1].score_front_ts = score_ts;
+                    
                     if ((time_now - score_ts) > wait_threshold)
                     {
                         skipSide = true;
@@ -300,9 +322,9 @@ namespace bias {
                     //if (predScore.frameCount > scoreCount)
                     //    std::cout << "side is ahead of score" << std::endl;
 
-                    time_now = getTime_->getPCtime();
+                    time_now = gettime->getPCtime();
                     score_ts = predScore.score_ts;
-                    scores[scoreCount - 1].score_side_ts = score_ts;
+                    
                     if ((time_now - score_ts) > wait_threshold)
                     {
                         skipFront = true;
@@ -311,7 +333,7 @@ namespace bias {
 
                 }
 
-                /*if (skipFront)
+                if (skipFront)
                 {
                     if (!skipSide)
                     {
@@ -324,12 +346,15 @@ namespace bias {
                             releaseLock();
 
                             //write_score("classifierscr.csv", scoreCount, predScore);
-
-                            //scores[scoreCount-1].score[0] = predScore.score[0];
-                            //scores[scoreCount-1].frameCount = predScore.frameCount;
-                            //scores[scoreCount-1].view = 1;
-                            //scores[scoreCount-1].score_ts = predScore.score_ts;
-                           
+                            time_now = gettime->getPCtime();
+                            scores[scoreCount-1].score[0] = predScore.score[0];
+                            scores[scoreCount-1].frameCount = predScore.frameCount;
+                            scores[scoreCount-1].view = 1;
+                            scores[scoreCount-1].score_ts = time_now;
+                            scores[scoreCount-1].score_side_ts = predScore.score_ts;
+#if visualize
+                            visualizeScores(predScore.score);
+#endif
                             scoreCount++;
                         }
                         
@@ -348,18 +373,21 @@ namespace bias {
                             releaseLock();
                           
                             //write_score("classifierscr.csv", scoreCount, predScorePartner);
-
-                            //scores[scoreCount-1].score[0] = predScorePartner.score[0];
-                            //scores[scoreCount-1].frameCount = predScorePartner.frameCount;
-                            //scores[scoreCount-1].view = 2;
-                            //scores[scoreCount-1].score_ts = predScorePartner.score_ts;
-                            
+                            time_now = gettime->getPCtime();
+                            scores[scoreCount-1].score[0] = predScorePartner.score[0];
+                            scores[scoreCount-1].frameCount = predScorePartner.frameCount;
+                            scores[scoreCount-1].view = 2;
+                            scores[scoreCount-1].score_ts = time_now;
+                            scores[scoreCount - 1].score_front_ts = predScorePartner.score_ts;
+#if visualize
+                            visualizeScores(predScorePartner.score);
+#endif        
                             scoreCount++;
 
                         }
                         
                     }
-                }*/
+                }
                
             }
 

@@ -11,7 +11,6 @@
 #include "HOGHOF.hpp"
 #include "beh_class.hpp"
 #include "process_scores.hpp"
-#include "vis_plots.hpp"
 #include "image_label.hpp"
 //#include "shape_data.hpp"
 
@@ -96,7 +95,7 @@ namespace bias
             PredData predScoreFront_;
  
             //QPointer<beh_class> classifier;
-            QPointer<VisPlots> visplots;
+            //QPointer<VisPlots> visplots;
             QPointer<QThreadPool> threadPoolPtr_;
 
             std::shared_ptr<Lockable<GetTime>> gettime_;   

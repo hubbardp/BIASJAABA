@@ -97,7 +97,7 @@ namespace bias {
 
             if (livePlotUpdateTimerPtr_->isActive())
             {
-
+                
                 if (timer < livePlotUpdateDt_)
                 {
 
@@ -154,7 +154,6 @@ namespace bias {
                         livePlotPtr_->xAxis->setRange(firstTime, lastTime);
 
                     }
-
 
                     livePlotPtr_->graph(0)->addData(livePlotTimeVec_, livePlotSignalVec_Lift);
                     livePlotPtr_->graph(1)->addData(livePlotTimeVec_, livePlotSignalVec_Handopen);

@@ -13,6 +13,7 @@
 #include "timer.h"
 #include "shape_data.hpp"
 #include "jaaba_utils.hpp"
+#include "vis_plots.hpp"
 
 #include <opencv2/opencv.hpp>
 #include <QThreadPool>
@@ -55,10 +56,12 @@ namespace bias
            int frameCount_;
            int partner_frameCount_;
            uint64_t side_read_time_, front_read_time_;
+           uint64_t fstfrmStampRef;
 
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;
            QPointer<beh_class> classifier;
+           QPointer<VisPlots> visplots;
 
            PredData predScore;
            PredData predScorePartner;
@@ -67,7 +70,7 @@ namespace bias
            QQueue<PredData> sideScoreQueue;
            std::vector<int64_t> frame_read_stamps; // frame read pass timings
            std::vector<int64_t> partner_frame_read_stamps; // partner read pass timings
-           std::shared_ptr<Lockable<GetTime>> getTime_;
+           std::shared_ptr<Lockable<GetTime>> gettime;
            ProcessScores(QObject *parent, bool mesPass,
                          std::shared_ptr<Lockable<GetTime>> getTime);
           
@@ -93,6 +96,7 @@ namespace bias
            void write_score_final(std::string file, unsigned int numFrames,
                vector<PredData>& pred_score);
            void write_frameNum(std::string filename, vector<int>& frame_vec, int numSkips);
+           void visualizeScores(vector<float>& scr_vec);
 
         private :
 
@@ -110,8 +114,6 @@ namespace bias
 
            //test
            std::vector<PredData>scores;
-
-           
 
         signals:
 

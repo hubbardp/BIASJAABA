@@ -439,6 +439,7 @@ namespace bias {
                 }
 
                 // Set image data timestamp, framecount and frame interval estimate
+                //std::cout << timeStampDbl << std::endl;
                 stampImg.timeStamp = timeStampDbl;
                 stampImg.timeStampInit = timeStampInit;
                 stampImg.timeStampVal = timeStamp;
@@ -506,7 +507,7 @@ namespace bias {
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
                                 ts_process[frameCount - 1] = end_process - start_process;
-                                ts_pc[frameCount - 1] = end_process;
+                                ts_pc[frameCount - 1] = start_process;
                             }
                         }
 #endif
