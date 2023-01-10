@@ -2,14 +2,14 @@
 #include <cuda_runtime_api.h> 
 
 #define DEBUG 1
-#define visualize 1
+#define visualize 0
 
 namespace bias {
 
 
     // public 
  
-    ProcessScores::ProcessScores(QObject *parent, bool mesPass, 
+    ProcessScores::ProcessScores(QObject *parent, bool mesPass,
                                  std::shared_ptr<Lockable<GetTime>> getTime) : QObject(parent)
     {
 
@@ -34,6 +34,7 @@ namespace bias {
         side_read_time_ = 0;
         front_read_time_ = 0;
         fstfrmStampRef = 0;
+
 
 #if DEBUG
         scores.resize(10000);
@@ -136,6 +137,14 @@ namespace bias {
 
     }*/
 
+    void ProcessScores::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
+        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr)
+    {
+        sideScoreQueuePtr_ = sideScoreQueuePtr;
+        frontScoreQueuePtr_ = frontScoreQueuePtr;
+        std::cout << "Score Queue set in ProcessScore " <<  std::endl;
+    }
+
     void ProcessScores::visualizeScores(vector<float>& scr_vec)
     {
         uint64_t time_now = 0;
@@ -159,7 +168,7 @@ namespace bias {
         bool done = false;
         uint64_t time_now;
         double score_ts;
-        double wait_threshold = 14000;
+        double wait_threshold = 1500;
         unsigned int numFrames = 2498;
         uint64_t ts_last_score = INT_MAX, cur_time=0;
         string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial2.csv";
@@ -204,7 +213,9 @@ namespace bias {
                 skipFront = false;
                 skipSide = false;
                 
-                if (sideScoreQueue.empty() && frontScoreQueue.empty()) {
+                //std::cout << "Side queue  size" << sideScoreQueuePtr_->size() << std::endl;
+                //std::cout << "Front queue  size: " << frontScoreQueuePtr_->size() << std::endl;
+                if (sideScoreQueuePtr_->empty() && frontScoreQueuePtr_->empty()) {
 
                     //cur_time = getTime_->getPCtime();
                     //if ((cur_time - ts_last_score) > wait_threshold) {
@@ -216,19 +227,23 @@ namespace bias {
                     //}
                     continue;
 
-                }
-                else if (!sideScoreQueue.empty() && !frontScoreQueue.empty()) {
+                } 
+                else if (!sideScoreQueuePtr_->empty() && !frontScoreQueuePtr_->empty()) {
 
-                    acquireLock();
-                    predScorePartner = frontScoreQueue.front();
-                    predScore = sideScoreQueue.front();
-                    releaseLock();
+
+                    frontScoreQueuePtr_->acquireLock();
+                    predScorePartner = frontScoreQueuePtr_->front();
+                    frontScoreQueuePtr_->releaseLock();
+
+                    sideScoreQueuePtr_->acquireLock();
+                    predScore = sideScoreQueuePtr_->front();
+                    sideScoreQueuePtr_->releaseLock();
 
                     // not sure if this condition occurs
                     if (scoreCount < predScore.frameCount)
                     {
                         if (predScore.frameCount > predScorePartner.frameCount)
-                            frontScoreQueue.pop_front();
+                            frontScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }
@@ -237,19 +252,19 @@ namespace bias {
                     if (scoreCount < predScorePartner.frameCount)
                     {
                         if (predScorePartner.frameCount > predScore.frameCount)
-                            sideScoreQueue.pop_front();
+                            sideScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }
                    
                     if (scoreCount > predScore.frameCount) {
-                        sideScoreQueue.pop_front();
+                        sideScoreQueuePtr_->pop();
                         continue;
                     }
 
 
                     if (scoreCount > predScorePartner.frameCount){
-                        frontScoreQueue.pop_front();
+                        frontScoreQueuePtr_->pop();
                         continue;
                     }
                     
@@ -261,16 +276,23 @@ namespace bias {
 
                         skipSide = false;
                         skipFront = false;
-                        acquireLock();
-                        sideScoreQueue.pop_front();
-                        frontScoreQueue.pop_front();
-                        releaseLock();
+                    
+                        sideScoreQueuePtr_->acquireLock();
+                        sideScoreQueuePtr_->pop();
+                        sideScoreQueuePtr_->releaseLock();
+                        
+                        frontScoreQueuePtr_->acquireLock();
+                        frontScoreQueuePtr_->pop();
+                        frontScoreQueuePtr_->releaseLock();
+          
                         time_now = gettime->getPCtime();
                         
-                        scores[scoreCount - 1].score[0] = classifier->finalscore.score[0];
+                        scores[scoreCount-1].score[0] = classifier->finalscore.score[0];
                         scores[scoreCount-1].frameCount = predScore.frameCount;
                         scores[scoreCount-1].view = 3;
                         scores[scoreCount-1].score_ts = time_now;
+                        scores[scoreCount-1].score_side_ts = predScore.score_side_ts;
+                        scores[scoreCount-1].score_front_ts = predScorePartner.score_front_ts;
                                               // - max(predScore.score_ts, predScorePartner.score_ts);
                         //write_score("classifierscr.csv", scoreCount, scores[scoreCount-1]);
 
@@ -282,12 +304,11 @@ namespace bias {
                         
                     }
                     
-                }
-                else if (!frontScoreQueue.empty()) {
+                }else if (!frontScoreQueuePtr_->empty()) {
 
-                    acquireLock();
-                    predScorePartner = frontScoreQueue.front();
-                    releaseLock();
+                    frontScoreQueuePtr_->acquireLock();
+                    predScorePartner = frontScoreQueuePtr_->front();
+                    frontScoreQueuePtr_->releaseLock();
 
                     // check if this is not already a processed scoreCount
                     //if (scoreCount > predScorePartner.frameCount) {
@@ -299,7 +320,7 @@ namespace bias {
                     //    std::cout << "Front ahead of score" << std::endl;
 
                     time_now = gettime->getPCtime();
-                    score_ts = predScorePartner.score_ts;
+                    score_ts = predScorePartner.score_front_ts;
                     
                     if ((time_now - score_ts) > wait_threshold)
                     {
@@ -307,11 +328,11 @@ namespace bias {
                     }
 
                 }
-                else if (!sideScoreQueue.empty()) {
+                else if (!sideScoreQueuePtr_->empty()) {
 
-                    acquireLock();
-                    predScore = sideScoreQueue.front();
-                    releaseLock();
+                    sideScoreQueuePtr_->acquireLock();
+                    predScore = sideScoreQueuePtr_->front();
+                    sideScoreQueuePtr_->releaseLock();
 
                     // check if this is not already a processed scoreCount
                     //if (scoreCount > predScore.frameCount) {
@@ -323,7 +344,7 @@ namespace bias {
                     //    std::cout << "side is ahead of score" << std::endl;
 
                     time_now = gettime->getPCtime();
-                    score_ts = predScore.score_ts;
+                    score_ts = predScore.score_side_ts;
                     
                     if ((time_now - score_ts) > wait_threshold)
                     {
@@ -341,9 +362,9 @@ namespace bias {
                         if (scoreCount == predScore.frameCount)
                         {
 
-                            acquireLock();
-                            sideScoreQueue.pop_front();
-                            releaseLock();
+                            sideScoreQueuePtr_->acquireLock();
+                            sideScoreQueuePtr_->pop();
+                            sideScoreQueuePtr_->releaseLock();
 
                             //write_score("classifierscr.csv", scoreCount, predScore);
                             time_now = gettime->getPCtime();
@@ -351,7 +372,7 @@ namespace bias {
                             scores[scoreCount-1].frameCount = predScore.frameCount;
                             scores[scoreCount-1].view = 1;
                             scores[scoreCount-1].score_ts = time_now;
-                            scores[scoreCount-1].score_side_ts = predScore.score_ts;
+                            scores[scoreCount-1].score_side_ts = predScore.score_side_ts;
 #if visualize
                             visualizeScores(predScore.score);
 #endif
@@ -368,9 +389,9 @@ namespace bias {
                         if (scoreCount == predScorePartner.frameCount)
                         {
 
-                            acquireLock();
-                            frontScoreQueue.pop_front();
-                            releaseLock();
+                            frontScoreQueuePtr_->acquireLock();
+                            frontScoreQueuePtr_->pop();
+                            frontScoreQueuePtr_->releaseLock();
                           
                             //write_score("classifierscr.csv", scoreCount, predScorePartner);
                             time_now = gettime->getPCtime();
@@ -378,7 +399,7 @@ namespace bias {
                             scores[scoreCount-1].frameCount = predScorePartner.frameCount;
                             scores[scoreCount-1].view = 2;
                             scores[scoreCount-1].score_ts = time_now;
-                            scores[scoreCount - 1].score_front_ts = predScorePartner.score_ts;
+                            scores[scoreCount - 1].score_front_ts = predScorePartner.score_front_ts;
 #if visualize
                             visualizeScores(predScorePartner.score);
 #endif        
@@ -398,9 +419,10 @@ namespace bias {
 
             if (scoreCount >= (numFrames)) {
 
-                //std::cout << "Writing ...." << std::endl;
+                std::cout << "Writing score...." << std::endl;
                 write_score_final(filename,numFrames-1, scores);
                 //std::cout << "Written ...." << std::endl;
+
                 break;
             }
 

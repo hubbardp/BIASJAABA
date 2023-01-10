@@ -66,8 +66,9 @@ namespace bias
            PredData predScore;
            PredData predScorePartner;
            PredData predScoreFinal;
-           QQueue<PredData> frontScoreQueue;
-           QQueue<PredData> sideScoreQueue;
+           std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
+           std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
+
            std::vector<int64_t> frame_read_stamps; // frame read pass timings
            std::vector<int64_t> partner_frame_read_stamps; // partner read pass timings
            std::shared_ptr<Lockable<GetTime>> gettime;
@@ -97,6 +98,8 @@ namespace bias
                vector<PredData>& pred_score);
            void write_frameNum(std::string filename, vector<int>& frame_vec, int numSkips);
            void visualizeScores(vector<float>& scr_vec);
+           void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
+               std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
 
         private :
 

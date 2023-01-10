@@ -51,7 +51,8 @@ namespace bias
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
 
-            JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr,
+            JaabaPlugin(int numberOfCameras, 
+                QPointer<QThreadPool> threadPoolPtr,
                 std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parent=0);
 
             void resetTrigger();
@@ -70,6 +71,9 @@ namespace bias
                                     std::shared_ptr<TestConfig> testConfig);
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
                                        std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
+            
+            virtual void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
+                                       std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
             //made it virtual void because of the need to access the function through base class pointer.
             virtual void gpuInit();
 
@@ -102,7 +106,8 @@ namespace bias
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
-
+            std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
+            std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
 
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;

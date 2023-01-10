@@ -24,6 +24,7 @@
 #include "win_time.hpp"
 #include "NIDAQUtils.hpp"
 #include "test_config.hpp"
+#include "jaaba_utils.hpp"
 
 // External lib forward declarations
 class QTimer;
@@ -344,6 +345,9 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
+            std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
+            std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
+        
             
             //Test
             string trial_num;
@@ -385,7 +389,7 @@ namespace bias
                     QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList
                     );
             void connectVidFrames();
-
+            void setScoreQueue();
 
             void setDefaultFileDirs();
             void setupImageDisplayTimer();

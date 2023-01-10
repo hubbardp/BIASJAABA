@@ -222,6 +222,9 @@ namespace bias
 
     void BiasPlugin::gpuInit() {}
 
+    void BiasPlugin::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
+        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr) {}
+
 
     /*TimeStamp BiasPlugin::getPCtime()
     {

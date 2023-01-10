@@ -7,7 +7,7 @@
 #define DEBUG 0 
 #define compute 1
 #define isVidInput 1
-#define visualize 1
+#define visualize 0
 
 //
 //Camera 1 should always be front view
@@ -21,7 +21,8 @@ namespace bias {
     const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
 
     // Public Methods
-    JaabaPlugin::JaabaPlugin(int numberOfCameras, QPointer<QThreadPool> threadPoolPtr, 
+    JaabaPlugin::JaabaPlugin(int numberOfCameras, 
+                             QPointer<QThreadPool> threadPoolPtr, 
                              std::shared_ptr<Lockable<GetTime>> gettime,
                              QWidget *parent) : BiasPlugin(parent)
     {
@@ -416,10 +417,11 @@ namespace bias {
 
         if (pluginImageQueuePtr_ != nullptr)
         {
-
+            acquireLock();
             pluginImage = stampedImage.image;
             frameCount_ = stampedImage.frameCount;
             fstfrmtStampRef_ = stampedImage.fstfrmtStampRef;
+            releaseLock();
 
 #if !isVidInput
             if (testConfigEnabled_ && nidaq_task_ != nullptr) {
@@ -442,6 +444,7 @@ namespace bias {
                 curTime_vid = static_cast<uint64_t>(time_now);
                 avgwait_time = curTime_vid - expTime_vid;
 
+                // this is for visualizer code to run accurately
                 if (isReceiver() && processScoresPtr_side != nullptr &&  
                     processScoresPtr_side->processedFrameCount == 0)
                     processScoresPtr_side->fstfrmStampRef = fstfrmtStampRef_;
@@ -540,24 +543,24 @@ namespace bias {
                                     processScoresPtr_front->processedFrameCount > 0)
                                 {
                                 
-                                    //processScoresPtr_front->acquireLock();
                                     processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
                                         processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, 
                                         &processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
                                         processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model);
 
-                                    //std::cout << processScoresPtr_front->classifier->predScoreFront.score[0] << std::endl;
-                                    scores[frameCount_-1].score = processScoresPtr_front->classifier->predScoreFront.score;
-                                    //processScoresPtr_front->releaseLock();
-
                                     time_now = gettime_->getPCtime();
                                     processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
-                                    processScoresPtr_front->classifier->predScoreFront.score_ts = time_now;
+                                    processScoresPtr_front->classifier->predScoreFront.score_front_ts = time_now;
                                     processScoresPtr_front->classifier->predScoreFront.view = 2;
 
-                                    processScoresPtr_front->classifier->predscore_front[processScoresPtr_front->processedFrameCount]
-                                        = processScoresPtr_front->classifier->predScoreFront;
-                                    emit(passScore(processScoresPtr_front->classifier->predScoreFront));
+                                    frontScoreQueuePtr_->acquireLock();
+                                    frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
+                                    frontScoreQueuePtr_->releaseLock();
+
+                                    //scores[frameCount_ - 1].score = processScoresPtr_front->classifier->predScoreFront.score;
+                                    //processScoresPtr_front->classifier->predscore_front[processScoresPtr_front->processedFrameCount]
+                                    //    = processScoresPtr_front->classifier->predScoreFront;
+                                    //emit(passScore(processScoresPtr_front->classifier->predScoreFront));
                               
 
                                 }
@@ -594,27 +597,24 @@ namespace bias {
                                 {
                                  
                                     
-                                    //processScoresPtr_side->acquireLock();
                                     processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
                                         processScoresPtr_side->HOGHOF_frame->hog_out, processScoresPtr_side->HOGHOF_frame->hof_out,
                                         &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape, processScoresPtr_side->classifier->nframes,
                                         processScoresPtr_side->classifier->model);
-                                    
-                                    scores[frameCount_- 1].score = processScoresPtr_side->classifier->predScoreSide.score;
-                                    //processScoresPtr_side->releaseLock();
-                                    
+                                   
                                     time_now = gettime_->getPCtime();
                                     processScoresPtr_side->classifier->predScoreSide.frameCount = processScoresPtr_side->processedFrameCount;
-                                    processScoresPtr_side->classifier->predScoreSide.score_ts = time_now;
+                                    processScoresPtr_side->classifier->predScoreSide.score_side_ts = time_now;
                                     processScoresPtr_side->classifier->predScoreSide.view = 1;
                                     processScoresPtr_side->isProcessed_side = 1;
 
-                                    processScoresPtr_side->acquireLock();
-                                    processScoresPtr_side->sideScoreQueue.push_back(processScoresPtr_side->classifier->predScoreSide);
-                                    processScoresPtr_side->releaseLock();
+                                    sideScoreQueuePtr_->acquireLock();
+                                    sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
+                                    sideScoreQueuePtr_->releaseLock();
 
-                                    processScoresPtr_side->classifier->predscore_side[processScoresPtr_side->processedFrameCount]
-                                        = processScoresPtr_side->classifier->predScoreSide;
+                                    //scores[frameCount_- 1].score = processScoresPtr_side->classifier->predScoreSide.score;
+                                    //processScoresPtr_side->classifier->predscore_side[processScoresPtr_side->processedFrameCount]
+                                    //    = processScoresPtr_side->classifier->predScoreSide;
 
                                 }
 #endif
@@ -773,7 +773,7 @@ namespace bias {
                 gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_jaaba_start);
                 gettime_->write_time_1d<int64_t>(filename2, testConfig_->numFrames, ts_jaaba_end);
                 //gettime_->write_time_1d<int64_t>(filename3, testConfig_->numFrames, time_cur);
-                if (frameCount_ == testConfig_->numFrames - 1) {
+                /*if (frameCount_ == testConfig_->numFrames - 1) {
                     string filename6;
                     if (cameraNumber_ == 0)
                         filename6 = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_scr_side.csv";
@@ -781,7 +781,7 @@ namespace bias {
                         filename6 = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_scr_front.csv";
                     write_score_final(filename6, testConfig_->numFrames - 1, scores);
                     return;
-                }
+                }*/
 
             }
 
@@ -1212,7 +1212,7 @@ namespace bias {
         process_frame_time = 1; 
 
         processScoresPtr_side = new ProcessScores(this, mesPass, gettime_);   
-        processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);  
+        processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);
 #if visualize
         if(processScoresPtr_side != nullptr && cameraNumber_==0)
             processScoresPtr_side->visplots = new VisPlots(livePlotPtr,this);
@@ -1844,7 +1844,7 @@ namespace bias {
         {
             processScoresPtr_side->isProcessed_front = 1;
             processScoresPtr_side->acquireLock();
-            processScoresPtr_side->frontScoreQueue.push_back(predScore);
+            processScoresPtr_side->frontScoreQueuePtr_->push(predScore);
             processScoresPtr_side->releaseLock();
            
         } 
@@ -1935,7 +1935,7 @@ namespace bias {
                 
                 ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0.0));
                 ts_nidaqThres.resize(testConfig_->numFrames, 0);
-                scores.resize(testConfig_->numFrames);
+                //scores.resize(testConfig_->numFrames);
             }
 
             if (!testConfig_->queue_prefix.empty()) {
@@ -1966,6 +1966,19 @@ namespace bias {
         pluginImageQueuePtr_ = pluginImageQueuePtr;
         skippedFramesPluginPtr_ = skippedFramesPluginPtr;
         
+    }
+
+    void JaabaPlugin::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
+                                    std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr)
+    {
+
+        sideScoreQueuePtr_ = sideScoreQueuePtr;
+        frontScoreQueuePtr_ = frontScoreQueuePtr;
+        std::cout << "Score Queue set in JAABA for cameranumber " << cameraNumber_ <<  std::endl;
+        
+        // setQueue for processScores thread 
+        processScoresPtr_side->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
+        processScoresPtr_front->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
     }
 
     // Test development

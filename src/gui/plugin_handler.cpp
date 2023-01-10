@@ -53,7 +53,13 @@ namespace bias
         skippedFramesPluginPtr_ = skippedFramesPluginPtr;
         setReadyState();
     }
-
+    
+    void PluginHandler::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
+                                      std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr) 
+    {
+        sideScoreQueuePtr_ = sideScoreQueuePtr;
+        frontScoreQueuePtr_ = frontScoreQueuePtr;
+    }
 
     void PluginHandler::setPlugin(BiasPlugin *pluginPtr)
     {
@@ -61,9 +67,10 @@ namespace bias
         setReadyState();
 
         // setImage queue for set pluginPtr
-        if(pluginImageQueuePtr_ != nullptr)
+        if (pluginImageQueuePtr_ != nullptr)
         {
-            pluginPtr_->setImageQueue(pluginImageQueuePtr_, skippedFramesPluginPtr_);     
+            pluginPtr_->setImageQueue(pluginImageQueuePtr_, skippedFramesPluginPtr_);
+            pluginPtr_->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
         }
 
     }

@@ -26,6 +26,7 @@
 #include "ext_ctl_http_server.hpp"
 #include "plugin_handler.hpp"
 
+
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
@@ -357,6 +358,7 @@ namespace bias
         //set nidaq pointer for cam 1
         if (cameraNumber_ == 1)
         {
+            setScoreQueue();
             QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
             if (partnerCameraWindowPtr->nidaq_task != nullptr) {
                 nidaq_task = partnerCameraWindowPtr->nidaq_task;
@@ -509,6 +511,7 @@ namespace bias
             
             pluginHandlerPtr_ -> setCameraNumber(cameraNumber_);
             pluginHandlerPtr_ -> setImageQueue(pluginImageQueuePtr_, skippedFramesPluginPtr_);
+            pluginHandlerPtr_-> setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
             
             pluginHandlerPtr_ -> setPlugin(currentPluginPtr);
             
@@ -3022,11 +3025,11 @@ namespace bias
     // -----------------------------------------------------------------------------------
 
     void CameraWindow::initialize(
-            Guid guid, 
-            unsigned int cameraNumber, 
-            unsigned int numberOfCameras,
-            QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList
-            )
+        Guid guid,
+        unsigned int cameraNumber,
+        unsigned int numberOfCameras,
+        QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList
+    )
     {
         connected_ = false;
         capturing_ = false;
@@ -3066,7 +3069,10 @@ namespace bias
         logImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
         pluginImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
         skippedFramesPluginPtr_ = std::make_shared<LockableQueue<unsigned int>>();
-
+        if (cameraNumber_ == 0) {
+            sideScoreQueuePtr_ = std::make_shared<LockableQueue<PredData>>();
+            frontScoreQueuePtr_ = std::make_shared<LockableQueue<PredData>>();
+        }
         setDefaultFileDirs();
         currentVideoFileDir_ = defaultVideoFileDir_;
         currentVideoFileName_ = DEFAULT_VIDEO_FILE_NAME;
@@ -3089,7 +3095,8 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_,
                                                                                  loadTestConfigEnabled, trial_num,
                                                                                  testConfig,this);
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, threadPoolPtr_, gettime_, 
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, 
+                                                               threadPoolPtr_, gettime_, 
                                                                this);
 
         //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
@@ -8042,6 +8049,26 @@ namespace bias
             nidaq_task->start_trigger_signal();
         }
 
+    }
+
+    void CameraWindow::setScoreQueue()
+    {
+        QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
+        if (partnerCameraWindowPtr->sideScoreQueuePtr_ != nullptr) {
+            sideScoreQueuePtr_ = partnerCameraWindowPtr->sideScoreQueuePtr_;
+            printf(" Queue set - %d\n", cameraNumber_);
+        }
+        else {
+            printf(" Queue not set - %d\n", cameraNumber_);
+        }
+
+        if (partnerCameraWindowPtr->frontScoreQueuePtr_ != nullptr) {
+            frontScoreQueuePtr_ = partnerCameraWindowPtr->frontScoreQueuePtr_;
+            printf(" Queue set - %d\n", cameraNumber_);
+        }
+        else {
+            printf(" Queue not set - %d\n", cameraNumber_);
+        }
     }
 
 

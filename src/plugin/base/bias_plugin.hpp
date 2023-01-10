@@ -7,6 +7,8 @@
 #include "stamped_image.hpp"
 #include "rtn_status.hpp"
 #include "camera_facade.hpp"
+#include "jaaba_utils.hpp"
+
 #include <QDir>
 #include <QTextStream>
 
@@ -80,6 +82,8 @@ namespace bias
                 bool testConfigEnabled, string trial_info,
                 std::shared_ptr<TestConfig> testConfig);
             virtual void gpuInit();
+            virtual void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
+                                       std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
 
             //TimeStamp getPCtime();
             //TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
@@ -107,7 +111,8 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
-
+            std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
+            std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
 
         signals:
 

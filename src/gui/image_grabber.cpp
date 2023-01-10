@@ -152,6 +152,8 @@ namespace bias {
 
         vid_obj_ = new videoBackend(filename);
         cap_obj_ = vid_obj_->videoCapObject();
+        nframes_ = vid_obj_->getNumFrames(cap_obj_);
+        std::cout << "Vid frames: " << nframes_ << std::endl;
 
         if (cap_obj_.isOpened())
             isOpen_ = 1;
@@ -301,9 +303,14 @@ namespace bias {
                 istriggered = true;
             }
 
-            start_process = gettime_->getPCtime();           
+            start_process = gettime_->getPCtime();
 #if isVidInput  
             // wait for nidaq trigger signal
+            if (frameCount == nframes_){
+                QThread::yieldCurrentThread();
+                continue;
+            }
+
             if (startUpCount >= numStartUpSkip_)
                 nidaq_task_->getCamtrig(frameCount);
             if (nidaq_task_->istrig) {
@@ -837,7 +844,7 @@ namespace bias {
 
     void ImageGrabber::initializeVid()
     {
-        nframes_ = 2498;
+        //nframes_ = 2498;
         no_of_skips = 10;   
 
         initializeVidBackend();
