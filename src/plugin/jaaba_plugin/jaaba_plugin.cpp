@@ -6,7 +6,7 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 1
+#define isVidInput 0
 #define visualize 0
 
 //
@@ -1915,6 +1915,13 @@ namespace bias {
         testConfig_ = testConfig;
         testConfigEnabled_ = testConfigEnabled;
         trial_num_ = trial_info;
+
+        if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
+        {
+            processScoresPtr_side->scores.resize(100000);
+            processScoresPtr_side->numFrames = 100000;
+            processScoresPtr_side->nidaq_task_= nidaq_task_;
+        }
 
         if (testConfigEnabled_)
             allocate_testVec();

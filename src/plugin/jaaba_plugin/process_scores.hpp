@@ -57,6 +57,7 @@ namespace bias
            int partner_frameCount_;
            uint64_t side_read_time_, front_read_time_;
            uint64_t fstfrmStampRef;
+           unsigned int numFrames;
 
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;
@@ -68,6 +69,7 @@ namespace bias
            PredData predScoreFinal;
            std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
            std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
+           std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
 
            std::vector<int64_t> frame_read_stamps; // frame read pass timings
            std::vector<int64_t> partner_frame_read_stamps; // partner read pass timings
@@ -101,11 +103,16 @@ namespace bias
            void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
                std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
 
+           //test
+           std::vector<PredData>scores;
+           uInt32 read_buffer_ = 0, read_ondemand_ = 0;
+
         private :
 
            bool stopped_;
            bool ready_;
-           float threshold_runtime = static_cast<float>(3000);
+           //float threshold_runtime = static_cast<float>(3000);
+           
            
  
            QQueue<FrameData> frameQueue_;
@@ -114,9 +121,6 @@ namespace bias
            //QQueue<FrameData> receiverImageQueue_;
 
            void run();
-
-           //test
-           std::vector<PredData>scores;
 
         signals:
 

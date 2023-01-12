@@ -2,6 +2,7 @@
 #include <cuda_runtime_api.h> 
 
 #define DEBUG 1
+#define isVidInput 0
 #define visualize 0
 
 namespace bias {
@@ -36,9 +37,6 @@ namespace bias {
         fstfrmStampRef = 0;
 
 
-#if DEBUG
-        scores.resize(10000);
-#endif
         //frame_read_stamps.resize(2798,0);
         //predScoreFront_ = &classifier->predScoreFront;
         //predScoreSide_ = &classifier->predScoreSide;
@@ -169,9 +167,8 @@ namespace bias {
         uint64_t time_now;
         double score_ts;
         double wait_threshold = 1500;
-        unsigned int numFrames = 2498;
         uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial2.csv";
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial5.csv";
     
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -284,13 +281,18 @@ namespace bias {
                         frontScoreQueuePtr_->acquireLock();
                         frontScoreQueuePtr_->pop();
                         frontScoreQueuePtr_->releaseLock();
-          
+#if isVidInput         
                         time_now = gettime->getPCtime();
-                        
+                        scores[scoreCount - 1].score_ts = time_now;
+#else
+                        nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                        scores[scoreCount - 1].score_ts = read_ondemand_;
+#endif
+
                         scores[scoreCount-1].score[0] = classifier->finalscore.score[0];
                         scores[scoreCount-1].frameCount = predScore.frameCount;
                         scores[scoreCount-1].view = 3;
-                        scores[scoreCount-1].score_ts = time_now;
+                        
                         scores[scoreCount-1].score_side_ts = predScore.score_side_ts;
                         scores[scoreCount-1].score_front_ts = predScorePartner.score_front_ts;
                                               // - max(predScore.score_ts, predScorePartner.score_ts);
@@ -367,11 +369,16 @@ namespace bias {
                             sideScoreQueuePtr_->releaseLock();
 
                             //write_score("classifierscr.csv", scoreCount, predScore);
+#if isVidInput         
                             time_now = gettime->getPCtime();
+                            scores[scoreCount - 1].score_ts = time_now;
+#else
+                            nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                            scores[scoreCount - 1].score_ts = read_ondemand_;
+#endif
                             scores[scoreCount-1].score[0] = predScore.score[0];
                             scores[scoreCount-1].frameCount = predScore.frameCount;
                             scores[scoreCount-1].view = 1;
-                            scores[scoreCount-1].score_ts = time_now;
                             scores[scoreCount-1].score_side_ts = predScore.score_side_ts;
 #if visualize
                             visualizeScores(predScore.score);
@@ -393,12 +400,19 @@ namespace bias {
                             frontScoreQueuePtr_->pop();
                             frontScoreQueuePtr_->releaseLock();
                           
+#if isVidInput         
+                            time_now = gettime->getPCtime();
+                            scores[scoreCount - 1].score_ts = time_now;
+#else
+                            nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                            scores[scoreCount - 1].score_ts = read_ondemand_;
+#endif
+
                             //write_score("classifierscr.csv", scoreCount, predScorePartner);
                             time_now = gettime->getPCtime();
                             scores[scoreCount-1].score[0] = predScorePartner.score[0];
                             scores[scoreCount-1].frameCount = predScorePartner.frameCount;
                             scores[scoreCount-1].view = 2;
-                            scores[scoreCount-1].score_ts = time_now;
                             scores[scoreCount - 1].score_front_ts = predScorePartner.score_front_ts;
 #if visualize
                             visualizeScores(predScorePartner.score);
