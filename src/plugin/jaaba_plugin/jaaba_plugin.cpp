@@ -6,8 +6,8 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 0
-#define visualize 0
+#define isVidInput 1
+#define visualize 1
 
 //
 //Camera 1 should always be front view
@@ -1918,8 +1918,8 @@ namespace bias {
 
         if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
         {
-            processScoresPtr_side->scores.resize(100000);
-            processScoresPtr_side->numFrames = 100000;
+            processScoresPtr_side->scores.resize(9992);
+            processScoresPtr_side->numFrames = 9992;
             processScoresPtr_side->nidaq_task_= nidaq_task_;
         }
 

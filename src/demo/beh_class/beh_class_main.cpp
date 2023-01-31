@@ -164,6 +164,8 @@ int main(int argc, char* argv[]) {
     // performance benchmark variables.
     std::vector<float> ts_nidaq(numFrames, 0.0);
     std::vector<int64_t>ts_pc(numFrames, 0);
+    std::vector<int64_t>ts_pc_side(numFrames, 0);
+    std::vector<int64_t>ts_pc_front(numFrames, 0);
     std::vector<int64_t>delay(10, 0);
     bias::NIDAQUtils* nidaq_task; // nidaq timing object 
     bias::GetTime* gettime; // pc time stamps object
@@ -171,7 +173,7 @@ int main(int argc, char* argv[]) {
     uInt32 read_start=0, read_end=0;
     int64_t start_delay = 0, end_delay = 0 ,avgWaitThres = 2500;
     int64_t start_process=0, end_process=0;
-    bool isNIDAQ= 1;
+    bool isNIDAQ= 0;
 
     // Print out current library version
     spinLibraryVersion hLibraryVersion;
@@ -222,7 +224,7 @@ int main(int argc, char* argv[]) {
 
     }
     // initialize camera, nidaq, HOGHOF params 
-    /*if (numCameras != 0) {
+    if (numCameras != 0) {
 
         std::cout << "Camera Initialized" << std::endl;
         hasValidInput = true;
@@ -242,7 +244,7 @@ int main(int argc, char* argv[]) {
         //have to load ImageParams from width and height information
         //printf("Number of cameras detected: %u\n\n", (unsigned int)numCameras);
 
-    }else if (!vidFile->isEmpty()) {*/
+    }else if (!vidFile->isEmpty()) {
 
         // Vid params
         std::cout << "Video File Input" << std::endl;
@@ -260,7 +262,7 @@ int main(int argc, char* argv[]) {
         feat_frt->initializeHOGHOF(width, height, numFrames);
         classifier->translate_mat2C(&feat_side->hog_shape, &feat_frt->hog_shape);
 
-    //}
+    }
     
     bool isTriggered = false;
     // Finish if there are no cameras
@@ -356,7 +358,7 @@ int main(int argc, char* argv[]) {
             cv::Mat greySide;
             cv::Mat greyFront;
 
-            if (isNIDAQ && !isTriggered && nidaq_task != nullptr) {
+            /*if (isNIDAQ && !isTriggered && nidaq_task != nullptr) {
 
                 printf("Started NIDAQ Trigger Signal");
                 nidaq_task->start_trigger_signal();
@@ -371,28 +373,28 @@ int main(int argc, char* argv[]) {
             }
             else {
                 start_process = gettime->getPCtime();
-            }
+            }*/
 
             curImg_side = feat_side->vid_frames[imageCnt];
             feat_side->preprocess_vidFrame(vid_sde, curImg_side);
             curImg_frt = feat_frt->vid_frames[imageCnt];
             feat_frt->preprocess_vidFrame(vid_frt, curImg_frt);
 
-            if(!isNIDAQ){
+            /*if(!isNIDAQ){
 
-                /*start_delay = gettime->getPCtime();
-                end_delay = start_delay;
-                while ((end_delay - start_delay) < avgWaitThres)
-                {
-                    end_delay = gettime->getPCtime();
-                }*/
-                write_time<int64_t>("./temp.csv", 1, delay);
-                write_time<int64_t>("./temp1.csv", 1, delay);
+                //start_delay = gettime->getPCtime();
+                //end_delay = start_delay;
+                //while ((end_delay - start_delay) < avgWaitThres)
+                //{
+                //    end_delay = gettime->getPCtime();
+                //}
+                //write_time<int64_t>("./temp.csv", 1, delay);
+                //write_time<int64_t>("./temp1.csv", 1, delay);
                 end_process = gettime->getPCtime();
             }
             else if (isNIDAQ) {
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_end, NULL));
-            }
+            }*/
             
             /*if (isNIDAQ)
                 ts_nidaq[imageCnt] = (read_end - read_start)*0.02;
@@ -433,7 +435,10 @@ int main(int argc, char* argv[]) {
             //feat_side->getvid_frame(vid_sde);
             feat_side->process_vidFrame(imageCnt);
 #endif      
+            end_process = gettime->getPCtime();
+            ts_pc_side[imageCnt] = (end_process - start_process);
 
+            start_process = gettime->getPCtime();
 #if isSkip
             if (!skipframes_view2.empty())
             {
@@ -463,7 +468,7 @@ int main(int argc, char* argv[]) {
             //feat_frt->getvid_frame(vid_frt);
             feat_frt->process_vidFrame(imageCnt);
 #endif
-
+            
 
         }else {
 
@@ -488,7 +493,7 @@ int main(int argc, char* argv[]) {
 
         if (imageCnt > 0) {
 
-            if (!isSkipSide)
+            /*if (!isSkipSide)
             {
                 classifier->boost_classify_side(classifier->score_side,
                     feat_side->hog_out, feat_side->hof_out,
@@ -498,7 +503,7 @@ int main(int argc, char* argv[]) {
             } else {
 
                 classifier->score_side = {0.0,0.0,0.0,0.0,0.0,0.0};
-            }
+            }*/
 
             if (!isSkipFront)
             {
@@ -512,20 +517,23 @@ int main(int argc, char* argv[]) {
                 std::cout << "score: " << imageCnt << std::endl;
                 classifier->score_front = {0.0,0.0,0.0,0.0,0.0,0.0};
             }
-            
-            classifier->addScores(classifier->score_side, classifier->score_front);
-            classifier->write_score(output_dir + "/lift_classifier.csv", imageCnt, classifier->score[0]);
+            end_process = gettime->getPCtime();
+            ts_pc_front[imageCnt] = (end_process - start_process);
+
+            //classifier->addScores(classifier->score_side, classifier->score_front);
+            //classifier->write_score(output_dir + "/lift_classifier.csv", imageCnt, classifier->score[0]);
 
         }
-        end_process = gettime->getPCtime();
-        ts_pc[imageCnt] = end_process - start_process;
+        //end_process = gettime->getPCtime();
+        //ts_pc[imageCnt] = (end_process - start_process);
         
-        /*if (isNIDAQ && imageCnt == numFrames-1){
+        if (isNIDAQ && imageCnt == numFrames-1){
             write_time<float>(output_dir + "/cam2sys_latency.csv", numFrames, ts_nidaq);
             break;
-        }*/
+        }
         if(imageCnt == numFrames - 1) {
-            write_time<int64_t>(output_dir + "/ts_pc_latency_vidread_processjaaba_.csv", numFrames, ts_pc);
+            write_time<int64_t>(output_dir + "/ts_pc_latency_vidread_processjaaba_side_.csv", numFrames, ts_pc_front);
+            write_time<int64_t>(output_dir + "/ts_pc_latency_vidread_processjaaba_front_.csv", numFrames, ts_pc_side);
             break;
         }
         imageCnt++;

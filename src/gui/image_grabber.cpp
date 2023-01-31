@@ -24,7 +24,7 @@
 // ----------------------------------------
 
 #define DEBUG 1 
-#define isVidInput 0
+#define isVidInput 1
 
 namespace bias {
 
@@ -144,10 +144,10 @@ namespace bias {
         QString filename;
         if (cameraNumber_ == 0)
         {
-            filename = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi";
+            filename = "C:/Users/27rut/BIAS/BIASJAABA_movies/multiple_sde.avi";
         }
         else if (cameraNumber_ == 1) {
-            filename = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi";
+            filename = "C:/Users/27rut/BIAS/BIASJAABA_movies/multiple_frt.avi";
         }
 
         vid_obj_ = new videoBackend(filename);

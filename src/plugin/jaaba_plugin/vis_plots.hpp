@@ -21,6 +21,10 @@ namespace bias
             static double DEFAULT_LIVEPLOT_SIGNAL_WINDOW;
 
             QCustomPlot* livePlotPtr_;
+            QCPGraph* graph1_;
+            QCPGraph* graph2_;
+            QCPGraph* graph3_;
+            QCPAxisRect* sub_plot_1;
             QVector<double> livePlotTimeVec_;
             QVector<double> livePlotSignalVec_Lift;
             QVector<double> livePlotSignalVec_Handopen;

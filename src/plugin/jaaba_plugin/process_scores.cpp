@@ -2,8 +2,8 @@
 #include <cuda_runtime_api.h> 
 
 #define DEBUG 1
-#define isVidInput 0
-#define visualize 0
+#define isVidInput 1
+#define visualize 1
 
 namespace bias {
 
@@ -74,7 +74,6 @@ namespace bias {
         hoghof->hof_out.resize(hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin);
 
         isHOGHOFInitialised = true;
-
 
 
     }
@@ -168,7 +167,7 @@ namespace bias {
         double score_ts;
         double wait_threshold = 1500;
         uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial5.csv";
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial3.csv";
     
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
