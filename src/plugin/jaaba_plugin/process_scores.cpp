@@ -2,8 +2,8 @@
 #include <cuda_runtime_api.h> 
 
 #define DEBUG 1
-#define isVidInput 1
-#define visualize 1
+#define isVidInput 0
+#define visualize 0
 
 namespace bias {
 
@@ -167,7 +167,7 @@ namespace bias {
         double score_ts;
         double wait_threshold = 1500;
         uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial3.csv";
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial5.csv";
     
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -208,19 +208,9 @@ namespace bias {
             else {
                 skipFront = false;
                 skipSide = false;
-                
-                //std::cout << "Side queue  size" << sideScoreQueuePtr_->size() << std::endl;
-                //std::cout << "Front queue  size: " << frontScoreQueuePtr_->size() << std::endl;
+
                 if (sideScoreQueuePtr_->empty() && frontScoreQueuePtr_->empty()) {
 
-                    //cur_time = getTime_->getPCtime();
-                    //if ((cur_time - ts_last_score) > wait_threshold) {
-                    //    scoreCount++;
-                    //    ts_last_score = cur_time;
-                    //}
-                    //else {
-                    //    continue;
-                    //}
                     continue;
 
                 } 
@@ -235,24 +225,25 @@ namespace bias {
                     predScore = sideScoreQueuePtr_->front();
                     sideScoreQueuePtr_->releaseLock();
 
-                    // not sure if this condition occurs
+                    // to keep up with frame where both views are skipped 
                     if (scoreCount < predScore.frameCount)
                     {
-                        if (predScore.frameCount > predScorePartner.frameCount)
-                            frontScoreQueuePtr_->pop();
+                        //if (predScore.frameCount > predScorePartner.frameCount)
+                        //    frontScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }
 
-                    // not sure if this condition occurs
+                    // to keep up with frames where both views are skipped
                     if (scoreCount < predScorePartner.frameCount)
                     {
-                        if (predScorePartner.frameCount > predScore.frameCount)
-                            sideScoreQueuePtr_->pop();
+                        //if (predScorePartner.frameCount > predScore.frameCount)
+                        //    sideScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }
                    
+                    
                     if (scoreCount > predScore.frameCount) {
                         sideScoreQueuePtr_->pop();
                         continue;
@@ -317,8 +308,8 @@ namespace bias {
                     //    continue;
                     //}
 
-                    //if (predScorePartner.frameCount > scoreCount)
-                    //    std::cout << "Front ahead of score" << std::endl;
+                    if (predScorePartner.frameCount > scoreCount)
+                        scoreCount++;
 
                     time_now = gettime->getPCtime();
                     score_ts = predScorePartner.score_front_ts;
@@ -341,8 +332,8 @@ namespace bias {
                     //    continue;
                     //}
 
-                    //if (predScore.frameCount > scoreCount)
-                    //    std::cout << "side is ahead of score" << std::endl;
+                    if (predScore.frameCount > scoreCount)
+                        scoreCount++;
 
                     time_now = gettime->getPCtime();
                     score_ts = predScore.score_side_ts;
@@ -418,11 +409,9 @@ namespace bias {
 #endif        
                             scoreCount++;
 
-                        }
-                        
+                        }       
                     }
                 }
-               
             }
 
             //std::cout << scoreCount << std::endl;

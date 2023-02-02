@@ -6,8 +6,8 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 1
-#define visualize 1
+#define isVidInput 0
+#define visualize 0
 
 //
 //Camera 1 should always be front view
@@ -467,8 +467,7 @@ namespace bias {
                     if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount == frameCount_))
                     {
 
-                        //side_skip_count++;
-                        //ts_nidaqThres[processScoresPtr_side->processedFrameCount] = expTime;
+                        ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
                         //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
                         processScoresPtr_side->processedFrameCount++;                           
 
@@ -477,8 +476,7 @@ namespace bias {
                     if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount == frameCount_))
                     {
 
-                        //front_skip_count++;
-                        //ts_nidaqThres[processScoresPtr_front->processedFrameCount] = expTime;
+                        ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
                         //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
                         processScoresPtr_front->processedFrameCount++;
 
@@ -1894,7 +1892,6 @@ namespace bias {
             acquireLock();
             processScoresPtr_front->skipSide = 1;   
             releaseLock();
-
         }
 
         if (isReceiver())
@@ -1902,7 +1899,6 @@ namespace bias {
             acquireLock();
             processScoresPtr_side->skipFront = 1;
             releaseLock();
-
         }
     }
 
@@ -1918,8 +1914,8 @@ namespace bias {
 
         if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
         {
-            processScoresPtr_side->scores.resize(9992);
-            processScoresPtr_side->numFrames = 9992;
+            processScoresPtr_side->scores.resize(100000);
+            processScoresPtr_side->numFrames = 100000;
             processScoresPtr_side->nidaq_task_= nidaq_task_;
         }
 
