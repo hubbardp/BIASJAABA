@@ -228,8 +228,8 @@ namespace bias {
                     // to keep up with frame where both views are skipped 
                     if (scoreCount < predScore.frameCount)
                     {
-                        //if (predScore.frameCount > predScorePartner.frameCount)
-                        //    frontScoreQueuePtr_->pop();
+                        if (predScore.frameCount > predScorePartner.frameCount)
+                            frontScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }
@@ -237,8 +237,8 @@ namespace bias {
                     // to keep up with frames where both views are skipped
                     if (scoreCount < predScorePartner.frameCount)
                     {
-                        //if (predScorePartner.frameCount > predScore.frameCount)
-                        //    sideScoreQueuePtr_->pop();
+                        if (predScorePartner.frameCount > predScore.frameCount)
+                            sideScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }
@@ -292,8 +292,7 @@ namespace bias {
                         visualizeScores(classifier->finalscore.score);
 #endif
                         scoreCount++;
-                        
-                        
+                                             
                     }
                     
                 }else if (!frontScoreQueuePtr_->empty()) {

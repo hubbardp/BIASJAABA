@@ -388,6 +388,7 @@ namespace bias {
         cv::Mat greySide;
         cv::Mat greyFront;
         float scaling_factor = 1.0 / 255.0;
+        bool isskip;
 
         //DEVEL
         int64_t pc_time;
@@ -434,7 +435,7 @@ namespace bias {
 
             }
 #endif
-
+            
             start_process = gettime_->getPCtime();
             if (fstfrmtStampRef_ != 0)
             {
@@ -443,14 +444,14 @@ namespace bias {
                 expTime_vid = fstfrmtStampRef_ + (frameGrabAvgTime * (frameCount_ + 1)) + max_jaaba_compute_time;
                 curTime_vid = static_cast<uint64_t>(time_now);
                 avgwait_time = curTime_vid - expTime_vid;
-
+                          
                 // this is for visualizer code to run accurately
                 if (isReceiver() && processScoresPtr_side != nullptr &&  
                     processScoresPtr_side->processedFrameCount == 0)
                     processScoresPtr_side->fstfrmStampRef = fstfrmtStampRef_;
 
 #else                   
-                avg_frameLatSinceFirstFrame = (((frameGrabAvgTime) * (frameCount_ + 1))
+                /*avg_frameLatSinceFirstFrame = (((frameGrabAvgTime) * (frameCount_ + 1))
                                                 + max_jaaba_compute_time ); // nidaq ts frame of reference
                                                   
                 expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
@@ -458,180 +459,178 @@ namespace bias {
                 //expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
                 curTime = (static_cast<uint64_t>(read_ondemand) * 20); 
 
-                avgwait_time = curTime - expTime;
+                avgwait_time = curTime - expTime;*/
 
 #endif
                     
-                if (avgwait_time > wait_thres)
+                //if (avgwait_time > wait_thres)
+    
+                if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount < frameCount_))
                 {
-                    if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount == frameCount_))
+                    while (processScoresPtr_side->processedFrameCount < frameCount_)
                     {
-
                         ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
                         //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
-                        processScoresPtr_side->processedFrameCount++;                           
-
-                    }else { assert(processScoresPtr_side->processedFrameCount==frameCount_); }
-
-                    if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount == frameCount_))
+                        processScoresPtr_side->processedFrameCount++;
+                    }
+                    assert(processScoresPtr_side->processedFrameCount == frameCount_);
+                }
+                
+                if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount < frameCount_))
+                {
+                    while (processScoresPtr_front->processedFrameCount < frameCount_)
                     {
-
                         ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
                         //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
                         processScoresPtr_front->processedFrameCount++;
-
                     }
-                    else { assert(processScoresPtr_front->processedFrameCount == frameCount_); }
+                    assert(processScoresPtr_front->processedFrameCount == frameCount_);
 
                 }
-                else {
 
-                    if (pluginImage.rows != 0 && pluginImage.cols != 0)
+                if (pluginImage.rows != 0 && pluginImage.cols != 0)
+                {
+
+                    if(isSender())//if (isSender() && detectStarted)
                     {
 
-                        if(isSender())//if (isSender() && detectStarted)
+                        if (pluginImage.channels() == 3)
                         {
-
-                            if (pluginImage.channels() == 3)
-                            {
-                                cv::cvtColor(pluginImage, pluginImage, cv::COLOR_BGR2GRAY);
-                            }
-
-                            // convert the frame into float32
-                            pluginImage.convertTo(greyFront, CV_32FC1, scaling_factor);
-
+                            cv::cvtColor(pluginImage, pluginImage, cv::COLOR_BGR2GRAY);
                         }
 
+                        // convert the frame into float32
+                        pluginImage.convertTo(greyFront, CV_32FC1, scaling_factor);
 
-                        if(isReceiver())//if (isReceiver() && detectStarted)
+                    }
+
+
+                    if(isReceiver())//if (isReceiver() && detectStarted)
+                    {
+
+                        if (pluginImage.channels() == 3)
                         {
-
-                            if (pluginImage.channels() == 3)
-                            {
-                                cv::cvtColor(pluginImage, pluginImage, cv::COLOR_BGR2GRAY);
-                            }
-
-                            // convert the frame into float32
-                            pluginImage.convertTo(greySide, CV_32FC1, scaling_factor);
-
+                            cv::cvtColor(pluginImage, pluginImage, cv::COLOR_BGR2GRAY);
                         }
 
-                        if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
-                        {
+                        // convert the frame into float32
+                        pluginImage.convertTo(greySide, CV_32FC1, scaling_factor);
 
-                            if (processScoresPtr_front->isFront)
-                            {
+                    }
+
+                    if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
+                    {
+
+                        if (processScoresPtr_front->isFront)
+                        {
 
 #if compute
-                                if (nDevices_ >= 2)
-                                {
-                                    cudaSetDevice(1);
-                                    processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                    processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
+                            if (nDevices_ >= 2)
+                            {
+                                cudaSetDevice(1);
+                                processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
 
-                                }
-                                else {
+                            }
+                            else {
 
-                                    processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                    processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
+                                processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
 
-                                }
+                            }
                                 
-                                if (processScoresPtr_front->classifier->isClassifierPathSet &&
-                                    processScoresPtr_front->processedFrameCount > 0)
-                                {
+                            if (processScoresPtr_front->classifier->isClassifierPathSet &&
+                                processScoresPtr_front->processedFrameCount > 0)
+                            {
                                 
-                                    processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
-                                        processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, 
-                                        &processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
-                                        processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model);
+                                processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
+                                    processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, 
+                                    &processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
+                                    processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model);
 
-                                    time_now = gettime_->getPCtime();
-                                    processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
-                                    processScoresPtr_front->classifier->predScoreFront.score_front_ts = time_now;
-                                    processScoresPtr_front->classifier->predScoreFront.view = 2;
+                                time_now = gettime_->getPCtime();
+                                processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
+                                processScoresPtr_front->classifier->predScoreFront.score_front_ts = time_now;
+                                processScoresPtr_front->classifier->predScoreFront.view = 2;
 
-                                    frontScoreQueuePtr_->acquireLock();
-                                    frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
-                                    frontScoreQueuePtr_->releaseLock();
+                                frontScoreQueuePtr_->acquireLock();
+                                frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
+                                frontScoreQueuePtr_->releaseLock();
 
-                                    //scores[frameCount_ - 1].score = processScoresPtr_front->classifier->predScoreFront.score;
-                                    //processScoresPtr_front->classifier->predscore_front[processScoresPtr_front->processedFrameCount]
-                                    //    = processScoresPtr_front->classifier->predScoreFront;
-                                    //emit(passScore(processScoresPtr_front->classifier->predScoreFront));
+                                //scores[frameCount_ - 1].score = processScoresPtr_front->classifier->predScoreFront.score;
+                                //processScoresPtr_front->classifier->predscore_front[processScoresPtr_front->processedFrameCount]
+                                //    = processScoresPtr_front->classifier->predScoreFront;
+                                //emit(passScore(processScoresPtr_front->classifier->predScoreFront));
                               
 
-                                }
+                            }
 #endif
-                                processScoresPtr_front->processedFrameCount++;
+                            processScoresPtr_front->processedFrameCount++;
+
+                        }
+                        else {
+
+                            //processScoresPtr_front->HOGHOF_partner->setLastInput();
+                            //processScoresPtr_front->skip_frameFront = 0;
+                            //processScoresPtr_front->processedFrameCount++;
+
+                        }
+
+                        if (processScoresPtr_side->isSide)
+                        {
+#if compute
+                            if (nDevices_ >= 2)
+                            {
+                                cudaSetDevice(0);
+                                processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
 
                             }
                             else {
 
-                                //processScoresPtr_front->HOGHOF_partner->setLastInput();
-                                //processScoresPtr_front->skip_frameFront = 0;
-                                //processScoresPtr_front->processedFrameCount++;
-
+                                processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
                             }
 
-                            if (processScoresPtr_side->isSide)
+                            if (processScoresPtr_side->classifier->isClassifierPathSet &&
+                                processScoresPtr_side->processedFrameCount > 0)
                             {
-#if compute
-                                if (nDevices_ >= 2)
-                                {
-                                    cudaSetDevice(0);
-                                    processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                    processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
-
-                                }
-                                else {
-
-                                    processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                    processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
-                                }
-
-                                if (processScoresPtr_side->classifier->isClassifierPathSet &&
-                                    processScoresPtr_side->processedFrameCount > 0)
-                                {
                                  
                                     
-                                    processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
-                                        processScoresPtr_side->HOGHOF_frame->hog_out, processScoresPtr_side->HOGHOF_frame->hof_out,
-                                        &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape, processScoresPtr_side->classifier->nframes,
-                                        processScoresPtr_side->classifier->model);
+                                processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
+                                    processScoresPtr_side->HOGHOF_frame->hog_out, processScoresPtr_side->HOGHOF_frame->hof_out,
+                                    &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape, processScoresPtr_side->classifier->nframes,
+                                    processScoresPtr_side->classifier->model);
                                    
-                                    time_now = gettime_->getPCtime();
-                                    processScoresPtr_side->classifier->predScoreSide.frameCount = processScoresPtr_side->processedFrameCount;
-                                    processScoresPtr_side->classifier->predScoreSide.score_side_ts = time_now;
-                                    processScoresPtr_side->classifier->predScoreSide.view = 1;
-                                    processScoresPtr_side->isProcessed_side = 1;
+                                time_now = gettime_->getPCtime();
+                                processScoresPtr_side->classifier->predScoreSide.frameCount = processScoresPtr_side->processedFrameCount;
+                                processScoresPtr_side->classifier->predScoreSide.score_side_ts = time_now;
+                                processScoresPtr_side->classifier->predScoreSide.view = 1;
+                                processScoresPtr_side->isProcessed_side = 1;
 
-                                    sideScoreQueuePtr_->acquireLock();
-                                    sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
-                                    sideScoreQueuePtr_->releaseLock();
+                                sideScoreQueuePtr_->acquireLock();
+                                sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
+                                sideScoreQueuePtr_->releaseLock();
 
-                                    //scores[frameCount_- 1].score = processScoresPtr_side->classifier->predScoreSide.score;
-                                    //processScoresPtr_side->classifier->predscore_side[processScoresPtr_side->processedFrameCount]
-                                    //    = processScoresPtr_side->classifier->predScoreSide;
+                                //scores[frameCount_- 1].score = processScoresPtr_side->classifier->predScoreSide.score;
+                                //processScoresPtr_side->classifier->predscore_side[processScoresPtr_side->processedFrameCount]
+                                //    = processScoresPtr_side->classifier->predScoreSide;
 
-                                }
+                            }
 #endif
-                                processScoresPtr_side->processedFrameCount++;
+                            processScoresPtr_side->processedFrameCount++;
 
-                            }
-                            else {
+                        }
+                        else {
 
-                                //processScoresPtr_side->HOGHOF_frame->setLastInput();
-                                //processScoresPtr_side->processedFrameCount++;
-
-                            }
+                            //processScoresPtr_side->HOGHOF_frame->setLastInput();
+                            //processScoresPtr_side->processedFrameCount++;
 
                         }
 
                     }
-                        
-                }// if skip or process 
-                //pluginImageQueuePtr_->pop();
+
+                }
             }  
             end_process = gettime_->getPCtime();
         }

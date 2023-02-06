@@ -203,6 +203,10 @@ namespace bias {
         int64_t start_read_delay=0, end_read_delay = 0;
         int64_t start_push_delay = 0, end_push_delay = 0;
         int64_t start_delay, end_delay = 0;
+        uint64_t expTime = 0, curTime = 0;
+        uint64_t curTime_vid = 0, expTime_vid = 0;
+        uint64_t frameGrabAvgTime, frameCaptureTime, avg_frameLatSinceFirstFrame = 0;
+        int64_t wait_thres, avgwait_time;
         StampedImage stampImg;
 
         QString errorMsg("no message");
@@ -217,6 +221,10 @@ namespace bias {
 #else 
         float cur_latency = 0.0;
         float avg_latency = 3.00;
+        frameGrabAvgTime = 2200;
+        frameCaptureTime = 2500;
+        wait_thres = static_cast<int64_t>(1300);
+        avgwait_time = 0;
 #endif
 
         if (!ready_)
@@ -442,30 +450,45 @@ namespace bias {
 #else
                     fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
 #endif
-
                 }
 
-                // Set image data timestamp, framecount and frame interval estimate
-                //std::cout << timeStampDbl << std::endl;
-                stampImg.timeStamp = timeStampDbl;
-                stampImg.timeStampInit = timeStampInit;
-                stampImg.timeStampVal = timeStamp;
-                stampImg.frameCount = frameCount;
-                stampImg.dtEstimate = dtEstimate;
-                stampImg.fstfrmtStampRef = fstfrmtStampRef_;
+#if !isVidInput
+                
+                nidaq_task_->getNidaqTimeNow(read_ondemand_);
+#endif
 
-                newImageQueuePtr_->acquireLock();
-                newImageQueuePtr_->push(stampImg);
-                newImageQueuePtr_->signalNotEmpty();
-                newImageQueuePtr_->releaseLock();
-                
-                
+                avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime;
+                expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
+                curTime = (static_cast<uint64_t>(read_ondemand_) * 20);
+                avgwait_time = curTime - expTime;
+       
+
+                if (abs(avgwait_time) <= wait_thres)
+                    // Set image data timestamp, framecount and frame interval estimate
+                {
+                    stampImg.timeStamp = timeStampDbl;
+                    stampImg.timeStampInit = timeStampInit;
+                    stampImg.timeStampVal = timeStamp;
+                    stampImg.frameCount = frameCount;
+                    stampImg.dtEstimate = dtEstimate;
+                    stampImg.fstfrmtStampRef = fstfrmtStampRef_;
+
+                    newImageQueuePtr_->acquireLock();
+                    newImageQueuePtr_->push(stampImg);
+                    newImageQueuePtr_->signalNotEmpty();
+                    newImageQueuePtr_->releaseLock();
+                    
+                }
+                else {
+                    ts_nidaqThres[frameCount] = 1;  
+                }
+                end_process = gettime_->getPCtime();
+                frameCount++;
                 //delay = end_process - start_process;
 
-                if (testConfigEnabled_ && frameCount < testConfig_->numFrames) {
+                if (testConfigEnabled_ && ((frameCount-1) < testConfig_->numFrames)) {
 
                     if (nidaq_task_ != nullptr) {
-
 #if !isVidInput
                         nidaq_task_->getNidaqTimeNow(read_ondemand_);
 #endif
@@ -475,9 +498,9 @@ namespace bias {
                         {
 
                             nidaq_task_->acquireLock();
-                            ts_nidaq[frameCount][0] = nidaq_task_->cam_trigger[frameCount];
+                            ts_nidaq[frameCount-1][0] = nidaq_task_->cam_trigger[frameCount-1];
                             nidaq_task_->releaseLock();
-                            ts_nidaq[frameCount][1] = read_ondemand_;
+                            ts_nidaq[frameCount-1][1] = read_ondemand_;
                             /*cur_latency = (read_ondemand_ - nidaq_task_->cam_trigger[frameCount])*0.02;
                             if (cur_latency > avg_latency)
                                 ts_nidaqThres[frameCount] = cur_latency;*/
@@ -486,8 +509,7 @@ namespace bias {
 #endif
                     }
                 }
-                end_process = gettime_->getPCtime();
-                frameCount++;
+
                 
 
                 ///---------------------------------------------------------------
