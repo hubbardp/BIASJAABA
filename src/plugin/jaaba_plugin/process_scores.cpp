@@ -167,7 +167,7 @@ namespace bias {
         double score_ts;
         double wait_threshold = 1500;
         uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/2c5ba_9_8_2022/classifier_trial5.csv";
+        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/multi/5e468_2_6_2023/classifier_trial1.csv";
     
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -228,8 +228,8 @@ namespace bias {
                     // to keep up with frame where both views are skipped 
                     if (scoreCount < predScore.frameCount)
                     {
-                        if (predScore.frameCount > predScorePartner.frameCount)
-                            frontScoreQueuePtr_->pop();
+                        //if (predScore.frameCount > predScorePartner.frameCount)
+                        //    frontScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }
@@ -237,8 +237,8 @@ namespace bias {
                     // to keep up with frames where both views are skipped
                     if (scoreCount < predScorePartner.frameCount)
                     {
-                        if (predScorePartner.frameCount > predScore.frameCount)
-                            sideScoreQueuePtr_->pop();
+                        //if (predScorePartner.frameCount > predScore.frameCount)
+                        //    sideScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }

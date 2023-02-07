@@ -223,7 +223,7 @@ namespace bias {
         float avg_latency = 3.00;
         frameGrabAvgTime = 2200;
         frameCaptureTime = 2500;
-        wait_thres = static_cast<int64_t>(1300);
+        wait_thres = static_cast<int64_t>(1800);
         avgwait_time = 0;
 #endif
 
