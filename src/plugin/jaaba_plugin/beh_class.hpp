@@ -36,7 +36,7 @@ namespace bias {
         PredData finalscore;
 
 
-        QString classifier_file;
+        string classifier_file;
 	    std::vector<boost_classifier> model = std::vector<boost_classifier>(6);
 	    std::vector<std::string> model_params{"alpha","dim","dir","error","tr"};
         std::vector<std::string> beh{"Lift","Handopen","Grab","Supinate","Chew","Atmouth"};

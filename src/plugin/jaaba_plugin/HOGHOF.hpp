@@ -7,13 +7,17 @@
 #include "logger.h"
 //#include "utils.hpp"
 #include "rtn_status.hpp"
+#include "jaaba_utils.hpp"
 
+#include "string.h"
 #include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDialog>
 #include <QMessageBox>
+
+using namespace std;
 
 struct HOGShape {
 
@@ -55,9 +59,10 @@ namespace bias {
 
         public:
 
-            QString HOGParam_file; 
-            QString HOFParam_file;
-            QString CropParam_file;
+            QString plugin_file;
+            string HOGParam_file;
+            string HOFParam_file;
+            string CropParam_file;
             bool isHOGPathSet=false;
             bool isHOFPathSet=false;
             int startFrameSet=true;
@@ -79,11 +84,13 @@ namespace bias {
             std::vector<float> hog_out;
             std::vector<float> hof_out;
 
+            //QJsonObject loadParams(const string& param_file);
             void loadHOGParams();
             void loadHOFParams();
             void loadCropParams();
             void loadImageParams(int img_width, int img_height);
             void setLastInput();
+            
             //void genFeatures();
 
         private: 

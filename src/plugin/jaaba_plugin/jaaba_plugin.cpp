@@ -21,13 +21,14 @@ namespace bias {
     const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
 
     // Public Methods
-    JaabaPlugin::JaabaPlugin(int numberOfCameras, 
+    JaabaPlugin::JaabaPlugin(string camera_id, 
                              QPointer<QThreadPool> threadPoolPtr, 
                              std::shared_ptr<Lockable<GetTime>> gettime,
                              QWidget *parent) : BiasPlugin(parent)
     {
 
-        nviews_ = numberOfCameras;
+        //nviews_ = numberOfCameras;
+        camera_serial_id = stoi(camera_id);
         threadPoolPtr_ = threadPoolPtr;
         gettime_ = gettime;
         nidaq_task_ = nullptr;
@@ -1301,10 +1302,10 @@ namespace bias {
     
     void JaabaPlugin::setupHOGHOF()
     {
-     
+    
         if(sideRadioButtonPtr_->isChecked())
         {
-             
+
 #if isVidInput
 
             if (isReceiver())
@@ -1315,20 +1316,23 @@ namespace bias {
 
             if (processScoresPtr_side != nullptr)
             {
-                printf("processScores Side allocated");
+                printf("processScores Side allocated\n");
                 acquireLock();
                 processScoresPtr_side->HOGHOF_frame = hoghofside;
-                processScoresPtr_side->HOGHOF_frame->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-                processScoresPtr_side->HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-                processScoresPtr_side->HOGHOF_frame->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
+                //hog_file = HOGParamFilePtr_->placeholderText().toStdString();
+                //hof_file = HOFParamFilePtr_->placeholderText().toStdString();
+                //crop_file = CropSideParamFilePtr_->placeholderText().toStdString();
+                processScoresPtr_side->HOGHOF_frame->HOGParam_file = plugin_file_dir + hog_file;
+                processScoresPtr_side->HOGHOF_frame->HOFParam_file = plugin_file_dir + hof_file;
+                processScoresPtr_side->HOGHOF_frame->CropParam_file = plugin_file_dir + crop_file;
                 processScoresPtr_side->HOGHOF_frame->loadHOGParams();
                 processScoresPtr_side->HOGHOF_frame->loadHOFParams();
                 processScoresPtr_side->HOGHOF_frame->loadCropParams();
                 releaseLock();
-
+                
             }else {
 
-                printf("processScores Side not allocated");
+                printf("processScores Side not allocated\n");
             }
 
         }
@@ -1345,21 +1349,25 @@ namespace bias {
 #endif
 
             HOGHOF *hoghoffront = new HOGHOF(this);  
+
             if (processScoresPtr_front != nullptr)
             {
-                printf("processScores Front allocated");
+                printf("processScores Front allocated\n");
                 acquireLock();
                 processScoresPtr_front->HOGHOF_partner = hoghoffront;
-                processScoresPtr_front->HOGHOF_partner->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-                processScoresPtr_front->HOGHOF_partner->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-                processScoresPtr_front->HOGHOF_partner->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
+                //hog_file = HOGParamFilePtr_->placeholderText().toStdString();
+                //hof_file = HOFParamFilePtr_->placeholderText().toStdString();
+                //crop_file = CropFrontParamFilePtr_->placeholderText().toStdString();
+                processScoresPtr_front->HOGHOF_partner->HOGParam_file = plugin_file_dir + hog_file;
+                processScoresPtr_front->HOGHOF_partner->HOFParam_file = plugin_file_dir + hof_file;
+                processScoresPtr_front->HOGHOF_partner->CropParam_file = plugin_file_dir + crop_file;
                 processScoresPtr_front->HOGHOF_partner->loadHOGParams();
                 processScoresPtr_front->HOGHOF_partner->loadHOFParams();
                 processScoresPtr_front->HOGHOF_partner->loadCropParams();
                 releaseLock();
 
             } else {
-                printf("processScores Front not allocated");
+                printf("processScores Front not allocated\n");
             }
         }
     }
@@ -1367,13 +1375,17 @@ namespace bias {
 
     void JaabaPlugin::setupClassifier() 
     {
+        
         if (frontRadioButtonPtr_->isChecked() || sideRadioButtonPtr_->isChecked()) {
             
+            //classifier_filename = ClassFilePtr_->placeholderText().toStdString();
+
             if (mesPass && isReceiver())
             {
+                
                 beh_class *cls = new beh_class(this);
                 processScoresPtr_side->classifier = cls;
-                processScoresPtr_side->classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+                processScoresPtr_side->classifier->classifier_file = plugin_file_dir + classifier_filename;
                 //qDebug()  << classifier->classifier_file;
                 processScoresPtr_side->classifier->allocate_model();
                 processScoresPtr_side->classifier->loadclassifier_model();
@@ -1386,22 +1398,23 @@ namespace bias {
 
                     beh_class *cls = new beh_class(this);
                     processScoresPtr_side->classifier = cls;
-                    processScoresPtr_side->classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+                    processScoresPtr_side->classifier->classifier_file = plugin_file_dir + classifier_filename;
                     //qDebug()  << classifier->classifier_file;
                     processScoresPtr_side->classifier->allocate_model();
                     processScoresPtr_side->classifier->loadclassifier_model();
+
                 }
 
                 if (isSender()) {
 
                     beh_class *cls = new beh_class(this);
                     processScoresPtr_front->classifier = cls;
-                    processScoresPtr_front->classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+                    processScoresPtr_front->classifier->classifier_file = plugin_file_dir + classifier_filename;
                     //qDebug()  << classifier->classifier_file;
                     processScoresPtr_front->classifier->allocate_model();
                     processScoresPtr_front->classifier->loadclassifier_model();
-
                 }
+                
             }
         }
     }
@@ -1466,9 +1479,9 @@ namespace bias {
         }
 
         //checkviews();
-        setupHOGHOF();
-        setupClassifier();
-        detectEnabled();
+        //setupHOGHOF();
+        //setupClassifier();
+        //detectEnabled();
     }
 
 
@@ -1483,10 +1496,11 @@ namespace bias {
         {   
             frontRadioButtonPtr_ -> setChecked(false);
         }
+
         //checkviews();
-        setupHOGHOF();
-        setupClassifier();
-        detectEnabled();
+        //setupHOGHOF();
+        //setupClassifier();
+        //detectEnabled();
 
     }
 
@@ -1621,7 +1635,7 @@ namespace bias {
     void JaabaPlugin::reloadButtonPressed()
     {
 
-        pathtodir_->setPlaceholderText(pathtodir_->displayText());
+        /*pathtodir_->setPlaceholderText(pathtodir_->displayText());
         // load side HOGHOFParams if side view checked
         if(sideRadioButtonPtr_->isChecked())
         {
@@ -1631,6 +1645,8 @@ namespace bias {
 
             } else {
             
+                processScoresPtr_side->HOGHOF_frame->readPluginConfig();
+                pathtodir_->placeholderText() = processScoresPtr_side->HOGHOF_frame->plugin_file;
                 processScoresPtr_side -> HOGHOF_frame->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
                 processScoresPtr_side -> HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
                 processScoresPtr_side -> HOGHOF_frame->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
@@ -1650,6 +1666,8 @@ namespace bias {
   
             } else {
 
+                processScoresPtr_front->HOGHOF_partner->readPluginConfig();
+                pathtodir_->placeholderText() = processScoresPtr_front->HOGHOF_partner->plugin_file;
                 processScoresPtr_front -> HOGHOF_partner->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
                 processScoresPtr_front -> HOGHOF_partner->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
                 processScoresPtr_front -> HOGHOF_partner->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
@@ -1694,8 +1712,8 @@ namespace bias {
 
                 }
             }
-        }
-        detectEnabled();
+        }*/
+        //detectEnabled();
        
     }
 
@@ -1976,11 +1994,57 @@ namespace bias {
 
         sideScoreQueuePtr_ = sideScoreQueuePtr;
         frontScoreQueuePtr_ = frontScoreQueuePtr;
-        std::cout << "Score Queue set in JAABA for cameranumber " << cameraNumber_ <<  std::endl;
+        std::cout << "Score Queue set in JAABA for cameranumber: \n" << cameraNumber_ <<  std::endl;
         
         // setQueue for processScores thread 
         processScoresPtr_side->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
         processScoresPtr_front->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
+    }
+
+    void JaabaPlugin::loadConfig()
+    {
+        std::cout << "Jaaba load Config reached\n" << std::endl;
+        unordered_map<string,unsigned int>::iterator camera_it;
+        unordered_map<unsigned int, string>::iterator crop_file_it;
+
+        readPluginConfig(jab_conf);
+        plugin_file_dir = jab_conf.plugin_file_dir;
+        hog_file = jab_conf.hog_file;
+        hof_file = jab_conf.hof_file;
+        classifier_filename = jab_conf.classifier_filename;
+
+        camera_list = jab_conf.camera_serial_id;
+        jab_crop_list = jab_conf.crop_file_list;
+
+        camera_it = camera_list.begin();
+
+        while (camera_it != camera_list.end())
+        {
+            
+            if (camera_serial_id == camera_it->second && camera_it->first == "viewA") {
+                sideRadioButtonPtr_->setChecked(true);
+            }
+            else if (camera_serial_id == camera_it->second && camera_it->first == "viewB") {
+                frontRadioButtonPtr_->setChecked(true);
+            }
+           camera_it++;
+        }
+
+        crop_file_it = jab_crop_list.begin();
+        while (crop_file_it != jab_crop_list.end())
+        {
+            
+            if (crop_file_it->first == camera_serial_id)
+                crop_file = crop_file_it->second;
+            crop_file_it++;
+        }
+        
+        setupHOGHOF();
+        setupClassifier();
+        if (cameraNumber_ == 0)
+            std::cout << "all side setup done\n" << std::endl;
+        else if (cameraNumber_ == 1)
+            std::cout << "all front setup done\n" << std::endl;
     }
 
     // Test development

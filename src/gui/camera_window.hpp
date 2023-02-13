@@ -178,7 +178,7 @@ namespace bias
             // Test Configuration signal
             void valueChangedFrametoFrame(bool frametoframeLatencyVal);
             void finished_vidReading();
-
+          
         protected:
 
             void resizeEvent(QResizeEvent *event);
@@ -242,6 +242,7 @@ namespace bias
             void actionHelpAboutTriggered();
             void actionDumpCameraPropsTriggered();
             void pluginActionGroupTriggered(QAction *action);
+            
 
             // Signal mappers for menu items e.g. videomode, framerate, properties and colormaps
             void actionVideoModeTriggered(int vidModeInt);
@@ -348,7 +349,6 @@ namespace bias
             std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
             std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
         
-            
             //Test
             string trial_num;
             bool loadTestConfigEnabled;
@@ -502,6 +502,7 @@ namespace bias
 
             unsigned int getPartnerCameraNumber();
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
+            void loadPluginConfig(QPointer<BiasPlugin> pluginPtr);
 
     }; // class CameraWindow
 

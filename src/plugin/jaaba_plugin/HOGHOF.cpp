@@ -1,4 +1,5 @@
 #include "HOGHOF.hpp"
+#include <algorithm>
 #include <string>
 #include <opencv2/highgui/highgui.hpp>
 #include <QDebug>
@@ -9,93 +10,41 @@ namespace bias
 {
 
     HOGHOF::HOGHOF(QWidget *parent): QDialog(parent)
-    {        
+    { 
+
         initialize();      
+    
     }
+
 
 
     void HOGHOF::initialize() 
     {
-        
+
         isHOGPathSet=false;
         isHOFPathSet=false;
         startFrameSet=true;
         isInitialized=false;
 
     }
-    
+
 
     void HOGHOF::loadHOGParams() 
     { 
 
-        //RtnStatus rtnStatus;
-        QString errMsgTitle("Load Parameter Error");
-
-        QFile parameterFile(HOGParam_file);
-        if (!parameterFile.exists())
-        {
-
-	    QString errMsgTitle = QString("HOG Params");
-	    QString errMsgText = QString("Parameter file, %1").arg(HOGParam_file);
-            errMsgText += QString(", does not exist - using default values");
-	    QMessageBox::critical(this, errMsgTitle, errMsgText);
-	    return;
-        }
-
-        bool ok = parameterFile.open(QIODevice::ReadOnly);
-        if (!ok)
-        {
-            QString errMsgTitle = QString("HOG Params");
-	    QString errMsgText = QString("Unable to open parameter file %1").arg(HOGParam_file);
-	    errMsgText += QString(" - using default values");
-            QMessageBox::critical(this, errMsgTitle, errMsgText);
-	    return;
-        }
-
-        isHOGPathSet = true;
-        QByteArray paramJson = parameterFile.readAll();
-        parameterFile.close();
-
-        QJsonDocument doc = QJsonDocument::fromJson(paramJson);
-        QJsonObject obj = doc.object();
+        QJsonObject obj = loadParams(HOGParam_file);
         copytoHOGParams(obj);
-	   
+        isHOGPathSet = true;
+
     }
 
 
     void HOGHOF::loadHOFParams() 
     {
 
-        //RtnStatus rtnStatus;
-        QString errMsgTitle("Load Parameter Error");
-
-        QFile parameterFile(HOFParam_file);
-        if (!parameterFile.exists())
-        {
-            QString errMsgTitle = QString("HOF Params");
-	    QString errMsgText = QString("Parameter file, %1").arg(HOFParam_file);
-	    errMsgText += QString(", does not exist - using default values");
-	    QMessageBox::critical(this, errMsgTitle, errMsgText);
-	    return;
-        }
-
-        bool ok = parameterFile.open(QIODevice::ReadOnly);
-        if (!ok)
-        {
-             QString errMsgTitle = QString("HOF Params");
-	     QString errMsgText = QString("Unable to open parameter file %1").arg(HOFParam_file);
-	     errMsgText += QString(" - using default values");
-	     QMessageBox::critical(this, errMsgTitle, errMsgText);
-	     return;
-        }
-
-        isHOFPathSet = true;
-        QByteArray paramJson = parameterFile.readAll();
-        parameterFile.close();
-
-        QJsonDocument doc = QJsonDocument::fromJson(paramJson);  
-        QJsonObject obj = doc.object();
+        QJsonObject obj = loadParams(HOFParam_file);
         copytoHOFParams(obj);
+        isHOFPathSet = true;
 
     }
 
@@ -103,35 +52,7 @@ namespace bias
     void HOGHOF::loadCropParams() 
     {
 
-        RtnStatus rtnStatus;
-        QString errMsgTitle("Load Parameter Error");
-
-        QFile parameterFile(CropParam_file);
-        if (!parameterFile.exists())
-        {
-	    QString errMsgTitle = QString("Crop Params");
-	    QString errMsgText = QString("Parameter file, %1").arg(CropParam_file);
-	    errMsgText += QString(", does not exist - using default values");
-	    QMessageBox::critical(this, errMsgTitle, errMsgText);
-	    return;
-        }
-
-        bool ok = parameterFile.open(QIODevice::ReadOnly);
-        if (!ok)
-        {
-
-            QString errMsgTitle = QString("Crop Params");
-	    QString errMsgText = QString("Unable to open parameter file %1").arg(CropParam_file);
-	    errMsgText += QString(" - using default values");
-	    QMessageBox::critical(this, errMsgTitle, errMsgText);
-            return;
-        }
-
-        QByteArray paramJson = parameterFile.readAll();
-        parameterFile.close();
-
-        QJsonDocument doc = QJsonDocument::fromJson(paramJson);
-        QJsonObject obj = doc.object();
+        QJsonObject obj = loadParams(CropParam_file);
         copytoCropParams(obj);
 
     }
@@ -390,6 +311,7 @@ namespace bias
 
         std::cout << "vid HOGHOF" << std::endl;
         HOFSetLastInput(hof_ctx);
+
     }
 
 

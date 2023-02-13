@@ -19,7 +19,7 @@ namespace bias {
             // open classfier file
 			//int rank;
 			int ndims;
-			H5::H5File file(this->classifier_file.toStdString(), H5F_ACC_RDONLY);
+			H5::H5File file(this->classifier_file, H5F_ACC_RDONLY);
 
             // check the number of behaviors present
             size_t num_beh = beh.size();
@@ -59,7 +59,7 @@ namespace bias {
                     } catch (H5::Exception error) {
                 
                         QString errMsgTitle = QString("Classifier Params");
-                        QString errMsgText = QString("In parameter file, %1").arg(this->classifier_file);
+                        QString errMsgText = QString("In parameter file, %1").arg(QString::fromStdString(this->classifier_file));
                         errMsgText += QString(" Beh not present, %1").arg(QString::fromStdString(beh[nbeh]));
                         QMessageBox::critical(this, errMsgTitle, errMsgText);
 
@@ -77,7 +77,7 @@ namespace bias {
         {
 
             QString errMsgTitle = QString("Classifier Params");
-            QString errMsgText = QString("In parameter file, %1").arg(this->classifier_file);
+            QString errMsgText = QString("In parameter file, %1").arg(QString::fromStdString(this->classifier_file));
             errMsgText += QString(" error in function, %1").arg(QString::fromStdString(error.getFuncName()));
             QMessageBox::critical(this, errMsgTitle, errMsgText);
             return;
@@ -91,7 +91,7 @@ namespace bias {
     {
  
         RtnStatus rtnstatus; 
-        std::string class_file = this->classifier_file.toStdString();
+        std::string class_file = this->classifier_file;
         size_t num_beh = beh_present.size();
         for(int ncls = 0;ncls < num_beh;ncls++)
         {

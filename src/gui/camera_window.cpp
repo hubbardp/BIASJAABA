@@ -1503,10 +1503,10 @@ namespace bias
             setPluginEnabled(true);
             if (testConfig->plugin_prefix == "signal_slot") {
                 setCurrentPlugin("signalSlotDemo");
-                pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME]->show();
+                //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME]->show();
             }else {
                 setCurrentPlugin("jaabaPlugin");
-                pluginMap_[JaabaPlugin::PLUGIN_NAME]->show();
+                //pluginMap_[JaabaPlugin::PLUGIN_NAME]->show();
             }
         }
         else {
@@ -3020,6 +3020,15 @@ namespace bias
         }
     }
 
+    void CameraWindow::loadPluginConfig(QPointer<BiasPlugin> pluginPtr)
+    {
+  
+        if (pluginPtr != nullptr)
+        {
+            std::cout << "Config reached" << std::endl;
+            pluginPtr->loadConfig();
+        }
+    }
 
     // Private methods
     // -----------------------------------------------------------------------------------
@@ -3095,7 +3104,7 @@ namespace bias
         pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_,
                                                                                  loadTestConfigEnabled, trial_num,
                                                                                  testConfig,this);
-        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(numberOfCameras, 
+        pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(guid.toString(), 
                                                                threadPoolPtr_, gettime_, 
                                                                this);
 
@@ -3121,7 +3130,7 @@ namespace bias
         //setCurrentPlugin("grabDetector");
         //setCurrentPlugin("stampede");     
         //setCurrentPlugin("signalSlotDemo");
-        //setCurrentPlugin("jaabaPlugin");
+        setCurrentPlugin("jaabaPlugin");
 
         if(pluginEnabled_)
             setPluginEnabled(true);
@@ -3762,17 +3771,29 @@ namespace bias
         {
             pluginIt.next();
             QPointer<BiasPlugin> pluginPtr = pluginIt.value();
-            QString pluginName = pluginPtr -> getName();
-            QString pluginDisplayName = pluginPtr -> getDisplayName();
+            QString pluginName = pluginPtr->getName();
+            QString pluginDisplayName = pluginPtr->getDisplayName();
 
-            QPointer<QAction> pluginActionPtr = menuPluginsPtr_ -> addAction(pluginDisplayName);
+            QPointer<QAction> pluginActionPtr = menuPluginsPtr_->addAction(pluginDisplayName);
             pluginActionMap_.insert(pluginName, pluginActionPtr);
-            pluginActionPtr -> setData(QVariant(pluginName));
-            pluginActionGroupPtr_ -> addAction(pluginActionPtr);
-            pluginActionPtr -> setCheckable(true);
+            pluginActionPtr->setData(QVariant(pluginName));
+            pluginActionGroupPtr_->addAction(pluginActionPtr);
+            pluginActionPtr->setCheckable(true);
 
-            pluginActionPtr -> setChecked(false);
-            pluginPtr -> setActive(false);
+            pluginActionPtr->setChecked(false);
+            pluginPtr->setActive(false);
+            
+            if (pluginDisplayName == "Jaaba Plugin")
+            { 
+               
+                /*connect(pluginActionPtr,
+                    SIGNAL(triggered()),
+                    this,
+                    SLOT(loadPluginConfig())
+                );
+                pluginActionPtr->triggered();*/
+                loadPluginConfig(pluginPtr);
+            }
         }
         connect(
                 pluginActionGroupPtr_,

@@ -28,6 +28,7 @@ set(
     beh_class.cpp
     process_scores.cpp
     vis_plots.cpp
+	jaaba_utils.cpp
     )
 
 qt5_wrap_ui(jaaba_plugin_FORMS_HEADERS ${jaaba_plugin_FORMS})

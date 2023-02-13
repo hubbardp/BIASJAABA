@@ -51,7 +51,7 @@ namespace bias
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
 
-            JaabaPlugin(int numberOfCameras, 
+            JaabaPlugin(string camera_id, 
                 QPointer<QThreadPool> threadPoolPtr,
                 std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parent=0);
 
@@ -76,6 +76,7 @@ namespace bias
                                        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
             //made it virtual void because of the need to access the function through base class pointer.
             virtual void gpuInit();
+            virtual void loadConfig();
 
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;
@@ -84,6 +85,13 @@ namespace bias
             int side_skip_count = 0;
             int front_skip_count = 0;
             bool gpuInitialized = false;
+
+            //jaaba config params 
+            string plugin_file;
+            string hog_file;
+            string hof_file;
+            string crop_file;
+            string classifier_filename;
 
         protected:
  
@@ -149,7 +157,14 @@ namespace bias
 
             bool testConfigEnabled_;
             string trial_num_;
+
+            JaabaConfig jab_conf;
+            string plugin_file_dir;
+            unsigned int camera_serial_id;
             
+            unordered_map<string, unsigned int> camera_list;
+            unordered_map<unsigned int, string> jab_crop_list;
+
             //test
             QString file_frt; // video input for front
             QString file_sde; // video input for side
@@ -198,6 +213,7 @@ namespace bias
             //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
             void write_score_final(std::string file, unsigned int numFrames,
                 vector<PredData>& pred_score);
+            //void loadConfig();
  
         signals:
 
