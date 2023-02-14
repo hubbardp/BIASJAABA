@@ -213,7 +213,6 @@ namespace bias
             //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
             void write_score_final(std::string file, unsigned int numFrames,
                 vector<PredData>& pred_score);
-            //void loadConfig();
  
         signals:
 
@@ -230,9 +229,6 @@ namespace bias
 
             void SideViewCheckBoxChanged(int state);
             void FrontViewCheckBoxChanged(int state);
-            void reloadButtonPressed();
-            void detectClicked();
-            void saveClicked();
             void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
             void trigResetPushButtonClicked();
             void trigEnabledCheckBoxStateChanged(int state);
@@ -244,6 +240,9 @@ namespace bias
             void setSkipFrameProcess(unsigned int frameCount);
             //void gpuInit();
             void initialize_classifier();
+            void reloadButtonPressed();
+            //void detectClicked();
+            //void saveClicked();
     };
 
 }

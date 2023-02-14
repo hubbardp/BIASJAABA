@@ -506,7 +506,6 @@ namespace bias
             {
                 currentPluginPtr -> setFileAutoNamingString(autoNamingString);
                 currentPluginPtr -> setFileVersionNumber(versionNumber);
-                currentPluginPtr -> reset();
             }
             
             pluginHandlerPtr_ -> setCameraNumber(cameraNumber_);
@@ -515,11 +514,12 @@ namespace bias
             
             pluginHandlerPtr_ -> setPlugin(currentPluginPtr);
             
-
-            if (currentPluginPtr->getName() == "signalSlotDemo" || 
-                currentPluginPtr->getName() == "jaabaPlugin")
+            if (currentPluginPtr->getName() == "signalSlotDemo" ||
+                currentPluginPtr->getName() == "jaabaPlugin") {
                 currentPluginPtr->setupNIDAQ(nidaq_task, loadTestConfigEnabled,
-                                             trial_num, testConfig);
+                    trial_num, testConfig);
+                currentPluginPtr->reset();
+            }
             pluginHandlerPtr_->setAutoDelete(false);
 
         } 
@@ -2161,6 +2161,15 @@ namespace bias
 
     void CameraWindow::startTriggerButtonClicked()
     {
+
+        QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+        if (currentPluginPtr != nullptr)
+        {
+            if (currentPluginPtr->getName() == "signalSlotDemo" ||
+                currentPluginPtr->getName() == "jaabaPlugin") {
+                currentPluginPtr->gpuInit();
+            }
+        }
 
         QMetaObject::invokeMethod(this, "startThreads", Q_ARG(bool,true));
         emit this->finished_vidReading();

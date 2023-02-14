@@ -86,11 +86,12 @@ namespace bias {
         }
 #else 
         Format7Settings settings;
+        cameraPtr_->acquireLock();
         settings = cameraPtr_->getFormat7Settings();
         image_height = settings.width;
         image_width = settings.height;
-        std::cout << "height " << image_height << std::endl;
-        std::cout << "width " << image_width << std::endl;
+        cameraPtr_->releaseLock();
+
 #endif
 
     }
@@ -186,8 +187,7 @@ namespace bias {
         
         if (isReceiver())
         {
-            if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr)
-                && cameraNumber_ == 0)
+            if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
                 threadPoolPtr_->start(processScoresPtr_side);
 #if visualize
@@ -236,6 +236,7 @@ namespace bias {
                 }
 
                 acquireLock();
+                detectStarted = true;
                 processScoresPtr_side->isSide = true;
                 releaseLock();
             }
@@ -274,10 +275,13 @@ namespace bias {
                     processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
 
                 }
+
                 acquireLock();
+                detectStarted = true;
                 processScoresPtr_front->isFront = true;
                 releaseLock();
             }
+
             emit(processSide(true));
             emit(passHOGShape(processScoresPtr_front->HOGHOF_partner));
         }
@@ -1254,26 +1258,6 @@ namespace bias {
             SIGNAL(stateChanged(int)),
             this,
             SLOT(FrontViewCheckBoxChanged(int))
-        );   
-        connect(
-            reloadPushButtonPtr_,
-            SIGNAL(clicked()),
-            this,
-            SLOT(reloadButtonPressed())
-        );
-
-        connect(
-            gpuButtonPtr_,
-            SIGNAL(clicked()),
-            this,
-            SLOT(detectClicked())
-        );
-
-        connect(
-            saveButtonPtr_,
-            SIGNAL(clicked()),
-            this,
-            SLOT(saveClicked())
         );
  
         connect(
@@ -1284,6 +1268,13 @@ namespace bias {
         );
 
         /*connect(
+            reloadPushButtonPtr_,
+            SIGNAL(clicked()),
+            this,
+            SLOT(reloadButtonPressed())
+        );
+
+        connect(
             trigEnabledCheckBoxPtr,
             SIGNAL(stateChanged(int)),
             this,
@@ -1455,10 +1446,6 @@ namespace bias {
 
             sideRadioButtonPtr_ -> setChecked(false);
             frontRadioButtonPtr_ -> setChecked(false);
-            gpuButtonPtr_ -> setEnabled(false);
-            saveButtonPtr_-> setEnabled(false);
-            save = false;        
-
             tabWidgetPtr -> setEnabled(true);
             tabWidgetPtr -> repaint();        
         }
@@ -1505,133 +1492,6 @@ namespace bias {
     }
 
 
-    void JaabaPlugin::detectClicked() 
-    {
-        
-        if(!detectStarted) 
-        {
-            gpuButtonPtr_->setText(QString("Gpu Initialized"));
-            detectStarted = true;
-
-            gpuInit();
-
-            if (processScoresPtr_side != nullptr)
-            {
-
-                //processScoresPtr_side -> acquireLock();
-                //processScoresPtr_side -> detectOn();
-                //processScoresPtr_side -> releaseLock();
-
-                if (!mesPass) {
-
-                    // moved this to gpuInit 
-                    /*if(isSender())
-                    {
-                        processScoresPtr_front->acquireLock();
-                        processScoresPtr_front->isFront = true;
-                        processScoresPtr_front->releaseLock();
-                    }
-
-                    if (isReceiver())
-                    {
-                        processScoresPtr_side->acquireLock();
-                        processScoresPtr_side->isSide = true;
-                        processScoresPtr_side->releaseLock();
-                    }*/
-                       
-                }else {
-
-                    if (isReceiver())
-                    {
-                        processScoresPtr_side->acquireLock();
-                        processScoresPtr_side->isSide = true;
-                        processScoresPtr_side->releaseLock();
-                    
-                        processScoresPtr_front->acquireLock();
-                        processScoresPtr_front->isFront = true;
-                        processScoresPtr_front->releaseLock();
-                    }
-                }
-
-            }
-
-        } else {
-
-            gpuButtonPtr_->setText(QString("Detect"));
-            detectStarted = false;
-             
-            /*if (processScoresPtr_side != nullptr)
-            {
-                processScoresPtr_side -> acquireLock();
-                processScoresPtr_side ->  detectOff();
-                processScoresPtr_side -> releaseLock();
-            }*/
-
-        }
-
-    }
-
-
-    void JaabaPlugin::saveClicked()
-    {
-
-        if(!save) { 
-
-            saveButtonPtr_->setText(QString("Stop Saving"));
-            processScoresPtr_side -> save = true;
- 
-        } else {
-
-            saveButtonPtr_->setText(QString("Save"));
-            processScoresPtr_side -> save = false;
-
-        }       
-
-    }
-
-    
-    void JaabaPlugin::detectEnabled() 
-    {
-        if (frontRadioButtonPtr_->isChecked() && sideRadioButtonPtr_->isChecked())
-        {
-            
-            if (processScoresPtr_side->HOGHOF_frame->isHOGPathSet
-                && processScoresPtr_side->HOGHOF_frame->isHOFPathSet
-                && processScoresPtr_front->HOGHOF_partner->isHOGPathSet
-                && processScoresPtr_front->HOGHOF_partner->isHOFPathSet
-                && processScoresPtr_side->classifier->isClassifierPathSet)
-            {
-
-                gpuButtonPtr_->setEnabled(true);
-                saveButtonPtr_->setEnabled(true);
-
-            }
-
-        }else if (frontRadioButtonPtr_->isChecked()) {
-
-            if (processScoresPtr_front->HOGHOF_partner->isHOGPathSet
-                && processScoresPtr_front->HOGHOF_partner->isHOFPathSet)
-            {
-               
-                gpuButtonPtr_->setEnabled(false);
-                saveButtonPtr_->setEnabled(true);
-                
-            }
-
-        }else if (sideRadioButtonPtr_->isChecked()) {
-
-            if (processScoresPtr_side->HOGHOF_frame->isHOGPathSet
-                && processScoresPtr_side->HOGHOF_frame->isHOFPathSet)
-            {
-                
-                gpuButtonPtr_->setEnabled(true);
-                saveButtonPtr_->setEnabled(true);
-
-            }
-        }
-    }    
-    
-
     void JaabaPlugin::reloadButtonPressed()
     {
 
@@ -1645,7 +1505,7 @@ namespace bias {
 
             } else {
             
-                processScoresPtr_side->HOGHOF_frame->readPluginConfig();
+                readPluginConfig(jab_conf);
                 pathtodir_->placeholderText() = processScoresPtr_side->HOGHOF_frame->plugin_file;
                 processScoresPtr_side -> HOGHOF_frame->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
                 processScoresPtr_side -> HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
@@ -1666,7 +1526,7 @@ namespace bias {
   
             } else {
 
-                processScoresPtr_front->HOGHOF_partner->readPluginConfig();
+                readPluginConfig(jab_conf);
                 pathtodir_->placeholderText() = processScoresPtr_front->HOGHOF_partner->plugin_file;
                 processScoresPtr_front -> HOGHOF_partner->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
                 processScoresPtr_front -> HOGHOF_partner->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
