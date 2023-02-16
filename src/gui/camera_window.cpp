@@ -3029,13 +3029,14 @@ namespace bias
         }
     }
 
-    void CameraWindow::loadPluginConfig(QPointer<BiasPlugin> pluginPtr)
+    void CameraWindow::loadPluginConfig(QPointer<BiasPlugin> pluginPtr, QString& config_filename)
     {
-  
+
         if (pluginPtr != nullptr)
         {
             std::cout << "Config reached" << std::endl;
-            pluginPtr->loadConfig();
+            std::cout << config_filename.toLocal8Bit().constData() << std::endl;
+            pluginPtr->loadConfig(config_filename);
         }
     }
 
@@ -3099,9 +3100,8 @@ namespace bias
         currentConfigFileName_ = DEFAULT_CONFIG_FILE_NAME;
 
         currentTestConfigFileDir_ = defaultTestConfigFileDir_;
-        currentTestConfigFileName_ = DEFAULT_TESTCONFIG_FILE_NAME;  
-        std::cout << "initialize default Config File Dir"
-            << defaultTestConfigFileDir_.absoluteFilePath(currentTestConfigFileName_).toStdString() << std::endl;
+        currentTestConfigFileName_ = DEFAULT_TESTCONFIG_FILE_NAME; 
+
 
         // Temporary - plugin development
         // -------------------------------------------------------------------------------        
@@ -3517,9 +3517,8 @@ namespace bias
         settings.beginGroup("CurrentVersion/Explorer/Shell Folders");
         QString myDocsString = settings.value("Personal").toString();
         defaultTestConfigFileDir_ = settings.value("DEFAULT_DIR_KEY").toString();
-        std::cout << "init default test Config File Dir" << defaultTestConfigFileDir_.absolutePath().toStdString()
-            << std::endl;
-
+        defaultPluginConfigFileDir_ = "../../plugin_config_files";
+        std::cout << "****" <<  defaultPluginConfigFileDir_.absolutePath().toLocal8Bit().constData() << std::endl;
         QDir myDocsDir = QDir(myDocsString);
         QDir videoDir = myDocsDir;
 
@@ -3794,14 +3793,11 @@ namespace bias
             
             if (pluginDisplayName == "Jaaba Plugin")
             { 
-               
-                /*connect(pluginActionPtr,
+                connect(pluginActionPtr,
                     SIGNAL(triggered()),
                     this,
-                    SLOT(loadPluginConfig())
-                );
-                pluginActionPtr->triggered();*/
-                loadPluginConfig(pluginPtr);
+                    SLOT(loadPluginFile()));
+                //loadPluginConfig(pluginPtr, QString(""));
             }
         }
         connect(
@@ -3811,6 +3807,42 @@ namespace bias
                 SLOT(pluginActionGroupTriggered(QAction*))
                );
 
+    }
+
+    void CameraWindow::loadPluginFile()
+    {
+        std::cout << "Entered" << std::endl;
+        QString configFileFullPath = defaultPluginConfigFileDir_.absolutePath();
+        // Query user for desired video filename and directory
+        QString configFileString = QFileDialog::getOpenFileName(
+            this,
+            QString("Load Configuration File"),
+            configFileFullPath
+        );
+
+        if (configFileString.isEmpty())
+        {
+            return;
+        }
+
+        QMapIterator<QString, QPointer<BiasPlugin>> pluginIt(pluginMap_);
+        while (pluginIt.hasNext())
+        {
+            pluginIt.next();
+            QPointer<BiasPlugin> pluginPtr = pluginIt.value();
+            QString pluginDisplayName = pluginPtr->getDisplayName();
+
+            if (pluginDisplayName == "Jaaba Plugin")
+            {
+                std::cout << configFileString.toLocal8Bit().constData() << std::endl;
+                loadPluginConfig(pluginPtr, configFileString);
+            }
+        }
+        // set file path as default
+        //QFileInfo configFileInfo = QFileInfo(configFileString);
+        //QDir configFileDir = configFileInfo.dir();
+        //defaultPluginConfigFileDir_ = configFileDir;
+        
     }
 
 

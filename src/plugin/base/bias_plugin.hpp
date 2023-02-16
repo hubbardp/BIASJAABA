@@ -84,7 +84,7 @@ namespace bias
             virtual void gpuInit();
             virtual void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
                                        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
-            virtual void loadConfig();
+            virtual void loadConfig(QString config_filename);
 
             //TimeStamp getPCtime();
             //TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);

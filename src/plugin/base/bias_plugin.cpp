@@ -225,7 +225,7 @@ namespace bias
     void BiasPlugin::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
         std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr) {}
 
-    void BiasPlugin::loadConfig() {}
+    void BiasPlugin::loadConfig(QString config_filename) {}
 
     /*TimeStamp BiasPlugin::getPCtime()
     {

@@ -76,7 +76,7 @@ namespace bias
                                        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
             //made it virtual void because of the need to access the function through base class pointer.
             virtual void gpuInit();
-            virtual void loadConfig();
+            virtual void loadConfig(QString conf_filename);
 
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;

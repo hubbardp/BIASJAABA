@@ -1861,13 +1861,13 @@ namespace bias {
         processScoresPtr_front->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
     }
 
-    void JaabaPlugin::loadConfig()
+    void JaabaPlugin::loadConfig(QString conf_filename)
     {
         std::cout << "Jaaba load Config reached\n" << std::endl;
         unordered_map<string,unsigned int>::iterator camera_it;
         unordered_map<unsigned int, string>::iterator crop_file_it;
 
-        readPluginConfig(jab_conf);
+        readPluginConfig(jab_conf, conf_filename.toStdString());
         plugin_file_dir = jab_conf.plugin_file_dir;
         hog_file = jab_conf.hog_file;
         hof_file = jab_conf.hof_file;

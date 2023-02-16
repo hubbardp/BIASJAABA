@@ -4,9 +4,10 @@
 
 namespace bias {
 
-    void readPluginConfig(JaabaConfig& jaaba_config)
+    void readPluginConfig(JaabaConfig& jaaba_config, string param_file)
     {
-        string param_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/plugin_config_files/jaaba_config_load.json";
+        //string param_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/plugin_config_files/jaaba_config_load.json";
+        std::cout << "read" << param_file << std::endl;
         QJsonObject obj = loadParams(param_file);
         QJsonValue value;
         QString tmp_file;
@@ -80,8 +81,8 @@ namespace bias {
 
         }
 
-        //std::cout << plugin_file.toLocal8Bit().constData() << std::endl;
-        //std::cout << filename << std::endl;
+        
+        std::cout << filename << std::endl;
     }
 
     QJsonObject loadParams(const string& param_file)

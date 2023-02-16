@@ -37,7 +37,7 @@ namespace bias {
 
     };
 
-    void readPluginConfig(JaabaConfig& jaaba_config);
+    void readPluginConfig(JaabaConfig& jaaba_config, string param_file);
     QJsonObject loadParams(const string& param_file);
 }
 

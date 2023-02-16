@@ -178,6 +178,7 @@ namespace bias
             // Test Configuration signal
             void valueChangedFrametoFrame(bool frametoframeLatencyVal);
             void finished_vidReading();
+            void trig(bool plugin);
           
         protected:
 
@@ -261,6 +262,8 @@ namespace bias
             void enableFrametoFrame();
             void autostartTriggerSignal();
             RtnStatus startThreads(bool showErrorDlg = true);
+            //void loadPluginFile(QPointer<BiasPlugin> pluginPtr);
+            void loadPluginFile();
 
         private:
 
@@ -291,6 +294,7 @@ namespace bias
 
             QDir defaultConfigFileDir_;
             QDir defaultTestConfigFileDir_;
+            QDir defaultPluginConfigFileDir_;
             QDir currentConfigFileDir_;
             QDir currentTestConfigFileDir_;
 
@@ -502,7 +506,7 @@ namespace bias
 
             unsigned int getPartnerCameraNumber();
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
-            void loadPluginConfig(QPointer<BiasPlugin> pluginPtr);
+            void loadPluginConfig(QPointer<BiasPlugin> pluginPtr, QString& config_filename);
 
     }; // class CameraWindow
 
