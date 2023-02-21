@@ -493,7 +493,7 @@ int main(int argc, char* argv[]) {
 
         if (imageCnt > 0) {
 
-            /*if (!isSkipSide)
+            if (!isSkipSide)
             {
                 classifier->boost_classify_side(classifier->score_side,
                     feat_side->hog_out, feat_side->hof_out,
@@ -503,7 +503,7 @@ int main(int argc, char* argv[]) {
             } else {
 
                 classifier->score_side = {0.0,0.0,0.0,0.0,0.0,0.0};
-            }*/
+            }
 
             if (!isSkipFront)
             {
@@ -520,14 +520,14 @@ int main(int argc, char* argv[]) {
             end_process = gettime->getPCtime();
             ts_pc_front[imageCnt] = (end_process - start_process);
 
-            //classifier->addScores(classifier->score_side, classifier->score_front);
-            //classifier->write_score(output_dir + "/lift_classifier.csv", imageCnt, classifier->score[0]);
+            classifier->addScores(classifier->score_side, classifier->score_front);
+            classifier->write_score(output_dir + "/lift_classifier.csv", imageCnt, classifier->score[0]);
 
         }
         //end_process = gettime->getPCtime();
         //ts_pc[imageCnt] = (end_process - start_process);
         
-        if (isNIDAQ && imageCnt == numFrames-1){
+        /*if (isNIDAQ && imageCnt == numFrames-1){
             write_time<float>(output_dir + "/cam2sys_latency.csv", numFrames, ts_nidaq);
             break;
         }
@@ -535,7 +535,7 @@ int main(int argc, char* argv[]) {
             write_time<int64_t>(output_dir + "/ts_pc_latency_vidread_processjaaba_side_.csv", numFrames, ts_pc_front);
             write_time<int64_t>(output_dir + "/ts_pc_latency_vidread_processjaaba_front_.csv", numFrames, ts_pc_side);
             break;
-        }
+        }*/
         imageCnt++;
 
     }

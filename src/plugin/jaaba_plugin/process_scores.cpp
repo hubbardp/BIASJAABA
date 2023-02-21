@@ -2,7 +2,7 @@
 #include <cuda_runtime_api.h> 
 
 #define DEBUG 1
-#define isVidInput 0
+#define isVidInput 1
 #define visualize 0
 
 namespace bias {
@@ -165,7 +165,11 @@ namespace bias {
         bool done = false;
         uint64_t time_now;
         double score_ts;
+#if isVidInput
         double wait_threshold = 1500;
+#else if 
+        double wait_threshold = 1500
+#endif
         uint64_t ts_last_score = INT_MAX, cur_time=0;
         string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/"
             "multi/2c5ba_9_8_2022/classifier_trial1.csv";
@@ -226,6 +230,9 @@ namespace bias {
                     predScore = sideScoreQueuePtr_->front();
                     sideScoreQueuePtr_->releaseLock();
 
+                    //if ((predScore.frameCount % 100) == 0)
+                    //    std::cout << "ScoreFrame " << predScore.frameCount << " " << scoreCount << std::endl;
+
                     // to keep up with frame where both views are skipped 
                     if (scoreCount < predScore.frameCount)
                     {
@@ -261,6 +268,7 @@ namespace bias {
                     {
 
                         classifier->addScores(predScore.score, predScorePartner.score);
+
 
                         skipSide = false;
                         skipFront = false;
@@ -326,11 +334,14 @@ namespace bias {
                     predScore = sideScoreQueuePtr_->front();
                     sideScoreQueuePtr_->releaseLock();
 
+                   
                     // check if this is not already a processed scoreCount
                     //if (scoreCount > predScore.frameCount) {
                     //    sideScoreQueue.pop_front();
                     //    continue;
                     //}
+                    //if ((predScore.frameCount % 100) == 0)
+                    //    std::cout << "ScoreFrame ** " << predScore.frameCount << " " << scoreCount << std::endl;
 
                     if (predScore.frameCount > scoreCount)
                         scoreCount++;
@@ -340,6 +351,7 @@ namespace bias {
                     
                     if ((time_now - score_ts) > wait_threshold)
                     {
+                        
                         skipFront = true;
                        
                     }
@@ -419,11 +431,11 @@ namespace bias {
             done = stopped_;
             releaseLock();
 
-            if (scoreCount >= (numFrames)) {
+            if (scoreCount >= (numFrames-1)) {
 
                 std::cout << "Writing score...." << std::endl;
                 write_score_final(filename,numFrames-1, scores);
-                //std::cout << "Written ...." << std::endl;
+                std::cout << "Written ...." << std::endl;
 
                 break;
             }

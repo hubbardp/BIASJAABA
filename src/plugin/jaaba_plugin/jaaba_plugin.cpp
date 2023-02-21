@@ -6,7 +6,7 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 0
+#define isVidInput 1
 #define visualize 0
 
 //
@@ -637,20 +637,24 @@ namespace bias {
 
                 }
             }  
+            //std::cout << "FrameCount " << frameCount_ << std::endl;
             end_process = gettime_->getPCtime();
         }
 
-#if !isVidInput
+//#if !isVidInput
         if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
             if (frameCount_ <= testConfig_->numFrames) {
 
-                nidaq_task_->getNidaqTimeNow(read_ondemand);
+                //nidaq_task_->getNidaqTimeNow(read_ondemand);
+                nidaq_task_->acquireLock();
+                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                nidaq_task_->releaseLock();
 
             }
 
         }
-#endif
+//#endif
 
         if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
         {
@@ -688,7 +692,7 @@ namespace bias {
                     
             }
 
-            if (frameCount_ == testConfig_->numFrames - 1
+            if (frameCount_ == (testConfig_->numFrames - 2)
                 && !testConfig_->f2f_prefix.empty())
             {
 
@@ -703,7 +707,7 @@ namespace bias {
 
             }
 
-            if (frameCount_ == testConfig_->numFrames - 1
+            if (frameCount_ == (testConfig_->numFrames - 2)
                 && !testConfig_->nidaq_prefix.empty())
             {
 
@@ -725,7 +729,7 @@ namespace bias {
                 gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, ts_nidaq);
             }
 
-            if (frameCount_ == testConfig_->numFrames - 1
+            if (frameCount_ == (testConfig_->numFrames - 2)
                 && !testConfig_->queue_prefix.empty()) {
 
 
@@ -740,7 +744,7 @@ namespace bias {
 
             }
 
-            if (frameCount_ == testConfig_->numFrames - 1
+            if (frameCount_ == (testConfig_->numFrames - 2)
                 && process_frame_time) {
 
                 string filename = testConfig_->dir_list[0] + "/"
@@ -786,8 +790,6 @@ namespace bias {
                 }*/
 
             }
-
-         
 
         }else{}
 
@@ -1791,8 +1793,8 @@ namespace bias {
 
         if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
         {
-            processScoresPtr_side->scores.resize(100000);
-            processScoresPtr_side->numFrames = 100000;
+            processScoresPtr_side->scores.resize(2498);
+            processScoresPtr_side->numFrames = 2498;
             processScoresPtr_side->nidaq_task_= nidaq_task_;
         }
 
