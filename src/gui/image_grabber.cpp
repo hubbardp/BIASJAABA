@@ -217,7 +217,7 @@ namespace bias {
         frameCaptureTime = 2500;
         wait_thres = static_cast<int64_t>(1500);
         avgwait_time = 0;
-        delay_framethres = 1000;
+        delay_framethres = 1800;
         int num_skipFrames=0;
 #else 
         float cur_latency = 0.0;
@@ -334,7 +334,7 @@ namespace bias {
 
                 start_delay = gettime_->getPCtime();
                 end_delay = start_delay;
-                while ((end_delay - start_delay) < wait_thres)
+                while ((end_delay - start_delay) < delay_framethres)
                 {
                     end_delay = gettime_->getPCtime();
                 }
@@ -568,7 +568,7 @@ namespace bias {
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
                                 ts_process[frameCount - 1] = end_process - start_process;
-                                ts_pc[frameCount - 1] = start_process;
+                                ts_pc[frameCount - 1] = avgwait_time;
                             }
                         }
 #endif
