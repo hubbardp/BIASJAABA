@@ -860,7 +860,7 @@ namespace bias {
     void ImageGrabber::initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames)
 
     {
-        bool isreg = 1;
+        bool isreg = 0;
         srand(time(NULL));
         int framenumber=0;
 
@@ -908,7 +908,6 @@ namespace bias {
 
     void ImageGrabber::initializeVid()
     {
-        //nframes_ = 2498;
         no_of_skips = 24;   
 
         initializeVidBackend();
