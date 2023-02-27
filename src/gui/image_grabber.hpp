@@ -120,6 +120,7 @@ namespace bias
             bool isOpen_ = 0;
             bool start_reading = 0;
             priority_queue<int, vector<int>, greater<int>>delayFrames; // side skips
+            //vector<int> delayFrames;
             vector<int> delay_view;
             vector<StampedImage> vid_images;
 
@@ -128,6 +129,7 @@ namespace bias
 
             void initializeVidBackend();
             void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
+            //void initiateVidSkips(vector<int>& skip_frames);
             void readVidFrames();
             void add_delay(int delay_us);
             //void spikeDetected(unsigned int frameCount);

@@ -433,7 +433,7 @@ int main(int argc, char* argv[]) {
             }
 #else            
             //feat_side->getvid_frame(vid_sde);
-            feat_side->process_vidFrame(imageCnt);
+            //feat_side->process_vidFrame(imageCnt);
 #endif      
             end_process = gettime->getPCtime();
             ts_pc_side[imageCnt] = (end_process - start_process);
@@ -493,7 +493,7 @@ int main(int argc, char* argv[]) {
 
         if (imageCnt > 0) {
 
-            if (!isSkipSide)
+            /*if (!isSkipSide)
             {
                 classifier->boost_classify_side(classifier->score_side,
                     feat_side->hog_out, feat_side->hof_out,
@@ -503,7 +503,7 @@ int main(int argc, char* argv[]) {
             } else {
 
                 classifier->score_side = {0.0,0.0,0.0,0.0,0.0,0.0};
-            }
+            }*/
 
             if (!isSkipFront)
             {
@@ -512,16 +512,17 @@ int main(int argc, char* argv[]) {
                     &feat_side->hog_shape, &feat_frt->hof_shape, classifier->nframes,
                     classifier->model);
 
-            } else {
+            }
+            else {
 
                 std::cout << "score: " << imageCnt << std::endl;
-                classifier->score_front = {0.0,0.0,0.0,0.0,0.0,0.0};
+                classifier->score_front = { 0.0,0.0,0.0,0.0,0.0,0.0 };
             }
             end_process = gettime->getPCtime();
             ts_pc_front[imageCnt] = (end_process - start_process);
 
             classifier->addScores(classifier->score_side, classifier->score_front);
-            classifier->write_score(output_dir + "/lift_classifier.csv", imageCnt, classifier->score[0]);
+            classifier->write_score(output_dir + "/lift_classifier_front.csv", imageCnt, classifier->score[0]);
 
         }
         //end_process = gettime->getPCtime();
