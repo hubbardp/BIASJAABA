@@ -328,7 +328,7 @@ namespace bias {
                 stampImg.image = vid_images[frameCount].image;
             }
 
-            if (cameraNumber_ == 1 && frameCount == delayFrames.top()) {
+            if (frameCount == delayFrames.top()) {
 
                 delay_view[frameCount] = 1000;
 
@@ -860,9 +860,10 @@ namespace bias {
     void ImageGrabber::initiateVidSkips(priority_queue<int, vector<int>,
         greater<int>>& skip_frames)
     {
-        bool isreg = 1;
+        bool isreg = 0;
         srand(time(NULL));
-        int framenumber = 0;
+
+        int framenumber=0;
         set<int> s;
 
         while(s.size() != no_of_skips)
@@ -870,13 +871,12 @@ namespace bias {
             if (isreg) {
 
                 framenumber += 100;
-                //skip_frames.push_back(framenumber);
                 s.insert(framenumber);
             }
             else
             {
-                framenumber = rand() % nframes_;
-                //skip_frames.push_back(framenumber);
+              
+                framenumber = rand() % nframes_-1;
                 s.insert(framenumber);
             }
     

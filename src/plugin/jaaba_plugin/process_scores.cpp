@@ -172,7 +172,7 @@ namespace bias {
 #endif
         uint64_t ts_last_score = INT_MAX, cur_time=0;
         string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/"
-            "multi/c1a39_2_21_2023/classifier_trial5.csv";
+            "multi/2c5ba_9_8_2022/classifier_trial2.csv";
     
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
