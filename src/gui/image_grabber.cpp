@@ -8,6 +8,7 @@
 #include <QThread>
 #include <QFileInfo>
 #include <opencv2/core/core.hpp>
+#include "camera_device.hpp"
 
 
 /*#include <cstdlib>
@@ -20,8 +21,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "win_time.hpp"
-#include "camera_device.hpp"
-// ----------------------------------------
+// ---------------------------------------
+
+#include  <algorithm>
 
 #define DEBUG 1 
 #define isVidInput 1
@@ -30,6 +32,7 @@
 namespace bias {
 
     unsigned int ImageGrabber::DEFAULT_NUM_STARTUP_SKIP = 2;
+
     unsigned int ImageGrabber::MIN_STARTUP_SKIP = 2;
     unsigned int ImageGrabber::MAX_ERROR_COUNT = 500;
 
@@ -134,6 +137,7 @@ namespace bias {
                 ts_process.resize(testConfig_->numFrames, 0);
                 ts_pc.resize(testConfig_->numFrames, 0);
                 queue_size.resize(testConfig_->numFrames, 0);
+                ts_end.resize(testConfig_->numFrames, 0);
             }
         }
 #endif
@@ -198,26 +202,26 @@ namespace bias {
         double timeStampDbl = 0.0;
         double timeStampDblLast = 0.0;
 
-        uInt32 read_start=0, read_end=0;
+        uInt32 read_start = 0, read_end = 0, frameCaptureTime_nidaq = 0;
 
-        int64_t pc_time=0, start_process=0, end_process=0, time_now=0;
+        uint64_t pc_time=0, start_process=0, end_process=0, time_now=0;
         int64_t start_read_delay=0, end_read_delay = 0;
         int64_t start_push_delay = 0, end_push_delay = 0;
-        int64_t start_delay, end_delay = 0;
-        uint64_t expTime = 0, curTime = 0;
+        uint64_t start_delay, end_delay = 0;
+        uint64_t expTime = 0, curTime = 0, prev_curTime = 0;
         uint64_t curTime_vid = 0, expTime_vid = 0;
         uint64_t frameGrabAvgTime, frameCaptureTime, avg_frameLatSinceFirstFrame = 0;
         int64_t wait_thres, avgwait_time, delay_framethres;
         StampedImage stampImg;
+        int numtrailFrames = 0;
 
         QString errorMsg("no message");
 
 #if isVidInput
-        frameGrabAvgTime = 500;
         frameCaptureTime = 2500;
-        wait_thres = static_cast<int64_t>(1500);
+        frameCaptureTime_nidaq = 125;
+        wait_thres = static_cast<int64_t>(1000);
         avgwait_time = 0;
-        delay_framethres = 1800;
         int num_skipFrames=0;
 #else 
         float cur_latency = 0.0;
@@ -314,32 +318,49 @@ namespace bias {
 
             start_process = gettime_->getPCtime();
 #if isVidInput  
-            // wait for nidaq trigger signal
+            
+            delay_framethres = 0;
             if (frameCount == nframes_){
                 QThread::yieldCurrentThread();
                 continue;
             }
 
             if (startUpCount >= numStartUpSkip_) {
-                nidaq_task_->getCamtrig(frameCount);     
-            }
 
+                nidaq_task_->getCamtrig(frameCount);
+
+                // adding synthetic latency to the frame grab 
+                if (!delayFrames.empty() && frameCount == delayFrames.top()) 
+                {
+                       
+                    // get magnitude of latency to generate - sampled randomly
+                    if (!latency_spikes.empty())
+                    {
+                        delay_framethres = latency_spikes.back();
+                        delay_view[frameCount][1] = delay_framethres;
+                        delay_view[frameCount][0] = 1;
+                        latency_spikes.pop_back();
+
+                    }
+
+                    // introduce the latency delay
+                    start_delay = gettime_->getPCtime();
+                    end_delay = start_delay;
+                    while ((end_delay - start_delay) < delay_framethres)
+                    {
+                        end_delay = gettime_->getPCtime();
+                    }
+
+                    delayFrames.pop();
+                }
+           
+            }
+            
+            // wait for nidaq trigger signal to grab frame
             if (nidaq_task_->istrig) {
                 stampImg.image = vid_images[frameCount].image;
             }
-
-            if (frameCount == delayFrames.top()) {
-
-                delay_view[frameCount] = 1000;
-
-                start_delay = gettime_->getPCtime();
-                end_delay = start_delay;
-                while ((end_delay - start_delay) < delay_framethres)
-                {
-                    end_delay = gettime_->getPCtime();
-                }
-                delayFrames.pop();
-            }
+            
 
 #else
             if(startUpCount >= numStartUpSkip_)
@@ -463,7 +484,7 @@ namespace bias {
 
 #if isVidInput
                     fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
-                    //fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
+ 
 
 #else
                     fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
@@ -471,27 +492,23 @@ namespace bias {
                 }
 
 #if DEBUG
-                //nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                //nidaq_task_->getNidaqTimeNow(read_ondemand2_);
+
 #endif
 
 #if isVidInput
                 time_now = gettime_->getPCtime();
                 expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount+1));
-                curTime_vid = static_cast<uint64_t>(time_now);
+                curTime_vid = max(fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1)) + delay_framethres, prev_curTime);
+                prev_curTime = curTime_vid;
                 avgwait_time = curTime_vid - expTime_vid;
-                
-                //expTime = (fstfrmtStampRef_*20) + ((frameCaptureTime * (frameCount)) + 500);
-                //curTime = (static_cast<uint64_t>(read_ondemand_)*20);
-                //avgwait_time = curTime - expTime;
-                //if (delay_view[frameCount] == 1000)
-                //    std::cout << "FrameCount" << frameCount << "AvgwaitTime" << 
-                //    curTime << " " << expTime << " " << avgwait_time <<  std::endl;
+   
                 
 #else
 
                 avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime;
                 expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
-                curTime = (static_cast<uint64_t>(read_ondemand_) * 20);
+                curTime = (static_cast<uint64_t>(read_ondemand2_) * 20);
                 avgwait_time = curTime - expTime;
                 
 #endif       
@@ -532,17 +549,14 @@ namespace bias {
                             nidaq_task_->acquireLock();
                             ts_nidaq[frameCount - 1][0] = nidaq_task_->cam_trigger[frameCount - 1];
                             nidaq_task_->releaseLock();
-                            ts_nidaq[frameCount-1][1] = read_ondemand_;
-                            /*cur_latency = (read_ondemand_ - nidaq_task_->cam_trigger[frameCount])*0.02;
-                            if (cur_latency > avg_latency)
-                                ts_nidaqThres[frameCount] = cur_latency;*/
+                            ts_nidaq[frameCount-1][1] = read_ondemand2_;
+             
 
                         }
 #endif
                     }
                 }
 
-                
 
                 ///---------------------------------------------------------------
 #if DEBUG
@@ -567,42 +581,11 @@ namespace bias {
                         if (process_frame_time_)
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
-                                ts_process[frameCount - 1] = end_process - start_process;
-                                ts_pc[frameCount - 1] = avgwait_time;
+                                ts_process[frameCount - 1] = start_process;
+                                ts_pc[frameCount - 1] = expTime_vid;
+                                ts_end[frameCount - 1] = curTime_vid;
                             }
                         }
-#endif
-
-#if isVidInput
-
-                        // to speed up frame read to keep up with delay
-                        /*if (avgwait_time > wait_thres) {
-                            num_skipFrames = avgwait_time / frameCaptureTime;
-                            //std::cout  << " FrameCount " << frameCount 
-                            //    << "Num skip " << num_skipFrames << std::endl;
-                            for (int j = 0; j < num_skipFrames; j++)
-                            {
-                                stampImg.image = vid_images[frameCount].image;
-                                delay_view[frameCount] = 1000;
-                                nidaq_task_->acquireLock();
-                                nidaq_task_->getCamtrig(frameCount);
-                                nidaq_task_->releaseLock();
-
-                                stampImg.timeStamp = timeStampDbl;
-                                stampImg.timeStampInit = timeStampInit;
-                                stampImg.timeStampVal = timeStamp;
-                                stampImg.frameCount = frameCount;
-                                stampImg.dtEstimate = dtEstimate;
-                                stampImg.fstfrmtStampRef = fstfrmtStampRef_;
-
-                                newImageQueuePtr_->acquireLock();
-                                newImageQueuePtr_->push(stampImg);
-                                newImageQueuePtr_->signalNotEmpty();
-                                newImageQueuePtr_->releaseLock();
-                                //std::cout << "skipped speed up " << frameCount << std::endl;
-                                frameCount++;
-                            }
-                        }*/
 #endif
 
 #if DEBUG
@@ -674,9 +657,18 @@ namespace bias {
                                 + "_" + "start_time" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
+
+                            string filename2 = testConfig_->dir_list[0] + "/"
+                                + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                                + testConfig_->imagegrab_prefix
+                                + "_" + "end_time" + "cam"
+                                + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+
                             //std::cout << "Writing" << std::endl;
                             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_process);
                             gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_pc);
+                            gettime_->write_time_1d<int64_t>(filename2, testConfig_->numFrames, ts_end);
                             //std::cout << "Written" << std::endl;
                         }
 #endif
@@ -691,7 +683,7 @@ namespace bias {
                                 + "_" + "skipped_frames" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
-                            gettime_->write_time_1d<int>(filename, testConfig_->numFrames, delay_view);
+                            gettime_->write_time_2d<unsigned int>(filename, testConfig_->numFrames, delay_view);
 
                         }
 #endif
@@ -861,11 +853,14 @@ namespace bias {
         greater<int>>& skip_frames)
     {
         bool isreg = 0;
+        unsigned int spike_mag=0;
+        unsigned int min_latency_spike=5000, max_latency_spike = 20000;
         srand(time(NULL));
 
         int framenumber=0;
         set<int> s;
 
+        // create random selected frames for skipping 
         while(s.size() != no_of_skips)
         {
             if (isreg) {
@@ -876,17 +871,27 @@ namespace bias {
             else
             {
               
-                framenumber = rand() % nframes_-1;
+                framenumber = rand() % (nframes_-1);
                 s.insert(framenumber);
             }
     
         }
         
         set<int>::iterator it;
-        for (it = s.begin(); it != s.end(); it++)
+        if (!s.empty())
         {
-            skip_frames.push(*it);
+            for (it = s.begin(); it != s.end(); it++)
+            {
+                skip_frames.push(*it);
+
+                // create random latency for skips in us
+                spike_mag = (rand() % (max_latency_spike - min_latency_spike))
+                    + min_latency_spike;
+                latency_spikes.push_back(spike_mag);
+
+            }
         }
+
     }
 
     void ImageGrabber::readVidFrames()
@@ -917,11 +922,11 @@ namespace bias {
 
     void ImageGrabber::initializeVid()
     {
-        no_of_skips = 24;   
+        no_of_skips = 5;   
 
         initializeVidBackend();
         initiateVidSkips(delayFrames);
-        delay_view.resize(nframes_, 0);
+        delay_view.resize(nframes_, vector<unsigned int>(2,0));
 
         //important this is the last function called before imagegrabber starts 
         //grabbing frames. The camera trigger signal is on and the both threads

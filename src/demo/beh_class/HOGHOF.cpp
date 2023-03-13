@@ -354,8 +354,8 @@ void HOGHOF::genFeatures(QString vidname, QString& CropFile) {
 
         //copy_features1d(frame, hog_num_elements, hog_out, tmp_hog);
         if(frame > 0) {
-            copy_features1d(frame-1, hog_num_elements, hog_out, tmp_hog);
-            copy_features1d(frame-1, hof_num_elements, hof_out, tmp_hof);
+            copy_features1d(frame-1, hog_num_elements, hog_out.data(), tmp_hog);
+            copy_features1d(frame-1, hof_num_elements, hof_out.data(), tmp_hof);
         }
 
         frame++;

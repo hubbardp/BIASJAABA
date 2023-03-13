@@ -91,7 +91,7 @@ namespace bias
             bool process_frame_time_;
 
             unsigned int partnerCameraNumber_;
-            uInt32 read_buffer_ = 0, read_ondemand_ = 0;
+            uInt32 read_buffer_ = 0, read_ondemand1_ = 0, read_ondemand2_ = 0;
            
 
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
@@ -113,16 +113,20 @@ namespace bias
             std::vector<std::vector<uInt32>>ts_nidaq; // nidaq timings
             std::vector<unsigned int> queue_size; // queue size
             std::vector<int64_t>ts_process;
+            std::vector<int64_t>ts_end;
 
             int no_of_skips;
             int nframes_;
             bool finished_reading_ = 0;
             bool isOpen_ = 0;
             bool start_reading = 0;
-            priority_queue<int, vector<int>, greater<int>>delayFrames; // side skips
+            priority_queue<int, vector<int>, greater<int>>delayFrames; 
+            vector<unsigned int> latency_spikes;
             //vector<int> delayFrames;
-            vector<int> delay_view;
+            vector<vector<unsigned int>> delay_view;
             vector<StampedImage> vid_images;
+            priority_queue<int, vector<int>, greater<int>> trialFrames; // frames skipped as a trial
+                                                                        // to keep up
 
             videoBackend* vid_obj_;
             cv::VideoCapture cap_obj_;

@@ -172,8 +172,7 @@ namespace bias {
 #endif
         uint64_t ts_last_score = INT_MAX, cur_time=0;
         string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/"
-            "multi/2c5ba_9_8_2022/classifier_trial2.csv";
-    
+            "multi/2c5ba_9_8_2022/classifier_trial5.csv";
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
@@ -282,18 +281,18 @@ namespace bias {
                         frontScoreQueuePtr_->releaseLock();
 #if isVidInput         
                         time_now = gettime->getPCtime();
-                        scores[scoreCount - 1].score_ts = time_now;
+                        scores[scoreCount].score_ts = time_now;
 #else
                         nidaq_task_->getNidaqTimeNow(read_ondemand_);
                         scores[scoreCount - 1].score_ts = read_ondemand_;
 #endif
 
-                        scores[scoreCount-1].score[0] = classifier->finalscore.score[0];
-                        scores[scoreCount-1].frameCount = predScore.frameCount;
-                        scores[scoreCount-1].view = 3;
+                        scores[scoreCount].score[0] = classifier->finalscore.score[0];
+                        scores[scoreCount].frameCount = predScore.frameCount;
+                        scores[scoreCount].view = 3;
                         
-                        scores[scoreCount-1].score_side_ts = predScore.score_side_ts;
-                        scores[scoreCount-1].score_front_ts = predScorePartner.score_front_ts;
+                        scores[scoreCount].score_side_ts = predScore.score_side_ts;
+                        scores[scoreCount].score_front_ts = predScorePartner.score_front_ts;
                                               // - max(predScore.score_ts, predScorePartner.score_ts);
                         //write_score("classifierscr.csv", scoreCount, scores[scoreCount-1]);
 
@@ -334,14 +333,11 @@ namespace bias {
                     predScore = sideScoreQueuePtr_->front();
                     sideScoreQueuePtr_->releaseLock();
 
-                   
                     // check if this is not already a processed scoreCount
                     //if (scoreCount > predScore.frameCount) {
                     //    sideScoreQueue.pop_front();
                     //    continue;
                     //}
-                    //if ((predScore.frameCount % 100) == 0)
-                    //    std::cout << "ScoreFrame ** " << predScore.frameCount << " " << scoreCount << std::endl;
 
                     if (predScore.frameCount > scoreCount)
                         scoreCount++;
@@ -373,15 +369,15 @@ namespace bias {
                             //write_score("classifierscr.csv", scoreCount, predScore);
 #if isVidInput         
                             time_now = gettime->getPCtime();
-                            scores[scoreCount - 1].score_ts = time_now;
+                            scores[scoreCount].score_ts = time_now;
 #else
                             nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                            scores[scoreCount - 1].score_ts = read_ondemand_;
+                            scores[scoreCount].score_ts = read_ondemand_;
 #endif
-                            scores[scoreCount-1].score[0] = predScore.score[0];
-                            scores[scoreCount-1].frameCount = predScore.frameCount;
-                            scores[scoreCount-1].view = 1;
-                            scores[scoreCount-1].score_side_ts = predScore.score_side_ts;
+                            scores[scoreCount].score[0] = predScore.score[0];
+                            scores[scoreCount].frameCount = predScore.frameCount;
+                            scores[scoreCount].view = 1;
+                            scores[scoreCount].score_side_ts = predScore.score_side_ts;
 #if visualize
                             visualizeScores(predScore.score);
 #endif
@@ -404,18 +400,18 @@ namespace bias {
                           
 #if isVidInput         
                             time_now = gettime->getPCtime();
-                            scores[scoreCount - 1].score_ts = time_now;
+                            scores[scoreCount].score_ts = time_now;
 #else
                             nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                            scores[scoreCount - 1].score_ts = read_ondemand_;
+                            scores[scoreCount].score_ts = read_ondemand_;
 #endif
 
                             //write_score("classifierscr.csv", scoreCount, predScorePartner);
                             time_now = gettime->getPCtime();
-                            scores[scoreCount-1].score[0] = predScorePartner.score[0];
-                            scores[scoreCount-1].frameCount = predScorePartner.frameCount;
-                            scores[scoreCount-1].view = 2;
-                            scores[scoreCount - 1].score_front_ts = predScorePartner.score_front_ts;
+                            scores[scoreCount].score[0] = predScorePartner.score[0];
+                            scores[scoreCount].frameCount = predScorePartner.frameCount;
+                            scores[scoreCount].view = 2;
+                            scores[scoreCount].score_front_ts = predScorePartner.score_front_ts;
 #if visualize
                             visualizeScores(predScorePartner.score);
 #endif        

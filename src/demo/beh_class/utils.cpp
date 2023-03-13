@@ -102,63 +102,47 @@ void IsSubset(std::set<char> A, std::set<char> B) {
 }
 
 
-void copy_features1d(int frame_num, int num_elements, std::vector<float> &vec_feat, float* array_feat) {
+void copy_features1d(int frame_num, int num_elements, float* out_feat, float* in_feat) {
     // row to add is num_elements * frame_num
     int start_idx = frame_num * num_elements;
     for(int i = 0; i < num_elements; i++) {
-        vec_feat[i + start_idx] = array_feat[i];
+        out_feat[i + start_idx] = in_feat[i];
     }
 }
 
-
+// vectors don't work well with hdf5 
+//https://stackoverflow.com/questions/32447628/how-to-write-2d-std-vector-of-floats-to-hdf5-file-and-then-read-it-in-python
 void create_dataset(H5::H5File& file, std::string key,
-        std::vector<float> features, int num_frames, int num_elements) {
+        float* features, int num_frames, int num_elements) {
 
     hsize_t dims[2];
     dims[0] = num_frames;
     dims[1] = num_elements;
-    H5::DataSpace dataspace(2, dims);
+    H5::DataSpace dataspace(2, dims); 
     H5::DataSet dataset = file.createDataSet(key, H5::PredType::IEEE_F32LE, dataspace);
 
-    dataset.write(&features.data()[0], H5::PredType::IEEE_F32LE);
+    dataset.write(features, H5::PredType::IEEE_F32LE);
 
     dataset.close();
     dataspace.close();
 }
 
+
 int createh5( std::string exp_path, std::string exp_name,
-               int num_frames, int hog_elements1, int hof_elements1,
-               int hog_elements2, int hof_elements2,
-               std::vector<float> hog1, std::vector<float> hog2,
-               std::vector<float> hof1, std::vector<float> hof2) {
+               int num_frames, int dim_view1, int dim_view2,
+               float* hog1, float* hog2,
+               float* hof1, float* hof2) {
   
     // Test h5 creation
-    //std::string out_file = "/nrs/branson/kwaki/data/hantman_hoghof/" +
-    //          exp_name;
-        // std::string out_file = "/media/drive3/kwaki/data/hantman_hoghof/" +
-        //      exp_name + ".hdf5";
     std::string out_file = exp_path + exp_name;
-             //+ exp_name + "/cuda_dir/" + exp_name;
-            
     H5::H5File file(out_file.c_str(), H5F_ACC_TRUNC);
 
     // Create 4 datasets.
-    create_dataset(file, "hog_side", hog1, num_frames, hog_elements1);
-    create_dataset(file, "hog_front", hog2, num_frames, hog_elements2);
-    create_dataset(file, "hof_side", hof1, num_frames, hof_elements1);
-    create_dataset(file, "hof_front", hof2, num_frames, hof_elements2);
-    // hsize_t dims[2];
-    // dims[0] = num_frames;
-    // dims[1] = hog_elements;
-    // H5::DataSpace dataspace(2, dims);
-    // H5::DataSet dataset = file.createDataSet(
-    //         "hog_side", H5::PredType::IEEE_F32LE, dataspace);
+    create_dataset(file, "hog_side", hog1, num_frames, dim_view1);
+    create_dataset(file, "hog_front", hog2, num_frames, dim_view2);
+    create_dataset(file, "hof_side", hof1, num_frames, dim_view1);
+    create_dataset(file, "hof_front", hof2, num_frames, dim_view2);
 
-    // // fprintf(stderr, "%f\n", hog1.data()[0]);
-    // dataset.write(&hog1.data()[0], H5::PredType::IEEE_F32LE);
-
-    // dataset.close();
-    // dataspace.close();
     file.close();
 
     return 0;

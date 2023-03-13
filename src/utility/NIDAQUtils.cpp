@@ -43,7 +43,7 @@ namespace bias {
         //Measure frame trigger Channel
         DAQmxErrChk(DAQmxCreateTask("", &taskHandle_trigger_in));
         DAQmxErrChk(DAQmxCreateCICountEdgesChan(taskHandle_trigger_in, "Dev1/ctr0", "", DAQmx_Val_Rising, 0, DAQmx_Val_CountUp));
-        DAQmxErrChk(DAQmxCfgSampClkTiming(taskHandle_trigger_in, "/Dev1/PFI14", 1000000.0, DAQmx_Val_Rising, DAQmx_Val_ContSamps, 1000000.0));
+        DAQmxErrChk(DAQmxCfgSampClkTiming(taskHandle_trigger_in, "/Dev1/PFI14", 1000.0, DAQmx_Val_Rising, DAQmx_Val_ContSamps, 1000.0));
         DAQmxErrChk(DAQmxSetCICountEdgesTerm(taskHandle_trigger_in, "Dev1/ctr0", "/Dev1/PFI15"));
 
         // Measure frame grab Channel
@@ -70,7 +70,7 @@ namespace bias {
         DAQmxErrChk(DAQmxStartTask(taskHandle_trigger_in));
         DAQmxErrChk(DAQmxStartTask(taskHandle_fout));
         DAQmxErrChk(DAQmxStartTask(taskHandle_sampout));
-        
+        printf("tasks started******************************\n ");
     }
 
     void NIDAQUtils::start_trigger_signal() {

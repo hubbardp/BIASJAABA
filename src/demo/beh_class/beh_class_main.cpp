@@ -108,6 +108,11 @@ int main(int argc, char* argv[]) {
     priority_queue<int, vector<int>, greater<int>>skipframes_view1; // frames to skip 
     priority_queue<int, vector<int>, greater<int>>skipframes_view2;
 
+    float* feats_hog_out = nullptr;
+    float* feats_hof_out = nullptr;
+    float* featf_hog_out = nullptr;
+    float* featf_hof_out = nullptr;
+
     QQueue<PredData> frontScoreQueue; // front score buffers
     QQueue<PredData> sideScoreQueue; // side score buffers
 
@@ -150,6 +155,8 @@ int main(int argc, char* argv[]) {
 
     param_sde = { HOGParam_file_sde , HOFParam_file_sde, CropParam_file_sde };
     param_frt = { HOGParam_file_frt , HOFParam_file_frt, CropParam_file_frt };
+    int feat_dim_side = 0;
+    int feat_dim_front = 0;
     
     // spinnaker camera configuration variables
     spinError err = SPINNAKER_ERR_SUCCESS;
@@ -261,7 +268,13 @@ int main(int argc, char* argv[]) {
         feat_side->initializeHOGHOF(width, height, numFrames);
         feat_frt->initializeHOGHOF(width, height, numFrames);
         classifier->translate_mat2C(&feat_side->hog_shape, &feat_frt->hog_shape);
-
+        feat_dim_side = feat_side->hog_shape.x* feat_side->hog_shape.y*feat_side->hog_shape.bin;
+        feat_dim_front = feat_frt->hog_shape.x* feat_frt->hog_shape.y*feat_frt->hog_shape.bin;
+        feats_hog_out = new float[numFrames * feat_dim_side];
+        featf_hog_out = new float[numFrames * feat_dim_front];
+        feats_hof_out = new float[numFrames * feat_dim_side];
+        featf_hof_out = new float[numFrames * feat_dim_front];
+        printf("%d-%d", feat_dim_side, feat_dim_front);
     }
     
     bool isTriggered = false;
@@ -284,7 +297,7 @@ int main(int argc, char* argv[]) {
                 isTriggered = true;
             }
 
-            err = spin_handle.getFrame_camera(hCamera, hResultImage);                
+            err = spin_handle.getFrame_camera(hCamera, hResultImage);
 
             if (err != SPINNAKER_ERR_SUCCESS)
             {
@@ -322,11 +335,11 @@ int main(int argc, char* argv[]) {
             );
 
             imageTmp.copyTo(image);
-            
+
             image.convertTo(image, CV_32FC1);
             image = image / 255;
             feat_side->img.buf = image.data;
-            
+
             //printf("%d\n", imageCnt);
             if (nidaq_task != nullptr && isNIDAQ) {
 
@@ -335,7 +348,7 @@ int main(int argc, char* argv[]) {
                 ts_nidaq[imageCnt] = static_cast<float>((read_ondemand - read_buffer)*0.02);
 
             }
-          
+
             // ----------------------------------------------------------------------------
 
             if (!destroySpinImage(hSpinImageConv))
@@ -369,7 +382,7 @@ int main(int argc, char* argv[]) {
             {
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_start, NULL));
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
-               
+
             }
             else {
                 start_process = gettime->getPCtime();
@@ -395,7 +408,7 @@ int main(int argc, char* argv[]) {
             else if (isNIDAQ) {
                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task->taskHandle_grab_in, 10.0, &read_end, NULL));
             }*/
-            
+
             /*if (isNIDAQ)
                 ts_nidaq[imageCnt] = (read_end - read_start)*0.02;
             else
@@ -433,7 +446,10 @@ int main(int argc, char* argv[]) {
             }
 #else            
             //feat_side->getvid_frame(vid_sde);
-            //feat_side->process_vidFrame(imageCnt);
+            feat_side->process_vidFrame(imageCnt);
+            copy_features1d(imageCnt, feat_dim_side, feats_hog_out, feat_side->hog_out.data());
+            copy_features1d(imageCnt, feat_dim_side, feats_hof_out, feat_side->hof_out.data());
+
 #endif      
             end_process = gettime->getPCtime();
             ts_pc_side[imageCnt] = (end_process - start_process);
@@ -445,11 +461,13 @@ int main(int argc, char* argv[]) {
                 if ((imageCnt < skipframes_view2.top()))
                 {
 
-                }else if((imageCnt >= (skipframes_view2.top() + frameSkip))) {
+                }
+                else if ((imageCnt >= (skipframes_view2.top() + frameSkip))) {
 
                     feat_frt->setLastInput();
 
-                }else {
+                }
+                else {
 
                     std::cout << "frameCnt: " << imageCnt << std::endl;
                     isSkipFront = 1;
@@ -467,10 +485,13 @@ int main(int argc, char* argv[]) {
 #else
             //feat_frt->getvid_frame(vid_frt);
             feat_frt->process_vidFrame(imageCnt);
+            copy_features1d(imageCnt, feat_dim_front, featf_hog_out, feat_frt->hog_out.data());
+            copy_features1d(imageCnt, feat_dim_front, featf_hof_out, feat_frt->hof_out.data());
 #endif
-            
 
-        }else {
+
+        }
+        else {
 
             if (numCameras == 0) {
 
@@ -493,17 +514,18 @@ int main(int argc, char* argv[]) {
 
         if (imageCnt > 0) {
 
-            /*if (!isSkipSide)
+            if (!isSkipSide)
             {
                 classifier->boost_classify_side(classifier->score_side,
                     feat_side->hog_out, feat_side->hof_out,
                     &feat_side->hog_shape, &feat_frt->hof_shape, classifier->nframes,
                     classifier->model);
 
-            } else {
+            }
+            else {
 
-                classifier->score_side = {0.0,0.0,0.0,0.0,0.0,0.0};
-            }*/
+                classifier->score_side = { 0.0,0.0,0.0,0.0,0.0,0.0 };
+            }
 
             if (!isSkipFront)
             {
@@ -522,12 +544,12 @@ int main(int argc, char* argv[]) {
             ts_pc_front[imageCnt] = (end_process - start_process);
 
             classifier->addScores(classifier->score_side, classifier->score_front);
-            classifier->write_score(output_dir + "/lift_classifier_front.csv", imageCnt, classifier->score[0]);
+            //classifier->write_score(output_dir + "/lift_classifier_front.csv", imageCnt, classifier->score[0]);
 
         }
         //end_process = gettime->getPCtime();
         //ts_pc[imageCnt] = (end_process - start_process);
-        
+
         /*if (isNIDAQ && imageCnt == numFrames-1){
             write_time<float>(output_dir + "/cam2sys_latency.csv", numFrames, ts_nidaq);
             break;
@@ -537,15 +559,24 @@ int main(int argc, char* argv[]) {
             write_time<int64_t>(output_dir + "/ts_pc_latency_vidread_processjaaba_front_.csv", numFrames, ts_pc_side);
             break;
         }*/
-        imageCnt++;
 
+        if (imageCnt == (numFrames - 1))
+        {    
+            std::cout << "Started Writing" << std::endl;;
+            createh5("./hoghof", ".h5", numFrames,
+                feat_dim_side, feat_dim_front,
+                feats_hog_out, featf_hog_out,
+                feats_hof_out, featf_hof_out);
+            std::cout << "finished writing" << std::endl;
+        }
+        imageCnt++;
+     
     }
 
-    /*createh5("./hoghof", ".h5", 2498,
-                 2400, 2400,
-                 1600, 1600,
-                 feat_side->hog_out, feat_frt->hog_out,
-                 feat_side->hof_out, feat_frt->hof_out);*/
+    delete[] feats_hog_out;
+    delete[] featf_hog_out;
+    delete[] feats_hof_out;
+    delete[] featf_hof_out;
 
     if (numCameras != 0) {
 
