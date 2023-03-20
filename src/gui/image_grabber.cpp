@@ -340,7 +340,7 @@ namespace bias {
             if (startUpCount >= numStartUpSkip_) {
 
                 // adding synthetic latency to the frame grab 
-                if (cameraNumber_ == 0) {
+                //if (cameraNumber_ == 0) {
 
                     if (!delayFrames.empty() && frameCount == delayFrames.top())
                     {
@@ -377,12 +377,12 @@ namespace bias {
                         nidaq_task_->getCamtrig(frameCount);
 
                     }
-                }
+                //}
 
-                if (cameraNumber_ == 1)
+                /*if (cameraNumber_ == 1)
                 {
                     nidaq_task_->getCamtrig(frameCount);
-                }
+                }*/
               
             }
             
