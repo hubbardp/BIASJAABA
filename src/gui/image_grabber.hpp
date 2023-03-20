@@ -123,7 +123,7 @@ namespace bias
             priority_queue<int, vector<int>, greater<int>>delayFrames; 
             vector<unsigned int> latency_spikes;
             //vector<int> delayFrames;
-            vector<vector<unsigned int>> delay_view;
+            vector<vector<int64_t>> delay_view;
             vector<StampedImage> vid_images;
             priority_queue<int, vector<int>, greater<int>> trialFrames; // frames skipped as a trial
                                                                         // to keep up

@@ -209,7 +209,7 @@ namespace bias {
         int64_t start_push_delay = 0, end_push_delay = 0;
         uint64_t start_delay, end_delay = 0;
         uint64_t expTime = 0, curTime = 0, prev_curTime = 0;
-        uint64_t curTime_vid = 0, expTime_vid = 0;
+        uint64_t curTime_vid = 0, expTime_vid = 0, delta_now=0;
         uint64_t frameGrabAvgTime, frameCaptureTime, avg_frameLatSinceFirstFrame = 0;
         int64_t wait_thres, avgwait_time, delay_framethres;
         StampedImage stampImg;
@@ -220,7 +220,7 @@ namespace bias {
 #if isVidInput
         frameCaptureTime = 2500;
         frameCaptureTime_nidaq = 125;
-        wait_thres = static_cast<int64_t>(1000);
+        wait_thres = static_cast<int64_t>(100);
         avgwait_time = 0;
         int num_skipFrames=0;
 #else 
@@ -325,43 +325,71 @@ namespace bias {
                 continue;
             }
 
+            
+            if (nidaq_task_ != nullptr && frameCount == 0) {
+
+                fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
+                prev_curTime = expTime_vid;
+            }
+
+            expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1));
+            if (frameCount == 0) {
+                prev_curTime = expTime_vid;
+            }
+
             if (startUpCount >= numStartUpSkip_) {
 
-                nidaq_task_->getCamtrig(frameCount);
-
                 // adding synthetic latency to the frame grab 
-                if (!delayFrames.empty() && frameCount == delayFrames.top()) 
-                {
-                       
-                    // get magnitude of latency to generate - sampled randomly
-                    if (!latency_spikes.empty())
+                if (cameraNumber_ == 0) {
+
+                    if (!delayFrames.empty() && frameCount == delayFrames.top())
                     {
-                        delay_framethres = latency_spikes.back();
-                        delay_view[frameCount][1] = delay_framethres;
+                        //nidaq_task_->getCamtrig(frameCount);
+                        // get magnitude of latency to generate - sampled randomly
+                        if (!latency_spikes.empty())
+                        {
+                            delay_framethres = latency_spikes.back();
+                            delay_view[frameCount][1] = delay_framethres;
+                            delay_view[frameCount][0] = 1;
+                            latency_spikes.pop_back();
+
+                        }
+
+                        // introduce the latency delay
+                        start_delay = gettime_->getPCtime();
+                        end_delay = start_delay;
+                        while ((end_delay - start_delay) < delay_framethres)
+                        {
+                            end_delay = gettime_->getPCtime();
+                        }
+
+                        delayFrames.pop();
+
+                    }
+                    else if ((prev_curTime-expTime_vid) > 0 && 
+                        static_cast<int64_t>(prev_curTime - expTime_vid) > wait_thres) {
+
                         delay_view[frameCount][0] = 1;
-                        latency_spikes.pop_back();
+                        delay_view[frameCount][1] = static_cast<int64_t>(prev_curTime - expTime_vid);
+                    }
+                    else {
+
+                        nidaq_task_->getCamtrig(frameCount);
 
                     }
-
-                    // introduce the latency delay
-                    start_delay = gettime_->getPCtime();
-                    end_delay = start_delay;
-                    while ((end_delay - start_delay) < delay_framethres)
-                    {
-                        end_delay = gettime_->getPCtime();
-                    }
-
-                    delayFrames.pop();
                 }
-           
+
+                if (cameraNumber_ == 1)
+                {
+                    nidaq_task_->getCamtrig(frameCount);
+                }
+              
             }
             
             // wait for nidaq trigger signal to grab frame
             if (nidaq_task_->istrig) {
                 stampImg.image = vid_images[frameCount].image;
             }
-            
-
 #else
             if(startUpCount >= numStartUpSkip_)
                 nidaq_task_->getCamtrig(frameCount);
@@ -478,40 +506,35 @@ namespace bias {
                 // ---------------------------------------------------------------------
                 // Test Configuration
                 //------------------------------------------------------------------------
-                //start_process = gettime_->getPCtime();
-                //-------------------------------------------------------------------------
+
                 if (nidaq_task_ != nullptr && frameCount == 0) {
-
-#if isVidInput
-                    fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
- 
-
-#else
+#if !isVidInput
                     fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
 #endif
                 }
 
-#if DEBUG
-                //nidaq_task_->getNidaqTimeNow(read_ondemand2_);
-
-#endif
-
 #if isVidInput
-                time_now = gettime_->getPCtime();
-                expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount+1));
-                curTime_vid = max(fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1)) + delay_framethres, prev_curTime);
+
+                //expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount+1));
+                curTime_vid = max(fstfrmtStampRef_ + (frameCaptureTime*(frameCount+1)+delay_framethres), prev_curTime);
+                //max(fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1)) + delay_framethres, prev_curTime);
                 prev_curTime = curTime_vid;
                 avgwait_time = curTime_vid - expTime_vid;
-   
-                
+
+
 #else
 
                 avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime;
                 expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
                 curTime = (static_cast<uint64_t>(read_ondemand2_) * 20);
                 avgwait_time = curTime - expTime;
-                
+
 #endif       
+
+#if DEBUG
+                //nidaq_task_->getNidaqTimeNow(read_ondemand2_);
+
+#endif
 
                 if (abs(avgwait_time) <= wait_thres)
                     // Set image data timestamp, framecount and frame interval estimate
@@ -582,8 +605,8 @@ namespace bias {
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
                                 ts_process[frameCount - 1] = start_process;
-                                ts_pc[frameCount - 1] = expTime_vid;
-                                ts_end[frameCount - 1] = curTime_vid;
+                                ts_pc[frameCount - 1] = start_process;
+                                ts_end[frameCount - 1] = end_process;
                             }
                         }
 #endif
@@ -683,7 +706,7 @@ namespace bias {
                                 + "_" + "skipped_frames" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
-                            gettime_->write_time_2d<unsigned int>(filename, testConfig_->numFrames, delay_view);
+                            gettime_->write_time_2d<int64_t>(filename, testConfig_->numFrames, delay_view);
 
                         }
 #endif
@@ -854,7 +877,7 @@ namespace bias {
     {
         bool isreg = 0;
         unsigned int spike_mag=0;
-        unsigned int min_latency_spike=5000, max_latency_spike = 20000;
+        unsigned int min_latency_spike=0, max_latency_spike = 20000;
         srand(time(NULL));
 
         int framenumber=0;
@@ -926,7 +949,7 @@ namespace bias {
 
         initializeVidBackend();
         initiateVidSkips(delayFrames);
-        delay_view.resize(nframes_, vector<unsigned int>(2,0));
+        delay_view.resize(nframes_, vector<int64_t>(2,0));
 
         //important this is the last function called before imagegrabber starts 
         //grabbing frames. The camera trigger signal is on and the both threads

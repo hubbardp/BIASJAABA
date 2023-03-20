@@ -229,9 +229,6 @@ namespace bias {
                     predScore = sideScoreQueuePtr_->front();
                     sideScoreQueuePtr_->releaseLock();
 
-                    //if ((predScore.frameCount % 100) == 0)
-                    //    std::cout << "ScoreFrame " << predScore.frameCount << " " << scoreCount << std::endl;
-
                     // to keep up with frame where both views are skipped 
                     if (scoreCount < predScore.frameCount)
                     {
@@ -267,7 +264,6 @@ namespace bias {
                     {
 
                         classifier->addScores(predScore.score, predScorePartner.score);
-
 
                         skipSide = false;
                         skipFront = false;
@@ -311,7 +307,7 @@ namespace bias {
 
                     // check if this is not already a processed scoreCount
                     //if (scoreCount > predScorePartner.frameCount) {
-                    //    frontScoreQueue.pop_front();
+                    //    frontScoreQueuePtr_->pop();
                     //    continue;
                     //}
 
@@ -335,7 +331,7 @@ namespace bias {
 
                     // check if this is not already a processed scoreCount
                     //if (scoreCount > predScore.frameCount) {
-                    //    sideScoreQueue.pop_front();
+                    //    sideScoreQueuePtr_->pop();
                     //    continue;
                     //}
 
@@ -432,7 +428,7 @@ namespace bias {
                 std::cout << "Writing score...." << std::endl;
                 write_score_final(filename,numFrames-1, scores);
                 std::cout << "Written ...." << std::endl;
-
+                 
                 break;
             }
 
