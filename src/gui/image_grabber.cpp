@@ -340,49 +340,42 @@ namespace bias {
             if (startUpCount >= numStartUpSkip_) {
 
                 // adding synthetic latency to the frame grab 
-                //if (cameraNumber_ == 0) {
 
-                    if (!delayFrames.empty() && frameCount == delayFrames.top())
-                    {
-                        //nidaq_task_->getCamtrig(frameCount);
-                        // get magnitude of latency to generate - sampled randomly
-                        if (!latency_spikes.empty())
-                        {
-                            delay_framethres = latency_spikes.back();
-                            delay_view[frameCount][1] = delay_framethres;
-                            delay_view[frameCount][0] = 1;
-                            latency_spikes.pop_back();
-
-                        }
-
-                        // introduce the latency delay
-                        start_delay = gettime_->getPCtime();
-                        end_delay = start_delay;
-                        while ((end_delay - start_delay) < delay_framethres)
-                        {
-                            end_delay = gettime_->getPCtime();
-                        }
-
-                        delayFrames.pop();
-
-                    }
-                    else if ((prev_curTime-expTime_vid) > 0 && 
-                        static_cast<int64_t>(prev_curTime - expTime_vid) > wait_thres) {
-
-                        delay_view[frameCount][0] = 1;
-                        delay_view[frameCount][1] = static_cast<int64_t>(prev_curTime - expTime_vid);
-                    }
-                    else {
-
-                        nidaq_task_->getCamtrig(frameCount);
-
-                    }
-                //}
-
-                /*if (cameraNumber_ == 1)
+                if (!delayFrames.empty() && frameCount == delayFrames.top())
                 {
+                    //nidaq_task_->getCamtrig(frameCount);
+                    // get magnitude of latency to generate - sampled randomly
+                    if (!latency_spikes.empty())
+                    {
+                        delay_framethres = latency_spikes.back();
+                        delay_view[frameCount][1] = delay_framethres;
+                        delay_view[frameCount][0] = 1;
+                        latency_spikes.pop_back();
+
+                    }
+
+                    // introduce the latency delay
+                    start_delay = gettime_->getPCtime();
+                    end_delay = start_delay;
+                    while ((end_delay - start_delay) < delay_framethres)
+                    {
+                        end_delay = gettime_->getPCtime();
+                    }
+
+                    delayFrames.pop();
+
+                }
+                else if ((prev_curTime-expTime_vid) > 0 && 
+                    static_cast<int64_t>(prev_curTime - expTime_vid) > wait_thres) {
+
+                    delay_view[frameCount][0] = 1;
+                    delay_view[frameCount][1] = static_cast<int64_t>(prev_curTime - expTime_vid);
+                }
+                else {
+
                     nidaq_task_->getCamtrig(frameCount);
-                }*/
+
+                }
               
             }
             

@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
+if (POLICY CMP0020) 
+    cmake_policy(SET CMP0020 NEW)
+endif()
+
 if(with_fc2)
     project(bias_test_fc2)
     add_executable(test_fc2 test_fc2.cpp)
