@@ -1,7 +1,7 @@
 #include "process_scores.hpp"
 #include <cuda_runtime_api.h> 
 
-#define isVidInput 0
+#define isVidInput 1
 #define visualize 0
 
 namespace bias {
