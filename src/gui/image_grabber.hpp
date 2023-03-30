@@ -91,7 +91,7 @@ namespace bias
             bool process_frame_time_;
 
             unsigned int partnerCameraNumber_;
-            uInt32 read_buffer_ = 0, read_ondemand1_ = 0, read_ondemand2_ = 0;
+            uInt32 read_buffer_ = 0, read_ondemand_ = 0;
            
 
             std::shared_ptr<Lockable<Camera>> cameraPtr_;

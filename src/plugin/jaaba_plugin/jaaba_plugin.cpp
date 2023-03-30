@@ -6,7 +6,7 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 1
+#define isVidInput 0
 #define visualize 0
 
 //
@@ -474,7 +474,8 @@ namespace bias {
                 {
                     while (processScoresPtr_side->processedFrameCount < frameCount_)
                     {
-                        ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
+                        if(testConfigEnabled_)
+                            ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
                         //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
                         processScoresPtr_side->processedFrameCount++;
                     }
@@ -485,7 +486,8 @@ namespace bias {
                 {
                     while (processScoresPtr_front->processedFrameCount < frameCount_)
                     {
-                        ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
+                        if(testConfigEnabled_)
+                            ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
                         //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
                         processScoresPtr_front->processedFrameCount++;
                     }
@@ -1793,8 +1795,8 @@ namespace bias {
 
         if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
         {
-            processScoresPtr_side->scores.resize(2498);
-            processScoresPtr_side->numFrames = 2498;
+            processScoresPtr_side->scores.resize(100000);
+            processScoresPtr_side->numFrames = 100000;
             processScoresPtr_side->nidaq_task_= nidaq_task_;
         }
 

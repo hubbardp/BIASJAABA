@@ -61,7 +61,7 @@
 #include "jaaba_plugin.hpp"
 #include "test_config.hpp"
 // -------------------------------------
-#define isVidInput 1
+#define isVidInput 0
 
 namespace bias
 {
@@ -372,7 +372,7 @@ namespace bias
                 printf(" nidaq set - %d\n", cameraNumber_);
             
         }
-
+        
         imageGrabberPtr_ = new ImageGrabber(
             cameraNumber_,
             cameraPtr_,
@@ -386,6 +386,7 @@ namespace bias
             this
         );
         imageGrabberPtr_->setAutoDelete(false);
+        
 
         imageDispatcherPtr_ = new ImageDispatcher(
             logging_,
@@ -403,7 +404,7 @@ namespace bias
             this
         );
         imageDispatcherPtr_->setAutoDelete(false);
-
+ 
         if (logging_)
         {
             // Create video writer based on video file format type
@@ -524,7 +525,7 @@ namespace bias
 
         } 
         actionPluginsEnabledPtr_ -> setEnabled(false);
-
+        
         // Set image Grabber and image dispatcher
         // ------------------------------------------------------------------------------
         /*imageGrabberPtr_ = new ImageGrabber(
@@ -2555,7 +2556,8 @@ namespace bias
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];           
 
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
-                               
+                              
+                std::cout << "Inside**** " << cameraNumber_ << std::endl;
                 nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();              
 
             }else if (triggerExternalType_ == TRIGGER_ELSE && cameraNumber_ == 0) {
@@ -2928,6 +2930,7 @@ namespace bias
         if (actionPluginsEnabledPtr_ -> isChecked())
         {
             setPluginEnabled(true);
+            std::cout << "Plugin Enabled" << std::endl;
         }
         else
         {
@@ -3793,6 +3796,10 @@ namespace bias
             
             if (pluginDisplayName == "Jaaba Plugin")
             { 
+                if (!isPluginEnabled())
+                {
+                    setPluginEnabled(true);
+                }
                 connect(pluginActionPtr,
                     SIGNAL(triggered()),
                     this,

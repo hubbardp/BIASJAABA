@@ -1,8 +1,7 @@
 #include "process_scores.hpp"
 #include <cuda_runtime_api.h> 
 
-#define DEBUG 1
-#define isVidInput 1
+#define isVidInput 0
 #define visualize 0
 
 namespace bias {
@@ -168,7 +167,7 @@ namespace bias {
 #if isVidInput
         double wait_threshold = 1500;
 #else if 
-        double wait_threshold = 1500
+        double wait_threshold = 1500;
 #endif
         uint64_t ts_last_score = INT_MAX, cur_time=0;
         string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/"
