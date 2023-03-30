@@ -67,13 +67,8 @@ endif()
 if(UNIX)
     if(with_qt_gui)
         #set(QT_BINARY_DIR "$ENV{QTDIR}/bin")
-        #message(STATUS "${QT_BINARY_DIR}")
-        #set(Qt5Core_DIR "/groups/branson/home/patilr/anaconda3/lib")
-        #set(Qt5Widgets_DIR "/groups/branson/home/patilr/anaconda3/lib")
-        #set(Qt5Network_DIR "/groups/branson/home/patilr/anaconda3/lib")
-        #set(Qt5SerialPort_DIR "/groups/branson/home/patilr/anaconda3/lib")
-       
-        set(Qt5_DIR "/opt/qt/5.12.3/gcc_64/lib/cmake/Qt5")
+        #message(STATUS "${QT_BINARY_DIR}")       
+        #set(Qt5_DIR "/opt/qt/5.12.3/gcc_64/lib/cmake/Qt5")
  
         # Old qt 4.8 build
         # ------------------------------------------------------------
@@ -144,7 +139,6 @@ set(CMAKE_C_STANDARD   99)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_BUILD_TYPE RELEASE)
 
-
 # Definitions 
 # -----------------------------------------------------------------------------
 add_definitions(-DDebug)
@@ -181,13 +175,13 @@ include_directories("./src/plugin/jaaba_plugin")
 include_directories("./src/3rd_party/qcustomplot")
 
 if(UNIX)
-    set(HEFFALUMP_SRC_DIR /home/patilr/rutuja_heffalump/heffalump)
+    set(HEFFALUMP_SRC_DIR ./heffalump)
     include_directories(${HEFFALUMP_SRC_DIR}/src/gpu)
                         #${HEFFALUMP_SRC_DIR}/src)
 endif()
 
 if(WIN32)
-    set(HEFFALUMP_SRC_DIR C:/Users/27rut/rutuja_heffalump/heffalump)
+    set(HEFFALUMP_SRC_DIR ./heffalump)
     include_directories(${HEFFALUMP_SRC_DIR}/src/gpu)
                         #${HEFFALUMP_SRC_DIR}/src)
 endif()
