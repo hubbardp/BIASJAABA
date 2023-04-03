@@ -25,6 +25,7 @@
 #include "NIDAQUtils.hpp"
 #include "test_config.hpp"
 #include "jaaba_utils.hpp"
+#include <iostream>
 
 // External lib forward declarations
 class QTimer;
@@ -516,16 +517,23 @@ namespace bias
 
     VideoMode convertStringToVideoMode(QString videoModeString);
     FrameRate convertStringToFrameRate(QString frameRateString);
-    TriggerType convertStringToTriggerType(QString trigTypeString);
     VideoFileFormat convertStringToVideoFileFormat(QString formatString);
     ImageMode convertStringToImageMode(QString imageModeString);
     PixelFormat convertStringToPixelFormat(QString pixelFormatString);
 
     QMap<QString, VideoMode> getStringToVideoModeMap();
     QMap<QString, FrameRate> getStringToFrameRateMap();
-    QMap<QString, TriggerType> getStringToTriggerTypeMap();
     QMap<QString, ImageMode> getStringToImageModeMap();
     QMap<QString, PixelFormat> getStringToPixelFormatMap();
+    
+
+    QMap<QString, TriggerType> getStringToTriggerTypeMap();
+
+    QMap<QString, TriggerExternalType> getStringToExternalTriggerTypeMap();
+
+    TriggerType convertStringToTriggerType(QString trigTypeString);
+
+    TriggerExternalType convertStringToTriggerExternalType(QString trigTypeString);
 
     QString propNameToCamelCase(QString propName);
 

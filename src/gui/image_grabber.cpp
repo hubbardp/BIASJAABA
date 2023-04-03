@@ -26,7 +26,7 @@
 #include  <algorithm>
 
 #define DEBUG 1 
-#define isVidInput 1
+#define isVidInput 0
 #define isSkip 0
 
 namespace bias {
@@ -101,7 +101,7 @@ namespace bias {
 #if isVidInput
         initializeVid();
 #else
-        nframes_ = 100000; // need to change this to some user defined input
+        nframes_ = 100000; // assigned for when camera is running in nidaq triggered mode.
 #endif
 
         nidaq_task_ = nidaq_task;
@@ -407,6 +407,7 @@ namespace bias {
                 error = true;
             }
             cameraPtr_->releaseLock();
+           
 #endif
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty())

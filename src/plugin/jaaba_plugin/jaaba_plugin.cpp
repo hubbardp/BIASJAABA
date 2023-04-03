@@ -6,7 +6,7 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 1
+#define isVidInput 0
 #define visualize 0
 
 //
@@ -19,6 +19,12 @@ namespace bias {
     //Public static variables 
     const QString JaabaPlugin::PLUGIN_NAME = QString("jaabaPlugin");
     const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
+
+#if isVidInput
+    int numframes_ = 2498;
+#else 
+    int numframes_ = 100000;
+#endif
 
     // Public Methods
     JaabaPlugin::JaabaPlugin(string camera_id, 
@@ -1793,10 +1799,11 @@ namespace bias {
         testConfigEnabled_ = testConfigEnabled;
         trial_num_ = trial_info;
 
+        // test vectors allocated for scores
         if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
         {
-            processScoresPtr_side->scores.resize(2498);
-            processScoresPtr_side->numFrames = 2498;
+            processScoresPtr_side->scores.resize(numframes_);
+            processScoresPtr_side->numFrames = numframes_;
             processScoresPtr_side->nidaq_task_= nidaq_task_;
         }
 

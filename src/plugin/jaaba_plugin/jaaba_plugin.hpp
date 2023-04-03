@@ -169,8 +169,6 @@ namespace bias
             QString file_frt; // video input for front
             QString file_sde; // video input for side
 
-            int nframes_; // test video frames
-
             std::vector<int64_t> time_cur;
             std::vector<int64_t> ts_pc;// pc time
             std::vector<std::vector<uInt32>>ts_nidaq; // nidaq timings

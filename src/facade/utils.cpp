@@ -69,14 +69,68 @@ namespace bias
         return list;
     }
 
-    TriggerTypeList getListOfTriggerTypes() 
-    {
-        TriggerTypeList list;
-        for (int i=0; i< int(NUMBER_OF_TRIGGER_TYPE); i++)
+
+    std::list<TriggerType> getListOfTriggerTypes() {
+
+        std::list<TriggerType> list;
+        //std::cout << "Trigger types " << int(NUMBER_OF_TRIGGER_TYPE) << std::endl;
+        for (int i = 0; i< int(NUMBER_OF_TRIGGER_TYPE); i++)
         {
+            //std::cout << TriggerType(i) << std::endl;
             list.push_back(TriggerType(i));
         }
         return list;
+    }
+
+    std::list<TriggerExternalType> getListOfExternalTriggerTypes() {
+
+        std::list<TriggerExternalType> list;
+        //std::cout << "Trigger types " << int(NUMBER_OF_EXTERNAL_TRIGGER_TYPE) << std::endl;
+        for (int i = 0; i< int(NUMBER_OF_TRIGGER_TYPE); i++)
+        {
+            //std::cout << TriggerExternalType(i) << std::endl;
+            list.push_back(TriggerExternalType(i));
+        }
+        return list;
+    }
+
+    std::string getTriggerTypeString(TriggerType trigType)
+    {
+        std::string trigTypeString;
+        if (trigType == TRIGGER_INTERNAL)
+        {
+            trigTypeString = std::string("Internal");
+        }
+        else if (trigType == TRIGGER_EXTERNAL)
+        {
+            trigTypeString = std::string("External");
+
+        }
+        else
+        {
+            trigTypeString = std::string("Unspecified");
+        }
+        return trigTypeString;
+    }
+
+
+    std::string getTriggerExternalTypeString(TriggerExternalType trigType)
+    {
+        std::string trigTypeString;
+        if (trigType == TRIGGER_NIDAQ)
+        {
+            trigTypeString = std::string("NIDAQ");
+        }
+        else if (trigType == TRIGGER_ELSE)
+        {
+            trigTypeString = std::string("ELSE");
+
+        }
+        else
+        {
+            trigTypeString = std::string("Unspecified");
+        }
+        return trigTypeString;
     }
 
     // Functions for converting enumerations to strings
@@ -261,44 +315,6 @@ namespace bias
         ss << std::endl;
         return ss.str();
     }
-
-    std::string getTriggerTypeString(TriggerType trigType)
-    {
-        std::string trigTypeString;
-        if (trigType == TRIGGER_INTERNAL)
-        {
-            trigTypeString = std::string("Internal");
-        }
-        else if (trigType == TRIGGER_EXTERNAL)
-        {
-            trigTypeString = std::string("External");
-        }
-        else
-        {
-            trigTypeString = std::string("Unspecified");
-        }
-        return trigTypeString;
-    }
-
-
-    std::string getTriggerExternalTypeString(TriggerExternalType trigExternaltype)
-    {
-        std::string trigTypeString;
-        if (trigExternaltype == TRIGGER_NIDAQ)
-        {
-            trigTypeString = std::string("NIDAQ");
-        }
-        else if (trigExternaltype == TRIGGER_ELSE)
-        {
-            trigTypeString = std::string("ELSE");
-        }
-        else
-        {
-            trigTypeString = std::string("Unspecified");
-        }
-        return trigTypeString;
-    }
-
 
     static std::map<ImageMode, std::string> createImageModeToStringMap()
     {

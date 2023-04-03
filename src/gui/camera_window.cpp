@@ -61,7 +61,7 @@
 #include "jaaba_plugin.hpp"
 #include "test_config.hpp"
 // -------------------------------------
-#define isVidInput 1
+#define isVidInput 0
 
 namespace bias
 {
@@ -867,6 +867,7 @@ namespace bias
         RtnStatus rtnStatus;
         QString msgTitle("Load Configuration Error");
         QFile configFile(fileName);
+        //std::cout << "filename " << fileName.toStdString() << std::endl;
 
         if (!configFile.exists())
         {
@@ -930,7 +931,6 @@ namespace bias
         QString configFilePath = QDir(fileName).absolutePath();
         //std::cout << configFilePath.toStdString() << std::endl;
         settings.setValue("DEFAULT_DIR_KEY", configFilePath);
-        std::cout << " " << QString(QVariant(settings.value("DEFAULT_DIR_KEY")).toString()).toStdString() << std::endl;
 
         read_testConfig(testConfig, input_configFile);
         input_configFile.close();
@@ -985,6 +985,7 @@ namespace bias
         VideoMode videoMode;
         FrameRate frameRate;
         TriggerType trigType;
+        TriggerExternalType trigExternalType;
         Format7Settings format7Settings;
         QString errorMsg;
         bool error = false;
@@ -1002,6 +1003,7 @@ namespace bias
                 frameRate = cameraPtr_ -> getFrameRate();
                 trigType = cameraPtr_ -> getTriggerType();
                 format7Settings = cameraPtr_ -> getFormat7Settings();
+
             }
             catch (RuntimeError &runtimeError)
             {
@@ -1078,8 +1080,10 @@ namespace bias
         cameraMap.insert("frameRate", frameRateString);
         QString trigTypeString = QString::fromStdString(getTriggerTypeString(trigType));
         cameraMap.insert("triggerType", trigTypeString);
+        QString trigExternalTypeString = QString::fromStdString(getTriggerExternalTypeString
+                                            (triggerExternalType_));
+        cameraMap.insert("triggerExternalType", trigExternalTypeString);
         //QString trigTypeString = QString::fromStdString(getTriggerExternalTypeString(trigExternalType));
-        //cameraMap.insert("triggerType", trigTypeString);
 
         // Create format7 settings map
         QVariantMap format7SettingsMap;
@@ -1238,7 +1242,6 @@ namespace bias
             return rtnStatus;
         }
 
-        
         QVariantMap oldConfigMap = getConfigurationMap(rtnStatus);
         rtnStatus = setConfigurationFromMap(configMap,showErrorDlg); 
 
@@ -1525,7 +1528,7 @@ namespace bias
              if (trig != TRIGGER_NIDAQ) {
 
                  cameraMap = configMap["camera"].toMap();
-                 cameraMap["triggerType"] = "TRIGGER_NIDAQ";
+                 cameraMap["triggerExternalType"] = "NIDAQ";
 
                  if (cameraPtr_->tryLock(CAMERA_LOCK_TRY_DT))
                  {
@@ -2556,8 +2559,7 @@ namespace bias
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];           
 
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
-                              
-                std::cout << "Inside**** " << cameraNumber_ << std::endl;
+                                                  
                 nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();              
 
             }else if (triggerExternalType_ == TRIGGER_ELSE && cameraNumber_ == 0) {
@@ -3818,7 +3820,6 @@ namespace bias
 
     void CameraWindow::loadPluginFile()
     {
-        std::cout << "Entered" << std::endl;
         QString configFileFullPath = defaultPluginConfigFileDir_.absolutePath();
         // Query user for desired video filename and directory
         QString configFileString = QFileDialog::getOpenFileName(
@@ -4687,7 +4688,6 @@ namespace bias
             trigExternalType = triggerExternalType_;
 
             if (trigExternalType == TRIGGER_NIDAQ){
-
                 actionCameraTriggerExternalNIDAQPtr_->setChecked(true);
                 actionCameraTriggerExternalElsePtr_ ->setChecked(false);
 
@@ -4964,7 +4964,6 @@ namespace bias
     RtnStatus CameraWindow::setCameraFromMap(QVariantMap cameraMap, bool showErrorDlg)
     {
         RtnStatus rtnStatus;
-
         QString errMsgTitle("Load Configuration Error (Camera)");
         QString currVendorName;
         QString currModelName;
@@ -5196,7 +5195,7 @@ namespace bias
 
 
         // Format7 settings
-        QVariantMap format7SettingsMap = cameraMap["format7Settings"].toMap();
+        /*QVariantMap format7SettingsMap = cameraMap["format7Settings"].toMap();
         if (cameraPropMap.isEmpty())
         {
             QString errMsgText("Camera: format7 settings are not present");
@@ -5212,7 +5211,7 @@ namespace bias
         if (!rtnStatus.success)
         {
             return rtnStatus;
-        }
+        }*/
 
         // Trigger Type
         QString triggerTypeString = cameraMap["triggerType"].toString();
@@ -5227,11 +5226,14 @@ namespace bias
             rtnStatus.message = errMsgText;
             return rtnStatus;
         }
+        
         TriggerType triggerType = convertStringToTriggerType(triggerTypeString);
-
+        
         // --------------------------------------------------------------------
         // TO DO - Check if trigger type is allowed 
         // --------------------------------------------------------------------
+        QString triggerExternalTypeString;
+        TriggerExternalType triggerExternalType;
         switch (triggerType)
         {
             case TRIGGER_INTERNAL:
@@ -5263,9 +5265,20 @@ namespace bias
                     rtnStatus.message = QString("setTriggerInternal - unable to acquire camera lock");
                     return rtnStatus;
                 }
-                actionCameraTriggerInternalPtr_ -> setChecked(false);
-                actionCameraTriggerExternalNIDAQPtr_ -> setChecked(false);
-                actionCameraTriggerExternalElsePtr_ -> setChecked(true);
+                actionCameraTriggerInternalPtr_ -> setChecked(false);            
+                triggerExternalTypeString = cameraMap["triggerExternalType"].toString();         
+                triggerExternalType = convertStringToTriggerExternalType(triggerExternalTypeString);
+               
+                if (triggerExternalType == TRIGGER_NIDAQ) {
+                    
+                    actionCameraTriggerExternalNIDAQPtr_->setChecked(true);
+                    actionCameraTriggerExternalNIDAQPtr_->setEnabled(true);
+                    actionCameraTriggerExternalNIDAQPtr_->triggered();
+                    updateCameraTriggerMenu();
+                }
+                else if (triggerExternalType == TRIGGER_ELSE) {
+                    actionCameraTriggerExternalElsePtr_->setChecked(true);
+                }
                 break;
 
             default:
@@ -5318,6 +5331,16 @@ namespace bias
             return rtnStatus;
         }
         bool loggingEnabledValue  = loggingMap["enabled"].toBool();
+        if (loggingEnabledValue)
+        {
+            logging_ = true;
+            actionLoggingEnabledPtr_->setChecked(true);
+        }
+        else {
+            logging_ = false;
+            actionLoggingEnabledPtr_->setChecked(false);
+        }
+
 
         // Get "Format" value
         // -------------------
@@ -7877,10 +7900,12 @@ namespace bias
         return rate;
     }
 
-
     TriggerType convertStringToTriggerType(QString trigTypeString)
     {
-        QMap<QString,TriggerType> map = getStringToTriggerTypeMap();
+        QMap<QString, TriggerType> map;
+
+        map = getStringToTriggerTypeMap();
+
         TriggerType trigType;
 
         if (map.contains(trigTypeString))
@@ -7889,11 +7914,29 @@ namespace bias
         }
         else
         {
-            trigType = TRIGGER_TYPE_UNSPECIFIED;
+            trigType = TriggerType(TRIGGER_TYPE_UNSPECIFIED);
         }
         return trigType;
     }
-    
+
+    TriggerExternalType convertStringToTriggerExternalType(QString trigTypeString)
+    {
+        QMap<QString, TriggerExternalType> map;
+
+        map = getStringToExternalTriggerTypeMap();
+
+        TriggerExternalType trigType;
+
+        if (map.contains(trigTypeString))
+        {
+            trigType = map[trigTypeString];
+        }
+        else
+        {
+            trigType = TriggerExternalType(TRIGGER_E_UNSPECIFIED);
+        }
+        return trigType;
+    }
 
     VideoFileFormat convertStringToVideoFileFormat(QString formatString)
     {
@@ -7974,16 +8017,37 @@ namespace bias
         return map;
     }
 
-
-    QMap<QString,TriggerType> getStringToTriggerTypeMap()
+    QMap<QString, TriggerType> getStringToTriggerTypeMap()
     {
-        QMap<QString,TriggerType> map;
-        TriggerTypeList typeList = getListOfTriggerTypes();
-        TriggerTypeList::iterator it;
-        for (it=typeList.begin(); it!=typeList.end(); it++)
+
+        list<TriggerType>::iterator it;
+        QMap<QString, TriggerType> map;
+
+        std::list<TriggerType> typeList = getListOfTriggerTypes();
+        //std::cout << "trigger type strings" << std::endl;
+        for (it = typeList.begin(); it != typeList.end(); it++)
         {
             TriggerType trigType = *it;
             QString typeString = QString::fromStdString(getTriggerTypeString(trigType));
+            //std::cout << typeString.toStdString() << std::endl;
+            map[typeString] = trigType;
+        }
+        return map;
+    }
+
+    QMap<QString, TriggerExternalType> getStringToExternalTriggerTypeMap()
+    {
+
+        list<TriggerExternalType>::iterator it;
+        QMap<QString, TriggerExternalType> map;
+
+        std::list<TriggerExternalType> typeList = getListOfExternalTriggerTypes();
+        //std::cout << "trigger type strings" << std::endl;
+        for (it = typeList.begin(); it != typeList.end(); it++)
+        {
+            TriggerExternalType trigType = *it;
+            QString typeString = QString::fromStdString(getTriggerExternalTypeString(trigType));
+            //std::cout << typeString.toStdString() << std::endl;
             map[typeString] = trigType;
         }
         return map;

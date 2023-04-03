@@ -3,6 +3,7 @@
 
 #include "basic_types.hpp"
 #include <string>
+#include <iostream>
 
 namespace bias
 {
@@ -22,7 +23,9 @@ namespace bias
 
     PixelFormatList getListOfPixelFormats();
 
-    TriggerTypeList getListOfTriggerTypes(); 
+    std::list<TriggerType> getListOfTriggerTypes();
+
+    std::list<TriggerExternalType> getListOfExternalTriggerTypes();
 
     // Functions for converting enumerations to strings
     // ------------------------------------------------------------------------
@@ -36,14 +39,16 @@ namespace bias
 
     std::string getImageInfoString(ImageInfo imgInfo);
 
-    std::string getTriggerTypeString(TriggerType trigType);
-
     std::string getImageModeString(ImageMode mode);
 
     std::string getTriggerExternalTypeString(TriggerExternalType trigExternaltype);
     // ------------------------------------------------------------------------
     float getFrameRateAsFloat(FrameRate frmRate);
-
+    
+    std::string getTriggerTypeString(TriggerType trigType);
+    
+    std::string getTriggerExternalTypeString(TriggerExternalType trigType);
+    
 }
 
 #endif // #ifndef BIAS_UTILS_HPP

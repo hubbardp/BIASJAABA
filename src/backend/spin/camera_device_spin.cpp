@@ -218,7 +218,6 @@ namespace bias {
                 frameRateEnableNode.setValue(true);
             }
 
-
             /*EnumNode_spin transferMode = nodeMapTLStream_.getNodeByName<EnumNode_spin>("StreamBufferHandlingMode");
             EntryNode_spin transferModeVal;
 
