@@ -609,7 +609,7 @@ namespace bias {
                         if (process_frame_time_)
                         {
                             if (frameCount <= unsigned long(testConfig_->numFrames)) {
-                                ts_process[frameCount - 1] = start_process;
+                                ts_process[frameCount - 1] = end_process-start_process;
                                 ts_pc[frameCount - 1] = start_process;
                                 ts_end[frameCount - 1] = end_process;
                             }

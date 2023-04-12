@@ -623,6 +623,7 @@ namespace bias
 
     RtnStatus CameraWindow::startThreads(bool showErrorDlg)
     {
+        std::cout << "Start Entered Camera: " << cameraNumber_ << std::endl;
         RtnStatus rtnStatus;   
         threadPoolPtr_ -> start(imageGrabberPtr_);
         threadPoolPtr_ -> start(imageDispatcherPtr_);
@@ -2559,7 +2560,8 @@ namespace bias
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];           
 
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
-                                                  
+                
+                std::cout << "Inside****" << std::endl;
                 nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();              
 
             }else if (triggerExternalType_ == TRIGGER_ELSE && cameraNumber_ == 0) {
@@ -3034,16 +3036,16 @@ namespace bias
         }
     }
 
-    void CameraWindow::loadPluginConfig(QPointer<BiasPlugin> pluginPtr, QString& config_filename)
+    /*void CameraWindow::loadPluginConfig(QPointer<BiasPlugin> pluginPtr, QString& config_filename)
     {
 
         if (pluginPtr != nullptr)
         {
-            std::cout << "Config reached" << std::endl;
+            std::cout << "Config reached old " << std::endl;
             std::cout << config_filename.toLocal8Bit().constData() << std::endl;
-            pluginPtr->loadConfig(config_filename);
+            //pluginPtr->loadConfig(config_filename);
         }
-    }
+    }*/
 
     // Private methods
     // -----------------------------------------------------------------------------------
@@ -3144,7 +3146,7 @@ namespace bias
         //setCurrentPlugin("grabDetector");
         //setCurrentPlugin("stampede");     
         //setCurrentPlugin("signalSlotDemo");
-        setCurrentPlugin("jaabaPlugin");
+        //setCurrentPlugin("jaabaPlugin");
 
         if(pluginEnabled_)
             setPluginEnabled(true);
@@ -3796,7 +3798,7 @@ namespace bias
             pluginActionPtr->setChecked(false);
             pluginPtr->setActive(false);
             
-            if (pluginDisplayName == "Jaaba Plugin")
+            /*if (pluginDisplayName == "Jaaba Plugin")
             { 
                 if (!isPluginEnabled())
                 {
@@ -3807,7 +3809,7 @@ namespace bias
                     this,
                     SLOT(loadPluginFile()));
                 //loadPluginConfig(pluginPtr, QString(""));
-            }
+            }*/
         }
         connect(
                 pluginActionGroupPtr_,
@@ -3818,8 +3820,9 @@ namespace bias
 
     }
 
-    void CameraWindow::loadPluginFile()
+    /*void CameraWindow::loadPluginFile()
     {
+
         QString configFileFullPath = defaultPluginConfigFileDir_.absolutePath();
         // Query user for desired video filename and directory
         QString configFileString = QFileDialog::getOpenFileName(
@@ -3842,7 +3845,6 @@ namespace bias
 
             if (pluginDisplayName == "Jaaba Plugin")
             {
-                std::cout << configFileString.toLocal8Bit().constData() << std::endl;
                 loadPluginConfig(pluginPtr, configFileString);
             }
         }
@@ -3851,7 +3853,7 @@ namespace bias
         //QDir configFileDir = configFileInfo.dir();
         //defaultPluginConfigFileDir_ = configFileDir;
         
-    }
+    }*/
 
 
     void CameraWindow::setupShortTrialTestMenu() {
@@ -5193,6 +5195,7 @@ namespace bias
         // to new value.
         // --------------------------------------------------------------------
 
+         //commemted out temporarily till i find ways to set the width and height without error
 
         // Format7 settings
         /*QVariantMap format7SettingsMap = cameraMap["format7Settings"].toMap();

@@ -1,6 +1,7 @@
 #ifndef JAABA_UTILS_HPP
 #define JAABA_UTILS_HPP
 
+#include "rtn_status.hpp"
 #include<vector>
 #include <unordered_map>
 #include <map>
@@ -26,18 +27,39 @@ namespace bias {
         int view = -1;
     };
 
-    struct JaabaConfig {
+    class JaabaConfig {
 
-        string plugin_file_dir = "";
-        string hog_file = "";
-        string hof_file = "";
-        unordered_map<string, unsigned int> camera_serial_id;
-        unordered_map<unsigned int, string> crop_file_list;
-        string classifier_filename = "";
+        public:
+            
+            //Default Jaaba parameters
+            static const string DEFAULT_VIEW;
+            static const string DEFAULT_HOG_FILE;
+            static const string DEFAULT_HOF_FILE;
+            static const string DEFAULT_CROP_FILE;
+            static const string DEFAULT_CLASSIFIER_FILE;
+            static const string DEFAULT_CONFIG_FILE_DIR;
 
+
+            //Jaaba parameters
+            string config_file_dir = "";
+            string view = "";
+            string hog_file = "";
+            string hof_file = "";
+            string crop_file = "";
+            string classifier_filename = "";
+            unordered_map<string, unsigned int> camera_serial_id;
+            unordered_map<unsigned int, string> crop_file_list;
+            
+            JaabaConfig();
+
+            //void readPluginConfig(JaabaConfig& jaaba_config, string param_file);
+            void readPluginConfig(string param_file);
+            QVariantMap toMap();
+            RtnStatus fromMap(QVariantMap configMap);
+            RtnStatus setViewFromMap(QVariantMap configMap);
+            RtnStatus setCropListFromMap(QVariantMap configMap);
     };
 
-    void readPluginConfig(JaabaConfig& jaaba_config, string param_file);
     QJsonObject loadParams(const string& param_file);
 }
 

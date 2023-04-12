@@ -76,7 +76,8 @@ namespace bias
                                        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
             //made it virtual void because of the need to access the function through base class pointer.
             virtual void gpuInit();
-            virtual void loadConfig(QString conf_filename);
+            virtual QVariantMap getConfigAsMap();
+            virtual RtnStatus setConfigFromMap(QVariantMap configMap);
 
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;
@@ -138,7 +139,6 @@ namespace bias
             unsigned int numskippedFrames_=0;
             int image_height=0;
             int image_width=0;
-            //float threshold_runtime = static_cast<float>(3000);
             double tStamp=0.0;
             int64_t process_time=0;
             TimeStamp cam_ofs={0,0};
@@ -159,7 +159,7 @@ namespace bias
             string trial_num_;
 
             JaabaConfig jab_conf;
-            string plugin_file_dir;
+            string config_file_dir;
             unsigned int camera_serial_id;
             
             unordered_map<string, unsigned int> camera_list;
@@ -205,6 +205,7 @@ namespace bias
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
             void getFormatSettings();
             //void gpuInit(); 
+            void loadConfig();
 
             void processFrame_inPlugin(StampedImage stampedImage);
             void processFramePass();
@@ -233,14 +234,13 @@ namespace bias
             void receiveHOGShape(QPointer<HOGHOF> partner_hogshape);
             void scoreCompute(PredData predScore);
             void receiveFrameRead(int64_t frameReadtime, int frameCount);
-            //void receiveFrameNum(unsigned int frameReadNum);
             void scoreCalculated(bool score_cal);
             void setSkipFrameProcess(unsigned int frameCount);
-            //void gpuInit();
             void initialize_classifier();
             void reloadButtonPressed();
             //void detectClicked();
             //void saveClicked();
+            //void receiveFrameNum(unsigned int frameReadNum);
     };
 
 }

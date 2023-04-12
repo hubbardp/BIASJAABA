@@ -33,7 +33,6 @@ namespace bias
         double signal;
     };
 
-
     class GrabDetectorPlugin : public BiasPlugin, public Ui::GrabDetectorPluginDialog
     {
         Q_OBJECT

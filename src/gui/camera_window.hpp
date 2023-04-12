@@ -264,7 +264,7 @@ namespace bias
             void autostartTriggerSignal();
             RtnStatus startThreads(bool showErrorDlg = true);
             //void loadPluginFile(QPointer<BiasPlugin> pluginPtr);
-            void loadPluginFile();
+            //void loadPluginFile();
 
         private:
 
@@ -507,7 +507,7 @@ namespace bias
 
             unsigned int getPartnerCameraNumber();
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
-            void loadPluginConfig(QPointer<BiasPlugin> pluginPtr, QString& config_filename);
+            //void loadPluginConfig(QPointer<BiasPlugin> pluginPtr, QString& config_filename);
 
     }; // class CameraWindow
 

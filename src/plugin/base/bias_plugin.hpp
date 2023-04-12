@@ -84,30 +84,6 @@ namespace bias
             virtual void gpuInit();
             virtual void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
                                        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
-            virtual void loadConfig(QString config_filename);
-
-            //TimeStamp getPCtime();
-            //TimeStamp cameraOffsetTime(std::shared_ptr<Lockable<Camera>> cameraPtr);
-
-            // this is a hack to avoid linker errors in VS2017
-
-            /*template <typename T>
-            void write_time(std::string filename, int framenum, std::vector<T> timeVec)
-            {
-
-                std::ofstream x_out;
-                x_out.open(filename.c_str(), std::ios_base::app);
-
-                for (int frame_id = 0; frame_id < framenum; frame_id++)
-                {
-
-		    x_out << frame_id << "," << timeVec[frame_id] << "\n";
-
-	        }
-
-            }*/
-            //void write_time(std::string file, int framenum, std::vector<double> timeVec);
-            //void write_delay(std::string file, int framenum, std::vector<int64_t> timeVec);
 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;

@@ -740,7 +740,9 @@ namespace bias {
 
     void CameraDevice_spin::setFormat7Configuration(Format7Settings settings, float percentSpeed)
     {
+
         bool ok = validateFormat7Settings(settings);
+
         if (!ok)
         {
             return;
@@ -752,7 +754,7 @@ namespace bias {
 
         EnumNode_spin pixelFormatNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("PixelFormat");
         spinPixelFormatEnums pixelFormat_spin = convertPixelFormat_to_spin(settings.pixelFormat);
-        pixelFormatNode.setEntryByValue(pixelFormat_spin);
+        //pixelFormatNode.setEntryByValue(pixelFormat_spin);
 
         IntegerNode_spin widthNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("Width");
         widthNode.setValue(int64_t(settings.width));
@@ -761,10 +763,10 @@ namespace bias {
         heightNode.setValue(int64_t(settings.height));
 
         IntegerNode_spin offsetXNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("OffsetX");
-        offsetXNode.setValue(int64_t(settings.offsetX));
+        //offsetXNode.setValue(int64_t(settings.offsetX));
 
         IntegerNode_spin offsetYNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("OffsetY");
-        offsetYNode.setValue(int64_t(settings.offsetY));
+        //offsetYNode.setValue(int64_t(settings.offsetY));
 
         std::cout << __FUNCTION__ << std::endl;
         //settings.print();

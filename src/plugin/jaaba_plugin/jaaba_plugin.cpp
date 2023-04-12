@@ -1225,6 +1225,7 @@ namespace bias {
 
         processScoresPtr_side = new ProcessScores(this, mesPass, gettime_);   
         processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);
+        
 #if visualize
         if(processScoresPtr_side != nullptr && cameraNumber_==0)
             processScoresPtr_side->visplots = new VisPlots(livePlotPtr,this);
@@ -1317,19 +1318,26 @@ namespace bias {
 
             if (processScoresPtr_side != nullptr)
             {
-                printf("processScores Side allocated\n");
+
                 acquireLock();
                 processScoresPtr_side->HOGHOF_frame = hoghofside;
-                //hog_file = HOGParamFilePtr_->placeholderText().toStdString();
-                //hof_file = HOFParamFilePtr_->placeholderText().toStdString();
-                //crop_file = CropSideParamFilePtr_->placeholderText().toStdString();
-                processScoresPtr_side->HOGHOF_frame->HOGParam_file = plugin_file_dir + hog_file;
-                processScoresPtr_side->HOGHOF_frame->HOFParam_file = plugin_file_dir + hof_file;
-                processScoresPtr_side->HOGHOF_frame->CropParam_file = plugin_file_dir + crop_file;
+                processScoresPtr_side->HOGHOF_frame->HOGParam_file = config_file_dir + hog_file;
+                processScoresPtr_side->HOGHOF_frame->HOFParam_file = config_file_dir + hof_file;
+                processScoresPtr_side->HOGHOF_frame->CropParam_file = config_file_dir + crop_file;
                 processScoresPtr_side->HOGHOF_frame->loadHOGParams();
+                if (processScoresPtr_side->HOGHOF_frame->HOGParams.nbins == 0)
+                    printf("HOG NOT Initialzied");
+
                 processScoresPtr_side->HOGHOF_frame->loadHOFParams();
+                if (processScoresPtr_side->HOGHOF_frame->HOFParams.nbins == 0)
+                    printf("HOF NOT Initialzied");
+
                 processScoresPtr_side->HOGHOF_frame->loadCropParams();
+                if (processScoresPtr_side->HOGHOF_frame->Cropparams.ncells == 0)
+                    printf("CROP NOT Initialzied");
+
                 releaseLock();
+                printf("processScores Side allocated\n");
                 
             }else {
 
@@ -1352,20 +1360,26 @@ namespace bias {
             HOGHOF *hoghoffront = new HOGHOF(this);  
 
             if (processScoresPtr_front != nullptr)
-            {
-                printf("processScores Front allocated\n");
+            {         
                 acquireLock();
                 processScoresPtr_front->HOGHOF_partner = hoghoffront;
-                //hog_file = HOGParamFilePtr_->placeholderText().toStdString();
-                //hof_file = HOFParamFilePtr_->placeholderText().toStdString();
-                //crop_file = CropFrontParamFilePtr_->placeholderText().toStdString();
-                processScoresPtr_front->HOGHOF_partner->HOGParam_file = plugin_file_dir + hog_file;
-                processScoresPtr_front->HOGHOF_partner->HOFParam_file = plugin_file_dir + hof_file;
-                processScoresPtr_front->HOGHOF_partner->CropParam_file = plugin_file_dir + crop_file;
+                processScoresPtr_front->HOGHOF_partner->HOGParam_file = config_file_dir + hog_file;
+                processScoresPtr_front->HOGHOF_partner->HOFParam_file = config_file_dir + hof_file;
+                processScoresPtr_front->HOGHOF_partner->CropParam_file = config_file_dir + crop_file;
                 processScoresPtr_front->HOGHOF_partner->loadHOGParams();
+                // implement a method to check if struct has been initialized 
+                if (processScoresPtr_front->HOGHOF_partner->HOGParams.nbins == 0)
+                    printf("HOG NOT Initialzied");
+
                 processScoresPtr_front->HOGHOF_partner->loadHOFParams();
+                if (processScoresPtr_front->HOGHOF_partner->HOFParams.nbins == 0)
+                    printf("HOF NOT Initialzied");
+
                 processScoresPtr_front->HOGHOF_partner->loadCropParams();
+                if (processScoresPtr_front->HOGHOF_partner->Cropparams.ncells == 0)
+                    printf("CROP NOT Initialzied");
                 releaseLock();
+                printf("processScores Front allocated\n");
 
             } else {
                 printf("processScores Front not allocated\n");
@@ -1379,18 +1393,17 @@ namespace bias {
         
         if (frontRadioButtonPtr_->isChecked() || sideRadioButtonPtr_->isChecked()) {
             
-            //classifier_filename = ClassFilePtr_->placeholderText().toStdString();
 
             if (mesPass && isReceiver())
             {
                 
                 beh_class *cls = new beh_class(this);
                 processScoresPtr_side->classifier = cls;
-                processScoresPtr_side->classifier->classifier_file = plugin_file_dir + classifier_filename;
-                //qDebug()  << classifier->classifier_file;
+                processScoresPtr_side->classifier->classifier_file = config_file_dir + classifier_filename;
                 processScoresPtr_side->classifier->allocate_model();
                 processScoresPtr_side->classifier->loadclassifier_model();
-
+                
+                 
             }
 
             if (!mesPass)
@@ -1399,8 +1412,7 @@ namespace bias {
 
                     beh_class *cls = new beh_class(this);
                     processScoresPtr_side->classifier = cls;
-                    processScoresPtr_side->classifier->classifier_file = plugin_file_dir + classifier_filename;
-                    //qDebug()  << classifier->classifier_file;
+                    processScoresPtr_side->classifier->classifier_file = config_file_dir + classifier_filename;
                     processScoresPtr_side->classifier->allocate_model();
                     processScoresPtr_side->classifier->loadclassifier_model();
 
@@ -1410,8 +1422,7 @@ namespace bias {
 
                     beh_class *cls = new beh_class(this);
                     processScoresPtr_front->classifier = cls;
-                    processScoresPtr_front->classifier->classifier_file = plugin_file_dir + classifier_filename;
-                    //qDebug()  << classifier->classifier_file;
+                    processScoresPtr_front->classifier->classifier_file = config_file_dir + classifier_filename;
                     processScoresPtr_front->classifier->allocate_model();
                     processScoresPtr_front->classifier->loadclassifier_model();
                 }
@@ -1872,18 +1883,17 @@ namespace bias {
         processScoresPtr_front->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
     }
 
-    void JaabaPlugin::loadConfig(QString conf_filename)
+    void JaabaPlugin::loadConfig()
     {
         std::cout << "Jaaba load Config reached\n" << std::endl;
         unordered_map<string,unsigned int>::iterator camera_it;
         unordered_map<unsigned int, string>::iterator crop_file_it;
 
-        readPluginConfig(jab_conf, conf_filename.toStdString());
-        plugin_file_dir = jab_conf.plugin_file_dir;
+        //jab_conf.readPluginConfig(conf_filename.toStdString());      
+        config_file_dir = jab_conf.config_file_dir;
         hog_file = jab_conf.hog_file;
         hof_file = jab_conf.hof_file;
         classifier_filename = jab_conf.classifier_filename;
-
         camera_list = jab_conf.camera_serial_id;
         jab_crop_list = jab_conf.crop_file_list;
 
@@ -1897,7 +1907,8 @@ namespace bias {
             }
             else if (camera_serial_id == camera_it->second && camera_it->first == "viewB") {
                 frontRadioButtonPtr_->setChecked(true);
-            }
+            }else{}
+
            camera_it++;
         }
 
@@ -1917,6 +1928,27 @@ namespace bias {
         else if (cameraNumber_ == 1)
             std::cout << "all front setup done\n" << std::endl;
     }
+
+
+    QVariantMap JaabaPlugin::getConfigAsMap()
+    {
+        QVariantMap configMap = jab_conf.toMap();
+        return configMap;
+    }
+
+    RtnStatus JaabaPlugin::setConfigFromMap(QVariantMap configMap)
+    {
+
+        RtnStatus rtnStatus = jab_conf.fromMap(configMap);
+        if (rtnStatus.success) {
+            std::cout << "Load Jaaba config Plugin" << std::endl;
+            loadConfig();
+        }
+        return rtnStatus;
+    }
+       
+
+/*********************************************************************************************************/
 
     // Test development
 

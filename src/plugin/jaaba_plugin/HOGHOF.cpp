@@ -178,20 +178,23 @@ namespace bias
     {
 
         QJsonValue value;
-      	foreach(const QString& key, obj.keys()) 
+        foreach(const QString& key, obj.keys())
         {
 
-	        value = obj.value(key);
-	        if(value.isString() && key == "nbins")
-		    HOGParams.nbins = value.toString().toInt();
+            value = obj.value(key);
+            if (value.isString() && key == "nbins"){
+                HOGParams.nbins = value.toString().toInt();
 
-	        if(value.isObject() && key == "cell") {
+            }else if (value.isObject() && key == "cell") {
       
 		        QJsonObject ob = value.toObject();
 		        HOGParams.cell.h = copyValueInt(ob, "h");
 		        HOGParams.cell.w = copyValueInt(ob, "w");
 
-	        }
+            }
+            else {
+                printf("Key %s missing in HOG params", key);
+            }
         }
     }
 
@@ -200,37 +203,43 @@ namespace bias
     {
 
 	    QJsonValue value;  
-	    foreach(const QString& key, obj.keys()) {
-	
-	        value = obj.value(key);
-	        if(value.isString() && key == "nbins")
-		        HOFParams.nbins = value.toString().toInt();
-     
-	        if(value.isObject() && key == "cell") {
+        foreach(const QString& key, obj.keys()) {
+
+            value = obj.value(key);
+            if (value.isString() && key == "nbins"){
+
+                HOFParams.nbins = value.toString().toInt();
+
+            }else if (value.isObject() && key == "cell") {
    
 		        QJsonObject ob = value.toObject();
 		        HOFParams.cell.h = copyValueInt(ob, "h");
 		        HOFParams.cell.w = copyValueInt(ob, "w");           
 
-	        }  
-
-	        if(value.isObject() && key == "lk") {
+            }
+            else if(value.isObject() && key == "lk") {
 
 	            QJsonObject ob = value.toObject();
 	            foreach(const QString& key, ob.keys()) {
 
 		            value = ob.value(key);
-		            if(value.isString() && key == "threshold") 
-			            HOFParams.lk.threshold = value.toString().toFloat();
+                    if (value.isString() && key == "threshold") {
+                        HOFParams.lk.threshold = value.toString().toFloat();
 
-		            if(value.isObject() && key == "sigma") {
+                    }else if(value.isObject() && key == "sigma") {
 
-			            QJsonObject ob = value.toObject();
-			            HOFParams.lk.sigma.smoothing = copyValueFloat(ob, "smoothing");
-			            HOFParams.lk.sigma.derivative = copyValueFloat(ob, "derivative");
+                        QJsonObject ob = value.toObject();
+                        HOFParams.lk.sigma.smoothing = copyValueFloat(ob, "smoothing");
+                        HOFParams.lk.sigma.derivative = copyValueFloat(ob, "derivative");
 
-		            }	    	    
+                    }
+                    else {
+                        printf("Key %s missing in lk params", key);
+                    }
 		        }
+            }
+            else {
+                printf("Key %s missing in HOF params", key);
             }
         }	       
     }
@@ -239,19 +248,20 @@ namespace bias
     void HOGHOF::copytoCropParams(QJsonObject& obj) {
 
 		QJsonValue value;
-		foreach(const QString& key, obj.keys()) {
+        foreach(const QString& key, obj.keys()) {
 
-			 value = obj.value(key);
-			if(value.isString() && key == "crop_flag")
-				Cropparams.crop_flag = value.toString().toInt();
-	    
-			if(value.isString() && key == "ncells")
-				Cropparams.ncells = value.toString().toInt();
-     
-			if(value.isString() && key == "npatches")
-				Cropparams.npatches = value.toString().toInt();
+            value = obj.value(key);
+            if (value.isString() && key == "crop_flag") {
+                Cropparams.crop_flag = value.toString().toInt();
 
-			if(value.isArray() && key == "interest_pnts") {
+            }else if (value.isString() && key == "ncells") {
+                Cropparams.ncells = value.toString().toInt();
+
+            }else if (value.isString() && key == "npatches") {
+                
+                Cropparams.npatches = value.toString().toInt();
+
+            }else if (value.isArray() && key == "interest_pnts") {
 
 				QJsonArray arr = value.toArray();
 				allocateCrop(arr.size());
@@ -263,7 +273,10 @@ namespace bias
 					Cropparams.interest_pnts[idx*2 + 1] = ips[1].toInt();
 					idx = idx + 1;
 				}
-			}
+            }
+            else {
+                printf("Key %s missing in Crop params", key);
+            }
 		}
 		if(!Cropparams.crop_flag) 
 		{  
