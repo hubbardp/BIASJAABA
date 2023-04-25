@@ -94,11 +94,6 @@ namespace bias
            void onProcessFront();
            void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
            void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
-           void write_score(std::string file, int framenum, PredData& score);
-           void write_histoutput(std::string file,float* out_img, unsigned w, unsigned h,unsigned nbins);
-           void write_score_final(std::string file, unsigned int numFrames,
-               vector<PredData>& pred_score);
-           void write_frameNum(std::string filename, vector<int>& frame_vec, int numSkips);
            void visualizeScores(vector<float>& scr_vec);
            void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
                std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
@@ -106,6 +101,14 @@ namespace bias
            //test
            std::vector<PredData>scores;
            uInt32 read_buffer_ = 0, read_ondemand_ = 0;
+
+           void write_score(std::string file, int framenum, PredData& score);
+           void write_histoutput(std::string file, float* out_img, unsigned w, unsigned h, unsigned nbins);
+           void write_score_final(std::string file, unsigned int numFrames,
+               vector<PredData>& pred_score);
+           void write_frameNum(std::string filename, vector<int>& frame_vec, int numSkips);
+           void writeAllFeatures(string filename, vector<float>& feat_out,
+               int feat_size);
 
         private :
 

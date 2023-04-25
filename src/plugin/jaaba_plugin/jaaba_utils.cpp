@@ -13,6 +13,7 @@ namespace bias {
     const string JaabaConfig::DEFAULT_CROP_FILE = "";
     const string JaabaConfig::DEFAULT_CLASSIFIER_FILE = "";
     const string JaabaConfig::DEFAULT_CONFIG_FILE_DIR = "";
+    const int JaabaConfig::DEFAULT_WINDOW_SIZE = 1;
 
     JaabaConfig::JaabaConfig()
     {
@@ -21,6 +22,7 @@ namespace bias {
         hof_file = DEFAULT_HOF_FILE;
         crop_file = DEFAULT_CROP_FILE;
         classifier_filename = DEFAULT_CLASSIFIER_FILE;
+        window_size = DEFAULT_WINDOW_SIZE;
     }
 
     QVariantMap JaabaConfig::toMap()
@@ -44,6 +46,7 @@ namespace bias {
         configMap.insert("crop_file_list", cropListMap);
         configMap.insert("classifier_filename", "");
         configMap.insert("config_file_dir", "");
+        configMap.insert("window_size", 1);
 
         return configMap;
     }
@@ -112,6 +115,22 @@ namespace bias {
             }
         }
 
+
+        //read hof file from config
+        if (configMap.contains("window_size"))
+        {
+            if (configMap["window_size"].canConvert<QString>())
+            {
+                window_size = configMap["window_size"].toInt();
+                std::cout << "Window size" << window_size << std::endl;
+            }
+            else
+            {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert hof file to string");
+            }
+        }
+        
         //read camera views guids 
 
         if (configMap.contains("view"))
@@ -291,9 +310,13 @@ namespace bias {
                 std::replace(filename.begin(), filename.end(), old_val, new_val);
                 classifier_filename = filename;
             }
+            else if (value.isString() && (key == "window_size")) {
+                window_size = value.toInt();
+            }
 
         }
 
+        std::cout << "Window Size" << window_size << std::endl;
         std::cout << filename << std::endl;
     }
 

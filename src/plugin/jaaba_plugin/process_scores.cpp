@@ -1,7 +1,7 @@
 #include "process_scores.hpp"
 #include <cuda_runtime_api.h> 
 
-#define isVidInput 0
+#define isVidInput 1
 #define visualize 0
 
 namespace bias {
@@ -47,6 +47,7 @@ namespace bias {
     {
 
         int nDevices;
+
         cudaError_t err = cudaGetDeviceCount(&nDevices); 
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
         hoghof->loadImageParams(img_width, img_height);
@@ -69,8 +70,14 @@ namespace bias {
         HOFOutputShape(&hofctx, &hofshape);
         hoghof->hog_shape = hogshape;
         hoghof->hof_shape = hofshape;
-        hoghof->hog_out.resize(hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin);
-        hoghof->hof_out.resize(hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin);
+        size_t hog_num_elements = hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin;
+        size_t hof_num_elements = hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin;
+        hoghof->hog_out.resize(hog_num_elements);
+        hoghof->hof_out.resize(hof_num_elements);
+        hoghof->hog_out_avg.resize(hog_num_elements,0.0);
+        hoghof->hof_out_avg.resize(hof_num_elements,0.0);
+        hoghof->hog_out_skip.resize(hog_num_elements,0.0);
+        hoghof->hof_out_skip.resize(hof_num_elements,0.0);
 
         isHOGHOFInitialised = true;
 
@@ -427,7 +434,6 @@ namespace bias {
                 std::cout << "Writing score...." << std::endl;
                 write_score_final(filename,numFrames-1, scores);
                 std::cout << "Written ...." << std::endl;
-                 
                 break;
             }
 
@@ -507,6 +513,8 @@ namespace bias {
         x_out.close();
 
     }
+
+
 
 }
 

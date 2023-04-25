@@ -17,6 +17,8 @@
 #include <QDialog>
 #include <QMessageBox>
 
+#include <queue>
+
 using namespace std;
 
 struct HOGShape {
@@ -82,7 +84,14 @@ namespace bias {
             HOFShape hof_shape;
             
             std::vector<float> hog_out;
-            std::vector<float> hof_out;
+            std::vector<float> hof_out; // jaaba output
+            std::queue<vector<float>> hog_out_past; 
+            std::queue<vector<float>> hof_out_past;// window storing windowed past features
+            std::vector<float> hog_out_avg;
+            std::vector<float> hof_out_avg; // moving average features
+            std::vector<float>hog_out_skip;
+            std::vector<float>hof_out_skip;//features for skip frames
+
 
             //QJsonObject loadParams(const string& param_file);
             void loadHOGParams();

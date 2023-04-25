@@ -93,6 +93,7 @@ namespace bias
             string hof_file;
             string crop_file;
             string classifier_filename;
+            int window_size;
 
         protected:
  
@@ -147,6 +148,8 @@ namespace bias
             int frameSkip;
             uint64_t fstfrmtStampRef_;
             bool process_frame_time;
+            size_t hog_num_elements;
+            size_t hof_num_elements;
 
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
@@ -178,7 +181,9 @@ namespace bias
             std::vector<int64_t> ts_jaaba_start;// test
             std::vector<int64_t> ts_jaaba_end;
             //test
-            std::vector<PredData>scores;
+            std::vector<std::vector<float>>hoghof_feat;
+            std::vector<std::vector<float>>hoghof_feat_avg;
+            //std::vector<PredData>scores;
             
             //int no_of_skips = 10;
             //priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips
@@ -206,13 +211,23 @@ namespace bias
             void getFormatSettings();
             //void gpuInit(); 
             void loadConfig();
+            void average_windowFeatures(vector<float>&hog_feat, vector<float>&hof_feat,
+                                        vector<float>& hog_feat_avg, vector<float>& hof_feat_avg,
+                                        int window_size);
+            void subtractLastwindowfeature(vector<float>& hog_past, vector<float>& hof_past, 
+                                           vector<float>& hog_feat_avg, vector<float>& hof_feat_avg);
 
             void processFrame_inPlugin(StampedImage stampedImage);
             void processFramePass();
             //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
             void write_score_final(std::string file, unsigned int numFrames,
                 vector<PredData>& pred_score);
- 
+            void writeAllFeatures(string filename, vector<float>& feat_out,
+                int feat_size);
+            void saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,
+                                       int frameCount,string filename);
+            void saveFeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj, int frameCount,
+                              string filename);
         signals:
 
             void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);

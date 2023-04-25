@@ -26,7 +26,7 @@
 #include  <algorithm>
 
 #define DEBUG 1 
-#define isVidInput 0
+#define isVidInput 1
 #define isSkip 0
 
 namespace bias {
@@ -518,7 +518,7 @@ namespace bias {
 #endif
                 }
 
-#if DEBUG
+#if !isVidInput
                 nidaq_task_->getNidaqTimeNow(read_ondemand_);
 #endif
 

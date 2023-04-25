@@ -38,6 +38,7 @@ namespace bias {
             static const string DEFAULT_CROP_FILE;
             static const string DEFAULT_CLASSIFIER_FILE;
             static const string DEFAULT_CONFIG_FILE_DIR;
+            static const int DEFAULT_WINDOW_SIZE;
 
 
             //Jaaba parameters
@@ -47,6 +48,7 @@ namespace bias {
             string hof_file = "";
             string crop_file = "";
             string classifier_filename = "";
+            int window_size;
             unordered_map<string, unsigned int> camera_serial_id;
             unordered_map<unsigned int, string> crop_file_list;
             
