@@ -9,7 +9,7 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 1
+#define isVidInput 0
 #define visualize 0
 
 //
@@ -311,8 +311,8 @@ namespace bias {
                         processScoresPtr_front->HOGHOF_partner->hof_shape.bin;
 
                 }
-                hoghof_feat.resize(numframes_, std::vector<float>());
-                hoghof_feat_avg.resize(numframes_, std::vector<float>());
+                //hoghof_feat.resize(numframes_, std::vector<float>());
+                //hoghof_feat_avg.resize(numframes_, std::vector<float>());
 
                 acquireLock();
                 detectStarted = true;
@@ -709,8 +709,7 @@ namespace bias {
                                 frontScoreQueuePtr_->acquireLock();
                                 frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
                                 frontScoreQueuePtr_->releaseLock();
-
-                              
+                         
                             }
 #endif
 

@@ -26,7 +26,7 @@
 #include  <algorithm>
 
 #define DEBUG 1 
-#define isVidInput 1
+#define isVidInput 0
 #define isSkip 0
 
 namespace bias {
