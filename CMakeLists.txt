@@ -289,6 +289,7 @@ endif()
 if (with_demos)
     add_subdirectory("src/demo/fly_sorter")
     add_subdirectory("src/demo/beh_class")
+	add_subdirectory("src/demo/opencv_test")
 endif()
 
 if (with_tests)
