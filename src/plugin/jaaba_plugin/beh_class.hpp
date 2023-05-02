@@ -35,7 +35,6 @@ namespace bias {
         PredData predScoreFront;
         PredData finalscore;
 
-
         string classifier_file;
 	    std::vector<boost_classifier> model = std::vector<boost_classifier>(6);
 	    std::vector<std::string> model_params{"alpha","dim","dir","error","tr"};
@@ -43,29 +42,35 @@ namespace bias {
         std::vector<int>beh_present = {0,0,0,0,0,0};
 	    std::vector<std::vector<int>> translated_index; //translated mat style 2 C style indexing
 	    std::vector<std::vector<int>> flag; // book kepping for features
+		std::vector<int>translated_featureindexes;
         beh_class(QWidget *parent);
 
 	    void allocate_model();
 	    void loadclassifier_model();
         RtnStatus readh5(std::string filename, std::vector<std::string> &model_params, boost_classifier &data_out,int beh_id);
-        void translate_mat2C(HOGShape *shape_side, HOGShape *shape_front);
-        void boost_classify_side(std::vector<float> &scr, std::vector<float> &hogs_features,
-            std::vector<float> &hofs_features, struct HOGShape *shape_side,
-            struct HOFShape *shape_front, int feat_len,
-            std::vector<boost_classifier> &model);
-        void boost_classify_front(std::vector<float> &scr, std::vector<float> &hogf_features,
-            std::vector<float> &hoff_features, struct HOGShape *shape_side,
-            struct HOFShape *shape_front, int feat_len,
-            std::vector<boost_classifier> &model);
+        void translate_mat2C(HOGShape *shape_side, HOGShape *shape_front, bool isSide);
+		void boost_classify_side(std::vector<float> &scr, std::vector<float> &hogs_features,
+			std::vector<float> &hofs_features, struct HOGShape *shape_side,
+			struct HOFShape *shape_front, int feat_len,
+			std::vector<boost_classifier> &model); // std::vector<float>& feat_val);
+			void boost_classify_front(std::vector<float> &scr, std::vector<float> &hogf_features,
+				std::vector<float> &hoff_features, struct HOGShape *shape_side,
+				struct HOFShape *shape_front, int feat_len,
+				std::vector<boost_classifier> &model); //std::vector<float>& feat_val);
 	    void boost_compute(float &scr, std::vector<float> &features, int ind,
 			       int num_feat, int feat_len, int dir, float tr, float alpha);
         bool pathExists(hid_t id, const std::string& path);
         void addScores(std::vector<float>& scr_side,
                        std::vector<float>& scr_front);
+		void translate_featureIndexes(HOGShape *shape_side, HOGShape *shape_front, bool isSide);
+		void write_translated_indexes(string filenam, int feat_dim);
 
         //test 
         vector<PredData> predscore_side = vector<PredData>(nframes);
         vector<PredData> predscore_front = vector<PredData>(nframes);
+
+		
+		
 	
     };
 

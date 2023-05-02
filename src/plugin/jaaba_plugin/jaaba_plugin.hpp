@@ -194,6 +194,7 @@ namespace bias
             std::vector<float>laserRead = { 0,0,0,0,0,0 };
             std::vector<double>timeofs;
             std::vector<double>timestd;
+			vector<vector<float>> translated_indexes;
           
             bool pluginReady();
             bool isSender();
@@ -228,6 +229,7 @@ namespace bias
                                        int frameCount,string filename);
             void saveFeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj, int frameCount,
                               string filename);
+			void paintEvent(QPainter& paitner);
         signals:
 
             void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);

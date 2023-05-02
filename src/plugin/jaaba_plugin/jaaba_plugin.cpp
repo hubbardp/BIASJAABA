@@ -40,7 +40,7 @@ namespace bias {
         camera_serial_id = stoi(camera_id);
         threadPoolPtr_ = threadPoolPtr;
         gettime_ = gettime;
-        nidaq_task_ = nullptr;
+		nidaq_task_ = nullptr;
 
         cudaError_t err = cudaGetDeviceCount(&nDevices_);
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
@@ -279,6 +279,7 @@ namespace bias {
 
             while (!gpuInitialized) {}
             emit(passHOGShape(processScoresPtr_side->HOGHOF_frame));
+			
         }
 
         if (isSender() && !processScoresPtr_front->isHOGHOFInitialised)
@@ -322,6 +323,7 @@ namespace bias {
 
             emit(processSide(true));
             emit(passHOGShape(processScoresPtr_front->HOGHOF_partner));
+			
         }
 
         
@@ -332,7 +334,7 @@ namespace bias {
             {
 
                 processScoresPtr_side->classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape,
-                    &processScoresPtr_front->HOGHOF_partner->hog_shape);
+                    &processScoresPtr_front->HOGHOF_partner->hog_shape, true);
                 std::cout << processScoresPtr_front->HOGHOF_partner->hog_shape.x
                     << processScoresPtr_front->HOGHOF_partner->hog_shape.y
                     << std::endl;
@@ -696,10 +698,11 @@ namespace bias {
                                 processScoresPtr_front->processedFrameCount > 0)
                             {
                                 
-                                processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
-                                    processScoresPtr_front->HOGHOF_partner->hog_out_avg, processScoresPtr_front->HOGHOF_partner->hof_out_avg, 
-                                    &processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
-                                    processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model);
+								processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
+									processScoresPtr_front->HOGHOF_partner->hog_out_avg, processScoresPtr_front->HOGHOF_partner->hof_out_avg,
+									&processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
+									processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model);
+									
 
                                 time_now = gettime_->getPCtime();
                                 processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
@@ -796,6 +799,9 @@ namespace bias {
                                 sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
                                 sideScoreQueuePtr_->releaseLock();
 
+								//QPainter painter(this);
+								//painter.begin(this);
+								//paintEvent(painter);
 
                             }
 #endif
@@ -1873,7 +1879,9 @@ namespace bias {
                 //hogshape_.x = 30; hogshape_.y = 10; hogshape_.bin = 8;
 
                 processScoresPtr_side->classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape, 
-                    &partner_hogshape_);    
+                    &partner_hogshape_, true);
+				processScoresPtr_side->classifier->translate_featureIndexes(&processScoresPtr_side->HOGHOF_frame->hog_shape,
+					&partner_hogshape_, true);
             }
 
             if (isSender())
@@ -1881,7 +1889,9 @@ namespace bias {
                 std::cout << "translated from mat to c front" << std::endl;
                 partner_hogshape_ = partner_hogshape->hog_shape;
                 processScoresPtr_front->classifier->translate_mat2C(&partner_hogshape_,
-                    &processScoresPtr_front->HOGHOF_partner->hog_shape);
+                    &processScoresPtr_front->HOGHOF_partner->hog_shape,false);
+				processScoresPtr_front->classifier->translate_featureIndexes(&partner_hogshape_,
+					&processScoresPtr_front->HOGHOF_partner->hog_shape, false);
             }
         }
     }
@@ -1975,6 +1985,7 @@ namespace bias {
             processScoresPtr_side->scores.resize(numframes_);
             processScoresPtr_side->numFrames = numframes_;
             processScoresPtr_side->nidaq_task_= nidaq_task_;
+			//translated_indexes.resize(numframes_, std::vector<float>());
         }
 
         if (testConfigEnabled_)
@@ -2172,6 +2183,19 @@ namespace bias {
         writeAllFeatures(filename, hoghof_feat[frameCount], feat_size);
 
     }
+
+
+	void JaabaPlugin::paintEvent(QPainter& painter)
+	{
+		setAttribute(Qt::WA_OpaquePaintEvent);
+		
+		QPen linepen(Qt::red);
+		linepen.setCapStyle(Qt::RoundCap);
+		linepen.setWidth(30);
+		painter.setRenderHint(QPainter::Antialiasing, true);
+		painter.setPen(linepen);
+		painter.drawPoint(50,50);
+	}
        
 
 /*********************************************************************************************************/
