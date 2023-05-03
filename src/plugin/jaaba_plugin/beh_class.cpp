@@ -311,35 +311,34 @@ namespace bias {
 			{
 				featrange[i-1] = i;
 			}
-			/*start_range = (feat_dims_side)/2 + (feat_dims_front)/2 + 1;
-			end_range = start_range + (feat_dims_side / 2);
+			start_range = (feat_dims_side)/2 + (feat_dims_front)/2 + 1;
+			end_range = start_range + (feat_dims_side / 2) - 1;
 			for (int i = start_range; i <= end_range; i++)
 			{
-				featrange[(feat_dims_side / 2)+i-1] = i;
-			}*/
+				featrange[i-1] = i;
+			}
 		}
 		else {
 			feat_dims = feat_dims_front;
 			this->translated_featureindexes.resize(feat_dims_front);
 			featrange.resize(feat_dims_front);
-			start_range = feat_dims_side + 1;
-			end_range = start_range + (feat_dims_front / 2);
+			start_range = (feat_dims_side/2) + 1;
+			end_range = start_range + (feat_dims_front / 2) - 1;
 			for (int i = start_range; i <= end_range; i++)
 			{
 				featrange[i-1] = i;
 			}
-			/*start_range = (feat_dims_side) + (feat_dims_front)/2 + 1;
-			end_range = start_range + (feat_dims_front/ 2);
+			start_range = (feat_dims_side) + (feat_dims_front/2) + 1;
+			end_range = start_range + (feat_dims_front/ 2) - 1;
 			for (int i = start_range; i <= end_range; i++)
 			{
-				featrange[(feat_dims_front / 2) + i-1] = i;
-			}*/
+				featrange[ i-1] = i;
+			}
 
 		}
 		
-		/*for (int dim_idx = 1; dim_idx <= feat_dims; dim_idx++) {
+		for (int dim_idx = 0; dim_idx < feat_dims; dim_idx++) {
 
-			//dim = this->model[ncls].cls_dim[midx];
 			flag = 0;
 			dim = featrange[dim_idx];
 			if (dim > ((side_x + front_x) * side_y * side_bin)) { // checking if feature is hog/hof
@@ -406,9 +405,9 @@ namespace bias {
 			}
 		}
 		if (isSide)
-			write_translated_indexes("./translatedindexes_mat2C_side.csv", feat_dims);
+			write_translated_indexes("./translatedindexes_mat2C_side.csv", featrange, feat_dims);
 		else
-			write_translated_indexes("./translatedindexes_mat2C_front.csv", feat_dims);*/
+			write_translated_indexes("./translatedindexes_mat2C_front.csv", featrange, feat_dims);
 
 	}
 
@@ -614,7 +613,7 @@ namespace bias {
 
 	}
 
-	void beh_class::write_translated_indexes(string filename, int feat_dim)
+	void beh_class::write_translated_indexes(string filename, vector<int>& index_vector ,int feat_dim)
 	{
 	
 		std::ofstream x_out;
@@ -644,11 +643,11 @@ namespace bias {
 		}*/
 
 		int translated_dim, dim;
-		for (int i = 1; i <= feat_dim; i++)
+		for (int i = 0; i < feat_dim; i++)
 		{
 			if(i==0)
 				x_out << "Matlab" << "," << "Cuda" << "\n";
-			dim = i;
+			dim = index_vector[i];
 			translated_dim = this->translated_featureindexes[i];
 			x_out << dim << "," << translated_dim;
 			x_out << "\n";

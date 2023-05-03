@@ -42,7 +42,7 @@ namespace bias {
         std::vector<int>beh_present = {0,0,0,0,0,0};
 	    std::vector<std::vector<int>> translated_index; //translated mat style 2 C style indexing
 	    std::vector<std::vector<int>> flag; // book kepping for features
-		std::vector<int>translated_featureindexes;
+		std::vector<int>translated_featureindexes;//translated mat style 2 C style indexing
         beh_class(QWidget *parent);
 
 	    void allocate_model();
@@ -63,7 +63,7 @@ namespace bias {
         void addScores(std::vector<float>& scr_side,
                        std::vector<float>& scr_front);
 		void translate_featureIndexes(HOGShape *shape_side, HOGShape *shape_front, bool isSide);
-		void write_translated_indexes(string filenam, int feat_dim);
+		void write_translated_indexes(string filenam, vector<int>& index_vector, int feat_dim);
 
         //test 
         vector<PredData> predscore_side = vector<PredData>(nframes);
