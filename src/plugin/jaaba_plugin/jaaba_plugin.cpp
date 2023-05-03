@@ -1880,8 +1880,8 @@ namespace bias {
 
                 processScoresPtr_side->classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape, 
                     &partner_hogshape_, true);
-				processScoresPtr_side->classifier->translate_featureIndexes(&processScoresPtr_side->HOGHOF_frame->hog_shape,
-					&partner_hogshape_, true);
+				//processScoresPtr_side->classifier->translate_featureIndexes(&processScoresPtr_side->HOGHOF_frame->hog_shape,
+				//	&partner_hogshape_, true);
             }
 
             if (isSender())
@@ -1890,8 +1890,8 @@ namespace bias {
                 partner_hogshape_ = partner_hogshape->hog_shape;
                 processScoresPtr_front->classifier->translate_mat2C(&partner_hogshape_,
                     &processScoresPtr_front->HOGHOF_partner->hog_shape,false);
-				processScoresPtr_front->classifier->translate_featureIndexes(&partner_hogshape_,
-					&processScoresPtr_front->HOGHOF_partner->hog_shape, false);
+				//processScoresPtr_front->classifier->translate_featureIndexes(&partner_hogshape_,
+				//	&processScoresPtr_front->HOGHOF_partner->hog_shape, false);
             }
         }
     }

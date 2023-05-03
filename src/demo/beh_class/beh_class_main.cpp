@@ -103,7 +103,7 @@ int main(int argc, char* argv[]) {
 
     //nviews - temp should be command line arg
     const int nviews = 2;
-    int numFrames = 2498; //frames to process
+    int numFrames;// = 2498; //frames to process
 
     priority_queue<int, vector<int>, greater<int>>skipframes_view1; // frames to skip 
     priority_queue<int, vector<int>, greater<int>>skipframes_view2;
@@ -119,28 +119,38 @@ int main(int argc, char* argv[]) {
     //initiateVidSkips(skipframes_view1, numFrames);
     //initiateVidSkips(skipframes_view2, numFrames);
   
-    int frameSkip = 5;
+    int frameSkip = 0;
     bool isSkipFront = 0;
     bool isSkipSide = 0;
 
     //Initialize and load classifier model temporary , should be made command line arguments
 #ifdef WIN32
-    QString HOGParam_file_sde = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOGparam.json";
-    QString HOFParam_file_sde = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOFparam.json";
-    QString CropParam_file_sde = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/Cropsde_param.json";
+    QString input_dir_path = "C:/Users/27rut/BIAS/mouse_videos_0502/";
+    string output_dir_path = "C:/Users/27rut/BIAS/mouse_videos_0502/";
+    QString HOGParam_file_sde = input_dir_path + "json_files/HOGparam.json";
+    QString HOFParam_file_sde = input_dir_path + "json_files/HOFparam.json";
+    QString CropParam_file_sde = input_dir_path + "json_files/Cropsde_param.json";
 
-    QString HOGParam_file_frt = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOGparam.json";
-    QString HOFParam_file_frt = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/HOFparam.json";
-    QString CropParam_file_frt = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/Cropfrt_param.json";
+    QString HOGParam_file_frt = input_dir_path + "json_files/HOGparam.json";
+    QString HOFParam_file_frt = input_dir_path + "json_files/HOFparam.json";
+    QString CropParam_file_frt = input_dir_path + "json_files/Cropfrt_param.json";
 
     // Video Capture
-    QString vidFile[nviews] = { "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi",
-                               "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi" };
-    videoBackend vid_sde(vidFile[0]);
-    videoBackend vid_frt(vidFile[1]);
+    QString vidFile[nviews] = { "movie_sde.avi" ,
+                                "movie_frt.avi" };
+    
+    videoBackend vid_sde(input_dir_path + vidFile[0]);
+    videoBackend vid_frt(input_dir_path + vidFile[1]);
+    cv::VideoCapture cap_obj_ = vid_sde.videoCapObject();
+    numFrames = vid_sde.getNumFrames(cap_obj_);
+    int width = vid_sde.getImageWidth(cap_obj_);
+    int height = vid_sde.getImageHeight(cap_obj_);
+    std::cout << "Video has " << numFrames << " frames" << std::endl;
+    std::cout << "Video height" << height << std::endl;
+    std::cout << "Video width" << width << std::endl;
 
     //Initialize and load classifier model
-    QString classifier_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/json_files/multiclassifier.mat";
+    //QString classifier_file = input_dir_path + "json_files/multiclassifier.mat";
 #endif    
 
     // Output dir filepath
@@ -149,7 +159,7 @@ int main(int argc, char* argv[]) {
     //HOG HOF Params
     HOGHOF* feat_side = new HOGHOF();
     HOGHOF* feat_frt = new HOGHOF();
-    beh_class* classifier = new beh_class(classifier_file);
+    //beh_class* classifier = new beh_class(classifier_file);
     Params param_sde;
     Params param_frt;
 
@@ -267,14 +277,14 @@ int main(int argc, char* argv[]) {
 
         feat_side->initializeHOGHOF(width, height, numFrames);
         feat_frt->initializeHOGHOF(width, height, numFrames);
-        classifier->translate_mat2C(&feat_side->hog_shape, &feat_frt->hog_shape);
+        //classifier->translate_mat2C(&feat_side->hog_shape, &feat_frt->hog_shape);
         feat_dim_side = feat_side->hog_shape.x* feat_side->hog_shape.y*feat_side->hog_shape.bin;
         feat_dim_front = feat_frt->hog_shape.x* feat_frt->hog_shape.y*feat_frt->hog_shape.bin;
         feats_hog_out = new float[numFrames * feat_dim_side];
         featf_hog_out = new float[numFrames * feat_dim_front];
         feats_hof_out = new float[numFrames * feat_dim_side];
         featf_hof_out = new float[numFrames * feat_dim_front];
-        printf("%d-%d", feat_dim_side, feat_dim_front);
+        printf("Feature dims side and front - %d-%d", feat_dim_side, feat_dim_front);
     }
     
     bool isTriggered = false;
@@ -512,7 +522,7 @@ int main(int argc, char* argv[]) {
 
         }
 
-        if (imageCnt > 0) {
+        /*if (imageCnt > 0) {
 
             if (!isSkipSide)
             {
@@ -546,7 +556,7 @@ int main(int argc, char* argv[]) {
             classifier->addScores(classifier->score_side, classifier->score_front);
             //classifier->write_score(output_dir + "/lift_classifier_front.csv", imageCnt, classifier->score[0]);
 
-        }
+        }*/
         //end_process = gettime->getPCtime();
         //ts_pc[imageCnt] = (end_process - start_process);
 
@@ -563,7 +573,7 @@ int main(int argc, char* argv[]) {
         if (imageCnt == (numFrames - 1))
         {    
             std::cout << "Started Writing" << std::endl;;
-            createh5("./hoghof", ".h5", numFrames,
+            createh5(output_dir_path + "./hoghof", ".h5", numFrames,
                 feat_dim_side, feat_dim_front,
                 feats_hog_out, featf_hog_out,
                 feats_hof_out, featf_hof_out);
