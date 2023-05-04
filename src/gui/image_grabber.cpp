@@ -26,7 +26,7 @@
 #include  <algorithm>
 
 #define DEBUG 1 
-#define isVidInput 0
+#define isVidInput 1
 #define isSkip 0
 
 namespace bias {
@@ -35,6 +35,7 @@ namespace bias {
 
     unsigned int ImageGrabber::MIN_STARTUP_SKIP = 2;
     unsigned int ImageGrabber::MAX_ERROR_COUNT = 500;
+	string input_video_dir = "C:/Users/Labadmin/BIAS/jab_experiments/STA14/20230503/STA14_20230503_142341/";
 
     ImageGrabber::ImageGrabber(QObject *parent) : QObject(parent)
     {
@@ -151,10 +152,10 @@ namespace bias {
         QString filename;
         if (cameraNumber_ == 0)
         {
-            filename = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_sde.avi";
+            filename = QString::fromStdString(input_video_dir) + "movie_sde.avi";
         }
         else if (cameraNumber_ == 1) {
-            filename = "C:/Users/27rut/BIAS/BIASJAABA_movies/movie_frt.avi";
+            filename = QString::fromStdString(input_video_dir) + "movie_frt.avi";
         }
 
         vid_obj_ = new videoBackend(filename);

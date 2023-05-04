@@ -9,7 +9,7 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 0
+#define isVidInput 1
 #define visualize 0
 
 //
@@ -22,9 +22,10 @@ namespace bias {
     //Public static variables 
     const QString JaabaPlugin::PLUGIN_NAME = QString("jaabaPlugin");
     const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
+	string output_feat_directory = "C:/Users/Labadmin/BIAS/jab_experiments/STA14/20230503/STA14_20230503_142341/";
 
 #if isVidInput
-    int numframes_ = 2498;
+	int numframes_ = 2798;//2498;
 #else 
     int numframes_ = 100000;
 #endif
@@ -198,7 +199,7 @@ namespace bias {
         {
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
-                threadPoolPtr_->start(processScoresPtr_side);
+                //threadPoolPtr_->start(processScoresPtr_side);
 #if visualize
                 threadPoolPtr_->start(processScoresPtr_side->visplots);
 #endif
@@ -311,8 +312,8 @@ namespace bias {
                         processScoresPtr_front->HOGHOF_partner->hof_shape.bin;
 
                 }
-                //hoghof_feat.resize(numframes_, std::vector<float>());
-                //hoghof_feat_avg.resize(numframes_, std::vector<float>());
+                hoghof_feat.resize(numframes_, std::vector<float>());
+                hoghof_feat_avg.resize(numframes_, std::vector<float>());
 
                 acquireLock();
                 detectStarted = true;
@@ -546,8 +547,8 @@ namespace bias {
                         processScoresPtr_side->HOGHOF_frame->hof_out_past.push(
                             processScoresPtr_side->HOGHOF_frame->hof_out_skip);
 
-                        //saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
-                        //    processScoresPtr_side->processedFrameCount, "./hoghof_avg_side_biasjaaba.csv");
+                        saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
+                            processScoresPtr_side->processedFrameCount, output_feat_directory + "hoghof_avg_side_biasjaaba.csv");
 
                         processScoresPtr_side->processedFrameCount++;
                     }
@@ -594,8 +595,8 @@ namespace bias {
                             processScoresPtr_front->HOGHOF_partner->hof_out_skip);
 
 
-                        //saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
-                        //    processScoresPtr_front->processedFrameCount, "./hoghof_avg_front_biasjaaba.csv");
+                        saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
+                            processScoresPtr_front->processedFrameCount, output_feat_directory + "hoghof_avg_front_biasjaaba.csv");
 
                         processScoresPtr_front->processedFrameCount++;
                     }
@@ -689,8 +690,8 @@ namespace bias {
                             processScoresPtr_front->HOGHOF_partner->hof_out_past.push(
                                 processScoresPtr_front->HOGHOF_partner->hof_out);
 
-                            //saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
-                            //    processScoresPtr_front->processedFrameCount, "./hoghof_avg_front_biasjaaba.csv");
+                            saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
+                                processScoresPtr_front->processedFrameCount, output_feat_directory + "hoghof_avg_front_biasjaaba.csv");
 
                             if (processScoresPtr_front->classifier->isClassifierPathSet &&
                                 processScoresPtr_front->processedFrameCount > 0)
@@ -773,8 +774,8 @@ namespace bias {
                             processScoresPtr_side->HOGHOF_frame->hof_out_past.push(
                                 processScoresPtr_side->HOGHOF_frame->hof_out);
 
-                            //saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
-                            //    processScoresPtr_side->processedFrameCount, "./hoghof_avg_side_biasjaaba.csv");
+                            saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
+                                processScoresPtr_side->processedFrameCount, output_feat_directory + "hoghof_avg_side_biasjaaba.csv");
 
                             if (processScoresPtr_side->classifier->isClassifierPathSet &&
                                 processScoresPtr_side->processedFrameCount > 0)
