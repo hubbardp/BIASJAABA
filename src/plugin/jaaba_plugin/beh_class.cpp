@@ -257,6 +257,60 @@ namespace bias {
         }
     }
 
+	void beh_class::getviewandfeature(HOGShape *shape_side, HOGShape *shape_front)
+	{
+		//shape of hist side
+		unsigned int side_x = shape_side->x;
+		unsigned int side_y = shape_side->y;
+		unsigned int side_bin = shape_side->bin;
+
+		//shape of hist front 
+		unsigned int front_x = shape_front->x;
+		unsigned int front_y = shape_front->y;
+		unsigned int front_bin = shape_front->bin;
+
+		unsigned int feat_dim_side = shape_side->x * shape_side->y*shape_side->bin;
+		unsigned int feat_dim_front = shape_front->x* shape_front->y*shape_front->bin;
+		//std::cout << "feat_dim_side = " << feat_dim_side << std::endl;
+		//std::cout << "feat_dim_front = " << feat_dim_front << std::endl;
+		//std::cout <<"limits: "<<"1 "<< feat_dim_side<<" "<< (feat_dim_side + feat_dim_front)
+		//	<< " " << ((2 * feat_dim_side) + feat_dim_front) << std::endl;
+
+		size_t numWkCls = model[0].cls_alpha.size();
+		size_t num_beh = beh_present.size();
+		int cls_dim = 0;
+		int flag = 0;
+		int cuda_feat_dim = 0;
+
+		for (int beh_id = 0; beh_id < num_beh; beh_id++)
+		{
+			if (beh_present[beh_id]) {
+				for (int cls_id = 0; cls_id < numWkCls; cls_id++)
+				{
+					cls_dim = this->model[beh_id].cls_dim[cls_id];
+					cuda_feat_dim = cls_dim-1;
+					
+					if(cls_dim > 0 && cls_dim <= feat_dim_side ){
+						flag = 1;
+					}
+					else if (cls_dim > feat_dim_side && cls_dim <= (feat_dim_side + feat_dim_front) ) {
+						cuda_feat_dim -= feat_dim_side;
+						flag = 2;
+					}
+					else if(cls_dim > (feat_dim_side + feat_dim_front) && cls_dim <= ((2*feat_dim_side) + feat_dim_front)) {
+						cuda_feat_dim -= (feat_dim_side + feat_dim_front);
+						flag = 3;
+					}else {
+						cuda_feat_dim -= ((2 * feat_dim_side) + feat_dim_front);
+						flag = 4;
+					}
+					this->translated_index[beh_id][cls_id] = cuda_feat_dim;
+					this->flag[beh_id][cls_id] = flag;
+					//std::cout << "beh " << beh_id << ", cls_id = " << cls_id << ", cls_dim = " << cls_dim << ", flag = " << flag << std::endl;
+				}
+			}
+		}
+	}
 
     // boost score from a single stump of the model 
     void beh_class::boost_compute(float &scr, std::vector<float> &features, int ind,
@@ -302,7 +356,7 @@ namespace bias {
 			  struct HOFShape *shape_front, int feat_len,
 			  std::vector<boost_classifier> &model) 
     {
-
+		//std::cout << "Entered boost classify side " << std::endl;
 		//shape of hist side
 		unsigned int side_x = shape_side->x;
 		unsigned int side_y = shape_side->y;
@@ -320,6 +374,10 @@ namespace bias {
 		int dir, dim;
 		float alpha, tr;
 
+		bool haveprinted_hof = false;
+		bool haveprinted_hog = false;
+		float scr_before;
+
 		//rem = 0;
 		//int flag = 0;
 
@@ -327,9 +385,11 @@ namespace bias {
         size_t num_beh = beh_present.size();
         std::fill(scr.begin(), scr.end(), 0.0);
 
+		num_feat = side_x * side_y * side_bin;
+
         for(int ncls = 0;ncls < num_beh;ncls++)
         {
-
+			
             if(beh_present[ncls])
             {
 
@@ -340,18 +400,48 @@ namespace bias {
 					dir = model[ncls].cls_dir[midx];
 					alpha = model[ncls].cls_alpha[midx];
 					tr = model[ncls].cls_tr[midx];
+					scr_before = scr[ncls];
+
+					//std::cout << "ncls = " << ncls << " midx = " << midx << std::endl;
+					//std::cout<<"flag " << this->flag[ncls][midx] << std::endl;
 
 					if(this->flag[ncls][midx] == 1) {  // book keeping to check which feature to choose
 
 						index = this->translated_index[ncls][midx];
-						num_feat = side_x * side_y * side_bin;
 						boost_compute(scr[ncls], hofs_features, index, num_feat, feat_len, dir, tr, alpha);
+						//if (!haveprinted_hof) {
+						//	std::cout << "side hof weak classifier = " << midx
+						//		<< ", feat number = " << dim
+						//		<< ", translated index = " << index
+						//		<< ", feat value = " << hofs_features[index]
+						//		<< ", thresh = " << tr
+						//		<< ", dir = " << dir
+						//		<< ", alpha = " << alpha
+						//		<< ", scr before = " << scr_before
+						//		<< ", scr after = " << scr[ncls]
+						//		<< std::endl;
+						//	haveprinted_hof = true;
+						//}
 
 					} else if(this->flag[ncls][midx] == 3) {
 
 						index = this->translated_index[ncls][midx];
 						num_feat = side_x * side_y * side_bin;
 						boost_compute(scr[ncls], hogs_features, index, num_feat, feat_len, dir, tr, alpha);
+
+						//if (!haveprinted_hof) {
+						//	std::cout << "side hog weak classifier = " << midx
+						//		<< ", feat number = " << dim
+						//		<< ", translated index = " << index
+						//		<< ", feat value = " << hogs_features[index]
+						//		<< ", thresh = " << tr
+						//		<< ", dir = " << dir
+						//		<< ", alpha = " << alpha
+						//		<< ", scr before = " << scr_before
+						//		<< ", scr after = " << scr[ncls]
+						//		<< std::endl;
+						//	haveprinted_hog = true;
+						//}
 
 					} 
 
@@ -368,7 +458,7 @@ namespace bias {
         struct HOFShape *shape_front, int feat_len,
         std::vector<boost_classifier> &model)
     {
-
+		//std::cout << "Entered boost classify front " << std::endl;
         //shape of hist side
         unsigned int side_x = shape_side->x;
         unsigned int side_y = shape_side->y;
@@ -386,6 +476,10 @@ namespace bias {
         int dir, dim;
         float alpha, tr;
 
+		bool haveprinted_hof = false;
+		bool haveprinted_hog = false;
+		float scr_before;
+
         //rem = 0;
         //int flag = 0;
 
@@ -393,8 +487,14 @@ namespace bias {
         size_t num_beh = beh_present.size();
         std::fill(scr.begin(), scr.end(), 0.0);
 
+		num_feat = front_x * front_y * front_bin;
+
+		//std::cout << "num_beh = " << num_beh << std::endl;
+
         for (int ncls = 0; ncls < num_beh; ncls++)
         {
+			//std::cout << "beh_present[" << ncls <<"] = "<<beh_present[ncls]
+			//	<<", numWkCls = "<<numWkCls<<std::endl;
 
             if (beh_present[ncls])
             {
@@ -406,19 +506,45 @@ namespace bias {
                     dir = model[ncls].cls_dir[midx];
                     alpha = model[ncls].cls_alpha[midx];
                     tr = model[ncls].cls_tr[midx];
+					scr_before = scr[ncls];
 
                     if (this->flag[ncls][midx] == 2) {  // book keeping to check which feature to choose
 
                         index = this->translated_index[ncls][midx];
-                        num_feat = front_x * front_y * front_bin;
-                        boost_compute(scr[ncls], hoff_features, index, num_feat, feat_len, dir, tr, alpha);
+						boost_compute(scr[ncls], hoff_features, index, num_feat, feat_len, dir, tr, alpha);
+						//if (!haveprinted_hof) {
+						//	std::cout << "front hof weak classifier = " << midx
+						//		<< ", feat number = " << dim
+						//		<< ", translated index = " << index
+						//		<< ", feat value = " << hoff_features[index]
+						//		<< ", thresh = " << tr
+						//		<< ", dir = " << dir
+						//		<< ", alpha = " << alpha
+						//		<< ", scr before = " << scr_before
+						//		<< ", scr after = " << scr[ncls]
+						//		<< std::endl;
+						//	haveprinted_hof = true;
+						//}
+
 
                     }
                     else if (this->flag[ncls][midx] == 4) {
 
                         index = this->translated_index[ncls][midx];
-                        num_feat = front_x * front_y * front_bin;
                         boost_compute(scr[ncls], hogf_features, index, num_feat, feat_len, dir, tr, alpha);
+						/*if (!haveprinted_hog) {
+							std::cout << "front hog weak classifier = " << midx
+								<< ", feat number = " << dim
+								<<", translated index = "<<index
+								<< ", feat value = " << hogf_features[index]
+								<< ", thresh = " << tr
+								<< ", dir = " << dir
+								<< ", alpha = " << alpha
+								<< ", scr before = " << scr_before
+								<< ", scr after = " << scr[ncls]
+								<< std::endl;
+							haveprinted_hog = true;
+						}*/
 
                     }
 

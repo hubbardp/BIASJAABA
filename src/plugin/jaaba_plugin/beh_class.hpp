@@ -62,7 +62,8 @@ namespace bias {
         bool pathExists(hid_t id, const std::string& path);
         void addScores(std::vector<float>& scr_side,
                        std::vector<float>& scr_front);
-
+		void getviewandfeature(HOGShape *shape_side, HOGShape *shape_front);
+		
         //test 
         vector<PredData> predscore_side = vector<PredData>(nframes);
         vector<PredData> predscore_front = vector<PredData>(nframes);

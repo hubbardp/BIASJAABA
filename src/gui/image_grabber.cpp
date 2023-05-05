@@ -35,7 +35,7 @@ namespace bias {
 
     unsigned int ImageGrabber::MIN_STARTUP_SKIP = 2;
     unsigned int ImageGrabber::MAX_ERROR_COUNT = 500;
-	string input_video_dir = "C:/Users/Labadmin/BIAS/jab_experiments/STA14/20230503/STA14_20230503_142341/";
+	string input_video_dir = "C:/Users/Labadmin/BIAS/jab_experiments/STA14/20230503_matlab/STA14_20230503_142341/";
 
     ImageGrabber::ImageGrabber(QObject *parent) : QObject(parent)
     {

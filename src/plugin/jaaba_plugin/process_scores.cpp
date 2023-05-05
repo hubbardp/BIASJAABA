@@ -4,6 +4,8 @@
 #define isVidInput 1
 #define visualize 0
 
+string output_score_dir = "C:/Users/Labadmin/BIAS/jab_experiments/STA14/20230503_matlab/STA14_20230503_142341/";
+
 namespace bias {
 
 
@@ -177,8 +179,7 @@ namespace bias {
         double wait_threshold = 1500;
 #endif
         uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/"
-            "multi/2c5ba_9_8_2022/classifier_trial5.csv";
+        string filename = output_score_dir + "classifier_score.csv";
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
@@ -494,6 +495,9 @@ namespace bias {
         {
             x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_side_ts 
                 << "," << pred_score[frm_id].score_front_ts << "," << pred_score[frm_id].score[0]
+				<< "," << pred_score[frm_id].score[1] << "," << pred_score[frm_id].score[2]
+				<< "," << pred_score[frm_id].score[3] << "," << pred_score[frm_id].score[4]
+				<< "," << pred_score[frm_id].score[5]
                 << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
                 "\n";
         }
