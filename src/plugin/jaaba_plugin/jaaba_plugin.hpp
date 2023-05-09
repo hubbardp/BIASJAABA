@@ -222,12 +222,10 @@ namespace bias
             //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
             void write_score_final(std::string file, unsigned int numFrames,
                 vector<PredData>& pred_score);
-            void writeAllFeatures(string filename, vector<float>& feat_out,
-                int feat_size);
             void saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,
                                        int frameCount,string filename);
-            void saveFeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj, int frameCount,
-                              string filename);
+            void saveFeatures(string filename, QPointer<HOGHOF> hoghof_obj,//vector<float>& feat_out,
+                                       int hog_num_elements, int hof_num_elements);
         signals:
 
             void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);

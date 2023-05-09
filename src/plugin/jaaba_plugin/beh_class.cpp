@@ -307,6 +307,7 @@ namespace bias {
 					this->translated_index[beh_id][cls_id] = cuda_feat_dim;
 					this->flag[beh_id][cls_id] = flag;
 					//std::cout << "beh " << beh_id << ", cls_id = " << cls_id << ", cls_dim = " << cls_dim << ", flag = " << flag << std::endl;
+                    //std::cout << "cuda dim " << cuda_feat_dim << ", matlab dim = " << cls_dim  << ", flag = " << flag << std::endl;
 				}
 			}
 		}
@@ -386,8 +387,9 @@ namespace bias {
         std::fill(scr.begin(), scr.end(), 0.0);
 
 		num_feat = side_x * side_y * side_bin;
+        //std::cout << "numWkCls " << numWkCls << "num_beh " << num_beh << std::endl;
 
-        for(int ncls = 0;ncls < num_beh;ncls++)
+        for(int ncls = 0;ncls < 1;ncls++)
         {
 			
             if(beh_present[ncls])
@@ -420,7 +422,7 @@ namespace bias {
 						//		<< ", scr before = " << scr_before
 						//		<< ", scr after = " << scr[ncls]
 						//		<< std::endl;
-						//	haveprinted_hof = true;
+					    //      haveprinted_hof = true;
 						//}
 
 					} else if(this->flag[ncls][midx] == 3) {
@@ -429,23 +431,24 @@ namespace bias {
 						num_feat = side_x * side_y * side_bin;
 						boost_compute(scr[ncls], hogs_features, index, num_feat, feat_len, dir, tr, alpha);
 
-						//if (!haveprinted_hof) {
-						//	std::cout << "side hog weak classifier = " << midx
-						//		<< ", feat number = " << dim
-						//		<< ", translated index = " << index
-						//		<< ", feat value = " << hogs_features[index]
-						//		<< ", thresh = " << tr
-						//		<< ", dir = " << dir
-						//		<< ", alpha = " << alpha
-						//		<< ", scr before = " << scr_before
-						//		<< ", scr after = " << scr[ncls]
-						//		<< std::endl;
+						/*if (!haveprinted_hof) {
+							std::cout << "side hog weak classifier = " << midx
+								<< ", feat number = " << dim
+								<< ", translated index = " << index
+								<< ", feat value = " << hogs_features[index]
+								<< ", thresh = " << tr
+								<< ", dir = " << dir
+								<< ", alpha = " << alpha
+								<< ", scr before = " << scr_before
+								<< ", scr after = " << scr[ncls]
+								<< std::endl;
 						//	haveprinted_hog = true;
-						//}
+						}*/
 
 					} 
 
 				}
+                haveprinted_hog = true;
 
 			}
 
@@ -493,8 +496,6 @@ namespace bias {
 
         for (int ncls = 0; ncls < num_beh; ncls++)
         {
-			//std::cout << "beh_present[" << ncls <<"] = "<<beh_present[ncls]
-			//	<<", numWkCls = "<<numWkCls<<std::endl;
 
             if (beh_present[ncls])
             {
@@ -512,19 +513,19 @@ namespace bias {
 
                         index = this->translated_index[ncls][midx];
 						boost_compute(scr[ncls], hoff_features, index, num_feat, feat_len, dir, tr, alpha);
-						//if (!haveprinted_hof) {
-						//	std::cout << "front hof weak classifier = " << midx
-						//		<< ", feat number = " << dim
-						//		<< ", translated index = " << index
-						//		<< ", feat value = " << hoff_features[index]
-						//		<< ", thresh = " << tr
-						//		<< ", dir = " << dir
-						//		<< ", alpha = " << alpha
-						//		<< ", scr before = " << scr_before
-						//		<< ", scr after = " << scr[ncls]
-						//		<< std::endl;
-						//	haveprinted_hof = true;
-						//}
+						/*if (!haveprinted_hof) {
+							std::cout << "front hof weak classifier = " << midx
+								<< ", feat number = " << dim
+								<< ", translated index = " << index
+								<< ", feat value = " << hoff_features[index]
+								<< ", thresh = " << tr
+								<< ", dir = " << dir
+								<< ", alpha = " << alpha
+								<< ", scr before = " << scr_before
+								<< ", scr after = " << scr[ncls]
+								<< std::endl;
+							haveprinted_hof = true;
+						}*/
 
 
                     }
@@ -559,19 +560,15 @@ namespace bias {
     void beh_class::addScores(std::vector<float>& scr_side, 
                               std::vector<float>& scr_front)
     {
-
         size_t num_beh = beh_present.size();
         for (int ncls = 0; ncls < num_beh; ncls++)
         {
-
             if (beh_present[ncls])
             {
                
                 finalscore.score[ncls] = scr_side[ncls] + scr_front[ncls];
             }
-
         }
-
     }
 
 
