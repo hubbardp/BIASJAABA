@@ -52,13 +52,13 @@ namespace bias {
         void boost_classify_side(std::vector<float> &scr, std::vector<float> &hogs_features,
             std::vector<float> &hofs_features, struct HOGShape *shape_side,
             struct HOFShape *shape_front, int feat_len,
-            std::vector<boost_classifier> &model);
+            std::vector<boost_classifier> &model, int frameCount);
         void boost_classify_front(std::vector<float> &scr, std::vector<float> &hogf_features,
             std::vector<float> &hoff_features, struct HOGShape *shape_side,
             struct HOFShape *shape_front, int feat_len,
-            std::vector<boost_classifier> &model);
+            std::vector<boost_classifier> &model, int frameCount);
 	    void boost_compute(float &scr, std::vector<float> &features, int ind,
-			       int num_feat, int feat_len, int dir, float tr, float alpha);
+			       int num_feat, int feat_len, int dir, float tr, float alpha, int framecount, int cls_idx);
         bool pathExists(hid_t id, const std::string& path);
         void addScores(std::vector<float>& scr_side,
                        std::vector<float>& scr_front);

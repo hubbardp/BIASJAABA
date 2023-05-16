@@ -29,7 +29,7 @@ namespace bias {
         mesPass_ = mesPass;
         frameCount_ = 0;
         partner_frameCount_ = -1;
-        scoreCount = 1;
+        scoreCount = 0;
         gettime = getTime;
         skipFront = 0;
         skipSide = 0;
@@ -82,7 +82,6 @@ namespace bias {
         hoghof->hof_out_skip.resize(hof_num_elements,0.0);
 
         isHOGHOFInitialised = true;
-
 
     }
 
@@ -290,7 +289,7 @@ namespace bias {
                         scores[scoreCount - 1].score_ts = read_ondemand_;
 #endif
 
-                        scores[scoreCount].score[0] = classifier->finalscore.score[0];
+                        scores[scoreCount].score = classifier->finalscore.score;
                         scores[scoreCount].frameCount = predScore.frameCount;
                         scores[scoreCount].view = 3;
                         
@@ -430,12 +429,12 @@ namespace bias {
             done = stopped_;
             releaseLock();
 
-            if (scoreCount >= (numFrames-1)) {
+            if (scoreCount == (numFrames-1)) {
 
                 std::cout << "Writing score...." << std::endl;
                 write_score_final(filename,numFrames-1, scores);
                 std::cout << "Written ...." << std::endl;
-                break;
+                
             }
 
         }
@@ -467,16 +466,16 @@ namespace bias {
         }
     }
 
-    void ProcessScores::write_score(std::string file, int framenum, PredData& score)
+    void ProcessScores::write_score(std::string file,PredData& score)
     {
 
         std::ofstream x_out;
         x_out.open(file.c_str(), std::ios_base::app);
-        if (framenum == 0)
-            x_out << "Score ts," << "Score," << " FrameNumber," << "View" << "\n";
+
+        //x_out << "Score ts," << "Score," << " FrameNumber," << "View" << "\n";
         
         // write score to csv file
-        x_out << score.score_ts << "," << score.score[0] << "," 
+        x_out << score.score_ts << "," << score.score[1] << "," 
             << score.frameCount << "," << score.view << "\n";
 
         x_out.close();

@@ -706,19 +706,23 @@ namespace bias {
                             saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
                                 processScoresPtr_front->processedFrameCount, output_feat_directory + "hoghof_avg_front_biasjaaba.csv");
 #endif
-                            if (processScoresPtr_front->classifier->isClassifierPathSet &&
-                                processScoresPtr_front->processedFrameCount > 0)
+                            if (processScoresPtr_front->classifier->isClassifierPathSet )
+                                //&& processScoresPtr_front->processedFrameCount > 0)
                             {
                                 
                                 processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
                                     processScoresPtr_front->HOGHOF_partner->hog_out_avg, processScoresPtr_front->HOGHOF_partner->hof_out_avg, 
                                     &processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
-                                    processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model);
+                                    processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model, 
+                                    processScoresPtr_front->processedFrameCount);                
 
                                 time_now = gettime_->getPCtime();
                                 processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
                                 processScoresPtr_front->classifier->predScoreFront.score_front_ts = time_now;
                                 processScoresPtr_front->classifier->predScoreFront.view = 2;
+
+                                //processScoresPtr_front->write_score(output_feat_directory + "classifier_front.csv", processScoresPtr_front->classifier->predScoreFront);
+
 
                                 frontScoreQueuePtr_->acquireLock();
                                 frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
@@ -790,21 +794,24 @@ namespace bias {
                             saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
                                 processScoresPtr_side->processedFrameCount, output_feat_directory + "hoghof_avg_side_biasjaaba.csv");
 #endif
-                            if (processScoresPtr_side->classifier->isClassifierPathSet &&
-                                processScoresPtr_side->processedFrameCount > 0)
+                            if (processScoresPtr_side->classifier->isClassifierPathSet )
+                                //&& processScoresPtr_side->processedFrameCount > 0)
                             {
-                                 
-                                    
+                                
                                 processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
                                     processScoresPtr_side->HOGHOF_frame->hog_out_avg, processScoresPtr_side->HOGHOF_frame->hof_out_avg,
-                                    &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape, processScoresPtr_side->classifier->nframes,
-                                    processScoresPtr_side->classifier->model);
-                                   
+                                    &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape, 
+                                    processScoresPtr_side->classifier->nframes,processScoresPtr_side->classifier->model, 
+                                    processScoresPtr_side->processedFrameCount);
+                                
+
                                 time_now = gettime_->getPCtime();
                                 processScoresPtr_side->classifier->predScoreSide.frameCount = processScoresPtr_side->processedFrameCount;
                                 processScoresPtr_side->classifier->predScoreSide.score_side_ts = time_now;
                                 processScoresPtr_side->classifier->predScoreSide.view = 1;
                                 processScoresPtr_side->isProcessed_side = 1;
+
+                                //processScoresPtr_side->write_score(output_feat_directory + "classifier_side.csv", processScoresPtr_side->classifier->predScoreSide);
 
                                 sideScoreQueuePtr_->acquireLock();
                                 sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
@@ -1183,16 +1190,18 @@ namespace bias {
                                 processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score, 
                                  processScoresPtr_side->HOGHOF_frame->hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out, 
                                  &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_front ->HOGHOF_partner->hof_shape, 
-                                    processScoresPtr_side->classifier-> nframes, processScoresPtr_side->classifier->model);
+                                    processScoresPtr_side->classifier-> nframes, processScoresPtr_side->classifier->model, 
+                                    processScoresPtr_side->processedFrameCount);
 
                                 processScoresPtr_side->classifier->boost_classify_front(processScoresPtr_side->classifier->predScoreFront.score, 
                                     processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, 
                                     &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape, 
-                                    processScoresPtr_side->classifier->nframes, processScoresPtr_side->classifier->model);
+                                    processScoresPtr_side->classifier->nframes, processScoresPtr_side->classifier->model,
+                                    processScoresPtr_side->processedFrameCount);
                                 
                                 processScoresPtr_side->classifier->addScores(processScoresPtr_side->classifier->predScoreSide.score,
                                                                              processScoresPtr_side->classifier->predScoreFront.score);
-                                processScoresPtr_side->write_score("classifierscr.csv", processScoresPtr_side->processedFrameCount,
+                                processScoresPtr_side->write_score("classifierscr.csv",
                                     processScoresPtr_side->classifier->finalscore);
 
                                 //triggerLaser();
@@ -2161,15 +2170,15 @@ namespace bias {
 
         for (int j = 0; j < hog_num_elements; j++)
         {
-            x_out << hoghof_obj->hog_out_avg[j] << ",";
+            x_out << setprecision(6) << hoghof_obj->hog_out_avg[j] << ",";
         }
 
         for (int k = 0; k < hof_num_elements; k++)
         {
             if (k == (hof_num_elements - 1))
-                x_out << hoghof_obj->hof_out_avg[k] << "\n";
+                x_out << setprecision(6) << hoghof_obj->hof_out_avg[k] << "\n";
             else
-                x_out << hoghof_obj->hof_out_avg[k] << ",";
+                x_out << setprecision(6) << hoghof_obj->hof_out_avg[k] << ",";
         }
 
 
@@ -2187,15 +2196,15 @@ namespace bias {
 
         for (int j = 0; j < hog_num_elements; j++)
         {
-            x_out << hoghof_obj->hog_out[j] << ",";
+            x_out << setprecision(6) << hoghof_obj->hog_out[j] << ",";
         }
 
         for (int k = 0; k < hof_num_elements; k++)
         {
             if (k == (hof_num_elements - 1))
-                x_out << hoghof_obj->hof_out[k] << "\n";
+                x_out << setprecision(6) << hoghof_obj->hof_out[k] << "\n";
             else
-                x_out << hoghof_obj->hof_out[k] << ",";
+                x_out << setprecision(6) << hoghof_obj->hof_out[k] << ",";
         }
 
         x_out.close();
