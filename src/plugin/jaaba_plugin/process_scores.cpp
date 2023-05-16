@@ -1,8 +1,10 @@
 #include "process_scores.hpp"
 #include <cuda_runtime_api.h> 
 
-#define isVidInput 0
+#define isVidInput 1
 #define visualize 0
+
+string output_score_dir = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
 
 namespace bias {
 
@@ -27,7 +29,7 @@ namespace bias {
         mesPass_ = mesPass;
         frameCount_ = 0;
         partner_frameCount_ = -1;
-        scoreCount = 1;
+        scoreCount = 0;
         gettime = getTime;
         skipFront = 0;
         skipSide = 0;
@@ -80,7 +82,6 @@ namespace bias {
         hoghof->hof_out_skip.resize(hof_num_elements,0.0);
 
         isHOGHOFInitialised = true;
-
 
     }
 
@@ -177,8 +178,7 @@ namespace bias {
         double wait_threshold = 1500;
 #endif
         uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = "C:/Users/27rut/BIAS/misc/jaaba_plugin_day_trials/plugin_latency/nidaq/"
-            "multi/2c5ba_9_8_2022/classifier_trial5.csv";
+        string filename = output_score_dir + "classifier_score.csv";
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
@@ -289,7 +289,7 @@ namespace bias {
                         scores[scoreCount - 1].score_ts = read_ondemand_;
 #endif
 
-                        scores[scoreCount].score[0] = classifier->finalscore.score[0];
+                        scores[scoreCount].score = classifier->finalscore.score;
                         scores[scoreCount].frameCount = predScore.frameCount;
                         scores[scoreCount].view = 3;
                         
@@ -429,12 +429,12 @@ namespace bias {
             done = stopped_;
             releaseLock();
 
-            if (scoreCount >= (numFrames-1)) {
+            if (scoreCount == (numFrames-1)) {
 
                 std::cout << "Writing score...." << std::endl;
                 write_score_final(filename,numFrames-1, scores);
                 std::cout << "Written ...." << std::endl;
-                break;
+                
             }
 
         }
@@ -466,16 +466,16 @@ namespace bias {
         }
     }
 
-    void ProcessScores::write_score(std::string file, int framenum, PredData& score)
+    void ProcessScores::write_score(std::string file,PredData& score)
     {
 
         std::ofstream x_out;
         x_out.open(file.c_str(), std::ios_base::app);
-        if (framenum == 0)
-            x_out << "Score ts," << "Score," << " FrameNumber," << "View" << "\n";
+
+        //x_out << "Score ts," << "Score," << " FrameNumber," << "View" << "\n";
         
         // write score to csv file
-        x_out << score.score_ts << "," << score.score[0] << "," 
+        x_out << score.score_ts << "," << score.score[1] << "," 
             << score.frameCount << "," << score.view << "\n";
 
         x_out.close();
@@ -493,7 +493,13 @@ namespace bias {
         for (unsigned int frm_id = 0; frm_id < numFrames; frm_id++)
         {
             x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_side_ts 
-                << "," << pred_score[frm_id].score_front_ts << "," << pred_score[frm_id].score[0]
+                << "," << pred_score[frm_id].score_front_ts << "," 
+                << setprecision(6) << pred_score[frm_id].score[0]
+				<< "," << setprecision(6) << pred_score[frm_id].score[1] 
+                << "," << setprecision(6) << pred_score[frm_id].score[2]
+				<< "," << setprecision(6) << pred_score[frm_id].score[3] 
+                << "," << setprecision(6) << pred_score[frm_id].score[4]
+				<< "," << setprecision(6) << pred_score[frm_id].score[5]
                 << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
                 "\n";
         }

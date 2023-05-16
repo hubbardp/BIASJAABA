@@ -102,7 +102,7 @@ namespace bias
            std::vector<PredData>scores;
            uInt32 read_buffer_ = 0, read_ondemand_ = 0;
 
-           void write_score(std::string file, int framenum, PredData& score);
+           void write_score(std::string file, PredData& score);
            void write_histoutput(std::string file, float* out_img, unsigned w, unsigned h, unsigned nbins);
            void write_score_final(std::string file, unsigned int numFrames,
                vector<PredData>& pred_score);

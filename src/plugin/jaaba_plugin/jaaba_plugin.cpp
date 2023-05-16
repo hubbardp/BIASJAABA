@@ -9,8 +9,9 @@
 
 #define DEBUG 0 
 #define compute 1
-#define isVidInput 0
+#define isVidInput 1
 #define visualize 0
+#define savefeat 0
 
 //
 //Camera 1 should always be front view
@@ -22,9 +23,15 @@ namespace bias {
     //Public static variables 
     const QString JaabaPlugin::PLUGIN_NAME = QString("jaabaPlugin");
     const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
+	string output_feat_directory = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
+
+	//unsigned int IMAGE_HEIGHT = 448;
+	//unsigned int IMAGE_WIDTH = 290;
+	//unsigned int IMAGE_HEIGHT = 384;
+	//unsigned int IMAGE_WIDTH = 260;
 
 #if isVidInput
-    int numframes_ = 2498;
+	int numframes_ = 2798;
 #else 
     int numframes_ = 100000;
 #endif
@@ -40,7 +47,7 @@ namespace bias {
         camera_serial_id = stoi(camera_id);
         threadPoolPtr_ = threadPoolPtr;
         gettime_ = gettime;
-		nidaq_task_ = nullptr;
+        nidaq_task_ = nullptr;
 
         cudaError_t err = cudaGetDeviceCount(&nDevices_);
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
@@ -76,21 +83,21 @@ namespace bias {
     void JaabaPlugin::getFormatSettings()
     {
 
-#if isVidInput   
+/*#if isVidInput   
         //DEVEL
         if(processScoresPtr_side->isVid)
         {
             std::cout << "inside side " << std::endl;
-            image_height = 384; //height of frame from video input
-            image_width = 260;   //width of frame from video input 
+            image_height = IMAGE_HEIGHT; //height of frame from video input
+            image_width = IMAGE_WIDTH;   //width of frame from video input 
             
         }
 
         if (processScoresPtr_front->isVid)
         {
             std::cout << "inside front" << std::endl;
-            image_height = 384; //height of frame from video input
-            image_width = 260;   //width of frame from video input 
+            image_height = IMAGE_HEIGHT; //height of frame from video input
+            image_width = IMAGE_WIDTH;   //width of frame from video input 
             
         }
 #else 
@@ -101,7 +108,14 @@ namespace bias {
         image_width = settings.height;
         cameraPtr_->releaseLock();
 
-#endif
+#endif*/
+
+        Format7Settings settings;
+        cameraPtr_->acquireLock();
+        settings = cameraPtr_->getFormat7Settings();
+        image_height = settings.width;
+        image_width = settings.height;
+        cameraPtr_->releaseLock();
 
     }
 
@@ -279,7 +293,6 @@ namespace bias {
 
             while (!gpuInitialized) {}
             emit(passHOGShape(processScoresPtr_side->HOGHOF_frame));
-			
         }
 
         if (isSender() && !processScoresPtr_front->isHOGHOFInitialised)
@@ -312,8 +325,8 @@ namespace bias {
                         processScoresPtr_front->HOGHOF_partner->hof_shape.bin;
 
                 }
-                //hoghof_feat.resize(numframes_, std::vector<float>());
-                //hoghof_feat_avg.resize(numframes_, std::vector<float>());
+                hoghof_feat.resize(numframes_, std::vector<float>());
+                hoghof_feat_avg.resize(numframes_, std::vector<float>());
 
                 acquireLock();
                 detectStarted = true;
@@ -323,7 +336,6 @@ namespace bias {
 
             emit(processSide(true));
             emit(passHOGShape(processScoresPtr_front->HOGHOF_partner));
-			
         }
 
         
@@ -334,7 +346,7 @@ namespace bias {
             {
 
                 processScoresPtr_side->classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape,
-                    &processScoresPtr_front->HOGHOF_partner->hog_shape, true);
+                    &processScoresPtr_front->HOGHOF_partner->hog_shape);
                 std::cout << processScoresPtr_front->HOGHOF_partner->hog_shape.x
                     << processScoresPtr_front->HOGHOF_partner->hog_shape.y
                     << std::endl;
@@ -507,8 +519,6 @@ namespace bias {
                 avgwait_time = curTime - expTime;*/
 
 #endif
-                    
-                //if (avgwait_time > wait_thres)
     
                 if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount < frameCount_))
                 {
@@ -518,10 +528,11 @@ namespace bias {
                             ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
                         }
- 
-                        //saveFeatures(hoghof_feat, processScoresPtr_side->HOGHOF_frame,
-                        //    processScoresPtr_side->processedFrameCount, "./hoghof_side_biasjaaba.csv");
-
+#if savefeat
+                        std::cout << "side skipped in Jaaba plugin " << std::endl;
+                        saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv", processScoresPtr_side->HOGHOF_frame,
+                            hog_num_elements, hof_num_elements);
+#endif
                         average_windowFeatures(processScoresPtr_side->HOGHOF_frame->hog_out_skip,
                             processScoresPtr_side->HOGHOF_frame->hof_out_skip,
                             processScoresPtr_side->HOGHOF_frame->hog_out_avg,
@@ -547,10 +558,10 @@ namespace bias {
                             processScoresPtr_side->HOGHOF_frame->hog_out_skip);
                         processScoresPtr_side->HOGHOF_frame->hof_out_past.push(
                             processScoresPtr_side->HOGHOF_frame->hof_out_skip);
-
-                        //saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
-                        //    processScoresPtr_side->processedFrameCount, "./hoghof_avg_side_biasjaaba.csv");
-
+#if savefeat
+                        saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
+                            processScoresPtr_side->processedFrameCount, output_feat_directory + "hoghof_avg_side_biasjaaba.csv");
+#endif
                         processScoresPtr_side->processedFrameCount++;
                     }
                     assert(processScoresPtr_side->processedFrameCount == frameCount_);
@@ -564,10 +575,11 @@ namespace bias {
                             ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
                         }
-
-                        //saveFeatures(hoghof_feat, processScoresPtr_front->HOGHOF_partner,
-                        //    processScoresPtr_front->processedFrameCount, "./hoghof_front_biasjaaba.csv");
-
+#if savefeat
+                        std::cout << "front skipped in Jaaba plugin" << std::endl;
+                        saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", processScoresPtr_front->HOGHOF_partner,
+                            hog_num_elements, hof_num_elements);
+#endif
                         average_windowFeatures(processScoresPtr_front->HOGHOF_partner->hog_out_skip,
                             processScoresPtr_front->HOGHOF_partner->hof_out_skip,
                             processScoresPtr_front->HOGHOF_partner->hog_out_avg,
@@ -595,10 +607,10 @@ namespace bias {
                         processScoresPtr_front->HOGHOF_partner->hof_out_past.push(
                             processScoresPtr_front->HOGHOF_partner->hof_out_skip);
 
-
-                        //saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
-                        //    processScoresPtr_front->processedFrameCount, "./hoghof_avg_front_biasjaaba.csv");
-
+#if savefeat
+                        saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
+				                            processScoresPtr_front->processedFrameCount, output_feat_directory + "hoghof_avg_front_biasjaaba.csv");
+#endif
                         processScoresPtr_front->processedFrameCount++;
                     }
                     assert(processScoresPtr_front->processedFrameCount == frameCount_);
@@ -656,10 +668,10 @@ namespace bias {
 
                             }
 
-  
-                            //saveFeatures(hoghof_feat, processScoresPtr_front->HOGHOF_partner,
-                            //    processScoresPtr_front->processedFrameCount, "./hoghof_front_biasjaaba.csv");
-
+#if savefeat  
+                            saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", processScoresPtr_front->HOGHOF_partner,
+                                hog_num_elements, hof_num_elements);
+#endif
                             //average window features
                             average_windowFeatures(processScoresPtr_front->HOGHOF_partner->hog_out,
                                                    processScoresPtr_front->HOGHOF_partner->hof_out, 
@@ -690,19 +702,19 @@ namespace bias {
                                 processScoresPtr_front->HOGHOF_partner->hog_out);
                             processScoresPtr_front->HOGHOF_partner->hof_out_past.push(
                                 processScoresPtr_front->HOGHOF_partner->hof_out);
-
-                            //saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
-                            //    processScoresPtr_front->processedFrameCount, "./hoghof_avg_front_biasjaaba.csv");
-
-                            if (processScoresPtr_front->classifier->isClassifierPathSet &&
-                                processScoresPtr_front->processedFrameCount > 0)
+#if savefeat
+                            saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
+                                processScoresPtr_front->processedFrameCount, output_feat_directory + "hoghof_avg_front_biasjaaba.csv");
+#endif
+                            if (processScoresPtr_front->classifier->isClassifierPathSet )
+                                //&& processScoresPtr_front->processedFrameCount > 0)
                             {
                                 
-								processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
-									processScoresPtr_front->HOGHOF_partner->hog_out_avg, processScoresPtr_front->HOGHOF_partner->hof_out_avg,
-									&processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
-									processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model);
-									
+                                processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
+                                    processScoresPtr_front->HOGHOF_partner->hog_out_avg, processScoresPtr_front->HOGHOF_partner->hof_out_avg, 
+                                    &processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
+                                    processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model, 
+                                    processScoresPtr_front->processedFrameCount);                
 
                                 time_now = gettime_->getPCtime();
                                 processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
@@ -742,10 +754,10 @@ namespace bias {
                                 processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
                                 processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
                             }
-
-                            //saveFeatures(hoghof_feat, processScoresPtr_side->HOGHOF_frame,
-                            //    processScoresPtr_side->processedFrameCount, "./hoghof_side_biasjaaba.csv");
-
+#if savefeat
+                            saveFeatures( output_feat_directory + "hoghof_side_biasjaaba.csv", processScoresPtr_side->HOGHOF_frame,
+                                hog_num_elements, hof_num_elements);
+#endif
                             //average window features
                             average_windowFeatures(processScoresPtr_side->HOGHOF_frame->hog_out,
                                 processScoresPtr_side->HOGHOF_frame->hof_out,
@@ -775,25 +787,27 @@ namespace bias {
                                 processScoresPtr_side->HOGHOF_frame->hog_out);
                             processScoresPtr_side->HOGHOF_frame->hof_out_past.push(
                                 processScoresPtr_side->HOGHOF_frame->hof_out);
-
-                            //saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
-                            //    processScoresPtr_side->processedFrameCount, "./hoghof_avg_side_biasjaaba.csv");
-
-                            if (processScoresPtr_side->classifier->isClassifierPathSet &&
-                                processScoresPtr_side->processedFrameCount > 0)
+#if savefeat
+                            saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
+                                processScoresPtr_side->processedFrameCount, output_feat_directory + "hoghof_avg_side_biasjaaba.csv");
+#endif
+                            if (processScoresPtr_side->classifier->isClassifierPathSet )
+                                //&& processScoresPtr_side->processedFrameCount > 0)
                             {
-                                 
-                                    
+
                                 processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
                                     processScoresPtr_side->HOGHOF_frame->hog_out_avg, processScoresPtr_side->HOGHOF_frame->hof_out_avg,
-                                    &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape, processScoresPtr_side->classifier->nframes,
-                                    processScoresPtr_side->classifier->model);
-                                   
+                                    &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape, 
+                                    processScoresPtr_side->classifier->nframes,processScoresPtr_side->classifier->model, 
+                                    processScoresPtr_side->processedFrameCount);
+                                
                                 time_now = gettime_->getPCtime();
                                 processScoresPtr_side->classifier->predScoreSide.frameCount = processScoresPtr_side->processedFrameCount;
                                 processScoresPtr_side->classifier->predScoreSide.score_side_ts = time_now;
                                 processScoresPtr_side->classifier->predScoreSide.view = 1;
                                 processScoresPtr_side->isProcessed_side = 1;
+
+                                //processScoresPtr_side->write_score(output_feat_directory + "classifier_side.csv", processScoresPtr_side->classifier->predScoreSide);
 
                                 sideScoreQueuePtr_->acquireLock();
                                 sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
@@ -1175,16 +1189,16 @@ namespace bias {
                                 processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score, 
                                  processScoresPtr_side->HOGHOF_frame->hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out, 
                                  &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_front ->HOGHOF_partner->hof_shape, 
-                                    processScoresPtr_side->classifier-> nframes, processScoresPtr_side->classifier->model);
+                                    processScoresPtr_side->classifier-> nframes, processScoresPtr_side->classifier->model, processScoresPtr_side->processedFrameCount);
 
                                 processScoresPtr_side->classifier->boost_classify_front(processScoresPtr_side->classifier->predScoreFront.score, 
                                     processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, 
                                     &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape, 
-                                    processScoresPtr_side->classifier->nframes, processScoresPtr_side->classifier->model);
+                                    processScoresPtr_side->classifier->nframes, processScoresPtr_side->classifier->model,processScoresPtr_front->processedFrameCount);
                                 
                                 processScoresPtr_side->classifier->addScores(processScoresPtr_side->classifier->predScoreSide.score,
                                                                              processScoresPtr_side->classifier->predScoreFront.score);
-                                processScoresPtr_side->write_score("classifierscr.csv", processScoresPtr_side->processedFrameCount,
+                                processScoresPtr_side->write_score("classifierscr.csv",
                                     processScoresPtr_side->classifier->finalscore);
 
                                 //triggerLaser();
@@ -1878,20 +1892,24 @@ namespace bias {
                 //partner_hogshape_.x = 20; partner_hogshape_.y = 10; partner_hogshape_.bin = 8;
                 //hogshape_.x = 30; hogshape_.y = 10; hogshape_.bin = 8;
 
-                processScoresPtr_side->classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape, 
-                    &partner_hogshape_, true);
+                //processScoresPtr_side->classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape, 
+                //    &partner_hogshape_);
 				//processScoresPtr_side->classifier->translate_featureIndexes(&processScoresPtr_side->HOGHOF_frame->hog_shape,
 				//	&partner_hogshape_, true);
+                processScoresPtr_side->classifier->getviewandfeature(&processScoresPtr_side->HOGHOF_frame->hog_shape,
+                        &partner_hogshape_);
             }
 
             if (isSender())
             {
                 std::cout << "translated from mat to c front" << std::endl;
                 partner_hogshape_ = partner_hogshape->hog_shape;
-                processScoresPtr_front->classifier->translate_mat2C(&partner_hogshape_,
-                    &processScoresPtr_front->HOGHOF_partner->hog_shape,false);
+                //processScoresPtr_front->classifier->translate_mat2C(&partner_hogshape_,
+                //    &processScoresPtr_front->HOGHOF_partner->hog_shape);
 				//processScoresPtr_front->classifier->translate_featureIndexes(&partner_hogshape_,
 				//	&processScoresPtr_front->HOGHOF_partner->hog_shape, false);
+                processScoresPtr_front->classifier->getviewandfeature(&partner_hogshape_,
+                        &processScoresPtr_front->HOGHOF_partner->hog_shape);
             }
         }
     }
@@ -2148,39 +2166,25 @@ namespace bias {
     void JaabaPlugin::saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,
                                             int frameCount, string filename) {
 
-        int feat_size;
-        hoghof_feat[frameCount].insert(
-            hoghof_feat[frameCount].begin(),
-            hoghof_obj->hog_out_avg.begin(),
-            hoghof_obj->hog_out_avg.end());
-
-        hoghof_feat[frameCount].insert(
-            hoghof_feat[frameCount].end(),
-            hoghof_obj->hof_out_avg.begin(),
-            hoghof_obj->hof_out_avg.end());
-
-        feat_size = hog_num_elements + hof_num_elements;
-        writeAllFeatures(filename, hoghof_feat[frameCount], feat_size);
-
-    }
+        std::ofstream x_out;
+        x_out.open(filename.c_str(), std::ios_base::app);
 
 
-    void JaabaPlugin::saveFeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,
-                                   int frameCount, string filename) {
+        for (int j = 0; j < hog_num_elements; j++)
+        {
+            x_out << setprecision(6) << hoghof_obj->hog_out_avg[j] << ",";
+        }
 
-        int feat_size;
-        hoghof_feat[frameCount].insert(
-            hoghof_feat[frameCount].begin(),
-            hoghof_obj->hog_out.begin(),
-            hoghof_obj->hog_out.end());
+        for (int k = 0; k < hof_num_elements; k++)
+        {
+            if (k == (hof_num_elements - 1))
+                x_out << setprecision(6) << hoghof_obj->hof_out_avg[k] << "\n";
+            else
+                x_out << setprecision(6) << hoghof_obj->hof_out_avg[k] << ",";
+        }
 
-        hoghof_feat[frameCount].insert(
-            hoghof_feat[frameCount].end(),
-            hoghof_obj->hof_out.begin(),
-            hoghof_obj->hof_out.end());
 
-        feat_size = hog_num_elements + hof_num_elements;
-        writeAllFeatures(filename, hoghof_feat[frameCount], feat_size);
+        x_out.close();
 
     }
 
@@ -2196,6 +2200,30 @@ namespace bias {
 		painter.setPen(linepen);
 		painter.drawPoint(50,50);
 	}
+       
+    void JaabaPlugin::saveFeatures(string filename, QPointer<HOGHOF> hoghof_obj,//vector<float>& feat_out,
+        int hog_num_elements, int hof_num_elements) 
+    {
+        std::ofstream x_out;
+        x_out.open(filename.c_str(), std::ios_base::app);
+
+
+        for (int j = 0; j < hog_num_elements; j++)
+        {
+            x_out << setprecision(6) << hoghof_obj->hog_out[j] << ",";
+        }
+
+        for (int k = 0; k < hof_num_elements; k++)
+        {
+            if (k == (hof_num_elements - 1))
+                x_out << setprecision(6) << hoghof_obj->hof_out[k] << "\n";
+            else
+                x_out << setprecision(6) << hoghof_obj->hof_out[k] << ",";
+        }
+
+        x_out.close();
+
+    }
        
 
 /*********************************************************************************************************/
@@ -2228,25 +2256,6 @@ namespace bias {
                 << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
                 "\n";
         }
-        x_out.close();
-    }
-
-    void JaabaPlugin::writeAllFeatures(string filename, vector<float>& feat_out,
-        int feat_size)
-    {
-        std::ofstream x_out;
-        x_out.open(filename.c_str(), std::ios_base::app);
-
-
-        for (int j = 0; j < feat_size; j++)
-        {
-            if (j == (feat_size - 1))
-                x_out << feat_out[j] << "\n";
-            else
-                x_out << feat_out[j] << ",";
-        }
-
-
         x_out.close();
     }
  
