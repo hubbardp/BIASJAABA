@@ -7,11 +7,12 @@
 #include <functional>
 #include <Windows.h>
 
+
 #define DEBUG 0 
-#define compute 1
-#define isVidInput 1
-#define visualize 0
-#define savefeat 0
+//#define compute 1
+//#define isVidInput 1
+//#define visualize 0
+//#define savefeat 0
 
 //
 //Camera 1 should always be front view
@@ -23,23 +24,24 @@ namespace bias {
     //Public static variables 
     const QString JaabaPlugin::PLUGIN_NAME = QString("jaabaPlugin");
     const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
-	string output_feat_directory = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
+	//string output_feat_directory = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
 
 	//unsigned int IMAGE_HEIGHT = 448;
 	//unsigned int IMAGE_WIDTH = 290;
 	//unsigned int IMAGE_HEIGHT = 384;
 	//unsigned int IMAGE_WIDTH = 260;
 
-#if isVidInput
-	int numframes_ = 2798;
-#else 
-    int numframes_ = 100000;
-#endif
+//#if isVidInput
+//	int numframes_ = 2798;
+//#else 
+//    int numframes_ = 100000;
+//#endif
 
     // Public Methods
     JaabaPlugin::JaabaPlugin(string camera_id, 
                              QPointer<QThreadPool> threadPoolPtr, 
                              std::shared_ptr<Lockable<GetTime>> gettime,
+                             CmdLineParams& cmdlineparams,
                              QWidget *parent) : BiasPlugin(parent)
     {
 
@@ -49,11 +51,30 @@ namespace bias {
         gettime_ = gettime;
         nidaq_task_ = nullptr;
 
+        //initialize cmdline arguments
+        output_feat_directory = cmdlineparams.output_dir;
+        isVideo = cmdlineparams.isVideo;
+        saveFeat = cmdlineparams.saveFeat;
+        compute_jaaba = cmdlineparams.compute_jaaba;
+        classify_scores = cmdlineparams.classify_scores;
+        visualize = cmdlineparams.visualize;
+        numframes_ = cmdlineparams.numframes;
+
+        print(cmdlineparams);
+
+        /*if (isVideo)
+        {
+            numframes_ = 2798;
+        }
+        else {
+            numframes_ = 100000;
+        }*/
+
         cudaError_t err = cudaGetDeviceCount(&nDevices_);
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
         setupUi(this);
         connectWidgets();
-        initialize();
+        initialize(cmdlineparams);
 
     }
 
@@ -170,10 +191,12 @@ namespace bias {
             }
 
             processScoresPtr_side->stop();
-#if visualize
-            processScoresPtr_side->visplots->stop();
-            delete processScoresPtr_side->visplots;
-#endif           
+
+            if (visualize) {
+                processScoresPtr_side->visplots->stop();
+                delete processScoresPtr_side->visplots;
+            }
+          
             delete processScoresPtr_side->HOGHOF_frame;
             delete processScoresPtr_side;
             
@@ -213,9 +236,12 @@ namespace bias {
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
                 threadPoolPtr_->start(processScoresPtr_side);
-#if visualize
-                threadPoolPtr_->start(processScoresPtr_side->visplots);
-#endif
+
+                if (visualize)
+                {
+                    threadPoolPtr_->start(processScoresPtr_side->visplots);
+                }
+
             }
             
         }
@@ -460,18 +486,20 @@ namespace bias {
         double vis_ts = 0.0;
       
 
-#if isVidInput
-        frameGrabAvgTime = 2500;
-        max_jaaba_compute_time = 2000;
-        wait_thres = 2000;
-        avgwait_time = 0;
-        
-#else
-        frameGrabAvgTime = 2500;
-        wait_thres = static_cast<int64_t>(1500);
-        max_jaaba_compute_time = 2000;
-        avgwait_time = 0;
-#endif
+        if (isVideo) {
+            frameGrabAvgTime = 2500;
+            max_jaaba_compute_time = 2000;
+            wait_thres = 2000;
+            avgwait_time = 0;
+        }
+        else {
+
+            frameGrabAvgTime = 2500;
+            wait_thres = static_cast<int64_t>(1500);
+            max_jaaba_compute_time = 2000;
+            avgwait_time = 0;
+        }
+
 
         if (pluginImageQueuePtr_ != nullptr)
         {
@@ -481,44 +509,49 @@ namespace bias {
             fstfrmtStampRef_ = stampedImage.fstfrmtStampRef;
             releaseLock();
 
-#if !isVidInput
-            if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
-                if (frameCount_ <= testConfig_->numFrames) {
+            if (!isVideo){
 
-                    nidaq_task_->getNidaqTimeNow(read_ondemand);
+                if (testConfigEnabled_ && nidaq_task_ != nullptr) {
+
+                    if (frameCount_ <= testConfig_->numFrames) {
+
+                        nidaq_task_->getNidaqTimeNow(read_ondemand);
+
+                    }
 
                 }
-
             }
-#endif
+
             
             start_process = gettime_->getPCtime();
             if (fstfrmtStampRef_ != 0)
             {
-#if isVidInput     
-                time_now = gettime_->getPCtime();
-                expTime_vid = fstfrmtStampRef_ + (frameGrabAvgTime * (frameCount_ + 1)) + max_jaaba_compute_time;
-                curTime_vid = static_cast<uint64_t>(time_now);
-                avgwait_time = curTime_vid - expTime_vid;
-                          
-                // this is for visualizer code to run accurately
-                if (isReceiver() && processScoresPtr_side != nullptr &&  
-                    processScoresPtr_side->processedFrameCount == 0)
-                    processScoresPtr_side->fstfrmStampRef = fstfrmtStampRef_;
 
-#else                   
-                /*avg_frameLatSinceFirstFrame = (((frameGrabAvgTime) * (frameCount_ + 1))
-                                                + max_jaaba_compute_time ); // nidaq ts frame of reference
-                                                  
-                expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
+                if (isVideo) {
+                    time_now = gettime_->getPCtime();
+                    expTime_vid = fstfrmtStampRef_ + (frameGrabAvgTime * (frameCount_ + 1)) + max_jaaba_compute_time;
+                    curTime_vid = static_cast<uint64_t>(time_now);
+                    avgwait_time = curTime_vid - expTime_vid;
 
-                //expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
-                curTime = (static_cast<uint64_t>(read_ondemand) * 20); 
+                    // this is for visualizer code to run accurately
+                    if (isReceiver() && processScoresPtr_side != nullptr &&
+                        processScoresPtr_side->processedFrameCount == 0)
+                        processScoresPtr_side->fstfrmStampRef = fstfrmtStampRef_;
+                }
+                else {
+                   
+                    /*avg_frameLatSinceFirstFrame = (((frameGrabAvgTime) * (frameCount_ + 1))
+                                                    + max_jaaba_compute_time ); // nidaq ts frame of reference
 
-                avgwait_time = curTime - expTime;*/
+                    expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
 
-#endif
+                    //expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
+                    curTime = (static_cast<uint64_t>(read_ondemand) * 20);
+
+                    avgwait_time = curTime - expTime;*/
+               }
+
     
                 if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount < frameCount_))
                 {
@@ -528,11 +561,13 @@ namespace bias {
                             ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
                         }
-#if savefeat
-                        std::cout << "side skipped in Jaaba plugin " << std::endl;
-                        saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv", processScoresPtr_side->HOGHOF_frame,
-                            hog_num_elements, hof_num_elements);
-#endif
+                        //#if savefeat
+                        if (saveFeat) {
+                            std::cout << "side skipped in Jaaba plugin " << std::endl;
+                            saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv", processScoresPtr_side->HOGHOF_frame,
+                                hog_num_elements, hof_num_elements);
+                        }
+                        //#endif
                         average_windowFeatures(processScoresPtr_side->HOGHOF_frame->hog_out_skip,
                             processScoresPtr_side->HOGHOF_frame->hof_out_skip,
                             processScoresPtr_side->HOGHOF_frame->hog_out_avg,
@@ -541,7 +576,7 @@ namespace bias {
 
                         // update moving window aveage features
                         if (processScoresPtr_side->processedFrameCount >= window_size) {
-                            
+
                             if (processScoresPtr_side->HOGHOF_frame->hog_out_past.size() == window_size)
                             {
                                 vector<float> hog_past = processScoresPtr_side->HOGHOF_frame->hog_out_past.front();
@@ -558,10 +593,12 @@ namespace bias {
                             processScoresPtr_side->HOGHOF_frame->hog_out_skip);
                         processScoresPtr_side->HOGHOF_frame->hof_out_past.push(
                             processScoresPtr_side->HOGHOF_frame->hof_out_skip);
-#if savefeat
-                        saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
-                            processScoresPtr_side->processedFrameCount, output_feat_directory + "hoghof_avg_side_biasjaaba.csv");
-#endif
+
+                        if (saveFeat) {
+                            saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
+                                processScoresPtr_side->processedFrameCount, output_feat_directory + "hoghof_avg_side_biasjaaba.csv");
+                        }
+
                         processScoresPtr_side->processedFrameCount++;
                     }
                     assert(processScoresPtr_side->processedFrameCount == frameCount_);
@@ -575,11 +612,13 @@ namespace bias {
                             ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
                         }
-#if savefeat
-                        std::cout << "front skipped in Jaaba plugin" << std::endl;
-                        saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", processScoresPtr_front->HOGHOF_partner,
-                            hog_num_elements, hof_num_elements);
-#endif
+
+                        if (saveFeat) {
+                            std::cout << "front skipped in Jaaba plugin" << std::endl;
+                            saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", processScoresPtr_front->HOGHOF_partner,
+                                hog_num_elements, hof_num_elements);
+                        }
+
                         average_windowFeatures(processScoresPtr_front->HOGHOF_partner->hog_out_skip,
                             processScoresPtr_front->HOGHOF_partner->hof_out_skip,
                             processScoresPtr_front->HOGHOF_partner->hog_out_avg,
@@ -607,10 +646,12 @@ namespace bias {
                         processScoresPtr_front->HOGHOF_partner->hof_out_past.push(
                             processScoresPtr_front->HOGHOF_partner->hof_out_skip);
 
-#if savefeat
-                        saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
-				                            processScoresPtr_front->processedFrameCount, output_feat_directory + "hoghof_avg_front_biasjaaba.csv");
-#endif
+
+                        if (saveFeat) {
+                            saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
+                                processScoresPtr_front->processedFrameCount, output_feat_directory + "hoghof_avg_front_biasjaaba.csv");
+                        }
+
                         processScoresPtr_front->processedFrameCount++;
                     }
                     assert(processScoresPtr_front->processedFrameCount == frameCount_);
@@ -653,80 +694,87 @@ namespace bias {
                         if (processScoresPtr_front->isFront)
                         {
 
-#if compute
-                            if (nDevices_ >= 2)
-                            {
-                                cudaSetDevice(1);
-                                processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
-
-                            }
-                            else {
-
-                                processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
-
-                            }
-
-#if savefeat  
-                            saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", processScoresPtr_front->HOGHOF_partner,
-                                hog_num_elements, hof_num_elements);
-#endif
-                            //average window features
-                            average_windowFeatures(processScoresPtr_front->HOGHOF_partner->hog_out,
-                                                   processScoresPtr_front->HOGHOF_partner->hof_out, 
-                                                   processScoresPtr_front->HOGHOF_partner->hog_out_avg,
-                                                   processScoresPtr_front->HOGHOF_partner->hof_out_avg,
-                                                   window_size);
-
-                            // update moving window aveage features
-                            if (processScoresPtr_front->processedFrameCount >= window_size) {
-
-                                if ((processScoresPtr_front->HOGHOF_partner->hog_out_past.size() == window_size)
-                                    && (processScoresPtr_front->HOGHOF_partner->hof_out_past.size() == window_size))
+             
+                            if (compute_jaaba) {
+                                if (nDevices_ >= 2)
                                 {
-                                    vector<float> hog_past = processScoresPtr_front->HOGHOF_partner->hog_out_past.front();
-                                    vector<float> hof_past = processScoresPtr_front->HOGHOF_partner->hof_out_past.front();
-                                    subtractLastwindowfeature(hog_past, hof_past,
-                                        processScoresPtr_front->HOGHOF_partner->hog_out_avg,
-                                        processScoresPtr_front->HOGHOF_partner->hof_out_avg);
-                                    processScoresPtr_front->HOGHOF_partner->hog_out_past.pop();
-                                    processScoresPtr_front->HOGHOF_partner->hof_out_past.pop();
+                                    cudaSetDevice(1);
+                                    processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                    processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
 
                                 }
-                                
+                                else {
+
+                                    processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
+                                    processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
+
+                                }
+
+  
+                                if (saveFeat) {
+                                    
+                                    saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", processScoresPtr_front->HOGHOF_partner,
+                                        hog_num_elements, hof_num_elements);
+                                }
+
+                                //average window features
+                                average_windowFeatures(processScoresPtr_front->HOGHOF_partner->hog_out,
+                                    processScoresPtr_front->HOGHOF_partner->hof_out,
+                                    processScoresPtr_front->HOGHOF_partner->hog_out_avg,
+                                    processScoresPtr_front->HOGHOF_partner->hof_out_avg,
+                                    window_size);
+
+                                // update moving window aveage features
+                                if (processScoresPtr_front->processedFrameCount >= window_size) {
+
+                                    if ((processScoresPtr_front->HOGHOF_partner->hog_out_past.size() == window_size)
+                                        && (processScoresPtr_front->HOGHOF_partner->hof_out_past.size() == window_size))
+                                    {
+                                        vector<float> hog_past = processScoresPtr_front->HOGHOF_partner->hog_out_past.front();
+                                        vector<float> hof_past = processScoresPtr_front->HOGHOF_partner->hof_out_past.front();
+                                        subtractLastwindowfeature(hog_past, hof_past,
+                                            processScoresPtr_front->HOGHOF_partner->hog_out_avg,
+                                            processScoresPtr_front->HOGHOF_partner->hof_out_avg);
+                                        processScoresPtr_front->HOGHOF_partner->hog_out_past.pop();
+                                        processScoresPtr_front->HOGHOF_partner->hof_out_past.pop();
+
+                                    }
+
+                                }
+
+                                //push incoming frame features
+                                processScoresPtr_front->HOGHOF_partner->hog_out_past.push(
+                                    processScoresPtr_front->HOGHOF_partner->hog_out);
+                                processScoresPtr_front->HOGHOF_partner->hof_out_past.push(
+                                    processScoresPtr_front->HOGHOF_partner->hof_out);
+
+                                if(saveFeat){
+
+                                    saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
+                                    processScoresPtr_front->processedFrameCount, output_feat_directory + "hoghof_avg_front_biasjaaba.csv");
+                      
+                                }
+                                if (processScoresPtr_front->classifier->isClassifierPathSet)
+                                    //&& processScoresPtr_front->processedFrameCount > 0)
+                                {
+
+                                    processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
+                                        processScoresPtr_front->HOGHOF_partner->hog_out_avg, processScoresPtr_front->HOGHOF_partner->hof_out_avg,
+                                        &processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
+                                        processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model,
+                                        processScoresPtr_front->processedFrameCount);
+
+                                    time_now = gettime_->getPCtime();
+                                    processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
+                                    processScoresPtr_front->classifier->predScoreFront.score_front_ts = time_now;
+                                    processScoresPtr_front->classifier->predScoreFront.view = 2;
+
+                                    frontScoreQueuePtr_->acquireLock();
+                                    frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
+                                    frontScoreQueuePtr_->releaseLock();
+
+                                }
                             }
-
-                            //push incoming frame features
-                            processScoresPtr_front->HOGHOF_partner->hog_out_past.push(
-                                processScoresPtr_front->HOGHOF_partner->hog_out);
-                            processScoresPtr_front->HOGHOF_partner->hof_out_past.push(
-                                processScoresPtr_front->HOGHOF_partner->hof_out);
-#if savefeat
-                            saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_front->HOGHOF_partner,
-                                processScoresPtr_front->processedFrameCount, output_feat_directory + "hoghof_avg_front_biasjaaba.csv");
-#endif
-                            if (processScoresPtr_front->classifier->isClassifierPathSet )
-                                //&& processScoresPtr_front->processedFrameCount > 0)
-                            {
-                                
-                                processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
-                                    processScoresPtr_front->HOGHOF_partner->hog_out_avg, processScoresPtr_front->HOGHOF_partner->hof_out_avg, 
-                                    &processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
-                                    processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model, 
-                                    processScoresPtr_front->processedFrameCount);                
-
-                                time_now = gettime_->getPCtime();
-                                processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
-                                processScoresPtr_front->classifier->predScoreFront.score_front_ts = time_now;
-                                processScoresPtr_front->classifier->predScoreFront.view = 2;
-
-                                frontScoreQueuePtr_->acquireLock();
-                                frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
-                                frontScoreQueuePtr_->releaseLock();
-                         
-                            }
-#endif
 
                             processScoresPtr_front->processedFrameCount++;
 
@@ -741,84 +789,93 @@ namespace bias {
 
                         if (processScoresPtr_side->isSide)
                         {
-#if compute
-                            if (nDevices_ >= 2)
+
+                            if(compute_jaaba)
                             {
-                                cudaSetDevice(0);
-                                processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
-
-                            }
-                            else {
-
-                                processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
-                            }
-#if savefeat
-                            saveFeatures( output_feat_directory + "hoghof_side_biasjaaba.csv", processScoresPtr_side->HOGHOF_frame,
-                                hog_num_elements, hof_num_elements);
-#endif
-                            //average window features
-                            average_windowFeatures(processScoresPtr_side->HOGHOF_frame->hog_out,
-                                processScoresPtr_side->HOGHOF_frame->hof_out,
-                                processScoresPtr_side->HOGHOF_frame->hog_out_avg,
-                                processScoresPtr_side->HOGHOF_frame->hof_out_avg,
-                                window_size);
-
-                            // update moving window aveage features
-                            if (processScoresPtr_side->processedFrameCount >= window_size) {
-
-                                if ((processScoresPtr_side->HOGHOF_frame->hog_out_past.size() == window_size)
-                                    && (processScoresPtr_side->HOGHOF_frame->hof_out_past.size() == window_size))
+                                if (nDevices_ >= 2)
                                 {
-                                    vector<float> hog_past = processScoresPtr_side->HOGHOF_frame->hog_out_past.front();
-                                    vector<float> hof_past = processScoresPtr_side->HOGHOF_frame->hof_out_past.front();
-                                    subtractLastwindowfeature(hog_past, hof_past,
-                                        processScoresPtr_side->HOGHOF_frame->hog_out_avg,
-                                        processScoresPtr_side->HOGHOF_frame->hof_out_avg);
-                                    processScoresPtr_side->HOGHOF_frame->hog_out_past.pop();
-                                    processScoresPtr_side->HOGHOF_frame->hof_out_past.pop();
+                                    cudaSetDevice(0);
+                                    processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                    processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
 
                                 }
-                                
+                                else {
+
+                                    processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
+                                    processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
+                                }
+
+                                if (saveFeat)
+                                {
+                                    saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv", processScoresPtr_side->HOGHOF_frame,
+                                        hog_num_elements, hof_num_elements);
+                                }
+
+                                //average window features
+                                average_windowFeatures(processScoresPtr_side->HOGHOF_frame->hog_out,
+                                    processScoresPtr_side->HOGHOF_frame->hof_out,
+                                    processScoresPtr_side->HOGHOF_frame->hog_out_avg,
+                                    processScoresPtr_side->HOGHOF_frame->hof_out_avg,
+                                    window_size);
+
+                                // update moving window aveage features
+                                if (processScoresPtr_side->processedFrameCount >= window_size) {
+
+                                    if ((processScoresPtr_side->HOGHOF_frame->hog_out_past.size() == window_size)
+                                        && (processScoresPtr_side->HOGHOF_frame->hof_out_past.size() == window_size))
+                                    {
+                                        vector<float> hog_past = processScoresPtr_side->HOGHOF_frame->hog_out_past.front();
+                                        vector<float> hof_past = processScoresPtr_side->HOGHOF_frame->hof_out_past.front();
+                                        subtractLastwindowfeature(hog_past, hof_past,
+                                            processScoresPtr_side->HOGHOF_frame->hog_out_avg,
+                                            processScoresPtr_side->HOGHOF_frame->hof_out_avg);
+                                        processScoresPtr_side->HOGHOF_frame->hog_out_past.pop();
+                                        processScoresPtr_side->HOGHOF_frame->hof_out_past.pop();
+
+                                    }
+
+                                }
+                                //push incoming frame features
+                                processScoresPtr_side->HOGHOF_frame->hog_out_past.push(
+                                    processScoresPtr_side->HOGHOF_frame->hog_out);
+                                processScoresPtr_side->HOGHOF_frame->hof_out_past.push(
+                                    processScoresPtr_side->HOGHOF_frame->hof_out);
+
+                                if (saveFeat)
+                                {
+                                    saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
+                                        processScoresPtr_side->processedFrameCount, output_feat_directory + "hoghof_avg_side_biasjaaba.csv");
+                                }
+
+                                if (processScoresPtr_side->classifier->isClassifierPathSet)
+                                    //&& processScoresPtr_side->processedFrameCount > 0)
+                                {
+
+                                    processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
+                                        processScoresPtr_side->HOGHOF_frame->hog_out_avg, processScoresPtr_side->HOGHOF_frame->hof_out_avg,
+                                        &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape,
+                                        processScoresPtr_side->classifier->nframes, processScoresPtr_side->classifier->model,
+                                        processScoresPtr_side->processedFrameCount);
+
+                                    time_now = gettime_->getPCtime();
+                                    processScoresPtr_side->classifier->predScoreSide.frameCount = processScoresPtr_side->processedFrameCount;
+                                    processScoresPtr_side->classifier->predScoreSide.score_side_ts = time_now;
+                                    processScoresPtr_side->classifier->predScoreSide.view = 1;
+                                    processScoresPtr_side->isProcessed_side = 1;
+
+                                    //processScoresPtr_side->write_score(output_feat_directory + "classifier_side.csv", processScoresPtr_side->classifier->predScoreSide);
+
+                                    sideScoreQueuePtr_->acquireLock();
+                                    sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
+                                    sideScoreQueuePtr_->releaseLock();
+
+                                    //QPainter painter(this);
+                                    //painter.begin(this);
+                                    //paintEvent(painter);
+
+                                }
                             }
-                            //push incoming frame features
-                            processScoresPtr_side->HOGHOF_frame->hog_out_past.push(
-                                processScoresPtr_side->HOGHOF_frame->hog_out);
-                            processScoresPtr_side->HOGHOF_frame->hof_out_past.push(
-                                processScoresPtr_side->HOGHOF_frame->hof_out);
-#if savefeat
-                            saveAvgwindowfeatures(hoghof_feat_avg, processScoresPtr_side->HOGHOF_frame,
-                                processScoresPtr_side->processedFrameCount, output_feat_directory + "hoghof_avg_side_biasjaaba.csv");
-#endif
-                            if (processScoresPtr_side->classifier->isClassifierPathSet )
-                                //&& processScoresPtr_side->processedFrameCount > 0)
-                            {
 
-                                processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
-                                    processScoresPtr_side->HOGHOF_frame->hog_out_avg, processScoresPtr_side->HOGHOF_frame->hof_out_avg,
-                                    &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape, 
-                                    processScoresPtr_side->classifier->nframes,processScoresPtr_side->classifier->model, 
-                                    processScoresPtr_side->processedFrameCount);
-                                
-                                time_now = gettime_->getPCtime();
-                                processScoresPtr_side->classifier->predScoreSide.frameCount = processScoresPtr_side->processedFrameCount;
-                                processScoresPtr_side->classifier->predScoreSide.score_side_ts = time_now;
-                                processScoresPtr_side->classifier->predScoreSide.view = 1;
-                                processScoresPtr_side->isProcessed_side = 1;
-
-                                //processScoresPtr_side->write_score(output_feat_directory + "classifier_side.csv", processScoresPtr_side->classifier->predScoreSide);
-
-                                sideScoreQueuePtr_->acquireLock();
-                                sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
-                                sideScoreQueuePtr_->releaseLock();
-
-								//QPainter painter(this);
-								//painter.begin(this);
-								//paintEvent(painter);
-
-                            }
-#endif
 
                             processScoresPtr_side->processedFrameCount++;
 
@@ -837,20 +894,20 @@ namespace bias {
             end_process = gettime_->getPCtime();
         }
 
-//#if !isVidInput
-        if (testConfigEnabled_ && nidaq_task_ != nullptr) {
+        if (!isVideo) {
+            if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
-            if (frameCount_ <= testConfig_->numFrames) {
+                if (frameCount_ <= testConfig_->numFrames) {
 
-                //nidaq_task_->getNidaqTimeNow(read_ondemand);
-                nidaq_task_->acquireLock();
-                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                nidaq_task_->releaseLock();
+                    //nidaq_task_->getNidaqTimeNow(read_ondemand);
+                    nidaq_task_->acquireLock();
+                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+                    nidaq_task_->releaseLock();
+
+                }
 
             }
-
         }
-//#endif
 
         if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
         {
@@ -1383,15 +1440,15 @@ namespace bias {
     }
     
         
-    void JaabaPlugin::initialize()
+    void JaabaPlugin::initialize(CmdLineParams& cmdlineparams)
     {
 
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
-        cameraNumber_ = cameraWindowPtr -> getCameraNumber();
+        cameraNumber_ = cameraWindowPtr->getCameraNumber();
         partnerCameraNumber_ = getPartnerCameraNumber();
-        cameraWindowPtrList_ = cameraWindowPtr -> getCameraWindowPtrList();
+        cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
         cameraPtr_ = cameraWindowPtr->getCameraPtr();
-   
+
         numMessageSent_ = 0;
         numMessageReceived_ = 0;
         frameCount_ = 0;
@@ -1400,15 +1457,18 @@ namespace bias {
         score_calculated_ = 0;
         scoreCount = 0;
         frameSkip = 5;
-        process_frame_time = 1; 
+        process_frame_time = 1;
 
-        processScoresPtr_side = new ProcessScores(this, mesPass, gettime_);   
-        processScoresPtr_front = new ProcessScores(this, mesPass, gettime_);
-        
-#if visualize
-        if(processScoresPtr_side != nullptr && cameraNumber_==0)
-            processScoresPtr_side->visplots = new VisPlots(livePlotPtr,this);
-#endif 
+        processScoresPtr_side = new ProcessScores(this, mesPass, gettime_ , cmdlineparams);
+        processScoresPtr_front = new ProcessScores(this, mesPass, gettime_, cmdlineparams);
+
+//#if visualize
+        if (visualize)
+        {
+            if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
+                processScoresPtr_side->visplots = new VisPlots(livePlotPtr, this);
+        }
+//#endif 
         updateWidgetsOnLoad();
         setupHOGHOF();
         setupClassifier();
@@ -1487,12 +1547,13 @@ namespace bias {
         if(sideRadioButtonPtr_->isChecked())
         {
 
-#if isVidInput
+//#if isVidInput
+            if (isVideo) {
+                if (isReceiver())
+                    processScoresPtr_side->isVid = 1;
+            }
 
-            if (isReceiver())
-                processScoresPtr_side->isVid = 1;
-
-#endif          
+//#endif          
             HOGHOF *hoghofside = new HOGHOF(this);
 
             if (processScoresPtr_side != nullptr)
@@ -1528,13 +1589,14 @@ namespace bias {
         if(frontRadioButtonPtr_->isChecked()) 
         {
 
-#if isVidInput
+//#if isVidInput
 //DEVEL
-           
-            if (isSender())
-                processScoresPtr_front->isVid = 1;
+            if (isVideo) {
+                if (isSender())
+                    processScoresPtr_front->isVid = 1;
+            }
 
-#endif
+//#endif
 
             HOGHOF *hoghoffront = new HOGHOF(this);  
 

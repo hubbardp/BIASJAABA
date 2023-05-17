@@ -7,7 +7,66 @@
 #include "camera_facade.hpp"
 #include "affinity.hpp"
 #include <iostream>
+#include "parser.hpp"
+#include "getopt.h"
 
+
+namespace bias {
+
+
+    void parser(int argc, char *argv[], CmdLineParams& cmdlineparams) {
+        int opt;
+
+        // place ':' in the beginning of the string so that program can 
+        //tell between '?' and ':' 
+        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:")) != -1)
+        {
+            switch (opt)
+            {
+            case 'o':
+                cmdlineparams.output_dir = optarg;
+                break;
+            case 'i':
+                cmdlineparams.isVideo = stoi(optarg);
+                break;
+            case 's':
+                cmdlineparams.saveFeat = stoi(optarg);
+                break;
+            case 'c':
+                cmdlineparams.compute_jaaba = stoi(optarg);
+                break;
+            case 'l':
+                cmdlineparams.classify_scores = stoi(optarg);
+                break;
+            case 'v':
+                cmdlineparams.visualize = stoi(optarg);
+                break;
+            case 'f':
+                cmdlineparams.numframes = stoi(optarg);
+                break;
+            case 'k':
+                cmdlineparams.isSkip = stoi(optarg);
+                break;
+            case 'w':
+                cmdlineparams.wait_thres = stoi(optarg);
+                break;
+            case ':':
+                printf("Required argument %c", opt);
+                break;
+            case '?':
+                //printf("unknown option : %c\n", optopt);
+                break;
+            }
+        }
+
+        // optind is for the extra arguments
+        // which are not parsed
+        /*for (; optind < argc; optind++) {
+            printf(“extra arguments : %s\n”, argv[optind]);
+        }*/
+    }
+
+}
 
 // ------------------------------------------------------------------------
 // TO DO ... temporary main function. Currently just opens a camera
@@ -16,7 +75,11 @@
 int main (int argc, char *argv[])
 {
     QApplication app(argc, argv);
-   
+
+    bias::CmdLineParams cmdparams;
+    bias::parser(argc, argv, cmdparams);
+    bias::print(cmdparams);
+
     bias::GuidList guidList;
     bias::CameraFinder cameraFinder;
 
@@ -60,7 +123,7 @@ int main (int argc, char *argv[])
     for (guidIt=guidList.begin(), camCnt=0; guidIt!=guidList.end(); guidIt++, camCnt++)
     {
         bias::Guid guid = *guidIt;
-        QPointer<bias::CameraWindow> windowPtr(new bias::CameraWindow(guid, camCnt, numCam, windowPtrList));
+        QPointer<bias::CameraWindow> windowPtr(new bias::CameraWindow(guid, camCnt, numCam, windowPtrList, cmdparams));
 
         windowPtr -> show();
         if (camCnt==0)

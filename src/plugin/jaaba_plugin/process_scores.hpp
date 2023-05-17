@@ -23,6 +23,8 @@
 #include <memory>
 
 #include "win_time.hpp"
+#include "parser.hpp"
+
 
 namespace bias 
 {
@@ -58,6 +60,10 @@ namespace bias
            uint64_t side_read_time_, front_read_time_;
            uint64_t fstfrmStampRef;
            unsigned int numFrames;
+           string output_score_dir;
+           bool isVideo;
+           bool visualize;
+           int wait_threshold;
 
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;
@@ -75,7 +81,8 @@ namespace bias
            std::vector<int64_t> partner_frame_read_stamps; // partner read pass timings
            std::shared_ptr<Lockable<GetTime>> gettime;
            ProcessScores(QObject *parent, bool mesPass,
-                         std::shared_ptr<Lockable<GetTime>> getTime);
+                         std::shared_ptr<Lockable<GetTime>> getTime,
+                         CmdLineParams& cmdlineparams);
           
            void stop();
            //void detectOn();

@@ -25,9 +25,9 @@
 
 #include  <algorithm>
 
-#define DEBUG 1 
-#define isVidInput 1
-#define isSkip 0
+#define DEBUG 0
+//#define isVidInput 1
+//#define isSkip 0
 
 namespace bias {
 
@@ -35,12 +35,13 @@ namespace bias {
 
     unsigned int ImageGrabber::MIN_STARTUP_SKIP = 2;
     unsigned int ImageGrabber::MAX_ERROR_COUNT = 500;
-	string input_video_dir = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
+	//string input_video_dir = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
 
     ImageGrabber::ImageGrabber(QObject *parent) : QObject(parent)
     {
-
-        initialize(0, NULL, NULL, NULL,NULL, false, NULL, NULL, NULL);
+        
+        initialize(0, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL);
+        //initialize(0, NULL, NULL, NULL,NULL, false, NULL, NULL, NULL, NULL);
     }
 
     ImageGrabber::ImageGrabber(
@@ -53,9 +54,15 @@ namespace bias {
         std::shared_ptr<TestConfig> testConfig,
         std::shared_ptr<Lockable<GetTime>> gettime,
         std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+        CmdLineParams& cmdlineparams,
         QObject *parent
     ) : QObject(parent)
     {
+        //cmdLine params
+        input_video_dir = cmdlineparams.output_dir;
+        isVideo = cmdlineparams.isVideo;
+        isSkip = cmdlineparams.isSkip;
+
         initialize(cameraNumber, cameraPtr, newImageQueuePtr,
             threadPoolPtr,testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
 
@@ -99,11 +106,16 @@ namespace bias {
         }
         errorCountEnabled_ = true;
 
-#if isVidInput
-        initializeVid();
-#else
-        nframes_ = 100000; // assigned for when camera is running in nidaq triggered mode.
-#endif
+//#if isVidInput
+        if (isVideo) {
+            std::cout << "Initializing video" << std::endl;
+            initializeVid();
+        }
+        else {
+//#else
+            nframes_ = 100000; // assigned for when camera is running in nidaq triggered mode.
+        }
+//#endif
 
         nidaq_task_ = nidaq_task;
         // needs to be allocated here outside the testConfig.Intend to record nidaq
@@ -153,9 +165,11 @@ namespace bias {
         if (cameraNumber_ == 0)
         {
             filename = QString::fromStdString(input_video_dir) + "movie_sde.avi";
+            std::cout << " movie filename*** " << filename.toStdString() << std::endl;
         }
         else if (cameraNumber_ == 1) {
             filename = QString::fromStdString(input_video_dir) + "movie_frt.avi";
+            std::cout << " movie filename **" << filename.toStdString() << std::endl;
         }
 
         vid_obj_ = new videoBackend(filename);
@@ -217,23 +231,28 @@ namespace bias {
         int64_t wait_thres, avgwait_time, delay_framethres;
         StampedImage stampImg;
         int numtrailFrames = 0;
+        float cur_latency, avg_latency;
 
         QString errorMsg("no message");
 
-#if isVidInput
-        frameCaptureTime = 2500;
-        frameCaptureTime_nidaq = 125;
-        wait_thres = static_cast<int64_t>(100);
-        avgwait_time = 0;
-        int num_skipFrames=0;
-#else 
-        float cur_latency = 0.0;
-        float avg_latency = 3.00;
-        frameGrabAvgTime = 2200;
-        frameCaptureTime = 2500;
-        wait_thres = static_cast<int64_t>(1800);
-        avgwait_time = 0;
-#endif
+
+        if (isVideo) {
+            frameCaptureTime = 2500;
+            frameCaptureTime_nidaq = 125;
+            wait_thres = static_cast<int64_t>(100);
+            avgwait_time = 0;
+            int num_skipFrames = 0;
+        }
+        else {
+ 
+            cur_latency = 0.0;
+            avg_latency = 3.00;
+            frameGrabAvgTime = 2200;
+            frameCaptureTime = 2500;
+            wait_thres = static_cast<int64_t>(1800);
+            avgwait_time = 0;
+        }
+
 
         if (!ready_)
         {
@@ -320,96 +339,99 @@ namespace bias {
             }
 
             start_process = gettime_->getPCtime();
-#if isVidInput  
-            
-            delay_framethres = 0;
 
-            if (frameCount == nframes_){
-                QThread::yieldCurrentThread();
-                continue;
-            }
+            if (isVideo) {
+                delay_framethres = 0;
 
-            if (nidaq_task_ != nullptr && frameCount == 0) {
+                if (frameCount == nframes_) {
+                    QThread::yieldCurrentThread();
+                    continue;
+                }
 
-                fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
-                prev_curTime = expTime_vid;
-            }
+                if (nidaq_task_ != nullptr && frameCount == 0) {
 
-            expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1));
-            if (frameCount == 0) {
-                prev_curTime = expTime_vid;
-            }
+                    fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
+                    prev_curTime = expTime_vid;
+                }
 
-            if (startUpCount >= numStartUpSkip_) {
+                expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1));
+                if (frameCount == 0) {
+                    prev_curTime = expTime_vid;
+                }
 
-                // adding synthetic latency to the frame grab 
+                if (startUpCount >= numStartUpSkip_) {
 
-                if (!delayFrames.empty() && frameCount == delayFrames.top())
-                {
-                    //nidaq_task_->getCamtrig(frameCount);
-                    // get magnitude of latency to generate - sampled randomly
-                    if (!latency_spikes.empty())
+                    // adding synthetic latency to the frame grab 
+
+                    if (!delayFrames.empty() && frameCount == delayFrames.top())
                     {
-                        delay_framethres = latency_spikes.back();
-                        delay_view[frameCount][1] = delay_framethres;
+                        //nidaq_task_->getCamtrig(frameCount);
+                        // get magnitude of latency to generate - sampled randomly
+                        if (!latency_spikes.empty())
+                        {
+                            delay_framethres = latency_spikes.back();
+                            delay_view[frameCount][1] = delay_framethres;
+                            delay_view[frameCount][0] = 1;
+                            latency_spikes.pop_back();
+
+                        }
+
+                        // introduce the latency delay
+                        start_delay = gettime_->getPCtime();
+                        end_delay = start_delay;
+                        while ((end_delay - start_delay) < delay_framethres)
+                        {
+                            end_delay = gettime_->getPCtime();
+                        }
+
+                        delayFrames.pop();
+
+                    }
+                    else if ((prev_curTime - expTime_vid) > 0 &&
+                        static_cast<int64_t>(prev_curTime - expTime_vid) > wait_thres) {
+
                         delay_view[frameCount][0] = 1;
-                        latency_spikes.pop_back();
+                        delay_view[frameCount][1] = static_cast<int64_t>(prev_curTime - expTime_vid);
+                    }
+                    else {
+
+                        nidaq_task_->getCamtrig(frameCount);
 
                     }
 
-                    // introduce the latency delay
-                    start_delay = gettime_->getPCtime();
-                    end_delay = start_delay;
-                    while ((end_delay - start_delay) < delay_framethres)
-                    {
-                        end_delay = gettime_->getPCtime();
-                    }
-
-                    delayFrames.pop();
-
                 }
-                else if ((prev_curTime-expTime_vid) > 0 && 
-                    static_cast<int64_t>(prev_curTime - expTime_vid) > wait_thres) {
 
-                    delay_view[frameCount][0] = 1;
-                    delay_view[frameCount][1] = static_cast<int64_t>(prev_curTime - expTime_vid);
+                // wait for nidaq trigger signal to grab frame
+                if (nidaq_task_->istrig) {
+                    stampImg.image = vid_images[frameCount].image;
                 }
-                else {
 
+            }
+            else {
+           
+                //std::cout << frameCount << std::endl;
+                if (startUpCount >= numStartUpSkip_)
                     nidaq_task_->getCamtrig(frameCount);
 
-                }
-              
-            }
-            
-            // wait for nidaq trigger signal to grab frame
-            if (nidaq_task_->istrig) {
-                stampImg.image = vid_images[frameCount].image;
-            }
-#else
-            //std::cout << frameCount << std::endl;
-            if(startUpCount >= numStartUpSkip_)
-                nidaq_task_->getCamtrig(frameCount);
+                cameraPtr_->acquireLock();
+                try
+                {
 
-            cameraPtr_->acquireLock();
-            try
-            { 
-        
-                stampImg.image = cameraPtr_->grabImage();
-                stampImg.isSpike = false;
-                timeStamp = cameraPtr_->getImageTimeStamp();
-                error = false;
+                    stampImg.image = cameraPtr_->grabImage();
+                    stampImg.isSpike = false;
+                    timeStamp = cameraPtr_->getImageTimeStamp();
+                    error = false;
+                }
+                catch (RuntimeError &runtimeError)
+                {
+                    std::cout << "Frame grab error: id = ";
+                    std::cout << runtimeError.id() << ", what = ";
+                    std::cout << runtimeError.what() << std::endl;
+                    error = true;
+                }
+                cameraPtr_->releaseLock();
             }
-            catch (RuntimeError &runtimeError)
-            {
-                std::cout << "Frame grab error: id = ";
-                std::cout << runtimeError.id() << ", what = ";
-                std::cout << runtimeError.what() << std::endl;
-                error = true;
-            }
-            cameraPtr_->releaseLock();
-           
-#endif
+     
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty())
             {
@@ -449,19 +471,24 @@ namespace bias {
                     if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_) {
                         
                         nidaq_task_->acquireLock();
-#if isVidInput
-                        if (nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] == 0) {
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                            nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] = read_buffer_;
-                           
-                        }
-#else
-                        if (nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] == 0) {
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                            nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] = read_buffer_;
+        
+                        if (isVideo)
+                        {
+                            if (nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] == 0) {
+                                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
+                                nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] = read_buffer_;
 
+                            }
                         }
-#endif
+                        else {
+
+                            if (nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] == 0) {
+                                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
+                                nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] = read_buffer_;
+
+                            }
+                        }
+
                         nidaq_task_->releaseLock();
                         
                     }
@@ -512,38 +539,61 @@ namespace bias {
                 // ---------------------------------------------------------------------
                 // Test Configuration
                 //------------------------------------------------------------------------
+                if (!isVideo) {
+                    if (nidaq_task_ != nullptr && frameCount == 0) {
+                        //#if !isVidInput
+                        fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
+                        //#endif
+                    }
 
-                if (nidaq_task_ != nullptr && frameCount == 0) {
-#if !isVidInput
-                    fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
-#endif
+                    //#if !isVidInput
+                    nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                    //#endif 
                 }
 
-#if !isVidInput
-                nidaq_task_->getNidaqTimeNow(read_ondemand_);
-#endif
 
-#if isVidInput
-
-                //expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount+1));
-                curTime_vid = max(fstfrmtStampRef_ + (frameCaptureTime*(frameCount+1)+delay_framethres), prev_curTime);
-                //max(fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1)) + delay_framethres, prev_curTime);
-                prev_curTime = curTime_vid;
-                avgwait_time = curTime_vid - expTime_vid;
+                if (isVideo) {
+                    //expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount+1));
+                    curTime_vid = max(fstfrmtStampRef_ + (frameCaptureTime*(frameCount + 1) + delay_framethres), prev_curTime);
+                    //max(fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1)) + delay_framethres, prev_curTime);
+                    prev_curTime = curTime_vid;
+                    avgwait_time = curTime_vid - expTime_vid;
+                }
+                else {
 
 
-#else
 
-                avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime;
-                expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
-                curTime = (static_cast<uint64_t>(read_ondemand_) * 20);
-                avgwait_time = curTime - expTime;
+                    avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime;
+                    expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
+                    curTime = (static_cast<uint64_t>(read_ondemand_) * 20);
+                    avgwait_time = curTime - expTime;
+                }
+      
+                if (isSkip) {
+                    if (abs(avgwait_time) <= wait_thres)
+                        // Set image data timestamp, framecount and frame interval estimate
+                    {
+                        stampImg.timeStamp = timeStampDbl;
+                        stampImg.timeStampInit = timeStampInit;
+                        stampImg.timeStampVal = timeStamp;
+                        stampImg.frameCount = frameCount;
+                        stampImg.dtEstimate = dtEstimate;
+                        stampImg.fstfrmtStampRef = fstfrmtStampRef_;
 
-#endif       
+                        newImageQueuePtr_->acquireLock();
+                        newImageQueuePtr_->push(stampImg);
+                        newImageQueuePtr_->signalNotEmpty();
+                        newImageQueuePtr_->releaseLock();
 
-                if (abs(avgwait_time) <= wait_thres)
-                    // Set image data timestamp, framecount and frame interval estimate
-                {
+                    }
+                    else {
+
+                        if (testConfigEnabled_ && nidaq_task_ != nullptr)
+                            ts_nidaqThres[frameCount] = 1.0;
+
+                    }
+                }
+                else {
                     stampImg.timeStamp = timeStampDbl;
                     stampImg.timeStampInit = timeStampInit;
                     stampImg.timeStampVal = timeStamp;
@@ -555,13 +605,7 @@ namespace bias {
                     newImageQueuePtr_->push(stampImg);
                     newImageQueuePtr_->signalNotEmpty();
                     newImageQueuePtr_->releaseLock();
-                   
-                }
-                else {
-                   
-                    if(testConfigEnabled_ && nidaq_task_!=nullptr)
-                        ts_nidaqThres[frameCount] = 1.0;  
-                    
+                    //std::cout << "Not skipped " << frameCount << std::endl;
                 }
                 end_process = gettime_->getPCtime();
                 
@@ -615,9 +659,7 @@ namespace bias {
                                 ts_end[frameCount - 1] = end_process;
                             }
                         }
-#endif
 
-#if DEBUG
                         if (frameCount == testConfig_->numFrames
                             && !testConfig_->f2f_prefix.empty())
                         {
@@ -700,25 +742,26 @@ namespace bias {
                             gettime_->write_time_1d<int64_t>(filename2, testConfig_->numFrames, ts_end);
                             //std::cout << "Written" << std::endl;
                         }
-#endif
+         
+                        if(isVideo){
+                            if (frameCount == testConfig_->numFrames) {
 
-#if isVidInput
-                        if (frameCount == testConfig_->numFrames) {
+                                string filename = testConfig_->dir_list[0] + "/"
+                                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                                    + testConfig_->imagegrab_prefix
+                                    + "_" + "skipped_frames" + "cam"
+                                    + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
-                            string filename = testConfig_->dir_list[0] + "/"
-                                + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                                + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                                + testConfig_->imagegrab_prefix
-                                + "_" + "skipped_frames" + "cam"
-                                + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+                                gettime_->write_time_2d<int64_t>(filename, testConfig_->numFrames, delay_view);
 
-                            gettime_->write_time_2d<int64_t>(filename, testConfig_->numFrames, delay_view);
-
+                            }
                         }
-#endif
+
                     }
 
                 }
+#endif
             }
             else {
 

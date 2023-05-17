@@ -57,6 +57,7 @@ set(
     auto_naming_dialog.hpp
     auto_naming_options.hpp
     plugin_handler.hpp
+	parser.hpp
     )
 
 set(
@@ -93,6 +94,7 @@ set(
     auto_naming_dialog.cpp
     auto_naming_options.cpp
     plugin_handler.cpp
+	parser.cpp
     )
 
 qt5_wrap_ui(bias_gui_FORMS_HEADERS ${bias_gui_FORMS}) 

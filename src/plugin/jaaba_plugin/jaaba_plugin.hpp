@@ -22,7 +22,7 @@
 
 #include<ctime>
 #include "win_time.hpp"
-
+#include "parser.hpp"
 
 #ifdef WITH_SPIN
 #include "camera_device_spin.hpp"
@@ -53,7 +53,9 @@ namespace bias
 
             JaabaPlugin(string camera_id, 
                 QPointer<QThreadPool> threadPoolPtr,
-                std::shared_ptr<Lockable<GetTime>> gettime, QWidget *parent=0);
+                std::shared_ptr<Lockable<GetTime>> gettime,
+                CmdLineParams& cmdlineparams,
+                QWidget *parent=0);
 
             void resetTrigger();
 
@@ -94,6 +96,7 @@ namespace bias
             string crop_file;
             string classifier_filename;
             int window_size;
+
 
         protected:
  
@@ -203,7 +206,7 @@ namespace bias
             int getNumberofViews();
             int getNumberOfDevices();
             void updateWidgetsOnLoad();
-            void initialize();
+            void initialize(CmdLineParams& cmdlineparams);
             void setupHOGHOF();
             void setupClassifier();
             void connectWidgets();
@@ -230,6 +233,17 @@ namespace bias
             void saveFeatures(string filename, QPointer<HOGHOF> hoghof_obj,//vector<float>& feat_out,
                 int hog_num_elements, int hof_num_elements);
 			void paintEvent(QPainter& paitner);
+
+            int numframes_;
+            //command line variables
+            string output_feat_directory;
+            bool isVideo;
+            bool saveFeat;
+            bool compute_jaaba;
+            bool classify_scores;
+            bool visualize;
+
+
         signals:
 
             void partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);

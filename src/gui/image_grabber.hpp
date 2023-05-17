@@ -17,6 +17,7 @@
 #include "NIDAQUtils.hpp"
 #include "test_config.hpp"
 #include "video_utils.hpp"
+#include "parser.hpp"
 
 // TEMPOERARY
 // ----------------------------------------
@@ -47,6 +48,7 @@ namespace bias
                     std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
                     std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                    CmdLineParams& cmdlineparams,
                     QObject *parent=0
                     );
 
@@ -71,6 +73,11 @@ namespace bias
             static unsigned int MAX_ERROR_COUNT;
 
             void initializeVid();
+
+            //cmdline params
+            string input_video_dir;
+            bool isVideo;
+            bool isSkip;
 
         signals:
             void startTimer();

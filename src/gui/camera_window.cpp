@@ -140,12 +140,13 @@ namespace bias
             unsigned int cameraNumber, 
             unsigned int numberOfCameras, 
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList,
+            CmdLineParams& cmdlineparams,
             QWidget *parent
             ) : QMainWindow(parent)
     {
         setupUi(this);
         connectWidgets();
-        initialize(cameraGuid, cameraNumber, numberOfCameras, cameraWindowPtrList);
+        initialize(cameraGuid, cameraNumber, numberOfCameras, cameraWindowPtrList, cmdlineparams);
 
     }
 
@@ -383,6 +384,7 @@ namespace bias
             testConfig,
             gettime_,
             nidaq_task,
+            cmdlineparams_,
             this
         );
         imageGrabberPtr_->setAutoDelete(false);
@@ -3054,7 +3056,8 @@ namespace bias
         Guid guid,
         unsigned int cameraNumber,
         unsigned int numberOfCameras,
-        QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList
+        QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList,
+        CmdLineParams& cmdlineparams
     )
     {
         connected_ = false;
@@ -3109,6 +3112,9 @@ namespace bias
         currentTestConfigFileDir_ = defaultTestConfigFileDir_;
         currentTestConfigFileName_ = DEFAULT_TESTCONFIG_FILE_NAME; 
 
+        cmdlineparams_ = cmdlineparams;
+        //std::cout << " Printing cmd line aprams from camera window" << std::endl;
+        //print(cmdlineparams_);
 
         // Temporary - plugin development
         // -------------------------------------------------------------------------------        
@@ -3121,7 +3127,7 @@ namespace bias
                                                                                  loadTestConfigEnabled, trial_num,
                                                                                  testConfig,this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(guid.toString(), 
-                                                               threadPoolPtr_, gettime_, 
+                                                               threadPoolPtr_, gettime_,cmdlineparams,
                                                                this);
 
         //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  

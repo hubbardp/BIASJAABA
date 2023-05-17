@@ -1,10 +1,11 @@
 #include "process_scores.hpp"
-#include <cuda_runtime_api.h> 
+#include <cuda_runtime_api.h>
 
-#define isVidInput 1
-#define visualize 0
 
-string output_score_dir = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
+//#define isVidInput 1
+//#define visualize 0
+
+//string output_score_dir = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
 
 namespace bias {
 
@@ -12,7 +13,8 @@ namespace bias {
     // public 
  
     ProcessScores::ProcessScores(QObject *parent, bool mesPass,
-                                 std::shared_ptr<Lockable<GetTime>> getTime) : QObject(parent)
+                                 std::shared_ptr<Lockable<GetTime>> getTime,
+                                 CmdLineParams& cmdlineparams) : QObject(parent)
     {
 
         stopped_ = true;
@@ -37,6 +39,10 @@ namespace bias {
         front_read_time_ = 0;
         fstfrmStampRef = 0;
 
+        output_score_dir = cmdlineparams.output_dir;
+        isVideo = cmdlineparams.isVideo;
+        visualize = cmdlineparams.visualize;
+        wait_threshold = cmdlineparams.wait_thres;
 
         //frame_read_stamps.resize(2798,0);
         //predScoreFront_ = &classifier->predScoreFront;
@@ -172,11 +178,15 @@ namespace bias {
         bool done = false;
         uint64_t time_now;
         double score_ts;
-#if isVidInput
-        double wait_threshold = 1500;
-#else if 
-        double wait_threshold = 1500;
-#endif
+        
+//#if isVidInput
+        /*((if (isVideo) {
+             wait_threshold = 1500;
+//#else if
+        }else {
+            wait_threshold = 1500;
+        }*/
+//#endif
         uint64_t ts_last_score = INT_MAX, cur_time=0;
         string filename = output_score_dir + "classifier_score.csv";
         // Set thread priority to idle - only run when no other thread are running
@@ -273,21 +283,25 @@ namespace bias {
 
                         skipSide = false;
                         skipFront = false;
-                    
+
                         sideScoreQueuePtr_->acquireLock();
                         sideScoreQueuePtr_->pop();
                         sideScoreQueuePtr_->releaseLock();
-                        
+
                         frontScoreQueuePtr_->acquireLock();
                         frontScoreQueuePtr_->pop();
                         frontScoreQueuePtr_->releaseLock();
-#if isVidInput         
-                        time_now = gettime->getPCtime();
-                        scores[scoreCount].score_ts = time_now;
-#else
-                        nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                        scores[scoreCount - 1].score_ts = read_ondemand_;
-#endif
+         
+                        if (isVideo) {
+                            time_now = gettime->getPCtime();
+                            scores[scoreCount].score_ts = time_now;
+
+                        }
+                        else {
+                            nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                            scores[scoreCount - 1].score_ts = read_ondemand_;
+                        }
+
 
                         scores[scoreCount].score = classifier->finalscore.score;
                         scores[scoreCount].frameCount = predScore.frameCount;
@@ -298,9 +312,12 @@ namespace bias {
                                               // - max(predScore.score_ts, predScorePartner.score_ts);
                         //write_score("classifierscr.csv", scoreCount, scores[scoreCount-1]);
 
-#if visualize
-                        visualizeScores(classifier->finalscore.score);
-#endif
+
+                        if(visualize){
+
+                            visualizeScores(classifier->finalscore.score);
+                
+                        }
                         scoreCount++;
                                              
                     }
@@ -369,20 +386,26 @@ namespace bias {
                             sideScoreQueuePtr_->releaseLock();
 
                             //write_score("classifierscr.csv", scoreCount, predScore);
-#if isVidInput         
-                            time_now = gettime->getPCtime();
-                            scores[scoreCount].score_ts = time_now;
-#else
-                            nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                            scores[scoreCount].score_ts = read_ondemand_;
-#endif
+
+                            if (isVideo) {
+                                time_now = gettime->getPCtime();
+                                scores[scoreCount].score_ts = time_now;
+                            }
+                            else {
+                                //#else
+                                nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                                scores[scoreCount].score_ts = read_ondemand_;
+                            }
+                            //#endif
                             scores[scoreCount].score[0] = predScore.score[0];
                             scores[scoreCount].frameCount = predScore.frameCount;
                             scores[scoreCount].view = 1;
                             scores[scoreCount].score_side_ts = predScore.score_side_ts;
-#if visualize
-                            visualizeScores(predScore.score);
-#endif
+
+                            if (visualize) {
+                                visualizeScores(predScore.score);
+                            }
+
                             scoreCount++;
                         }
                         
@@ -399,14 +422,17 @@ namespace bias {
                             frontScoreQueuePtr_->acquireLock();
                             frontScoreQueuePtr_->pop();
                             frontScoreQueuePtr_->releaseLock();
-                          
-#if isVidInput         
-                            time_now = gettime->getPCtime();
-                            scores[scoreCount].score_ts = time_now;
-#else
-                            nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                            scores[scoreCount].score_ts = read_ondemand_;
-#endif
+                            //#if isVidInput                         
+                            if (isVideo) {
+                                time_now = gettime->getPCtime();
+                                scores[scoreCount].score_ts = time_now;
+                            }
+                            else {
+                                //#else
+                                nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                                scores[scoreCount].score_ts = read_ondemand_;
+                            }
+                            //#endif
 
                             //write_score("classifierscr.csv", scoreCount, predScorePartner);
                             time_now = gettime->getPCtime();
@@ -414,9 +440,12 @@ namespace bias {
                             scores[scoreCount].frameCount = predScorePartner.frameCount;
                             scores[scoreCount].view = 2;
                             scores[scoreCount].score_front_ts = predScorePartner.score_front_ts;
-#if visualize
-                            visualizeScores(predScorePartner.score);
-#endif        
+
+                            if (visualize)
+                            {
+                                visualizeScores(predScorePartner.score);
+                            }
+       
                             scoreCount++;
 
                         }       
@@ -430,7 +459,7 @@ namespace bias {
             releaseLock();
 
             if (scoreCount == (numFrames-1)) {
-
+                std::cout << "Score file name " << filename << std::endl;
                 std::cout << "Writing score...." << std::endl;
                 write_score_final(filename,numFrames-1, scores);
                 std::cout << "Written ...." << std::endl;

@@ -25,6 +25,7 @@
 #include "NIDAQUtils.hpp"
 #include "test_config.hpp"
 #include "jaaba_utils.hpp"
+#include "parser.hpp"
 #include <iostream>
 
 // External lib forward declarations
@@ -64,6 +65,7 @@ namespace bias
                     unsigned int cameraNumber, 
                     unsigned int numberOfCameras, 
                     QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList,
+                    CmdLineParams& cmdlineparams,
                     QWidget *parent=0
                     );
 
@@ -166,6 +168,7 @@ namespace bias
 
             //DEVEL
             bool vidFinsihed_reading;
+            CmdLineParams cmdlineparams_;
 
         signals:
 
@@ -391,7 +394,8 @@ namespace bias
                     Guid guid, 
                     unsigned int cameraNumber, 
                     unsigned int numberOfCameras,
-                    QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList
+                    QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList,
+                    CmdLineParams& cmdlineparams
                     );
             void connectVidFrames();
             void setScoreQueue();
