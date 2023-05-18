@@ -1476,7 +1476,9 @@ namespace bias {
                 processScoresPtr_side->HOGHOF_frame->HOGParam_file = config_file_dir + hog_file;
                 processScoresPtr_side->HOGHOF_frame->HOFParam_file = config_file_dir + hof_file;
                 processScoresPtr_side->HOGHOF_frame->CropParam_file = config_file_dir + crop_file;
-                processScoresPtr_side->HOGHOF_frame->loadHOGParams();
+                processScoresPtr_side->HOGHOF_frame->initialize_HOGHOFParams();
+
+                /*processScoresPtr_side->HOGHOF_frame->loadHOGParams();
                 if (processScoresPtr_side->HOGHOF_frame->HOGParams.nbins == 0)
                     printf("HOG NOT Initialzied");
 
@@ -1486,10 +1488,11 @@ namespace bias {
 
                 processScoresPtr_side->HOGHOF_frame->loadCropParams();
                 if (processScoresPtr_side->HOGHOF_frame->Cropparams.ncells == 0)
-                    printf("CROP NOT Initialzied");
+                    printf("CROP NOT Initialzied");*/
 
                 releaseLock();
                 printf("processScores Side allocated\n");
+                
                 
             }else {
 
@@ -1519,7 +1522,9 @@ namespace bias {
                 processScoresPtr_front->HOGHOF_partner->HOGParam_file = config_file_dir + hog_file;
                 processScoresPtr_front->HOGHOF_partner->HOFParam_file = config_file_dir + hof_file;
                 processScoresPtr_front->HOGHOF_partner->CropParam_file = config_file_dir + crop_file;
-                processScoresPtr_front->HOGHOF_partner->loadHOGParams();
+                processScoresPtr_front->HOGHOF_partner->initialize_HOGHOFParams();
+
+                /*processScoresPtr_front->HOGHOF_partner->loadHOGParams();
                 // implement a method to check if struct has been initialized 
                 if (processScoresPtr_front->HOGHOF_partner->HOGParams.nbins == 0)
                     printf("HOG NOT Initialzied");
@@ -1530,9 +1535,10 @@ namespace bias {
 
                 processScoresPtr_front->HOGHOF_partner->loadCropParams();
                 if (processScoresPtr_front->HOGHOF_partner->Cropparams.ncells == 0)
-                    printf("CROP NOT Initialzied");
+                    printf("CROP NOT Initialzied");*/
                 releaseLock();
                 printf("processScores Front allocated\n");
+                
 
             } else {
                 printf("processScores Front not allocated\n");
