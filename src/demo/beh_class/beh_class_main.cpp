@@ -152,7 +152,7 @@ int main(int argc, char* argv[]) {
     //Initialize and load classifier model
     //QString classifier_file = input_dir_path + "json_files/multiclassifier.mat";
 #endif    
-
+    
     // Output dir filepath
     string output_dir = "C:/Users/27rut/BIAS/misc/spinnaker_toy_example/bias_demo_example/cam2sys_lat/single_camera/";
 

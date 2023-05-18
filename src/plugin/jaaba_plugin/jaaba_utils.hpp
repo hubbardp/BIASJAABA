@@ -2,16 +2,20 @@
 #define JAABA_UTILS_HPP
 
 #include "rtn_status.hpp"
+
 #include<vector>
 #include <unordered_map>
 #include <map>
+#include <fstream>
 
+#include <QPointer>
 #include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QDialog>
 #include <QMessageBox>
+
 
 using namespace std;
 
@@ -63,6 +67,9 @@ namespace bias {
     };
 
     QJsonObject loadParams(const string& param_file);
+    void saveFeatures(string filename,vector<float>& hog_feat, vector<float>& hof_feat,
+                     int hog_num_elements, int hof_num_elements);
+    
 }
 
 #endif

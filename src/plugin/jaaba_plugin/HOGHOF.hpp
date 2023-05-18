@@ -71,7 +71,7 @@ namespace bias {
             size_t hog_outputbytes;
             size_t hof_outputbytes;
             bool isInitialized=false;
-            HOGHOF(QWidget *parent);
+            HOGHOF(); //(QWidget *parent);
     
          
             HOGParameters HOGParams;
@@ -99,13 +99,20 @@ namespace bias {
             void loadCropParams();
             void loadImageParams(int img_width, int img_height);
             void setLastInput();
-            
+            void initHOGHOF(int img_height, int img_width);
+            void genFeatures(int frame);
+            void initialize_HOGHOFParams();
             //void genFeatures();
+            /*void averageWindowFeatures(vector<float>& hog_feat, vector<float>& hof_feat,
+                vector<float>& hog_feat_avg, vector<float>& hof_feat_avg,
+                std::queue<vector<float>>& hog_feat_past, std::queue<vector<float>>& hof_feat_past,
+                int frameCount, int window_size);*/
+            void averageWindowFeatures(int window_size, int frameCount, int isSkip);
 
         private: 
 
             void initialize();
-
+            
             void copytoHOGParams(QJsonObject& obj);
             void copytoHOFParams(QJsonObject& obj);
             void copytoCropParams(QJsonObject& obj);

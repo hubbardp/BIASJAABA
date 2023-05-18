@@ -290,6 +290,7 @@ if (with_demos)
     add_subdirectory("src/demo/fly_sorter")
     add_subdirectory("src/demo/beh_class")
 	add_subdirectory("src/demo/opencv_test")
+	add_subdirectory("src/demo/generatehoghof")
 endif()
 
 if (with_tests)

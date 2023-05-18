@@ -13,7 +13,7 @@
 
 namespace bias {
 
-
+    // parser defined here because defining in parser giving link errors. Need to fix in future
     void parser(int argc, char *argv[], CmdLineParams& cmdlineparams) {
         int opt;
 
@@ -50,6 +50,9 @@ namespace bias {
             case 'w':
                 cmdlineparams.wait_thres = stoi(optarg);
                 break;
+            case 'n':
+                cmdlineparams.window_size = stoi(optarg);
+                break;
             case ':':
                 printf("Required argument %c", opt);
                 break;
@@ -61,9 +64,9 @@ namespace bias {
 
         // optind is for the extra arguments
         // which are not parsed
-        /*for (; optind < argc; optind++) {
-            printf(“extra arguments : %s\n”, argv[optind]);
-        }*/
+        //for (; optind < argc; optind++) {
+        //    printf(“extra arguments : %s\n”, argv[optind]);
+        //}
     }
 
 }

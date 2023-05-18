@@ -228,10 +228,10 @@ namespace bias
                 vector<PredData>& pred_score);
             //void writeAllFeatures(string filename, vector<float>& feat_out,
             //    int feat_size);
-            void saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,
-                                       int frameCount,string filename);
-            void saveFeatures(string filename, QPointer<HOGHOF> hoghof_obj,//vector<float>& feat_out,
-                int hog_num_elements, int hof_num_elements);
+            //void saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,
+            //                           int frameCount,string filename);
+            //void saveFeatures(string filename, QPointer<HOGHOF> hoghof_obj,//vector<float>& feat_out,
+            //    int hog_num_elements, int hof_num_elements);
 			void paintEvent(QPainter& paitner);
 
             int numframes_;

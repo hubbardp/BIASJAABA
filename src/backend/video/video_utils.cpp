@@ -124,6 +124,31 @@ namespace bias {
         return r;
     }
 
+    void videoBackend::readVidFrames(cv::VideoCapture& capture, std::vector<cv::Mat>& vid_frames) {
+        
+        int num_frames = getNumFrames(capture);
+        int height = getImageHeight(capture);
+        int width = getImageWidth(capture);
+
+        vid_frames.resize(num_frames, cv::Mat());
+
+        for (int frm_id = 0; frm_id < num_frames; frm_id++)
+        {
+            if (capture.isOpened())
+                vid_frames[frm_id] = getImage(capture);
+            else
+                assert("Video capture is closed");
+        }
+        std::cout << "Finished reading movie" << std::endl;
+    }
+
+    void videoBackend::preprocess_vidFrame(cv::Mat& cur_Img)
+    {
+        cv::Mat greyImg;
+        convertImagetoFloat(cur_Img);
+        
+    }
+
 }
 
 #endif

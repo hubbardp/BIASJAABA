@@ -1,5 +1,8 @@
-#include <iostream>
 #include "jaaba_utils.hpp"
+
+
+#include <iostream>
+#include <iomanip>
 #include <unordered_map>
 
 #include <QVariantMap>
@@ -369,6 +372,30 @@ namespace bias {
         }
         printf("plugin file %s", plugin_file.toLocal8Bit().constData());*/
         return obj;
+    }
+
+    void saveFeatures(string filename, vector<float>& hog_feat, vector<float>& hof_feat,
+                      int hog_num_elements, int hof_num_elements) 
+    {
+        std::ofstream x_out;
+        x_out.open(filename.c_str(), std::ios_base::app);
+
+
+        for (int j = 0; j < hog_num_elements; j++)
+        {
+            x_out << setprecision(6) << hog_feat[j] << ",";
+        }
+
+        for (int k = 0; k < hof_num_elements; k++)
+        {
+            if (k == (hof_num_elements - 1))
+                x_out << setprecision(6) << hof_feat[k] << "\n";
+            else
+                x_out << setprecision(6) << hof_feat[k] << ",";
+        }
+
+        x_out.close();
+
     }
 
 }

@@ -31,6 +31,8 @@ namespace bias {
         int getcurrentFrameNumber(cv::VideoCapture& cap);
         void setBufferSize(cv::VideoCapture& cap);
         std::string type2str(int type);
+        void readVidFrames(cv::VideoCapture& capture, std::vector<cv::Mat>& vid_frames);
+        void preprocess_vidFrame(cv::Mat& cur_Img);
     };
 
 }

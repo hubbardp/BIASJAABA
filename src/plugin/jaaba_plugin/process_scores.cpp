@@ -54,39 +54,7 @@ namespace bias {
     void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
     {
 
-        int nDevices;
-
-        cudaError_t err = cudaGetDeviceCount(&nDevices); 
-        if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
-        hoghof->loadImageParams(img_width, img_height);
-        struct HOGContext hogctx = HOGInitialize(logger, hoghof->HOGParams, img_width, img_height, hoghof->Cropparams);
-        struct HOFContext hofctx = HOFInitialize(logger, hoghof->HOFParams, hoghof->Cropparams);
-        hoghof->hog_ctx = (HOGContext*)malloc(sizeof(hogctx));
-        hoghof->hof_ctx = (HOFContext*)malloc(sizeof(hofctx));
-        memcpy(hoghof->hog_ctx, &hogctx, sizeof(hogctx));
-        memcpy(hoghof->hof_ctx, &hofctx, sizeof(hofctx));
-        //hoghof->startFrameSet = false;
-
-        //allocate output bytes HOG/HOF per frame
-        hoghof->hog_outputbytes = HOGOutputByteCount(hoghof->hog_ctx);
-        hoghof->hof_outputbytes = HOFOutputByteCount(hoghof->hof_ctx);
-
-        //output shape 
-        struct HOGFeatureDims hogshape;
-        HOGOutputShape(&hogctx, &hogshape);
-        struct HOGFeatureDims hofshape;
-        HOFOutputShape(&hofctx, &hofshape);
-        hoghof->hog_shape = hogshape;
-        hoghof->hof_shape = hofshape;
-        size_t hog_num_elements = hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin;
-        size_t hof_num_elements = hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin;
-        hoghof->hog_out.resize(hog_num_elements);
-        hoghof->hof_out.resize(hof_num_elements);
-        hoghof->hog_out_avg.resize(hog_num_elements,0.0);
-        hoghof->hof_out_avg.resize(hof_num_elements,0.0);
-        hoghof->hog_out_skip.resize(hog_num_elements,0.0);
-        hoghof->hof_out_skip.resize(hof_num_elements,0.0);
-
+        hoghof->initHOGHOF(img_height,img_width);
         isHOGHOFInitialised = true;
 
     }
@@ -94,16 +62,7 @@ namespace bias {
     void ProcessScores::genFeatures(QPointer<HOGHOF> hoghof,int frame)
     {
 
-        size_t hog_num_elements = hoghof->hog_shape.x * hoghof->hog_shape.y * hoghof->hog_shape.bin;
-        size_t hof_num_elements = hoghof->hof_shape.x * hoghof->hof_shape.y * hoghof->hof_shape.bin;
-
-        //Compute and copy HOG/HOF
-
-        HOFCompute(hoghof->hof_ctx, hoghof->img.buf, hof_f32); // call to compute and copy is asynchronous
-        HOFOutputCopy(hoghof->hof_ctx, hoghof->hof_out.data(), hoghof->hof_outputbytes); // should be called one after 
-                                                           // the other to get correct answer
-        HOGCompute(hoghof->hog_ctx, hoghof->img);
-        HOGOutputCopy(hoghof->hog_ctx, hoghof->hog_out.data(), hoghof->hog_outputbytes);
+        hoghof->genFeatures(frame);
 
     }
 

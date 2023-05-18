@@ -3,13 +3,13 @@
 #include <string>
 #include <opencv2/highgui/highgui.hpp>
 #include <QDebug>
-
+#include <cuda_runtime_api.h>
 #include <iostream>
 
 namespace bias 
 {
 
-    HOGHOF::HOGHOF(QWidget *parent): QDialog(parent)
+    HOGHOF::HOGHOF()//(QWidget *parent): QDialog(parent)
     { 
 
         initialize();      
@@ -73,6 +73,75 @@ namespace bias
 	 
     }
 
+    void HOGHOF::initHOGHOF(int img_height, int img_width)
+    {
+
+        int nDevices;
+        
+        cudaError_t err = cudaGetDeviceCount(&nDevices);
+        if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
+        loadImageParams(img_width, img_height);
+        struct HOGContext hogctx = HOGInitialize(logger, HOGParams, img_width, img_height, Cropparams);
+        struct HOFContext hofctx = HOFInitialize(logger, HOFParams, Cropparams);
+        hog_ctx = (HOGContext*)malloc(sizeof(hogctx));
+        hof_ctx = (HOFContext*)malloc(sizeof(hofctx));
+        memcpy(hog_ctx, &hogctx, sizeof(hogctx));
+        memcpy(hof_ctx, &hofctx, sizeof(hofctx));
+        //hoghof->startFrameSet = false;
+
+        //allocate output bytes HOG/HOF per frame
+        hog_outputbytes = HOGOutputByteCount(hog_ctx);
+        hof_outputbytes = HOFOutputByteCount(hof_ctx);
+        
+        //output shape 
+        struct HOGFeatureDims hogshape;
+        HOGOutputShape(&hogctx, &hogshape);
+        struct HOGFeatureDims hofshape;
+        HOFOutputShape(&hofctx, &hofshape);
+        hog_shape = hogshape;
+        hof_shape = hofshape;
+        size_t hog_num_elements = hog_shape.x * hog_shape.y * hog_shape.bin;
+        size_t hof_num_elements = hof_shape.x * hof_shape.y * hof_shape.bin;
+        hog_out.resize(hog_num_elements);
+        hof_out.resize(hof_num_elements);
+        hog_out_avg.resize(hog_num_elements, 0.0);
+        hof_out_avg.resize(hof_num_elements, 0.0);
+        hog_out_skip.resize(hog_num_elements, 0.0);
+        hof_out_skip.resize(hof_num_elements, 0.0);
+        
+
+    }
+
+    void HOGHOF::genFeatures(int frame)
+    {
+
+        size_t hog_num_elements = hog_shape.x * hog_shape.y * hog_shape.bin;
+        size_t hof_num_elements = hof_shape.x * hof_shape.y * hof_shape.bin;
+
+        //Compute and copy HOG/HOF
+
+        HOFCompute(hof_ctx, img.buf, hof_f32); // call to compute and copy is asynchronous
+        HOFOutputCopy(hof_ctx, hof_out.data(), hof_outputbytes); // should be called one after 
+                                                           // the other to get correct answer
+        HOGCompute(hog_ctx, img);
+        HOGOutputCopy(hog_ctx, hog_out.data(), hog_outputbytes);
+
+    }
+
+    void HOGHOF::initialize_HOGHOFParams()
+    {
+        loadHOGParams();
+        if (HOGParams.nbins == 0)
+            printf("HOG NOT Initialzied");
+
+        loadHOFParams();
+        if (HOFParams.nbins == 0)
+            printf("HOF NOT Initialzied");
+
+        loadCropParams();
+        if (Cropparams.ncells == 0)
+            printf("CROP NOT Initialzied");
+    }
 
     //void HOGHOF::genFeatures() 
     //{
@@ -343,4 +412,76 @@ namespace bias
 
     }*/
 
+    void HOGHOF::averageWindowFeatures(int window_size, int frameCount, int isSkip)
+    {
+
+        /*std::vector<float> hog_out = hoghof_obj->hog_out;
+        std::vector<float> hof_out = hoghof_obj->hof_out;
+        std::vector<float> hog_out_avg = hoghof_obj->hog_out_avg;
+        std::vector<float> hof_out_avg = hoghof_obj->hof_out_avg;
+        std::queue<vector<float>> hog_out_past = hoghof_obj->hog_out_past;
+        std::queue<vector<float>> hof_out_past = hoghof_obj->hof_out_past;*/
+
+        std::vector<float>hog_feat;
+        std::vector<float>hof_feat;
+        if (isSkip)
+        {
+            hog_feat = hog_out_skip;
+            hof_feat = hof_out_skip;
+        }
+        else {
+            hog_feat = hog_out;
+            hof_feat = hof_out;
+        }
+
+        // average features over window size
+        unsigned int feat_size = static_cast<unsigned int>(hog_out.size());
+        transform(hog_feat.begin(), hog_feat.end(), hog_feat.begin(), [window_size](float &c) {return (c / window_size); });
+        transform(hof_feat.begin(), hof_feat.end(), hof_feat.begin(), [window_size](float &c) {return (c / window_size); });
+        //transform(hog_out.begin(), hog_out.end(), hog_out.begin(), [window_size](float &c) {return (c / window_size); });
+        //transform(hof_out.begin(), hof_out.end(), hof_out.begin(), [window_size](float &c) {return (c / window_size); });
+
+        for (int i = 0; i < feat_size; i++) {
+
+            //hog_feat_avg[i] = hog_feat_avg[i] + hog_feat[i];
+            //hof_feat_avg[i] = hof_feat_avg[i] + hof_feat[i];
+            hog_out_avg[i] = hog_out_avg[i] + hog_feat[i];
+            hof_out_avg[i] = hof_out_avg[i] + hof_feat[i];
+        }
+
+        //update moving average over the window
+        if (frameCount >= window_size) {
+
+            if ((hog_out_past.size() == window_size)
+                && (hof_out_past.size() == window_size))
+            {
+                vector<float> hog_past = hog_out_past.front();
+                vector<float> hof_past = hof_out_past.front();
+
+                // subtract last window feature
+                unsigned int feat_size = static_cast<unsigned int>(hog_past.size());
+                for (unsigned int i = 0; i < feat_size; i++) {
+
+                    //hog_feat_avg[i] -= hog_past[i];
+                    //hof_feat_avg[i] -= hof_past[i];
+                    hog_out_avg[i] -= hog_past[i];
+                    hof_out_avg[i] -= hof_past[i];
+
+                }
+
+                //hog_feat_past.pop();
+                //hof_feat_past.pop();
+                hog_out_past.pop();
+                hof_out_past.pop();
+
+            }
+        }
+
+        // pushing the inciming feature average to moving window average queue
+        //hog_feat_past.push(hog_feat);
+        //hof_feat_past.push(hof_feat);
+        hog_out_past.push(hog_feat);
+        hof_out_past.push(hof_feat);
+
+    }
 }
