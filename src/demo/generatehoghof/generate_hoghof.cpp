@@ -93,7 +93,8 @@ int main(int argc, char* argv[]) {
     // Video Capture
     QString vidFile[nviews] = { "movie_sde.avi" ,
                                 "movie_frt.avi" };
-
+    std::cout << "Movie filename" << input_dir_path <<  
+           std::endl;
     bias::videoBackend vid_sde(QString::fromStdString(input_dir_path) + vidFile[0]);
     bias::videoBackend vid_frt(QString::fromStdString(input_dir_path) + vidFile[1]);
     cv::VideoCapture cap_obj_sde = vid_sde.videoCapObject();

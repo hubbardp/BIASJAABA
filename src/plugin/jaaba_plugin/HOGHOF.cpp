@@ -330,9 +330,42 @@ namespace bias
                 
                 Cropparams.npatches = value.toString().toInt();
 
-            }else if (value.isArray() && key == "interest_pnts") {
+            }else if (value.isObject() && key == "interest_pnts") {
 
-				QJsonArray arr = value.toArray();
+                std::cout << " Interest points enetred" << std::endl;
+                QJsonObject ob = value.toObject();
+                allocateCrop(ob.size());
+                int idx = 0;
+                foreach(const QString& key, ob.keys()) {
+
+                    value = ob.value(key);
+                    if (value.isArray() && key == "food") {
+                        QJsonArray arr = value.toArray();
+                        Cropparams.interest_pnts[idx * 2 + 0] = arr[0].toInt();
+                        Cropparams.interest_pnts[idx * 2 + 1] = arr[1].toInt();
+                        std::cout << "idx " << idx << " ips x " << arr[0].toInt() << std::endl;
+                        idx = idx + 1;
+                        
+                    }
+                    else if (value.isArray() && key == "mouth") {
+                        QJsonArray arr = value.toArray();
+                        Cropparams.interest_pnts[idx * 2 + 0] = arr[0].toInt();
+                        Cropparams.interest_pnts[idx * 2 + 1] = arr[1].toInt();
+                        std::cout << "idx " << idx << " ips x " << arr[0].toInt() << std::endl;
+                        idx = idx + 1;
+                    }
+                    else if (value.isArray() && key == "perch") {
+                        QJsonArray arr = value.toArray();
+                        Cropparams.interest_pnts[idx * 2 + 0] = arr[0].toInt();
+                        Cropparams.interest_pnts[idx * 2 + 1] = arr[1].toInt();
+                        std::cout << "idx " << idx << " ips x " << arr[0].toInt() << std::endl;
+                        idx = idx + 1;
+                    }
+                    else {
+                        printf("Key %s missing in Crop interest params", key);
+                    }
+                }
+				/*QJsonArray arr = value.toArray();
 				allocateCrop(arr.size());
 				int idx = 0;
 				foreach(const QJsonValue& id, arr) {       
@@ -340,8 +373,10 @@ namespace bias
 					QJsonArray ips = id.toArray();
 					Cropparams.interest_pnts[idx*2+ 0] = ips[0].toInt();
 					Cropparams.interest_pnts[idx*2 + 1] = ips[1].toInt();
+                    std::cout << "Read x " << ips[0].toInt() << std::endl;
 					idx = idx + 1;
-				}
+				}*/
+                
             }
             else {
                 printf("Key %s missing in Crop params", key);
