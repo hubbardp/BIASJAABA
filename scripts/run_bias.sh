@@ -47,7 +47,7 @@ while read -r line; do
        else
             echo "movie_comb.avi does not exist"
        fi
-       C:/Users/27rut/Downloads/ffmpeg-6.0-essentials_build/ffmpeg-6.0-essentials_build/bin/ffmpeg  -i $exp_name'/movie_sde.avi' -i $exp_name'/movie_frt.avi'  -filter_complex hstack -c:v mjpeg -q:v 2 -huffman optimal $exp_name'/movie_comb.avi'
+       ffmpeg  -i $exp_name'movie_sde.avi' -i $exp_name'movie_frt.avi'  -filter_complex hstack -c:v mjpeg -q:v 2 -huffman optimal $exp_name'movie_comb.avi'
     fi   
 
 done < $exp_list_file
