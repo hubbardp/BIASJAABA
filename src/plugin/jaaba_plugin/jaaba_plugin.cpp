@@ -235,7 +235,8 @@ namespace bias {
         {
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
-                threadPoolPtr_->start(processScoresPtr_side);
+                if(classify_scores)
+                    threadPoolPtr_->start(processScoresPtr_side);
 
                 if (visualize)
                 {

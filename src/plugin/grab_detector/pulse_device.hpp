@@ -1,5 +1,5 @@
 #ifndef PULSE_DEVICE_HPP
-#define PULSE_DEIVE_HPP
+#define PULSE_DEVICE_HPP
 #include <QSerialPort>
 #include <QVector>
 

@@ -26,11 +26,34 @@
 #include "parser.hpp"
 
 
+// added for outputting signal
+#include "pulse_device.hpp"
+#include <QSerialPort>
+#include <QserialPortInfo>
+
 namespace bias 
 {
 
     class HOGHOF;
     class beh_class;
+
+    class SerialPortOutput 
+    {
+    public:
+        QList<QSerialPortInfo> serialInfoList_;
+        PulseDevice pulseDevice_;
+        QVector<int> allowedOutputPin_;
+        bool outputPinComboBoxReady_ = false;
+        QString portName_ = "COM1"; // hard code in com3
+        int outputPinIndex_ = 0; // hard code output pin
+        float pulseDuration_ = 0.2; // hard code pulse duration
+
+        RtnStatus connectTriggerDev(QSerialPortInfo portInfo);
+        void refreshPortList();
+        RtnStatus initPort();
+        void trigger();
+        void disconnectTriggerDev();
+    };
 
     class ProcessScores : public QObject, public QRunnable, public Lockable<Empty>
     {
@@ -122,8 +145,6 @@ namespace bias
            bool stopped_;
            bool ready_;
            //float threshold_runtime = static_cast<float>(3000);
-           
-           
  
            QQueue<FrameData> frameQueue_;
            QPointer<BiasPlugin> partnerPluginPtr_;

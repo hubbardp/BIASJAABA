@@ -49,12 +49,12 @@ namespace bias {
         //predScoreSide_ = &classifier->predScoreSide;
 
     }
-
    
     void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
     {
 
         hoghof->initHOGHOF(img_height,img_width);
+        std::cout << "In initHOGHOF, isSide = " << isSide << ", isFront = " << isFront << std::endl;
         isHOGHOFInitialised = true;
 
     }
@@ -134,6 +134,13 @@ namespace bias {
     void ProcessScores::run()
     {
 
+        SerialPortOutput portOutput;
+        const int classifierNum = 0;
+        const double classifierThresh = 0.0;
+        const bool DEBUGTRIGGER = false;
+        const int debugTriggerSkip = 100;
+        const bool outputTrigger = true;
+
         bool done = false;
         uint64_t time_now;
         double score_ts;
@@ -152,6 +159,14 @@ namespace bias {
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
           
+        // initialize the serial port output
+        if (outputTrigger) {
+            std::cout << "In ProcessScores constructor, calling initPort.\n";
+            if (!portOutput.initPort().success) {
+                std::cout << "Error initializing serial port\n";
+            }
+        }
+
         acquireLock();
         stopped_ = false;
         releaseLock();
@@ -271,12 +286,28 @@ namespace bias {
                                               // - max(predScore.score_ts, predScorePartner.score_ts);
                         //write_score("classifierscr.csv", scoreCount, scores[scoreCount-1]);
 
-
                         if(visualize){
 
                             visualizeScores(classifier->finalscore.score);
                 
                         }
+
+                        //KB add output code here
+                        if (outputTrigger) {
+                            if (DEBUGTRIGGER) {
+                                std::cout << scoreCount << std::endl;
+                                if ((scoreCount%debugTriggerSkip) == 0) {
+                                    portOutput.trigger();
+                                }
+                            }
+                            else {
+                                if (classifier->finalscore.score[classifierNum] > classifierThresh) {
+                                    std::cout << scoreCount << std::endl;
+                                    portOutput.trigger();
+                                }
+                            }
+                        }
+
                         scoreCount++;
                                              
                     }
@@ -427,6 +458,10 @@ namespace bias {
 
         }
      
+        if (outputTrigger) {
+            portOutput.disconnectTriggerDev();
+        }
+
     }
 
 
@@ -505,6 +540,161 @@ namespace bias {
             x_out << frame_vec[i] << "\n";
         }
         x_out.close();
+
+    }
+
+    // copied from GrabDetectorPlugin::refreshPortList
+    // todo: refactor code to share
+    void SerialPortOutput::refreshPortList()
+    {
+        serialInfoList_.clear();
+        // Get list of serial ports and populate comports 
+        QList<QSerialPortInfo> serialInfoListTmp = QSerialPortInfo::availablePorts();
+
+        for (QSerialPortInfo serialInfo : serialInfoListTmp)
+        {
+            if (serialInfo.portName().contains("ttyS"))
+            {
+                continue;
+            }
+            else
+            {
+                serialInfoList_.append(serialInfo);
+            }
+        }
+    }
+
+    RtnStatus SerialPortOutput::initPort() {
+
+        RtnStatus rtnStatus;
+
+        bool portFound = false;
+        QSerialPortInfo portInfo;
+        refreshPortList();
+
+        for (QSerialPortInfo serialInfo : serialInfoList_)
+        {
+            if (portName_ == serialInfo.portName())
+            {
+                portFound = true;
+                portInfo = serialInfo;
+                break;
+            }
+        }
+
+        if (portFound)
+        {
+            rtnStatus = connectTriggerDev(portInfo);
+
+            if (!rtnStatus.success)
+            {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage(QString("unable to connect to port %1").arg(portName_));
+            }
+        }
+        else
+        {
+            rtnStatus.success = false;
+            rtnStatus.appendMessage(QString("port %1 not found").arg(portName_));
+        }
+
+        return rtnStatus;
+    }
+
+    RtnStatus SerialPortOutput::connectTriggerDev(QSerialPortInfo portInfo)
+    {
+        RtnStatus rtnStatus;
+        std::cout << "Connecting to output trigger device...." << std::endl;
+
+        if (pulseDevice_.isOpen())
+        {
+            rtnStatus.success = true;
+            rtnStatus.message = QString("device already connected");
+            std::cout << "Device already connected." << std::endl;
+            return rtnStatus;
+        }
+
+        std::cout << "Connecting ...\n";
+        if (serialInfoList_.size() > 0)
+        {
+            pulseDevice_.setPort(portInfo);
+            pulseDevice_.open();
+        }
+
+        // Check to see if device is opene or closed and set status string accordingly
+        if (pulseDevice_.isOpen())
+        {
+            std::cout << "Connected\n";
+
+            // Get list of allowed output pins
+            bool ok;
+            QVector<int> allowedOutputPin = pulseDevice_.getAllowedOutputPin(&ok);
+            if (ok)
+            {
+                allowedOutputPin_ = allowedOutputPin;
+            }
+
+            // Set output pin
+            ok = pulseDevice_.setOutputPin(allowedOutputPin_[outputPinIndex_]);
+            // If bad response or unable to set output pin 
+            if (!ok)
+            {
+                std::cout << "Could not set output pin index, hopefully this will be ok!\n";
+                allowedOutputPin_.clear();
+                outputPinIndex_ = -1;
+            }
+            else{
+                std::cout << "Set output pin.\n";
+            }
+
+            // Set pulse length 
+            ok = pulseDevice_.setPulseLength(1.0e6*pulseDuration_);
+            if (ok) {
+                std::cout << "Set pulse length\n";
+            }
+            else {
+                std::cout << "Could not set pulse length, hopefully this will be ok!!\n";
+            }
+        }
+        else
+        {
+            std::cout << "Failed to connect.\n";
+            rtnStatus.success = false;
+            rtnStatus.message = QString("failed to open device");
+            return rtnStatus;
+        }
+
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+    }
+
+    void SerialPortOutput::trigger() {
+        if (pulseDevice_.isOpen())
+        {
+            std::cout << "Sending pulse to serial port\n";
+            pulseDevice_.startPulse();
+        }
+        else {
+            std::cout << "Port not open, not sending pulse\n";
+        }
+    }
+
+    void SerialPortOutput::disconnectTriggerDev()
+    {
+        RtnStatus rtnStatus;
+
+        if (pulseDevice_.isOpen())
+        {
+            std::cout << "Disconnecting...\n";
+            pulseDevice_.close();
+        }
+        else
+        {
+            std::cout << "Already disconnected\n";
+        }
+
+        allowedOutputPin_.clear();
 
     }
 
