@@ -44,13 +44,13 @@ namespace bias
         PulseDevice pulseDevice_;
         QVector<int> allowedOutputPin_;
         bool outputPinComboBoxReady_ = false;
-        QString portName_ = "COM1"; // hard code in com3
+        QString portName_; // hard code in com3
         int outputPinIndex_ = 0; // hard code output pin
         float pulseDuration_ = 0.2; // hard code pulse duration
 
         RtnStatus connectTriggerDev(QSerialPortInfo portInfo);
         void refreshPortList();
-        RtnStatus initPort();
+        RtnStatus initPort(string portName);
         void trigger();
         void disconnectTriggerDev();
     };
@@ -69,7 +69,8 @@ namespace bias
            bool processSide;
            bool processFront;
            bool mesPass_;
-           int scoreCount;
+           //int scoreCount;
+           unsigned int scoreCount;
            bool score_calculated_;
            bool skipFront;
            bool skipSide;
@@ -87,6 +88,7 @@ namespace bias
            bool isVideo;
            bool visualize;
            int wait_threshold;
+           string portName;
 
            QPointer<HOGHOF> HOGHOF_frame;
            QPointer<HOGHOF> HOGHOF_partner;

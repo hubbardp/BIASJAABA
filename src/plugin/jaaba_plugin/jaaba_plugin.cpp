@@ -8,7 +8,7 @@
 #include <Windows.h>
 
 
-#define DEBUG 0 
+//#define DEBUG 1 
 //#define compute 1
 //#define isVidInput 1
 //#define visualize 0
@@ -59,6 +59,7 @@ namespace bias {
         classify_scores = cmdlineparams.classify_scores;
         visualize = cmdlineparams.visualize;
         numframes_ = cmdlineparams.numframes;
+        isDebug = cmdlineparams.debug;
 
         print(cmdlineparams);
 
@@ -511,16 +512,18 @@ namespace bias {
             releaseLock();
 
 
-            if (!isVideo){
+            if (!isVideo) {
 
-                if (testConfigEnabled_ && nidaq_task_ != nullptr) {
+                if (isDebug) {
+                    if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
-                    if (frameCount_ <= testConfig_->numFrames) {
+                        if (frameCount_ <= testConfig_->numFrames) {
 
-                        nidaq_task_->getNidaqTimeNow(read_ondemand);
+                            nidaq_task_->getNidaqTimeNow(read_ondemand);
+
+                        }
 
                     }
-
                 }
             }
 
@@ -558,7 +561,7 @@ namespace bias {
                 {
                     while (processScoresPtr_side->processedFrameCount < frameCount_)
                     {
-                        if (testConfigEnabled_) {
+                        if (isDebug && testConfigEnabled_) {
                             ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
                         }
@@ -589,7 +592,7 @@ namespace bias {
                 {
                     while (processScoresPtr_front->processedFrameCount < frameCount_)
                     {
-                        if (testConfigEnabled_) {
+                        if (isDebug && testConfigEnabled_) {
                             ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
                         }
@@ -807,7 +810,8 @@ namespace bias {
             end_process = gettime_->getPCtime();
         }
 
-        if (!isVideo) {
+        if (!isVideo && isDebug ) {
+
             if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
                 if (frameCount_ <= testConfig_->numFrames) {
@@ -822,132 +826,133 @@ namespace bias {
             }
         }
 
-        if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
-        {
-
-            if (!testConfig_->nidaq_prefix.empty()) {
-
-                ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
-                ts_nidaq[frameCount_][1] = read_ondemand;
-                
-            }
-
-            if (!testConfig_->f2f_prefix.empty()) {
-
-                pc_time = gettime_->getPCtime();
-                ts_pc[frameCount_] = pc_time;
-            }
-
-            if (!testConfig_->queue_prefix.empty()) {
-
-                //queue_size[frameCount_] = 2;// pluginImageQueuePtr_->size();
-                if(cameraNumber_ == 0)
-                    queue_size[frameCount_] = side_skip_count;
-                else if (cameraNumber_ == 1)
-                    queue_size[frameCount_] = front_skip_count;
-                  
-            }
-
-            if (process_frame_time) {
-                
-                ts_gpuprocess_time[frameCount_] = (end_process - start_process);
-                ts_jaaba_start[frameCount_] = start_process;
-                ts_jaaba_end[frameCount_] = end_process;
-                //ts_nidaqThres[frameCount_] = expTime;
-                time_cur[frameCount_] = curTime;
-                    
-            }
-
-            if (frameCount_ == (testConfig_->numFrames - 2)
-                && !testConfig_->f2f_prefix.empty())
+        if(isDebug){
+            if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
             {
 
-                std::string filename = testConfig_->dir_list[0] + "/"
-                    + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
-                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                    + testConfig_->plugin_prefix
-                    + "_" + testConfig_->f2f_prefix + "cam"
-                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+                if (!testConfig_->nidaq_prefix.empty()) {
 
-                gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_pc);
+                    ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
+                    ts_nidaq[frameCount_][1] = read_ondemand;
 
+                }
+
+                if (!testConfig_->f2f_prefix.empty()) {
+
+                    pc_time = gettime_->getPCtime();
+                    ts_pc[frameCount_] = pc_time;
+                }
+
+                if (!testConfig_->queue_prefix.empty()) {
+
+                    //queue_size[frameCount_] = 2;// pluginImageQueuePtr_->size();
+                    if (cameraNumber_ == 0)
+                        queue_size[frameCount_] = side_skip_count;
+                    else if (cameraNumber_ == 1)
+                        queue_size[frameCount_] = front_skip_count;
+
+                }
+
+                if (process_frame_time) {
+
+                    ts_gpuprocess_time[frameCount_] = (end_process - start_process);
+                    ts_jaaba_start[frameCount_] = start_process;
+                    ts_jaaba_end[frameCount_] = end_process;
+                    //ts_nidaqThres[frameCount_] = expTime;
+                    time_cur[frameCount_] = curTime;
+
+                }
+
+                if (frameCount_ == (testConfig_->numFrames - 2)
+                    && !testConfig_->f2f_prefix.empty())
+                {
+
+                    std::string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->f2f_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_pc);
+
+                }
+
+                if (frameCount_ == (testConfig_->numFrames - 2)
+                    && !testConfig_->nidaq_prefix.empty())
+                {
+
+                    std::string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->nidaq_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    std::string filename1 = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->nidaq_prefix + "_thres" + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_nidaqThres);
+                    gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, ts_nidaq);
+                }
+
+                if (frameCount_ == (testConfig_->numFrames - 2)
+                    && !testConfig_->queue_prefix.empty()) {
+
+
+                    string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + testConfig_->queue_prefix + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+                    std::cout << frameCount_ << "" << filename << std::endl;
+                    gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+
+                }
+
+                if (frameCount_ == (testConfig_->numFrames - 2)
+                    && process_frame_time) {
+
+                    string filename = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + "process_time" + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    string filename1 = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + "start_time" + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    string filename2 = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + "end_time_" + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    string filename3 = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + "cur_time" + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
+                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_gpuprocess_time);
+                    gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_jaaba_start);
+                    gettime_->write_time_1d<int64_t>(filename2, testConfig_->numFrames, ts_jaaba_end);
+                    //gettime_->write_time_1d<int64_t>(filename3, testConfig_->numFrames, time_cur);
+
+                }
             }
-
-            if (frameCount_ == (testConfig_->numFrames - 2)
-                && !testConfig_->nidaq_prefix.empty())
-            {
-
-                std::string filename = testConfig_->dir_list[0] + "/"
-                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                    + testConfig_->plugin_prefix
-                    + "_" + testConfig_->nidaq_prefix + "cam"
-                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-
-                std::string filename1 = testConfig_->dir_list[0] + "/"
-                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                    + testConfig_->plugin_prefix
-                    + "_" + testConfig_->nidaq_prefix + "_thres" + "cam"
-                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-
-                gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_nidaqThres);
-                gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, ts_nidaq);
-            }
-
-            if (frameCount_ == (testConfig_->numFrames - 2)
-                && !testConfig_->queue_prefix.empty()) {
-
-
-                string filename = testConfig_->dir_list[0] + "/"
-                    + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
-                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                    + testConfig_->plugin_prefix
-                    + "_" + testConfig_->queue_prefix + "cam"
-                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-                std::cout << frameCount_ << "" << filename << std::endl;
-                gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
-
-            }
-
-            if (frameCount_ == (testConfig_->numFrames - 2)
-                && process_frame_time) {
-
-                string filename = testConfig_->dir_list[0] + "/"
-                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                    + testConfig_->plugin_prefix
-                    + "_" + "process_time" + "cam"
-                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-
-                string filename1 = testConfig_->dir_list[0] + "/"
-                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                    + testConfig_->plugin_prefix
-                    + "_" + "start_time" + "cam"
-                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-
-                string filename2 = testConfig_->dir_list[0] + "/" 
-                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                    + testConfig_->plugin_prefix
-                    + "_" + "end_time_" + "cam"
-                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-
-                string filename3 = testConfig_->dir_list[0] + "/"
-                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                    + testConfig_->plugin_prefix
-                    + "_" + "cur_time" + "cam"
-                    + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-                
-                gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_gpuprocess_time);
-                gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_jaaba_start);
-                gettime_->write_time_1d<int64_t>(filename2, testConfig_->numFrames, ts_jaaba_end);
-                //gettime_->write_time_1d<int64_t>(filename3, testConfig_->numFrames, time_cur);
-
-            }
-
         }else{}
 
     }
@@ -1204,9 +1209,9 @@ namespace bias {
             pluginImageQueuePtr_->releaseLock();
             partnerPluginImageQueuePtr_ -> releaseLock();         
             end_process = gettime_->getPCtime();
-#if DEBUG            
+//#if DEBUG            
             if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()
-                && testConfig_->plugin_prefix == "jaaba_plugin")
+                && testConfig_->plugin_prefix == "jaaba_plugin" && isDebug)
             {
 
                 if (nidaq_task_ != nullptr) {
@@ -1306,11 +1311,11 @@ namespace bias {
                         + "_" + "jaaba_process_time" + "cam"
                         + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
                     std::cout << filename << std::endl;
-                    gettime_->write_time_1d<float>(filename, testConfig_->numFrames, ts_nidaqThres);
+                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_nidaqThres);
 
                 }
             }
-#endif
+//#endif
         }        
     }
 
@@ -1981,13 +1986,14 @@ namespace bias {
         // test vectors allocated for scores
         if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
         {
+            std::cout << "Scores && " << numframes_ << std::endl;
             processScoresPtr_side->scores.resize(numframes_);
             processScoresPtr_side->numFrames = numframes_;
             processScoresPtr_side->nidaq_task_= nidaq_task_;
 			//translated_indexes.resize(numframes_, std::vector<float>());
         }
 
-        if (testConfigEnabled_)
+        if (isDebug)
             allocate_testVec();
           
     }
@@ -2025,9 +2031,9 @@ namespace bias {
             
         }
 
-#if DEBUG     
-        time_stamps1.resize(testConfig_->numFrames, 0.0);
-#endif        
+//#if DEBUG     
+       //time_stamps1.resize(testConfig_->numFrames, 0.0);
+//#endif        
     }
 
     void JaabaPlugin::setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,

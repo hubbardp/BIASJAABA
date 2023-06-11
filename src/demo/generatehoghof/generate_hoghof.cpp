@@ -88,7 +88,9 @@ int main(int argc, char* argv[]) {
     string HOGParam_file_frt = input_dir_path + "json_files/HOGparam.json";
     string HOFParam_file_frt = input_dir_path + "json_files/HOFparam.json";
     string CropParam_file_frt = input_dir_path + "json_files/Cropfrt_param.json";
-    int window_size = 5;
+    int window_size = cmdlineparams.window_size;
+    int saveFeatures = cmdlineparams.saveFeat;
+    int nframestocompute = cmdlineparams.numframes;
 
     // Video Capture
     QString vidFile[nviews] = { "movie_sde.avi" ,
@@ -105,6 +107,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Video has " << numFrames << " frames" << std::endl;
     std::cout << "Video height" << height << std::endl;
     std::cout << "Video width" << width << std::endl;
+    std::cout << "window size" << window_size << std::endl;
 
     //HOG HOF Params
     bias::HOGHOF* feat_side = new bias::HOGHOF();
@@ -148,7 +151,7 @@ int main(int argc, char* argv[]) {
     printf("Feature dims side and front - %d-%d", feat_dim_side, feat_dim_front);
 
     int imageCnt = 0;
-    while (imageCnt < numFrames) {
+    while (imageCnt < nframestocompute) {
 
         if (!vidFile->isEmpty()) {
             cv::Mat curImg_side;
@@ -166,28 +169,29 @@ int main(int argc, char* argv[]) {
             feat_side->genFeatures(imageCnt);
             feat_front->genFeatures(imageCnt);
 
-            bias::saveFeatures(output_dir_path + "hoghof_side_biasjaaba.csv",
-                feat_side->hog_out, feat_side->hof_out,
-                feat_dim_side, feat_dim_side);
-            bias::saveFeatures(output_dir_path + "hoghof_front_biasjaaba.csv",
-                feat_front->hog_out, feat_front->hof_out,
-                feat_dim_front, feat_dim_front);
-
+            if (saveFeatures) {
+                bias::saveFeatures(output_dir_path + "hoghof_side_biasjaaba_offline_gradtest1.csv",
+                    feat_side->hog_out, feat_side->hof_out,
+                    feat_dim_side, feat_dim_side);
+                bias::saveFeatures(output_dir_path + "hoghof_front_biasjaaba_offline_gradtest1.csv",
+                    feat_front->hog_out, feat_front->hof_out,
+                    feat_dim_front, feat_dim_front);
+            }
             feat_side->averageWindowFeatures(window_size, imageCnt, 0);
             feat_front->averageWindowFeatures(window_size, imageCnt, 0);
 
-            bias::saveFeatures(output_dir_path + "hoghof_avg_side_biasjaaba.csv",
-                feat_side->hog_out_avg, feat_side->hof_out_avg,
-                feat_dim_side, feat_dim_side);
-            bias::saveFeatures(output_dir_path + "hoghof_avg_front_biasjaaba.csv",
-                feat_front->hog_out_avg, feat_front->hof_out_avg,
-                feat_dim_front, feat_dim_front);
-
+            if (saveFeatures) {
+                bias::saveFeatures(output_dir_path + "hoghof_avg_side_biasjaaba_offline_gradtest1.csv",
+                    feat_side->hog_out_avg, feat_side->hof_out_avg,
+                    feat_dim_side, feat_dim_side);
+                bias::saveFeatures(output_dir_path + "hoghof_avg_front_biasjaaba_offline_gradtest1.csv",
+                    feat_front->hog_out_avg, feat_front->hof_out_avg,
+                    feat_dim_front, feat_dim_front);
+            }
 
             imageCnt++;
         }
     }
-
 
     delete[] feats_hog_out;
     delete[] featf_hog_out;

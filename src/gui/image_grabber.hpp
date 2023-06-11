@@ -78,6 +78,7 @@ namespace bias
             string input_video_dir;
             bool isVideo;
             bool isSkip;
+            bool isDebug;
 
         signals:
             void startTimer();

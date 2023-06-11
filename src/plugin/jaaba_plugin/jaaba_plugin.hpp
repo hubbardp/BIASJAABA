@@ -242,6 +242,7 @@ namespace bias
             bool compute_jaaba;
             bool classify_scores;
             bool visualize;
+            bool isDebug;
 
 
         signals:

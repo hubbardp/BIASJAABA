@@ -43,6 +43,7 @@ namespace bias {
         isVideo = cmdlineparams.isVideo;
         visualize = cmdlineparams.visualize;
         wait_threshold = cmdlineparams.wait_thres;
+        portName = cmdlineparams.comport;
 
         //frame_read_stamps.resize(2798,0);
         //predScoreFront_ = &classifier->predScoreFront;
@@ -139,7 +140,7 @@ namespace bias {
         const double classifierThresh = 0.0;
         const bool DEBUGTRIGGER = false;
         const int debugTriggerSkip = 100;
-        const bool outputTrigger = true;
+        const bool outputTrigger = false;
 
         bool done = false;
         uint64_t time_now;
@@ -162,7 +163,7 @@ namespace bias {
         // initialize the serial port output
         if (outputTrigger) {
             std::cout << "In ProcessScores constructor, calling initPort.\n";
-            if (!portOutput.initPort().success) {
+            if (!portOutput.initPort(portName).success) {
                 std::cout << "Error initializing serial port\n";
             }
         }
@@ -273,7 +274,8 @@ namespace bias {
                         }
                         else {
                             nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                            scores[scoreCount - 1].score_ts = read_ondemand_;
+                            scores[scoreCount].score_ts = read_ondemand_;
+                            //scores[scoreCount-1].score_ts = read_ondemand_;
                         }
 
 
@@ -564,13 +566,15 @@ namespace bias {
         }
     }
 
-    RtnStatus SerialPortOutput::initPort() {
+    RtnStatus SerialPortOutput::initPort(string portName) {
 
         RtnStatus rtnStatus;
 
         bool portFound = false;
         QSerialPortInfo portInfo;
         refreshPortList();
+        portName_ = QString::fromStdString(portName);
+        std::cout << "Portname: " <<  portName  << std::endl;
 
         for (QSerialPortInfo serialInfo : serialInfoList_)
         {

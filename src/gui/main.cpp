@@ -19,7 +19,7 @@ namespace bias {
 
         // place ':' in the beginning of the string so that program can 
         //tell between '?' and ':' 
-        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:")) != -1)
+        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:p:d:")) != -1)
         {
             switch (opt)
             {
@@ -52,6 +52,12 @@ namespace bias {
                 break;
             case 'n':
                 cmdlineparams.window_size = stoi(optarg);
+                break;
+            case 'd':
+                cmdlineparams.debug = stoi(optarg);
+                break;
+            case 'p':
+                cmdlineparams.comport = optarg;
                 break;
             case ':':
                 printf("Required argument %c", opt);

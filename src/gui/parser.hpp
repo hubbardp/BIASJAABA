@@ -21,6 +21,8 @@ namespace bias {
         int numframes = 0;
         int wait_thres = 1500;
         int window_size = 5;
+        bool debug = false;
+        string comport = "";
     };
     
     void print(CmdLineParams& cmdlineparams);
