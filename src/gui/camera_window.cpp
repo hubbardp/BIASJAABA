@@ -61,7 +61,7 @@
 #include "jaaba_plugin.hpp"
 #include "test_config.hpp"
 // -------------------------------------
-#define isVidInput 1
+//#define isVidInput 1
 
 namespace bias
 {
@@ -351,10 +351,11 @@ namespace bias
         newImageQueuePtr_ -> clear();
         logImageQueuePtr_ -> clear();
         pluginImageQueuePtr_ -> clear();
-        skippedFramesPluginPtr_->clear();
+        //skippedFramesPluginPtr_->clear();
 
         QString autoNamingString = getAutoNamingString();
         unsigned int versionNumber = 0;
+
 
         //set nidaq pointer for cam 1
         if (cameraNumber_ == 1)
@@ -372,6 +373,11 @@ namespace bias
             if (nidaq_task != nullptr)
                 printf(" nidaq set - %d\n", cameraNumber_);
             
+        }
+
+        if (nidaq_task == nullptr)
+        {
+            std::cout << "Nidaq is NULL ************ " << std::endl;
         }
         
         imageGrabberPtr_ = new ImageGrabber(
@@ -511,6 +517,11 @@ namespace bias
                 currentPluginPtr -> setFileVersionNumber(versionNumber);
             }
             
+            // clear score queues
+            skippedFramesPluginPtr_->clear();
+            sideScoreQueuePtr_->clear();
+            frontScoreQueuePtr_->clear();
+
             pluginHandlerPtr_ -> setCameraNumber(cameraNumber_);
             pluginHandlerPtr_ -> setImageQueue(pluginImageQueuePtr_, skippedFramesPluginPtr_);
             pluginHandlerPtr_-> setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
@@ -521,12 +532,12 @@ namespace bias
                 currentPluginPtr->getName() == "jaabaPlugin") {
                 currentPluginPtr->setupNIDAQ(nidaq_task, loadTestConfigEnabled,
                     trial_num, testConfig);
-                currentPluginPtr->reset();
+                //currentPluginPtr->reset();
             }
             pluginHandlerPtr_->setAutoDelete(false);
 
         } 
-        actionPluginsEnabledPtr_ -> setEnabled(false);
+        actionPluginsEnabledPtr_->setEnabled(false);
         
         // Set image Grabber and image dispatcher
         // ------------------------------------------------------------------------------
@@ -592,46 +603,23 @@ namespace bias
                    );
         }
         
-        /*threadPoolPtr_ -> start(imageGrabberPtr_);
-        threadPoolPtr_ -> start(imageDispatcherPtr_);
-        if(isPluginEnabled())
-            threadPoolPtr_-> start(pluginHandlerPtr_);
+        //moved to startThreads to sync all cameras
+        /*if (isPluginEnabled()) {
+            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+            if (currentPluginPtr != nullptr)
+            {
+                if (currentPluginPtr->getName() == "signalSlotDemo" ||
+                    currentPluginPtr->getName() == "jaabaPlugin") {
+                    currentPluginPtr->gpuInit();
+                }
+            }
+        }
 
-        // Set Capture start and stop time
-        captureStartDateTime_ = QDateTime::currentDateTime();
-        captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
-
-        // Update GUI widget for capturing state
-        startButtonPtr_->setText(QString("Stop"));
-        connectButtonPtr_->setEnabled(false);
-        pluginActionGroupPtr_->setEnabled(false);
-        updateStatusLabel();
-
-        capturing_ = true;
-        showCameraLockFailMsg_ = false;
-
-        updateAllMenus();
-
-        showCameraLockFailMsg_ = true;
-
-        emit imageCaptureStarted(logging_);*/
-        
-        // ------------------------------------------------------------------------------
-
-        rtnStatus.success = true;
-        rtnStatus.message = QString("");
-        return rtnStatus;
-    }
-
-    RtnStatus CameraWindow::startThreads(bool showErrorDlg)
-    {
-        std::cout << "Start Entered Camera: " << cameraNumber_ << std::endl;
-        RtnStatus rtnStatus;   
         threadPoolPtr_ -> start(imageGrabberPtr_);
         threadPoolPtr_ -> start(imageDispatcherPtr_);
-        if (isPluginEnabled())
-            threadPoolPtr_->start(pluginHandlerPtr_);
-        
+        if(isPluginEnabled())
+            threadPoolPtr_-> start(pluginHandlerPtr_);*/
+
         // Set Capture start and stop time
         captureStartDateTime_ = QDateTime::currentDateTime();
         captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
@@ -650,12 +638,74 @@ namespace bias
         showCameraLockFailMsg_ = true;
 
         emit imageCaptureStarted(logging_);
+        
+        // ------------------------------------------------------------------------------
 
         rtnStatus.success = true;
         rtnStatus.message = QString("");
         return rtnStatus;
     }
 
+
+    RtnStatus CameraWindow::startThreads(bool showErrorDlg)
+    {
+        
+        RtnStatus rtnStatus;   
+        threadPoolPtr_ -> start(imageGrabberPtr_);
+        threadPoolPtr_ -> start(imageDispatcherPtr_);
+        if (isPluginEnabled()) {
+
+            threadPoolPtr_->start(pluginHandlerPtr_);
+            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+            currentPluginPtr->reset();
+        }
+        
+        // Set Capture start and stop time
+        /*captureStartDateTime_ = QDateTime::currentDateTime();
+        captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
+
+        // Update GUI widget for capturing state
+        startButtonPtr_->setText(QString("Stop"));
+        connectButtonPtr_->setEnabled(false);
+        pluginActionGroupPtr_->setEnabled(false);
+        updateStatusLabel();
+
+        capturing_ = true;
+        showCameraLockFailMsg_ = false;
+
+        updateAllMenus();
+
+        showCameraLockFailMsg_ = true;
+
+        emit imageCaptureStarted(logging_);*/
+
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+    }
+
+
+    RtnStatus CameraWindow::stopThreads()
+    {
+        RtnStatus rtnStatus;
+        imageGrabberPtr_->stop();
+        imageDispatcherPtr_->stop();
+        if (isPluginEnabled())
+            pluginHandlerPtr_->stop();
+
+
+        // initialize some plugin params for next trial       
+        QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+        if (currentPluginPtr->getName() == "jaabaPlugin") {
+            if(cameraNumber_ == 0)
+                currentPluginPtr->stopThread();
+            currentPluginPtr->initializeParamsProcessScores();
+        }
+
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+    }
 
 
     RtnStatus CameraWindow::stopImageCapture(bool showErrorDlg)
@@ -727,10 +777,21 @@ namespace bias
             //pluginImageQueuePtr_ -> releaseLock();
         }
 
+        if (isPluginEnabled())
+        {
+            // stop the score compute thread
+            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+            if (!currentPluginPtr.isNull())
+            {
+                currentPluginPtr->stopThread();   
+            }
+        }
+
         // Wait until threads are finished
         bool threadsDone = false;
         while (!threadsDone)
         {
+            
             threadsDone = threadPoolPtr_ -> waitForDone(THREADPOOL_WAIT_TIMEOUT);
 
             newImageQueuePtr_ -> acquireLock();
@@ -744,7 +805,19 @@ namespace bias
             pluginImageQueuePtr_ -> acquireLock();
             pluginImageQueuePtr_ -> signalNotEmpty();
             pluginImageQueuePtr_ -> releaseLock();
+            
         }
+
+        //std::cout << "Threads Done exited" << std::endl;
+
+        /*if (isPluginEnabled())
+        {
+            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+            if (!currentPluginPtr.isNull())
+            {
+                currentPluginPtr->stop();
+            }
+        }*/
 
         // Clear any stale data out of existing queues
         newImageQueuePtr_ -> acquireLock();
@@ -759,20 +832,10 @@ namespace bias
         pluginImageQueuePtr_ -> clear();
         pluginImageQueuePtr_ -> releaseLock();
 
-        
-        if (isPluginEnabled())
-        {
-            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin(); 
-            if (!currentPluginPtr.isNull())
-            {
-                currentPluginPtr -> stop();
-            }
-        }
-
-        if (nidaq_task != nullptr)
+        /*if (nidaq_task != nullptr)
         {
             nidaq_task->Cleanup();
-        }
+        }*/
 
         // Update data GUI information
         startButtonPtr_ -> setText(QString("Start"));
@@ -783,7 +846,7 @@ namespace bias
         updateStatusLabel();
         framesPerSec_ = 0.0;
         updateAllImageLabels();
-
+        
         updateAllMenus();
 
         emit imageCaptureStopped();
@@ -794,6 +857,72 @@ namespace bias
         delete imageDispatcherPtr_;
         delete imageLoggerPtr_;
 
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+    }
+
+
+    RtnStatus CameraWindow::startTrigger(bool showErrorDlg)
+    {
+        
+        RtnStatus rtnStatus;
+        QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+        if (currentPluginPtr != nullptr)
+        {
+            if (currentPluginPtr->getName() == "jaabaPlugin") {
+                currentPluginPtr->gpuInit();
+            }
+        }
+        else {
+            std::cout << "Gpu not initialzed" << std::endl;
+        }
+        
+        //QMetaObject::invokeMethod(this, "startThreads", Q_ARG(bool, true));
+        //emit this->finished_vidReading();
+        startThreadsAllCamerasTrigMode();
+
+        if (nidaq_task != nullptr && cameraNumber_ == 0) {
+
+            // start the nidaq tasks
+            nidaq_task->start_trigger_signal();
+
+        }
+        startTriggerButtonPtr_->setText(QString("Stop Trigger"));
+
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+    }
+
+
+    RtnStatus CameraWindow::stopTrigger(bool showErrorDlg)
+    {
+        RtnStatus rtnStatus;
+
+        /*QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+        if (currentPluginPtr != nullptr)
+        {
+            if (currentPluginPtr->getName() == "jaabaPlugin") {
+                currentPluginPtr->gpuDeinit();
+            }
+        }*/
+
+        //stop threads 
+        stopThreadsAllCamerasTrigMode();
+        
+        // stop threads, clear queues, delete objects
+        //if(!cmdlineparams_.isVideo)
+        //    stopAllCamerasTrigMode();
+
+        if (nidaq_task != nullptr)
+        {
+            nidaq_task->stop_trigger_signal();
+            nidaq_task->stopTasks();
+        }
+        
+        startTriggerButtonPtr_->setText(QString("Start Trigger"));
+        
         rtnStatus.success = true;
         rtnStatus.message = QString("");
         return rtnStatus;
@@ -2169,7 +2298,7 @@ namespace bias
     void CameraWindow::startTriggerButtonClicked()
     {
 
-        QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+        /*QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
         if (currentPluginPtr != nullptr)
         {
             if (currentPluginPtr->getName() == "signalSlotDemo" ||
@@ -2187,7 +2316,13 @@ namespace bias
             nidaq_task ->start_trigger_signal();
 
         }
+        startTriggerButtonPtr_->setText(QString("Stop Trigger"));*/
 
+        //check to see if cameras have been started
+        if (nidaq_task != nullptr) {
+            (!(nidaq_task->istrig) && capturing_) ? startTrigger() : stopTrigger();
+        }
+        
     }
 
     void CameraWindow::updateDisplayOnTimer()
@@ -8168,6 +8303,11 @@ namespace bias
             SLOT(startThreads())
         );
 
+        connect(this,
+            SIGNAL(stopped()),
+            partnerCameraWindowPtr,
+            SLOT(stopThreads())
+        );
     }
 
     void CameraWindow::enableFrametoFrame() {
@@ -8213,6 +8353,50 @@ namespace bias
         }
     }
 
+    void CameraWindow::startAllCamerasTrigMode()
+    {
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                cameraWindowPtr->startImageCapture();
+            }
+        }
+    }
+
+    void CameraWindow::stopAllCamerasTrigMode()
+    {
+
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                cameraWindowPtr->stopImageCapture();
+            }
+        }
+    }
+
+    void CameraWindow::startThreadsAllCamerasTrigMode()
+    {
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                emit cameraWindowPtr->finished_vidReading();
+            }
+        }
+    }
+
+    void CameraWindow::stopThreadsAllCamerasTrigMode()
+    {
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                emit cameraWindowPtr->stopped();
+            }
+        }
+    }
 
 } // namespace bias
 

@@ -66,6 +66,7 @@ namespace bias
             //virtual void processFrames();
             virtual void reset();
             virtual void stop();
+            virtual void stopThread();
             cv::Mat getCurrentImage();
             int getLaserTrigger();
             virtual void setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
@@ -78,8 +79,10 @@ namespace bias
                                        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
             //made it virtual void because of the need to access the function through base class pointer.
             virtual void gpuInit();
+            virtual void gpuDeinit();
             virtual QVariantMap getConfigAsMap();
             virtual RtnStatus setConfigFromMap(QVariantMap configMap);
+            virtual void initializeParamsProcessScores();
 
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;
@@ -115,6 +118,7 @@ namespace bias
             //QPointer<VisPlots> visplots;
             QPointer<QThreadPool> threadPoolPtr_;
 
+            CmdLineParams cmdlineparams_;
             std::shared_ptr<Lockable<GetTime>> gettime_;   
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;

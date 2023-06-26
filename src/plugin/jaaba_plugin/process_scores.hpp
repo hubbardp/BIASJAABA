@@ -108,6 +108,9 @@ namespace bias
            ProcessScores(QObject *parent, bool mesPass,
                          std::shared_ptr<Lockable<GetTime>> getTime,
                          CmdLineParams& cmdlineparams);
+           void initialize(bool mesPass,
+               std::shared_ptr<Lockable<GetTime>> getTime,
+               CmdLineParams& cmdlineparams);
           
            void stop();
            //void detectOn();

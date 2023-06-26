@@ -44,7 +44,9 @@ namespace bias
         void initialize();
         void configureNIDAQ();
         void startTasks();
+        void stopTasks();
         void start_trigger_signal();
+        void stop_trigger_signal();
         void Cleanup();
         void getCamtrig(unsigned int frameCount);
         void getNidaqTimeNow(uInt32& read_ondemand);

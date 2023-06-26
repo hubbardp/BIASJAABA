@@ -46,7 +46,6 @@ namespace bias
         active_ = value;
     }
 
-
     bool BiasPlugin::isActive()
     {
         return active_;
@@ -222,9 +221,14 @@ namespace bias
 
     void BiasPlugin::gpuInit() {}
 
+    void BiasPlugin::gpuDeinit() {}
+
     void BiasPlugin::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
         std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr) {}
 
+    void BiasPlugin::stopThread() {}
+
+    void BiasPlugin::initializeParamsProcessScores() {}
 
     // Protected methods
     // ------------------------------------------------------------------------

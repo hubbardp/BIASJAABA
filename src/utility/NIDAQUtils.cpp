@@ -66,18 +66,44 @@ namespace bias {
 
     void NIDAQUtils::startTasks()
     {
+        acquireLock();
         DAQmxErrChk(DAQmxStartTask(taskHandle_grab_in));
         DAQmxErrChk(DAQmxStartTask(taskHandle_trigger_in));
         DAQmxErrChk(DAQmxStartTask(taskHandle_fout));
         DAQmxErrChk(DAQmxStartTask(taskHandle_sampout));
-        printf("tasks started******************************\n ");
+        releaseLock();
+        //printf("***** tasks started ***** \n ");
+    }
+
+    void NIDAQUtils::stopTasks()
+    {
+        acquireLock();
+        DAQmxErrChk(DAQmxStopTask(taskHandle_trigger_in));
+        DAQmxErrChk(DAQmxStopTask(taskHandle_grab_in));
+        DAQmxErrChk(DAQmxStopTask(taskHandle_sampout));
+        DAQmxErrChk(DAQmxStopTask(taskHandle_fout));       
+        releaseLock();
+        //printf("***** tasks stopped *****\n ");
     }
 
     void NIDAQUtils::start_trigger_signal() {
 
+        //printf("***** Start trigger Entred *****");
+        acquireLock();
         DAQmxErrChk(DAQmxStartTask(taskHandle_start_signal));
         istrig = true;
-        printf("istrig******************************\n ", istrig); 
+        releaseLock(); 
+        //printf("***** Trig Started *****\n  ", istrig); 
+
+    }
+
+    void NIDAQUtils::stop_trigger_signal() {
+
+        acquireLock();
+        DAQmxErrChk(DAQmxStopTask(taskHandle_start_signal));
+        istrig = false;
+        releaseLock();
+       //printf("***** Trig stopped *****\n ", istrig);
 
     }
 
@@ -88,19 +114,17 @@ namespace bias {
             /*********************************************/
             // DAQmx Stop Code
             /*********************************************/
-            DAQmxStopTask(taskHandle_trigger_in);
             DAQmxClearTask(taskHandle_trigger_in);
-            DAQmxStopTask(taskHandle_grab_in);
             DAQmxClearTask(taskHandle_grab_in);
-            DAQmxStopTask(taskHandle_sampout);
             DAQmxClearTask(taskHandle_sampout);
-            DAQmxStopTask(taskHandle_fout);
             DAQmxClearTask(taskHandle_fout);
+            DAQmxClearTask(taskHandle_start_signal);
             taskHandle_fout = 0;
             taskHandle_sampout = 0;
             taskHandle_trigger_in = 0;
             taskHandle_grab_in = 0;
             taskHandle_start_signal = 0;
+            istrig = false;
         }
 
     }

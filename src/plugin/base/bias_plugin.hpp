@@ -82,9 +82,11 @@ namespace bias
                 bool testConfigEnabled, string trial_info,
                 std::shared_ptr<TestConfig> testConfig);
             virtual void gpuInit();
+            virtual void gpuDeinit();
             virtual void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
                                        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
-
+            virtual void stopThread();
+            virtual void initializeParamsProcessScores();
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
@@ -117,7 +119,6 @@ namespace bias
             void setRequireTimer(bool value);
             void openLogFile();
             void closeLogFile();
-
             
     };
 

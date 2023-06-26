@@ -17,17 +17,35 @@ namespace bias {
                                  CmdLineParams& cmdlineparams) : QObject(parent)
     {
 
+        initialize(mesPass, getTime, cmdlineparams);
+        
+        // this is defined separately here because it is initialised when constructor
+        // is called but some variables need to be reinitialized when multiple trials of the plugin
+        //are run. this is the variable that does not need to be reinitialized foe every trial
+        
+        isHOGHOFInitialised = false;
         stopped_ = true;
+        isSide = false;
+        isFront = false;
+        
+        //frame_read_stamps.resize(2798,0);
+        //predScoreFront_ = &classifier->predScoreFront;
+        //predScoreSide_ = &classifier->predScoreSide;
+
+    }
+
+    void ProcessScores::initialize(bool mesPass, std::shared_ptr<Lockable<GetTime>> getTime,
+        CmdLineParams& cmdlineparams)
+    {
+
+        //stopped_ = true;
         //detectStarted_ = false;
         save = false;
-        isSide= false;
-        isFront = false;
         processedFrameCount = 0;
         processSide = false;
         processFront = false;
         isProcessed_side = false;
         isProcessed_front = false;
-        isHOGHOFInitialised = false;
         mesPass_ = mesPass;
         frameCount_ = 0;
         partner_frameCount_ = -1;
@@ -44,10 +62,37 @@ namespace bias {
         visualize = cmdlineparams.visualize;
         wait_threshold = cmdlineparams.wait_thres;
         portName = cmdlineparams.comport;
+        
+        if (sideScoreQueuePtr_ != nullptr) {
+            if (!sideScoreQueuePtr_->empty()){
+                sideScoreQueuePtr_->acquireLock();
+                sideScoreQueuePtr_->clear();
+                sideScoreQueuePtr_->releaseLock();
+                std::cout << "Side Queue Cleared " << std::endl;
+            }
+            else {
+                std::cout << "Side queue is empty" << std::endl;
+            }
+        }
+        else {
+            std::cout << "Side Score NULL" << std::endl;
+        }
 
-        //frame_read_stamps.resize(2798,0);
-        //predScoreFront_ = &classifier->predScoreFront;
-        //predScoreSide_ = &classifier->predScoreSide;
+        if (frontScoreQueuePtr_ != nullptr) {
+            if (!frontScoreQueuePtr_->empty()) {
+                frontScoreQueuePtr_->acquireLock();
+                frontScoreQueuePtr_->clear();
+                frontScoreQueuePtr_->releaseLock();
+                std::cout << "Front Queue Cleared " << std::endl;
+            }
+            else {
+                std::cout << "Front queue is empty" << std::endl;
+            }
+            
+        }
+        else {
+            std:cout << "Front Score NULL" << std::endl;
+        }
 
     }
    
@@ -172,8 +217,15 @@ namespace bias {
         stopped_ = false;
         releaseLock();
         
+        std::cout << "Score count" << scoreCount 
+            << "Numframes" << numFrames << std::endl;
+
         while (!done)
         {
+            acquireLock();
+            done = stopped_;
+            releaseLock();
+
             if (mesPass_) 
             {
 
@@ -211,6 +263,7 @@ namespace bias {
                 } 
                 else if (!sideScoreQueuePtr_->empty() && !frontScoreQueuePtr_->empty()) {
 
+                    //std::cout << "Both queues Filled" << std::endl;
 
                     frontScoreQueuePtr_->acquireLock();
                     predScorePartner = frontScoreQueuePtr_->front();
@@ -220,6 +273,10 @@ namespace bias {
                     predScore = sideScoreQueuePtr_->front();
                     sideScoreQueuePtr_->releaseLock();
 
+                    //std::cout << "PredScore FrameCount " << predScore.frameCount
+                    //    << "PredScore Partner FrameCount " << predScorePartner.frameCount
+                    //    << std::endl;
+
                     // to keep up with frame where both views are skipped 
                     if (scoreCount < predScore.frameCount)
                     {
@@ -228,6 +285,7 @@ namespace bias {
                         scoreCount++;
                         continue;
                     }
+                    //std::cout << "Case 1" << std::endl;
 
                     // to keep up with frames where both views are skipped
                     if (scoreCount < predScorePartner.frameCount)
@@ -237,19 +295,19 @@ namespace bias {
                         scoreCount++;
                         continue;
                     }
-                   
+                    //std::cout << "Case 2" << std::endl;
                     
                     if (scoreCount > predScore.frameCount) {
                         sideScoreQueuePtr_->pop();
                         continue;
                     }
-
+                    //std::cout << "Case 3" << std::endl;
 
                     if (scoreCount > predScorePartner.frameCount){
                         frontScoreQueuePtr_->pop();
                         continue;
                     }
-                    
+                    //std::cout << "Case 4" << std::endl;
                     
                     if (predScore.frameCount == predScorePartner.frameCount)
                     {
@@ -357,10 +415,8 @@ namespace bias {
                     score_ts = predScore.score_side_ts;
                     
                     if ((time_now - score_ts) > wait_threshold)
-                    {
-                        
-                        skipFront = true;
-                       
+                    {                       
+                        skipFront = true;                    
                     }
 
                 }
@@ -397,7 +453,7 @@ namespace bias {
                             if (visualize) {
                                 visualizeScores(predScore.score);
                             }
-
+                            
                             scoreCount++;
                         }
                         
@@ -460,6 +516,7 @@ namespace bias {
 
         }
      
+        std::cout << "ProcessScores run method exited " << std::endl;
         if (outputTrigger) {
             portOutput.disconnectTriggerDev();
         }

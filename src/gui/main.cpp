@@ -19,7 +19,7 @@ namespace bias {
 
         // place ':' in the beginning of the string so that program can 
         //tell between '?' and ':' 
-        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:p:d:")) != -1)
+        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:p:d:n:")) != -1)
         {
             switch (opt)
             {

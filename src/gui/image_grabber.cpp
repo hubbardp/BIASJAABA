@@ -324,7 +324,8 @@ namespace bias {
         // Grab images from camera until the done signal is given
         while (!done)
         {
-
+            //std::cout << "FrameCount Imagegrabber " << frameCount 
+            //    << "Cameranumber " << cameraNumber_  << std::endl;
             acquireLock();
             done = stopped_;
             releaseLock();
@@ -405,10 +406,15 @@ namespace bias {
 
             }
             else {
-           
-                //std::cout << frameCount << std::endl;
-                if (startUpCount >= numStartUpSkip_)
+          
+                if (frameCount == nframes_) {
+                    QThread::yieldCurrentThread();
+                    continue;
+                }
+
+                if (nidaq_task_ != nullptr && startUpCount >= numStartUpSkip_)
                     nidaq_task_->getCamtrig(frameCount);
+                
 
                 cameraPtr_->acquireLock();
                 try
@@ -537,15 +543,17 @@ namespace bias {
                 // Test Configuration
                 //------------------------------------------------------------------------
                 if (!isVideo) {
-                    if (nidaq_task_ != nullptr && frameCount == 0) {
-                        //#if !isVidInput
-                        fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
-                        //#endif
+                    if (nidaq_task_ != nullptr ){
+                        if (frameCount == 0) {
+                            
+                            fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
+                            
+                        }
+                        nidaq_task_->getNidaqTimeNow(read_ondemand_);
                     }
-
-                    //#if !isVidInput
-                    nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                    //#endif 
+                    else {
+                        //fstfrmtStampRef_ = static_cast<uint64_t>(gettime_->getPCtime());
+                    }
                 }
 
 
@@ -555,7 +563,7 @@ namespace bias {
                     //max(fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1)) + delay_framethres, prev_curTime);
                     prev_curTime = curTime_vid;
                     avgwait_time = curTime_vid - expTime_vid;
-                }
+                } 
                 else {
                     avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime;
                     expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
@@ -578,7 +586,7 @@ namespace bias {
                         newImageQueuePtr_->push(stampImg);
                         newImageQueuePtr_->signalNotEmpty();
                         newImageQueuePtr_->releaseLock();
-
+                        //std::cout << "Frames Transmitting " << cameraNumber_ << std::endl;
                     }
                     else {
                         
@@ -630,6 +638,8 @@ namespace bias {
                 ///---------------------------------------------------------------
 //#if DEBUG
                 if (isDebug) {
+
+                    
                     if (testConfigEnabled_ && ((frameCount - 1) < testConfig_->numFrames)) {
 
                         if (!testConfig_->imagegrab_prefix.empty()) {
@@ -675,7 +685,7 @@ namespace bias {
                             if (frameCount == testConfig_->numFrames
                                 && !testConfig_->nidaq_prefix.empty())
                             {
-
+                                
                                 std::string filename = testConfig_->dir_list[0] + "/"
                                     + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
                                     + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
@@ -782,7 +792,7 @@ namespace bias {
         } // while (!done) 
 
         // Stop image capture
-
+        std::cout << "Imagegrabber exited " << std::endl;
         error = false;
         cameraPtr_->acquireLock();
         try

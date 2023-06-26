@@ -75,9 +75,8 @@ namespace bias
 
     void HOGHOF::initHOGHOF(int img_height, int img_width)
     {
-
+        std::cout << "Gpu Initialized - - - " << std::endl;
         int nDevices;
-        
         cudaError_t err = cudaGetDeviceCount(&nDevices);
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
         loadImageParams(img_width, img_height);

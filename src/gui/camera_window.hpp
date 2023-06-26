@@ -75,8 +75,9 @@ namespace bias
             RtnStatus disconnectCamera(bool showErrorDlg=true);
             RtnStatus startImageCapture(bool showErrorDlg=true);
             RtnStatus stopImageCapture(bool showErrorDlg=true);
+            RtnStatus startTrigger(bool showErrorDlg = true);
+            RtnStatus stopTrigger(bool showErrorDlg = true);
             
-
             RtnStatus setConfigurationFromJson(
                     QByteArray jsonConfig, 
                     bool showErrorDlg=true
@@ -169,7 +170,7 @@ namespace bias
             //DEVEL
             bool vidFinsihed_reading;
             CmdLineParams cmdlineparams_;
-
+            
         signals:
 
             void imageCaptureStarted(bool logging);
@@ -183,6 +184,7 @@ namespace bias
             void valueChangedFrametoFrame(bool frametoframeLatencyVal);
             void finished_vidReading();
             void trig(bool plugin);
+            void stopped();
           
         protected:
 
@@ -266,6 +268,7 @@ namespace bias
             void enableFrametoFrame();
             void autostartTriggerSignal();
             RtnStatus startThreads(bool showErrorDlg = true);
+            RtnStatus stopThreads();
             //void loadPluginFile(QPointer<BiasPlugin> pluginPtr);
             //void loadPluginFile();
 
@@ -405,6 +408,10 @@ namespace bias
             void setupCaptureDurationTimer();
             void updateWindowTitle();
             QPointer<BiasPlugin> getCurrentPlugin(); 
+            void startAllCamerasTrigMode();
+            void stopAllCamerasTrigMode();
+            void startThreadsAllCamerasTrigMode();
+            void stopThreadsAllCamerasTrigMode();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();
