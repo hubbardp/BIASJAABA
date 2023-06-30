@@ -141,7 +141,7 @@ namespace bias
         acquireLock();
         stopped_ = false;
         releaseLock();
-
+        std::cout << " Plugin staretd*********** " << std::endl;
         //GpuTimer timer;
         //timer.Start();
         while (!done)
@@ -187,7 +187,7 @@ namespace bias
         //std::cout << timer.Elapsed()/1000 << std::endl;
         
         // Plugin clean up actions
-        //std::cout << "plugin: clean up" << std::endl;
+        std::cout << "plugin: clean up" << std::endl;
 
     } // PlugingHandler::run()
 

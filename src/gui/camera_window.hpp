@@ -413,6 +413,7 @@ namespace bias
             void stopAllCamerasTrigMode();
             void startThreadsAllCamerasTrigMode();
             void stopThreadsAllCamerasTrigMode();
+            void resetImageGrabParams();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();

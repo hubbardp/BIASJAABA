@@ -74,8 +74,8 @@ namespace bias
 
             void initializeVid();
             void setTrialNum(string trialnum);
-            void reinitializeImageGrab(unsigned long& frameCount,
-                bool& isFirst, bool& nidaqTrigged, double& dtEstimate, unsigned long& startupcount);
+            //void reinitializeImageGrab(unsigned long& frameCount,
+            //    bool& isFirst, bool& nidaqTrigged, double& dtEstimate, unsigned long& startupcount);
 
             //cmdline params
             string input_video_dir;
@@ -97,9 +97,11 @@ namespace bias
             void stopCaptureError(unsigned int errorId, QString errorMsg);
             void captureError(unsigned int errorId, QString errorMsg); 
             void nidaqtriggered(bool istriggered);
+            void setImagegrabParams();
         
         private slots:
             void setTriggered(bool istriggered);
+            void resetParams();
 
         private:
             bool ready_;

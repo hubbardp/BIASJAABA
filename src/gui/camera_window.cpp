@@ -659,12 +659,14 @@ namespace bias
             }
         }
         
-        threadPoolPtr_->start(imageGrabberPtr_);
-        threadPoolPtr_->start(imageDispatcherPtr_);
-
-        if (isPluginEnabled()) {
-            threadPoolPtr_->start(pluginHandlerPtr_);
-        }
+        //if (!imageGrabberPtr_->imagegrab_started)
+        //{
+            threadPoolPtr_->start(imageGrabberPtr_);
+            threadPoolPtr_->start(imageDispatcherPtr_);
+            if (isPluginEnabled()) {
+                threadPoolPtr_->start(pluginHandlerPtr_);
+            }
+        //}
         
         // Set Capture start and stop time
         /*captureStartDateTime_ = QDateTime::currentDateTime();
@@ -795,7 +797,7 @@ namespace bias
             //pluginImageQueuePtr_ -> releaseLock();
         }
 
-        if (isPluginEnabled())
+        /*if (isPluginEnabled())
         {
             // stop the score compute thread
             QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
@@ -803,7 +805,7 @@ namespace bias
             {
                 currentPluginPtr->stopThread();   
             }
-        }
+        }*/
 
         // Wait until threads are finished
         bool threadsDone = false;
@@ -898,14 +900,13 @@ namespace bias
 
         //QMetaObject::invokeMethod(this, "startThreads", Q_ARG(bool, true));
         //emit this->finished_vidReading();
-        startThreadsAllCamerasTrigMode();
+        if(!imageGrabberPtr_->imagegrab_started)
+            startThreadsAllCamerasTrigMode();
 
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
 
             // start the nidaq tasks
-            //imageGrabberPtr_->nidaqTriggered = false;
-            //emit imageGrabberPtr_->nidaqtriggered(imageGrabberPtr_->nidaqTriggered);
-
+            resetImageGrabParams();
             nidaq_task->start_trigger_signal();
 
         }
@@ -930,7 +931,7 @@ namespace bias
         }*/
 
         //stop threads 
-        stopThreadsAllCamerasTrigMode();
+        //stopThreadsAllCamerasTrigMode();
 
         if (nidaq_task != nullptr)
         {
@@ -8407,6 +8408,7 @@ namespace bias
 
     void CameraWindow::startThreadsAllCamerasTrigMode()
     {
+        std::cout << "Only once  " << std::endl;
         if ((cameraWindowPtrList_->size()) > 1)
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
@@ -8442,6 +8444,24 @@ namespace bias
                 }
             }
         }
+    }
+
+    void CameraWindow::resetImageGrabParams()
+    {
+        QPointer<ImageGrabber>imagegrabptr;
+
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                imagegrabptr = cameraWindowPtr->getImageGrabberPtr();
+                imagegrabptr->nidaqTriggered = false;
+                emit imagegrabptr->nidaqtriggered(imagegrabptr->nidaqTriggered);
+                emit imagegrabptr->setImagegrabParams();
+
+            }
+        }
+        
     }
 
 } // namespace bias

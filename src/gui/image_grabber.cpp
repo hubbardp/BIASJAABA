@@ -281,6 +281,13 @@ namespace bias {
             partnerImageGrabberPtr,
             SLOT(setTriggered(bool))
         );
+        connect(
+            this,
+            SIGNAL(setImagegrabParams()),
+            partnerImageGrabberPtr,
+            SLOT(resetParams())
+
+        );
 
         // Start image capture
         cameraPtr_->acquireLock();
@@ -339,7 +346,7 @@ namespace bias {
         //    }
         //}
         //// -------------------------------------------------------------------------------
-
+        std::cout << "Imagegrab started " << std::endl;
         // Grab images from camera until the done signal is given
         while (!done)
         {
@@ -349,7 +356,7 @@ namespace bias {
             releaseLock();
 
             if (!nidaqTriggered && nidaq_task_ != nullptr) {
-                std::cout << "Entering tasks started" << std::endl;
+                
                 if (cameraNumber_ == 0) {
                     nidaq_task_->startTasks();
                     nidaqTriggered = true;
@@ -643,7 +650,6 @@ namespace bias {
                     //std::cout << "Not skipped " << frameCount << std::endl;
                 }
                 end_process = gettime_->getPCtime();
-                
                 frameCount++;
                 //delay = end_process - start_process;
                 
@@ -1053,6 +1059,7 @@ namespace bias {
         acquireLock();
         nidaqTriggered = istriggered;
         releaseLock();
+        
     }
 
     void ImageGrabber::setTrialNum(string trialnum)
@@ -1060,15 +1067,13 @@ namespace bias {
         trial_num = trialnum;
     }
 
-    void ImageGrabber::reinitializeImageGrab(unsigned long& frameCount,
-        bool& isFirst, bool& nidaqTrigged, double& dtEstimate, unsigned long& startupcount)
+    void ImageGrabber::resetParams()
     {
         isFirst = true;
-        startupcount = 0;
+        startUpCount = 0;
         dtEstimate = 0.0;
-        nidaqTriggered = false;
-    
-
+        frameCount = 0;
+        std::cout << " Params set for camera number: " << cameraNumber_ << std::endl;
     }
    
 } // namespace bias
