@@ -119,6 +119,9 @@ namespace bias
 
         //Compute and copy HOG/HOF
 
+        //HOGCompute(hog_ctx, img);
+        //HOGOutputCopy(hog_ctx, hog_out.data(), hog_outputbytes);
+
         HOFCompute(hof_ctx, img.buf, hof_f32); // call to compute and copy is asynchronous
         HOFOutputCopy(hof_ctx, hof_out.data(), hof_outputbytes); // should be called one after 
                                                            // the other to get correct answer

@@ -73,6 +73,9 @@ namespace bias
             static unsigned int MAX_ERROR_COUNT;
 
             void initializeVid();
+            void setTrialNum(string trialnum);
+            void reinitializeImageGrab(unsigned long& frameCount,
+                bool& isFirst, bool& nidaqTrigged, double& dtEstimate, unsigned long& startupcount);
 
             //cmdline params
             string input_video_dir;
@@ -80,11 +83,23 @@ namespace bias
             bool isSkip;
             bool isDebug;
 
+            // moved from imagegrgab run method to public
+            bool isFirst = true;
+            bool nidaqTriggered = false;
+            unsigned long frameCount = 0;
+            unsigned long startUpCount = 0;
+            double dtEstimate = 0.0;
+            bool imagegrab_started = false;
+
         signals:
             void startTimer();
             void startCaptureError(unsigned int errorId, QString errorMsg);
             void stopCaptureError(unsigned int errorId, QString errorMsg);
             void captureError(unsigned int errorId, QString errorMsg); 
+            void nidaqtriggered(bool istriggered);
+        
+        private slots:
+            void setTriggered(bool istriggered);
 
         private:
             bool ready_;
@@ -97,6 +112,8 @@ namespace bias
             string trial_num;
             uint64_t fstfrmtStampRef_;
             bool process_frame_time_;
+            int numTrials_;
+            
 
             unsigned int partnerCameraNumber_;
             uInt32 read_buffer_ = 0, read_ondemand_ = 0;
@@ -106,6 +123,7 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             QPointer<CameraWindow> partnerCameraWindowPtr;
+            QPointer<ImageGrabber> partnerImageGrabberPtr;
 
             void run();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
@@ -149,6 +167,7 @@ namespace bias
             unsigned int getPartnerCameraNumber();
             QPointer<CameraWindow> getCameraWindow();
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
+            
     };
 
 

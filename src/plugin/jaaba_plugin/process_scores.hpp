@@ -144,11 +144,14 @@ namespace bias
            void write_frameNum(std::string filename, vector<int>& frame_vec, int numSkips);
            void writeAllFeatures(string filename, vector<float>& feat_out,
                int feat_size);
+           void setTrialNum(string trialnum);
 
         private :
 
            bool stopped_;
            bool ready_;
+           string trial_num_;
+           bool testConfigEnabled_;
            //float threshold_runtime = static_cast<float>(3000);
  
            QQueue<FrameData> frameQueue_;

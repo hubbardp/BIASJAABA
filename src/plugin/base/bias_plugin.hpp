@@ -87,6 +87,8 @@ namespace bias
                                        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
             virtual void stopThread();
             virtual void initializeParamsProcessScores();
+            virtual void setTrialNum(string trialnum);
+
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;

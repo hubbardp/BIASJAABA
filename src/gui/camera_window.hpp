@@ -368,8 +368,9 @@ namespace bias
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task;
             std::shared_ptr<TestConfig>testConfig;
+            void setTrialNum();
+
             QPointer<QThreadPool> threadPoolPtr_;
-            
             QPointer<ImageGrabber> imageGrabberPtr_;
             QPointer<ImageDispatcher> imageDispatcherPtr_;
             QPointer<ImageLogger> imageLoggerPtr_;
@@ -518,7 +519,7 @@ namespace bias
 
             unsigned int getPartnerCameraNumber();
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
-            //void loadPluginConfig(QPointer<BiasPlugin> pluginPtr, QString& config_filename);
+            //void loadPluginConfig(QPointer<BiasPlugin> pluginPtr, QString& config_filename);     
 
     }; // class CameraWindow
 

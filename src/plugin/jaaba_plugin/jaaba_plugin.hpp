@@ -83,6 +83,7 @@ namespace bias
             virtual QVariantMap getConfigAsMap();
             virtual RtnStatus setConfigFromMap(QVariantMap configMap);
             virtual void initializeParamsProcessScores();
+            virtual void setTrialNum(string trialnum);
 
             QPointer<ProcessScores> processScoresPtr_side;
             QPointer<ProcessScores> processScoresPtr_front;

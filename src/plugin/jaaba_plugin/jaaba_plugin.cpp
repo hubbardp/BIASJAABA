@@ -219,8 +219,9 @@ namespace bias {
         {
             if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
             {
-                if(classify_scores)
+                if (classify_scores) {
                     threadPoolPtr_->start(processScoresPtr_side);
+                }
 
                 if (visualize)
                 {
@@ -299,8 +300,8 @@ namespace bias {
                                        processScoresPtr_side->HOGHOF_frame->hof_shape.bin;
 
                 }
-                hoghof_feat.resize(numframes_, std::vector<float>());
-                hoghof_feat_avg.resize(numframes_, std::vector<float>());
+                //hoghof_feat.resize(numframes_, std::vector<float>());
+                //hoghof_feat_avg.resize(numframes_, std::vector<float>());
 
                 acquireLock();
                 detectStarted = true;
@@ -393,6 +394,24 @@ namespace bias {
     {
         if (isReceiver()) {
             processScoresPtr_side->isHOGHOFInitialised = false;
+            if (processScoresPtr_side != nullptr)
+            {
+
+                if (sideRadioButtonPtr_->isChecked())
+                {
+
+                    if (processScoresPtr_side->HOGHOF_frame->isHOGPathSet
+                        && processScoresPtr_side->HOGHOF_frame->isHOFPathSet
+                        && processScoresPtr_side->classifier->isClassifierPathSet)
+                    {
+
+                        HOFTeardown(processScoresPtr_side->HOGHOF_frame->hof_ctx);
+                        HOGTeardown(processScoresPtr_side->HOGHOF_frame->hog_ctx);
+                        std::cout << "side gpu ctx stop " << std::endl;
+                    }
+
+                }
+            }
 
             if (nDevices_ >= 2)
             {
@@ -410,6 +429,23 @@ namespace bias {
         if (isSender()) {
             processScoresPtr_front->isHOGHOFInitialised = false;
 
+            if (processScoresPtr_front != nullptr)
+            {
+
+                if (frontRadioButtonPtr_->isChecked())
+                {
+
+                    if (processScoresPtr_front->HOGHOF_partner->isHOGPathSet
+                        && processScoresPtr_front->HOGHOF_partner->isHOFPathSet
+                        && processScoresPtr_front->classifier->isClassifierPathSet)
+                    {
+
+                        HOFTeardown(processScoresPtr_front->HOGHOF_partner->hof_ctx);
+                        HOGTeardown(processScoresPtr_front->HOGHOF_partner->hog_ctx);
+                        std::cout << "front gpu ctx stop " << std::endl;
+                    }
+                }
+            }
         }
 
     }
@@ -592,13 +628,14 @@ namespace bias {
                 {
                     while (processScoresPtr_side->processedFrameCount < frameCount_)
                     {
+                        std::cout << "side skipped in Jaaba plugin " << std::endl;
                         if (isDebug && testConfigEnabled_) {
                             ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
                         }
 
                         if (saveFeat) {
-                            std::cout << "side skipped in Jaaba plugin " << std::endl;
+                            
                             saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv", 
                                 processScoresPtr_side->HOGHOF_frame->hog_out_skip,
                                 processScoresPtr_side->HOGHOF_frame->hof_out_skip,
@@ -623,13 +660,14 @@ namespace bias {
                 {
                     while (processScoresPtr_front->processedFrameCount < frameCount_)
                     {
+                        std::cout << "front skipped in Jaaba plugin" << std::endl;
                         if (isDebug && testConfigEnabled_) {
                             ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
                         }
 
                         if (saveFeat) {
-                            std::cout << "front skipped in Jaaba plugin" << std::endl;
+                            
                             saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", 
                                 processScoresPtr_front->HOGHOF_partner->hog_out_skip,
                                 processScoresPtr_front->HOGHOF_partner->hof_out_skip,
@@ -724,6 +762,7 @@ namespace bias {
                                         hog_num_elements, hof_num_elements);
                       
                                 }
+
                                 if (processScoresPtr_front->classifier->isClassifierPathSet)
                                     //&& processScoresPtr_front->processedFrameCount > 0)
                                 {
@@ -1495,13 +1534,11 @@ namespace bias {
         if(sideRadioButtonPtr_->isChecked())
         {
 
-//#if isVidInput
             if (isVideo) {
                 if (isReceiver())
                     processScoresPtr_side->isVid = 1;
             }
-
-//#endif          
+      
             HOGHOF *hoghofside = new HOGHOF();//(this);
 
             if (processScoresPtr_side != nullptr)
@@ -1597,8 +1634,7 @@ namespace bias {
                 processScoresPtr_side->classifier->classifier_file = config_file_dir + classifier_filename;
                 processScoresPtr_side->classifier->allocate_model();
                 processScoresPtr_side->classifier->loadclassifier_model();
-                
-                 
+                          
             }
 
             if (!mesPass)
@@ -2207,6 +2243,15 @@ namespace bias {
             hof_feat_avg[i] = hof_feat_avg[i] - hof_past[i];
          }
 
+    }
+
+    void JaabaPlugin::setTrialNum(string trialnum)
+    {
+        trial_num_ = trialnum;
+        if (processScoresPtr_side != nullptr && cameraNumber_==0)
+        {
+            processScoresPtr_side->setTrialNum(trialnum);
+        }
     }
 
     /*void JaabaPlugin::saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,

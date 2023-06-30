@@ -56,6 +56,7 @@ namespace bias {
         side_read_time_ = 0;
         front_read_time_ = 0;
         fstfrmStampRef = 0;
+        //isHOGHOFInitialised = false;
 
         output_score_dir = cmdlineparams.output_dir;
         isVideo = cmdlineparams.isVideo;
@@ -190,6 +191,9 @@ namespace bias {
         bool done = false;
         uint64_t time_now;
         double score_ts;
+        uint64_t ts_last_score = INT_MAX, cur_time = 0;
+
+        string filename;
         
 //#if isVidInput
         /*((if (isVideo) {
@@ -199,8 +203,12 @@ namespace bias {
             wait_threshold = 1500;
         }*/
 //#endif
-        uint64_t ts_last_score = INT_MAX, cur_time=0;
-        string filename = output_score_dir + "classifier_score.csv";
+        
+        if (testConfigEnabled_)
+            filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
+        else
+            filename = output_score_dir + "classifier_score.csv";
+
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
@@ -216,9 +224,6 @@ namespace bias {
         acquireLock();
         stopped_ = false;
         releaseLock();
-        
-        std::cout << "Score count" << scoreCount 
-            << "Numframes" << numFrames << std::endl;
 
         while (!done)
         {
@@ -511,7 +516,9 @@ namespace bias {
                 std::cout << "Writing score...." << std::endl;
                 write_score_final(filename,numFrames-1, scores);
                 std::cout << "Written ...." << std::endl;
-                
+                acquireLock();
+                done = true;
+                releaseLock();
             }
 
         }
@@ -601,6 +608,15 @@ namespace bias {
         x_out.close();
 
     }
+
+
+    void ProcessScores::setTrialNum(string trialnum)
+    {
+        trial_num_ = trialnum;
+        testConfigEnabled_ = 1;
+        std::cout << "Trial number set" << std::endl;
+    }
+
 
     // copied from GrabDetectorPlugin::refreshPortList
     // todo: refactor code to share

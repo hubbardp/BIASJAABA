@@ -2294,7 +2294,7 @@ namespace bias {
         trial_num_ = trial_info;
         testConfigEnabled_ = testConfigEnabled;
 
-        std::cout << "setup........ " << cameraNumber_ <<  std::endl;
+        std::cout << "setup in cameradevicespin " << cameraNumber_ <<  std::endl;
     }
 
     void CameraDevice_spin::skipDetected(StampedImage& stampedImage) {

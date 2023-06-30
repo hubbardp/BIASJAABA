@@ -72,7 +72,7 @@ namespace bias {
         DAQmxErrChk(DAQmxStartTask(taskHandle_fout));
         DAQmxErrChk(DAQmxStartTask(taskHandle_sampout));
         releaseLock();
-        //printf("***** tasks started ***** \n ");
+        printf("***** tasks started ***** \n ");
     }
 
     void NIDAQUtils::stopTasks()
@@ -83,7 +83,7 @@ namespace bias {
         DAQmxErrChk(DAQmxStopTask(taskHandle_sampout));
         DAQmxErrChk(DAQmxStopTask(taskHandle_fout));       
         releaseLock();
-        //printf("***** tasks stopped *****\n ");
+        printf("***** tasks stopped *****\n ");
     }
 
     void NIDAQUtils::start_trigger_signal() {
@@ -102,6 +102,7 @@ namespace bias {
         acquireLock();
         DAQmxErrChk(DAQmxStopTask(taskHandle_start_signal));
         istrig = false;
+        std::fill(cam_trigger.begin(), cam_trigger.end(), 0);
         releaseLock();
        //printf("***** Trig stopped *****\n ", istrig);
 

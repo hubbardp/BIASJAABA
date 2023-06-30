@@ -94,7 +94,7 @@ namespace bias {
         testConfig_ = testConfig;
         trial_num = trial_info;
         fstfrmtStampRef_ = 0.0;
-        
+
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
         partnerCameraWindowPtr = getPartnerCameraWindowPtr();
@@ -109,11 +109,6 @@ namespace bias {
         }
         errorCountEnabled_ = true;
 
-        if (isVideo) {
-            std::cout << "Initializing video" << std::endl;
-            initializeVid();
-        }
-
         nidaq_task_ = nidaq_task;
         // needs to be allocated here outside the testConfig.Intend to record nidaq
         // camera trigger timestamps for other threads even if imagegrab is 
@@ -123,6 +118,11 @@ namespace bias {
         }
 
         gettime_ = gettime;
+
+        if (isVideo) {
+            std::cout << "Initializing video" << std::endl;
+            initializeVid();
+        }
 
 //#if DEBUG
         if (isDebug) {
@@ -154,6 +154,7 @@ namespace bias {
                 }
             }
         }
+
 //#endif
     }
 
@@ -199,16 +200,26 @@ namespace bias {
     void ImageGrabber::run()
     {
 
-        bool isFirst = true;
-        bool istriggered = false;
+        //bool isFirst = true;
+        //bool istriggered = false;
+        //unsigned long frameCount = 0;
+        //unsigned long startUpCount = 0;
+        //double dtEstimate = 0.0;
+
+        isFirst = true;
+        nidaqTriggered = false;
+        frameCount = 0;
+        startUpCount = 0;
+        dtEstimate = 0.0;
+        imagegrab_started = true;
+
+        nidaqTriggered = false;
         bool done = false;
         bool error = false;
         bool errorEmitted = false;
         unsigned int errorId = 0;
         unsigned int errorCount = 0;
-        unsigned long frameCount = 0;
-        unsigned long startUpCount = 0;
-        double dtEstimate = 0.0;
+
         TriggerType trig;
 
         TimeStamp timeStamp;
@@ -232,7 +243,6 @@ namespace bias {
         float cur_latency, avg_latency;
 
         QString errorMsg("no message");
-
 
         if (isVideo) {
             frameCaptureTime = 2500;
@@ -262,6 +272,15 @@ namespace bias {
         //ThreadAffinityService::assignThreadAffinity(true, cameraNumber_);
 
         trig = cameraPtr_->getTriggerType();
+
+        //set nidaq trigger for partner camera
+        partnerImageGrabberPtr = partnerCameraWindowPtr->getImageGrabberPtr();
+        connect(
+            this,
+            SIGNAL(nidaqtriggered(bool)),
+            partnerImageGrabberPtr,
+            SLOT(setTriggered(bool))
+        );
 
         // Start image capture
         cameraPtr_->acquireLock();
@@ -324,16 +343,27 @@ namespace bias {
         // Grab images from camera until the done signal is given
         while (!done)
         {
-            //std::cout << "FrameCount Imagegrabber " << frameCount 
-            //    << "Cameranumber " << cameraNumber_  << std::endl;
+
             acquireLock();
             done = stopped_;
             releaseLock();
 
-            if (!istriggered && nidaq_task_ != nullptr && cameraNumber_ == 0) {
-
-                nidaq_task_->startTasks();
-                istriggered = true;
+            if (!nidaqTriggered && nidaq_task_ != nullptr) {
+                std::cout << "Entering tasks started" << std::endl;
+                if (cameraNumber_ == 0) {
+                    nidaq_task_->startTasks();
+                    nidaqTriggered = true;
+                    emit nidaqtriggered(nidaqTriggered);
+                }
+                else if(cameraNumber_ == 1) {
+                    bool wait = false;
+                    while(!wait)
+                    {
+                        acquireLock();
+                        wait = nidaqTriggered;
+                        releaseLock();
+                    }
+                }
             }
 
             start_process = gettime_->getPCtime();
@@ -387,12 +417,12 @@ namespace bias {
                     }
                     else if ((prev_curTime - expTime_vid) > 0 &&
                         static_cast<int64_t>(prev_curTime - expTime_vid) > wait_thres) {
-
+                        
                         delay_view[frameCount][0] = 1;
                         delay_view[frameCount][1] = static_cast<int64_t>(prev_curTime - expTime_vid);
                     }
                     else {
-
+                        //std::cout << "Get Image" << std::endl;
                         nidaq_task_->getCamtrig(frameCount);
 
                     }
@@ -408,6 +438,7 @@ namespace bias {
             else {
           
                 if (frameCount == nframes_) {
+
                     QThread::yieldCurrentThread();
                     continue;
                 }
@@ -438,6 +469,7 @@ namespace bias {
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty())
             {
+                //std:cout << "Empty images" << std::endl;
                 QThread::yieldCurrentThread();
                 continue;
             }
@@ -477,17 +509,17 @@ namespace bias {
         
                         if (isVideo)
                         {
-                            if (nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] == 0) {
+                            if (nidaq_task_->cam_trigger[(nframes_ ) - 1 + startUpCount] == 0) {
                                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                                nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] = read_buffer_;
+                                nidaq_task_->cam_trigger[(nframes_) - 1 + startUpCount] = read_buffer_;
 
                             }
                         }
                         else {
 
-                            if (nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] == 0) {
+                            if (nidaq_task_->cam_trigger[(nframes_ ) - 1 + startUpCount] == 0) {
                                 DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                                nidaq_task_->cam_trigger[nframes_ - 1 + startUpCount] = read_buffer_;
+                                nidaq_task_->cam_trigger[(nframes_ ) - 1 + startUpCount] = read_buffer_;
 
                             }
                         }
@@ -563,6 +595,7 @@ namespace bias {
                     //max(fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1)) + delay_framethres, prev_curTime);
                     prev_curTime = curTime_vid;
                     avgwait_time = curTime_vid - expTime_vid;
+                    //std::cout << "Avg wait time" << avgwait_time << std::endl;
                 } 
                 else {
                     avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime;
@@ -586,7 +619,7 @@ namespace bias {
                         newImageQueuePtr_->push(stampImg);
                         newImageQueuePtr_->signalNotEmpty();
                         newImageQueuePtr_->releaseLock();
-                        //std::cout << "Frames Transmitting " << cameraNumber_ << std::endl;
+
                     }
                     else {
                         
@@ -1012,6 +1045,29 @@ namespace bias {
         //grabbing frames. The camera trigger signal is on and the both threads
         // want to read frames at the same time. 
         readVidFrames();
+
+    }
+
+    void ImageGrabber::setTriggered(bool istriggered)
+    {
+        acquireLock();
+        nidaqTriggered = istriggered;
+        releaseLock();
+    }
+
+    void ImageGrabber::setTrialNum(string trialnum)
+    {
+        trial_num = trialnum;
+    }
+
+    void ImageGrabber::reinitializeImageGrab(unsigned long& frameCount,
+        bool& isFirst, bool& nidaqTrigged, double& dtEstimate, unsigned long& startupcount)
+    {
+        isFirst = true;
+        startupcount = 0;
+        dtEstimate = 0.0;
+        nidaqTriggered = false;
+    
 
     }
    

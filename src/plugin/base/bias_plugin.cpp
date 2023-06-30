@@ -230,6 +230,8 @@ namespace bias
 
     void BiasPlugin::initializeParamsProcessScores() {}
 
+    void BiasPlugin::setTrialNum(string trialnum) {}
+
     // Protected methods
     // ------------------------------------------------------------------------
 
