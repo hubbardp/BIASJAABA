@@ -71,6 +71,7 @@ namespace bias {
         DAQmxErrChk(DAQmxStartTask(taskHandle_trigger_in));
         DAQmxErrChk(DAQmxStartTask(taskHandle_fout));
         DAQmxErrChk(DAQmxStartTask(taskHandle_sampout));
+        start_tasks = true;
         releaseLock();
         //printf("***** tasks started ***** \n ");
     }

@@ -228,9 +228,7 @@ namespace bias
         updateCameraInfoMessage();
         updateAllMenus();
 
-//#if isVidInput
-        connectVidFrames();
-//#endif
+        connectSignals();
 
         rtnStatus.success = true;
         rtnStatus.message = QString("");
@@ -364,6 +362,7 @@ namespace bias
             QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
             if (partnerCameraWindowPtr->nidaq_task != nullptr) {
                 nidaq_task = partnerCameraWindowPtr->nidaq_task;
+                numImageGrabStarted_ = partnerCameraWindowPtr->numImageGrabStarted_;
                 printf(" nidaq set - %d\n", cameraNumber_);
             }
         }
@@ -379,6 +378,8 @@ namespace bias
             std::cout << "Nidaq is NULL ************ " << std::endl;
         }
         
+        //std::cout << "numImageGrabStarted_ at start image capture cameranumber "
+        //    << *numImageGrabStarted_ << " " << cameraNumber_ << std::endl;
         imageGrabberPtr_ = new ImageGrabber(
             cameraNumber_,
             cameraPtr_,
@@ -390,6 +391,7 @@ namespace bias
             gettime_,
             nidaq_task,
             cmdlineparams_,
+            numImageGrabStarted_,
             this
         );
         imageGrabberPtr_->setAutoDelete(false);
@@ -643,11 +645,43 @@ namespace bias
         return rtnStatus;
     }
 
+    RtnStatus CameraWindow::startImageGrabThreads(bool showErrorDlg)
+    {
+        RtnStatus rtnStatus;
+        std::cout << "cameraNumber " << cameraNumber_ << " start Image grab Threads" << std::endl;
+
+        threadPoolPtr_->start(imageGrabberPtr_);
+
+        std::cout << "Camera started*** " << cameraNumber_ << std::endl;
+
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+
+    }
+
+    RtnStatus CameraWindow::stopImageGrabThreads(bool showErrorDlg)
+    {
+        RtnStatus rtnStatus;
+        std::cout << "cameraNumber " << cameraNumber_ << " stop Image grab Threads" << std::endl;
+
+        imageGrabberPtr_->acquireLock();
+        imageGrabberPtr_->stop();
+        imageGrabberPtr_->releaseLock();
+
+        std::cout << "Camera stopped*** " << cameraNumber_ << std::endl;
+
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        return rtnStatus;
+
+    }
 
     RtnStatus CameraWindow::startThreads(bool showErrorDlg)
     {
         
         RtnStatus rtnStatus;   
+        std::cout << "cameraNumber " << cameraNumber_ << " startThreads" << std::endl;
 
         if (isPluginEnabled()) {
 
@@ -658,35 +692,13 @@ namespace bias
                 currentPluginPtr->reset();
             }
         }
-        
-        //if (!imageGrabberPtr_->imagegrab_started)
-        //{
-            threadPoolPtr_->start(imageGrabberPtr_);
-            threadPoolPtr_->start(imageDispatcherPtr_);
-            if (isPluginEnabled()) {
-                threadPoolPtr_->start(pluginHandlerPtr_);
-            }
-        //}
-        
-        // Set Capture start and stop time
-        /*captureStartDateTime_ = QDateTime::currentDateTime();
-        captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
 
-        // Update GUI widget for capturing state
-        startButtonPtr_->setText(QString("Stop"));
-        connectButtonPtr_->setEnabled(false);
-        pluginActionGroupPtr_->setEnabled(false);
-        updateStatusLabel();
-
-        capturing_ = true;
-        showCameraLockFailMsg_ = false;
-
-        updateAllMenus();
-
-        showCameraLockFailMsg_ = true;
-
-        emit imageCaptureStarted(logging_);*/
-
+        threadPoolPtr_->start(imageDispatcherPtr_);
+        if (isPluginEnabled()) {
+            threadPoolPtr_->start(pluginHandlerPtr_);
+        }
+        std::cout << "Camera started*** " << cameraNumber_ << std::endl;
+     
         rtnStatus.success = true;
         rtnStatus.message = QString("");
         return rtnStatus;
@@ -695,6 +707,7 @@ namespace bias
 
     RtnStatus CameraWindow::stopThreads()
     {
+        std::cout << "cameraNumber " << cameraNumber_ << " startThreads" << std::endl;
         RtnStatus rtnStatus;
 
         //imageGrabberPtr_->acquireLock();
@@ -712,7 +725,6 @@ namespace bias
         }
 
         // initialize some plugin params for next trial  
-
         if (cmdlineparams_.classify_scores) {
             QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
             if (currentPluginPtr->getName() == "jaabaPlugin") {
@@ -727,6 +739,21 @@ namespace bias
         return rtnStatus;
     }
 
+    void CameraWindow::clearAllQueues()
+    {
+        std::cout << "Camera Number  " << cameraNumber_ << " Clearing queues" << std::endl;
+        newImageQueuePtr_->acquireLock();
+        newImageQueuePtr_->clear();
+        newImageQueuePtr_->releaseLock();
+
+        logImageQueuePtr_->acquireLock();
+        logImageQueuePtr_->clear();
+        logImageQueuePtr_->releaseLock();
+
+        pluginImageQueuePtr_->acquireLock();
+        pluginImageQueuePtr_->clear();
+        pluginImageQueuePtr_->releaseLock();
+    }
 
     RtnStatus CameraWindow::stopImageCapture(bool showErrorDlg)
     {
@@ -898,6 +925,9 @@ namespace bias
             std::cout << "Gpu not initialzed" << std::endl;
         }
 
+        //clear data from all queues 
+        clearQueues();
+
         //QMetaObject::invokeMethod(this, "startThreads", Q_ARG(bool, true));
         //emit this->finished_vidReading();
         if(!imageGrabberPtr_->imagegrab_started)
@@ -906,12 +936,14 @@ namespace bias
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
 
             // start the nidaq tasks
-            resetImageGrabParams();
-            nidaq_task->start_trigger_signal();
+            //nidaq_task->startTasks();
+            //nidaq_task->start_trigger_signal();
+            resetImageGrabParams();         
+            //std::cout << "Nidaq Triggered * " << std::endl;
 
         }
         startTriggerButtonPtr_->setText(QString("Stop Trigger"));
-
+        std::cout << "Start Trigger Button pressed Exited " << std::endl;
         rtnStatus.success = true;
         rtnStatus.message = QString("");
         return rtnStatus;
@@ -933,15 +965,19 @@ namespace bias
         //stop threads 
         //stopThreadsAllCamerasTrigMode();
 
-        if (nidaq_task != nullptr)
-        {
-            nidaq_task->stop_trigger_signal();
-            nidaq_task->stopTasks();
-        }
-
         // stop threads, clear queues, delete objects
         //if(!cmdlineparams_.isVideo)
         //    stopAllCamerasTrigMode();
+
+        if (nidaq_task != nullptr)
+        {
+            nidaq_task->stopTasks();
+            nidaq_task->stop_trigger_signal();
+            setStopNIDAQTriggerFlag();
+        }
+
+        //clear data from all queues 
+        //clearQueues();
 
         startTriggerButtonPtr_->setText(QString("Start Trigger"));
         
@@ -3256,6 +3292,8 @@ namespace bias
         numberOfCameras_ = numberOfCameras;
         cameraWindowPtrList_ = cameraWindowPtrList;
         cameraPtr_ = std::make_shared<Lockable<Camera>>(guid);
+        numImageGrabStarted_ = &numberOfCameras_;
+        std::cout << "initialize " << *numImageGrabStarted_ << std::endl;
 
         threadPoolPtr_ = new QThreadPool(this);
         threadPoolPtr_->setMaxThreadCount(MAX_THREAD_COUNT);
@@ -8319,7 +8357,7 @@ namespace bias
         
     }
 
-    void CameraWindow::connectVidFrames()
+    void CameraWindow::connectSignals()
     {
         QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
         /*connect(this,
@@ -8328,7 +8366,7 @@ namespace bias
             SLOT(autostartTriggerSignal())
         );*/
         connect(this,
-            SIGNAL(finished_vidReading()),
+            SIGNAL(threadStarted()),
             partnerCameraWindowPtr,
             SLOT(startThreads())
         );
@@ -8337,6 +8375,18 @@ namespace bias
             SIGNAL(stopped()),
             partnerCameraWindowPtr,
             SLOT(stopThreads())
+        );
+
+        connect(this,
+            SIGNAL(clear()),
+            partnerCameraWindowPtr,
+            SLOT(clearAllQueues())
+        );
+
+        connect(this,
+            SIGNAL(threadImageGrabStarted()),
+            partnerCameraWindowPtr,
+            SLOT(startImageGrabThreads())
         );
     }
 
@@ -8408,14 +8458,25 @@ namespace bias
 
     void CameraWindow::startThreadsAllCamerasTrigMode()
     {
-        std::cout << "Only once  " << std::endl;
+        //std::cout << "Only once  " << std::endl;
+        // start plugin processing threads
         if ((cameraWindowPtrList_->size()) > 1)
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
-                emit cameraWindowPtr->finished_vidReading();
+                emit cameraWindowPtr->threadStarted();
             }
         }
+
+        // start imagegrab threads
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                emit cameraWindowPtr->threadImageGrabStarted();
+            }
+        }
+        //std::cout << "Active thread count: " << threadPoolPtr_->activeThreadCount() << std::endl;
     }
 
     void CameraWindow::stopThreadsAllCamerasTrigMode()
@@ -8450,18 +8511,58 @@ namespace bias
     {
         QPointer<ImageGrabber>imagegrabptr;
 
-        if ((cameraWindowPtrList_->size()) > 1)
+        if ((cameraWindowPtrList_->size()) > 0)
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
                 imagegrabptr = cameraWindowPtr->getImageGrabberPtr();
-                imagegrabptr->nidaqTriggered = false;
-                emit imagegrabptr->nidaqtriggered(imagegrabptr->nidaqTriggered);
+                imagegrabptr->startTrigger = true;
+                //imagegrabptr->resetNidaqTrigger(false);
+                //emit imagegrabptr->nidaqtriggered(imagegrabptr->nidaqTriggered);
+
+            }
+        }    
+
+        /*if ((cameraWindowPtrList_->size()) > 0)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                imagegrabptr = cameraWindowPtr->getImageGrabberPtr();
+                //imageGrabberPtr_->acquireLock();
                 emit imagegrabptr->setImagegrabParams();
+                //imageGrabberPtr_->acquireLock();
+
+            }
+        }*/
+    }
+
+    void CameraWindow::setStopNIDAQTriggerFlag()
+    {
+        QPointer<ImageGrabber>imagegrabptr;
+
+        if ((cameraWindowPtrList_->size()) > 0)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                imagegrabptr = cameraWindowPtr->getImageGrabberPtr();
+                //imagegrabptr->resetNidaqTrigger(false);
+                //emit imagegrabptr->nidaqtriggered(imagegrabptr->nidaqTriggered);
+                imagegrabptr->stopTrigger = true;
 
             }
         }
-        
+        std::cout << "nidaq stop nidaq trigger flag exited" << std::endl;
+    }
+
+    void CameraWindow::clearQueues()
+    {
+        if ((cameraWindowPtrList_->size()) > 0)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                emit cameraWindowPtr->clear();
+            }
+        }
     }
 
 } // namespace bias

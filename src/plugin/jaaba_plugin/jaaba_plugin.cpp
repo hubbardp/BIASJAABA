@@ -300,8 +300,8 @@ namespace bias {
                                        processScoresPtr_side->HOGHOF_frame->hof_shape.bin;
 
                 }
-                //hoghof_feat.resize(numframes_, std::vector<float>());
-                //hoghof_feat_avg.resize(numframes_, std::vector<float>());
+                hoghof_feat.resize(numframes_, std::vector<float>());
+                hoghof_feat_avg.resize(numframes_, std::vector<float>());
 
                 acquireLock();
                 detectStarted = true;
@@ -569,17 +569,18 @@ namespace bias {
             avgwait_time = 0;
         }
 
-
+        
         if (pluginImageQueuePtr_ != nullptr)
         {
             acquireLock();
             pluginImage = stampedImage.image;
             frameCount_ = stampedImage.frameCount;
             fstfrmtStampRef_ = stampedImage.fstfrmtStampRef;
+            timeStamp_ = stampedImage.timeStamp;
             releaseLock();
+            
 
-
-            if (!isVideo) {
+            /*if (!isVideo) {
 
                 if (isDebug) {
                     if (testConfigEnabled_ && nidaq_task_ != nullptr) {
@@ -592,7 +593,7 @@ namespace bias {
 
                     }
                 }
-            }
+            }*/
 
             
             start_process = gettime_->getPCtime();
@@ -903,6 +904,7 @@ namespace bias {
 
                     ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
                     ts_nidaq[frameCount_][1] = read_ondemand;
+                    imageTimeStamp[frameCount_] = timeStamp_;
 
                 }
 
@@ -965,8 +967,16 @@ namespace bias {
                         + "_" + testConfig_->nidaq_prefix + "_thres" + "cam"
                         + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
 
+                    std::string filename2 = testConfig_->dir_list[0] + "/"
+                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                        + testConfig_->plugin_prefix
+                        + "_" + "imagetimestamp_" + "cam"
+                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+
                     gettime_->write_time_1d<int64_t>(filename1, testConfig_->numFrames, ts_nidaqThres);
                     gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, ts_nidaq);
+                    gettime_->write_time_1d<double>(filename2, testConfig_->numFrames, imageTimeStamp);
                 }
 
                 if (frameCount_ == (testConfig_->numFrames - 2)
@@ -2079,6 +2089,7 @@ namespace bias {
                 ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0.0));
                 ts_nidaqThres.resize(testConfig_->numFrames, 0);
                 //scores.resize(testConfig_->numFrames);
+                imageTimeStamp.resize(testConfig_->numFrames, 0.0);
             }
 
             if (!testConfig_->queue_prefix.empty()) {

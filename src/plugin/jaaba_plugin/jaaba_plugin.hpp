@@ -155,6 +155,7 @@ namespace bias
             bool score_calculated_;
             int frameSkip;
             uint64_t fstfrmtStampRef_;
+            double timeStamp_;
             bool process_frame_time;
             size_t hog_num_elements;
             size_t hof_num_elements;
@@ -188,6 +189,8 @@ namespace bias
             std::vector<int64_t> ts_nidaqThres;// nmidaq threshold for spiked frames
             std::vector<int64_t> ts_jaaba_start;// test
             std::vector<int64_t> ts_jaaba_end;
+            std::vector<double> imageTimeStamp;
+
             //test
             std::vector<std::vector<float>>hoghof_feat;
             std::vector<std::vector<float>>hoghof_feat_avg;

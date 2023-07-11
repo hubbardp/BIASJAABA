@@ -170,6 +170,7 @@ namespace bias
             //DEVEL
             bool vidFinsihed_reading;
             CmdLineParams cmdlineparams_;
+            unsigned int* numImageGrabStarted_;
             
         signals:
 
@@ -182,9 +183,12 @@ namespace bias
 
             // Test Configuration signal
             void valueChangedFrametoFrame(bool frametoframeLatencyVal);
-            void finished_vidReading();
+            //void finished_vidReading();
+            void threadStarted();
             void trig(bool plugin);
             void stopped();
+            void clear();
+            void threadImageGrabStarted();
           
         protected:
 
@@ -269,6 +273,9 @@ namespace bias
             void autostartTriggerSignal();
             RtnStatus startThreads(bool showErrorDlg = true);
             RtnStatus stopThreads();
+            void clearAllQueues();
+            RtnStatus startImageGrabThreads(bool showErrorDlg=true);
+            RtnStatus stopImageGrabThreads(bool showErrorDlg);
             //void loadPluginFile(QPointer<BiasPlugin> pluginPtr);
             //void loadPluginFile();
 
@@ -401,7 +408,7 @@ namespace bias
                     QSharedPointer<QList<QPointer<bias::CameraWindow>>> cameraWindowPtrList,
                     CmdLineParams& cmdlineparams
                     );
-            void connectVidFrames();
+            void connectSignals();
             void setScoreQueue();
 
             void setDefaultFileDirs();
@@ -414,6 +421,8 @@ namespace bias
             void startThreadsAllCamerasTrigMode();
             void stopThreadsAllCamerasTrigMode();
             void resetImageGrabParams();
+            void clearQueues();
+            void setStopNIDAQTriggerFlag();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();

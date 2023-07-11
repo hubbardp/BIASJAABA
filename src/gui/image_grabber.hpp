@@ -49,6 +49,7 @@ namespace bias
                     std::shared_ptr<Lockable<GetTime>> gettime,
                     std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
                     CmdLineParams& cmdlineparams,
+                    unsigned int* numImagegrabStarted,
                     QObject *parent=0
                     );
 
@@ -61,7 +62,8 @@ namespace bias
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
                     std::shared_ptr<Lockable<GetTime>> gettime,
-                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
+                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                    unsigned int* numImagegrabStarted
                     );
 
             void stop();
@@ -76,6 +78,7 @@ namespace bias
             void setTrialNum(string trialnum);
             //void reinitializeImageGrab(unsigned long& frameCount,
             //    bool& isFirst, bool& nidaqTrigged, double& dtEstimate, unsigned long& startupcount);
+            void resetNidaqTrigger(bool turnOn);
 
             //cmdline params
             string input_video_dir;
@@ -90,6 +93,18 @@ namespace bias
             unsigned long startUpCount = 0;
             double dtEstimate = 0.0;
             bool imagegrab_started = false;
+            unsigned int* numImagegrabStarted_;
+            bool isReset = true;
+
+            TimeStamp timeStamp;
+            TimeStamp timeStampInit;
+
+            double timeStampDbl = 0.0;
+            double timeStampDblLast = 0.0;
+
+            // nidaq flags
+            bool startTrigger;
+            bool stopTrigger;
 
         signals:
             void startTimer();
@@ -142,6 +157,7 @@ namespace bias
             std::vector<unsigned int> queue_size; // queue size
             std::vector<int64_t>ts_process;
             std::vector<int64_t>ts_end;
+            std::vector<double>imageTimeStamp;
 
             int no_of_skips;
             int nframes_;

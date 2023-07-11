@@ -46,15 +46,20 @@ namespace bias
                 mutex_.unlock();
             }
 
-            void wait()
+            void waitForCond()
             {
                 wait_to_process_.wait(&mutex_);             
             }
 
-            void wakeAll()
+            void signalCondMet()
             {
-    
-                signal_to_process_.wakeAll();
+                //signal_to_process_.wakeAll();
+                wait_to_process_.wakeAll();
+            }
+
+            void signalCondMetOne()
+            {
+                wait_to_process_.wakeOne();
             }
 
         protected:
