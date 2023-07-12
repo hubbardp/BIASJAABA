@@ -171,6 +171,7 @@ namespace bias
             bool vidFinsihed_reading;
             CmdLineParams cmdlineparams_;
             unsigned int* numImageGrabStarted_;
+            bool isPluginStarted;
             
         signals:
 
@@ -189,6 +190,7 @@ namespace bias
             void stopped();
             void clear();
             void threadImageGrabStarted();
+            void threadImageGrabStopped();
           
         protected:
 
@@ -271,11 +273,11 @@ namespace bias
             //Test private slots
             void enableFrametoFrame();
             void autostartTriggerSignal();
-            RtnStatus startThreads(bool showErrorDlg = true);
+            RtnStatus startProcessThreads(bool showErrorDlg = true);
             RtnStatus stopThreads();
             void clearAllQueues();
             RtnStatus startImageGrabThreads(bool showErrorDlg=true);
-            RtnStatus stopImageGrabThreads(bool showErrorDlg);
+            RtnStatus stopImageGrabThreads(bool showErrorDlg=true);
             //void loadPluginFile(QPointer<BiasPlugin> pluginPtr);
             //void loadPluginFile();
 

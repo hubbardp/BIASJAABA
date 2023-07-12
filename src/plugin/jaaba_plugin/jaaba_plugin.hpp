@@ -137,6 +137,7 @@ namespace bias
             RtnStatus connectTriggerDev();
 
             void allocate_testVec();
+            void refill_testVec();
 
         private:
 

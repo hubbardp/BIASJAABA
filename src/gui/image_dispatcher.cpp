@@ -191,7 +191,7 @@ namespace bias
         std::ofstream stampOutStream;
         stampOutStream.open(stampFileName);*/
         // ---------------------------------------------------------------------------
-        
+        std::cout << "ImageDispatcher Started" << std::endl;
         while (!done)
         {
 
@@ -339,7 +339,7 @@ namespace bias
             //stampOutStream << QString::number(currentTimeStamp_,'g',15).toStdString(); 
             //stampOutStream << std::endl;
             // ----------------------------------------------------------------
-
+            
         }
 
         // DEVEL

@@ -82,7 +82,8 @@ namespace bias {
         DAQmxErrChk(DAQmxStopTask(taskHandle_trigger_in));
         DAQmxErrChk(DAQmxStopTask(taskHandle_grab_in));
         DAQmxErrChk(DAQmxStopTask(taskHandle_sampout));
-        DAQmxErrChk(DAQmxStopTask(taskHandle_fout));       
+        DAQmxErrChk(DAQmxStopTask(taskHandle_fout));    
+        start_tasks = false;
         releaseLock();
         //printf("***** tasks stopped *****\n ");
     }
@@ -127,6 +128,7 @@ namespace bias {
             taskHandle_grab_in = 0;
             taskHandle_start_signal = 0;
             istrig = false;
+            start_tasks = false;
         }
 
     }

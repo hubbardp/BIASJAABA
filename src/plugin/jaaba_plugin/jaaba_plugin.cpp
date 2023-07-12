@@ -273,13 +273,13 @@ namespace bias {
         // initialize side gpu context
         if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
         {
-            //std::cout << "ProcessScores is not NULL " << std::endl;
+            std::cout << "ProcessScores is not NULL " << std::endl;
             if (!(processScoresPtr_side->HOGHOF_frame.isNull()))
             {
-                //std::cout << " HOGHOF is Not NULL" << std::endl;
+                std::cout << " HOGHOF is Not NULL" << std::endl;
                 if (nDevices_ >= 2)
                 {
-                    //std::cout << "Gpu initialized side******" << std::endl;
+                    std::cout << "Gpu initialized side******" << std::endl;
                     cudaSetDevice(0);
                     processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
                     hog_num_elements = processScoresPtr_side->HOGHOF_frame->hog_shape.x*
@@ -336,7 +336,7 @@ namespace bias {
 
                 if (nDevices_ >= 2)
                 {
-                    //std::cout << "Gpu initialized front******" << std::endl;
+                    std::cout << "Gpu initialized front******" << std::endl;
                     cudaSetDevice(1);
                     processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
                     hog_num_elements = processScoresPtr_front->HOGHOF_partner->hog_shape.x*
@@ -585,7 +585,7 @@ namespace bias {
                 if (isDebug) {
                     if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
-                        if (frameCount_ <= testConfig_->numFrames) {
+                        if (frameCount_ < testConfig_->numFrames) {
 
                             nidaq_task_->getNidaqTimeNow(read_ondemand);
 
@@ -595,6 +595,11 @@ namespace bias {
                 }
             }*/
 
+            if (frameCount_ == 0 && cameraNumber_ == 0)
+                std::cout << " FrameCount on Start " << processScoresPtr_side->processedFrameCount << std::endl;
+
+            if (frameCount_ == 0 && cameraNumber_ == 1)
+                std::cout << " FrameCount on Start " << processScoresPtr_front->processedFrameCount << std::endl;
             
             start_process = gettime_->getPCtime();
             if (fstfrmtStampRef_ != 0)
@@ -625,19 +630,22 @@ namespace bias {
                }
 
     
-                if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount < frameCount_))
+                //if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount < frameCount_))
+                if(cameraNumber_ == 0)
                 {
+                    
                     while (processScoresPtr_side->processedFrameCount < frameCount_)
                     {
-                        std::cout << "side skipped in Jaaba plugin " << std::endl;
+                        std::cout << "side skipped in Jaaba plugin " <<
+                            processScoresPtr_side->processedFrameCount << std::endl;
                         if (isDebug && testConfigEnabled_) {
                             ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
                         }
 
                         if (saveFeat) {
-                            
-                            saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv", 
+
+                            saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv",
                                 processScoresPtr_side->HOGHOF_frame->hog_out_skip,
                                 processScoresPtr_side->HOGHOF_frame->hof_out_skip,
                                 hog_num_elements, hof_num_elements);
@@ -654,14 +662,21 @@ namespace bias {
 
                         processScoresPtr_side->processedFrameCount++;
                     }
-                    assert(processScoresPtr_side->processedFrameCount == frameCount_);
+                    
+                    if(processScoresPtr_side->processedFrameCount != frameCount_) 
+                    {
+                        std::cout << "Error in skipping frames in cameraNumber " << cameraNumber_ << std::endl;
+                    }
                 }
                 
-                if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount < frameCount_))
+                
+                //if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount < frameCount_))
+                if(cameraNumber_ == 1)
                 {
                     while (processScoresPtr_front->processedFrameCount < frameCount_)
                     {
-                        std::cout << "front skipped in Jaaba plugin" << std::endl;
+                        std::cout << "front skipped in Jaaba plugin" << 
+                            processScoresPtr_front->processedFrameCount << std::endl;
                         if (isDebug && testConfigEnabled_) {
                             ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
                             //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
@@ -686,7 +701,11 @@ namespace bias {
 
                         processScoresPtr_front->processedFrameCount++;
                     }
-                    assert(processScoresPtr_front->processedFrameCount == frameCount_);
+
+                    if (processScoresPtr_front->processedFrameCount != frameCount_)
+                    {
+                        std::cout << "Error in skipping frames in cameraNumber " << cameraNumber_ << std::endl;
+                    }
 
                 }
 
@@ -743,7 +762,7 @@ namespace bias {
                                 }
 
   
-                                if (saveFeat) {
+                                /*if (saveFeat) {
                                     
                                     saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", 
                                         processScoresPtr_front->HOGHOF_partner->hog_out,
@@ -784,10 +803,11 @@ namespace bias {
                                     frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
                                     frontScoreQueuePtr_->releaseLock();
 
-                                }
+                                }*/
                             }
 
-                            //std::cout << "FrameCount front " << processScoresPtr_front->processedFrameCount << std::endl;
+                            //std::cout << "FrameCount front " << processScoresPtr_front->processedFrameCount << 
+                            //      " " << frameCount_ << std::endl;
                             processScoresPtr_front->processedFrameCount++;
 
                         }
@@ -796,7 +816,7 @@ namespace bias {
                             //processScoresPtr_front->HOGHOF_partner->setLastInput();
                             //processScoresPtr_front->skip_frameFront = 0;
                             //processScoresPtr_front->processedFrameCount++;
-
+                            //std::cout << "Jaaba isFront False " << cameraNumber_ << std::endl;
                         }
 
                         if (processScoresPtr_side->isSide)
@@ -818,7 +838,7 @@ namespace bias {
                                     processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
                                 }
 
-                                if (saveFeat)
+                                /*if (saveFeat)
                                 {
                                     saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv", 
                                         processScoresPtr_side->HOGHOF_frame->hog_out,
@@ -859,10 +879,11 @@ namespace bias {
                                     sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
                                     sideScoreQueuePtr_->releaseLock();
 
-                                }
+                                }*/
                             }
 
-                            //std::cout << "FrameCount side " << processScoresPtr_side->processedFrameCount << std::endl;
+                            //std::cout << "FrameCount side " << processScoresPtr_side->processedFrameCount 
+                            //    << " " << frameCount_ << std::endl;
                             processScoresPtr_side->processedFrameCount++;
                             
                         }
@@ -870,6 +891,7 @@ namespace bias {
 
                             //processScoresPtr_side->HOGHOF_frame->setLastInput();
                             //processScoresPtr_side->processedFrameCount++;
+                            //std::cout << "Jaaba isSide False " << cameraNumber_ << std::endl;
 
                         }
 
@@ -884,12 +906,12 @@ namespace bias {
 
             if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
-                if (frameCount_ <= testConfig_->numFrames) {
+                if (frameCount_ < testConfig_->numFrames) {
 
-                    //nidaq_task_->getNidaqTimeNow(read_ondemand);
-                    nidaq_task_->acquireLock();
+                    nidaq_task_->getNidaqTimeNow(read_ondemand);
+                    /*nidaq_task_->acquireLock();
                     DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                    nidaq_task_->releaseLock();
+                    nidaq_task_->releaseLock();*/
 
                 }
 
@@ -905,7 +927,7 @@ namespace bias {
                     ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
                     ts_nidaq[frameCount_][1] = read_ondemand;
                     imageTimeStamp[frameCount_] = timeStamp_;
-
+                    
                 }
 
                 if (!testConfig_->f2f_prefix.empty()) {
@@ -934,7 +956,7 @@ namespace bias {
 
                 }
 
-                if (frameCount_ == (testConfig_->numFrames - 2)
+                if (frameCount_ == (testConfig_->numFrames - 1)
                     && !testConfig_->f2f_prefix.empty())
                 {
 
@@ -949,7 +971,7 @@ namespace bias {
 
                 }
 
-                if (frameCount_ == (testConfig_->numFrames - 2)
+                if (frameCount_ == (testConfig_->numFrames - 1)
                     && !testConfig_->nidaq_prefix.empty())
                 {
 
@@ -979,7 +1001,7 @@ namespace bias {
                     gettime_->write_time_1d<double>(filename2, testConfig_->numFrames, imageTimeStamp);
                 }
 
-                if (frameCount_ == (testConfig_->numFrames - 2)
+                if (frameCount_ == (testConfig_->numFrames - 1)
                     && !testConfig_->queue_prefix.empty()) {
 
 
@@ -994,7 +1016,7 @@ namespace bias {
 
                 }
 
-                if (frameCount_ == (testConfig_->numFrames - 2)
+                if (frameCount_ == (testConfig_->numFrames - 1)
                     && process_frame_time) {
 
                     string filename = testConfig_->dir_list[0] + "/"
@@ -2078,6 +2100,7 @@ namespace bias {
     {
 
         if (testConfigEnabled_) {
+            std::cout << "allocated testVec " << cameraNumber_ <<  std::endl;
 
             if (!testConfig_->f2f_prefix.empty()) {
 
@@ -2086,7 +2109,7 @@ namespace bias {
 
             if (!testConfig_->nidaq_prefix.empty()) {
                 
-                ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0.0));
+                ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
                 ts_nidaqThres.resize(testConfig_->numFrames, 0);
                 //scores.resize(testConfig_->numFrames);
                 imageTimeStamp.resize(testConfig_->numFrames, 0.0);
@@ -2111,6 +2134,50 @@ namespace bias {
 //#if DEBUG     
        //time_stamps1.resize(testConfig_->numFrames, 0.0);
 //#endif        
+    }
+
+    void JaabaPlugin::refill_testVec()
+    {
+        std::cout << "Refill testVec " << cameraNumber_ << std::endl;
+        if (testConfigEnabled_) {
+
+            if (!testConfig_->f2f_prefix.empty()) {
+
+                std::fill(ts_pc.begin(), ts_pc.end(), 0);
+            }
+
+            if (!testConfig_->nidaq_prefix.empty()) {
+
+                //std::fill(ts_nidaq.begin(), ts_nidaq.end(), vector<uInt32>(2, 0)); // this segfaults ?? 
+                if (!ts_nidaq.empty()) {
+                    for (unsigned int i = 0; i < ts_nidaq.size(); i++)
+                    {
+                        ts_nidaq[i][0] = 0;
+                        ts_nidaq[i][1] = 0;
+                    }
+                }
+                else {
+                    std::cout << "ts nidaq empty " <<  ts_nidaq.size() << std::endl;
+                }
+                std::fill(ts_nidaqThres.begin(), ts_nidaqThres.end(), 0);
+                std::fill(imageTimeStamp.begin(),imageTimeStamp.end(),0.0);
+            }
+
+            if (!testConfig_->queue_prefix.empty()) {
+
+                std::fill(queue_size.begin(),queue_size.end(),0);
+            }
+
+            if (process_frame_time)
+            {
+                std::fill(ts_gpuprocess_time.begin(),ts_gpuprocess_time.end(), 0);
+                std::fill(ts_jaaba_start.begin(), ts_jaaba_start.end(), 0);
+                std::fill(ts_jaaba_start.begin(), ts_jaaba_end.end(), 0);
+                std::fill(time_cur.begin(), time_cur.end(), 0);
+
+            }
+
+        }
     }
 
     void JaabaPlugin::setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
@@ -2153,6 +2220,10 @@ namespace bias {
         else {
             std::cout << "processScores is NULL" << std::endl;
         }*/
+
+        if (isDebug) {
+            refill_testVec();
+        }
 
         if (isReceiver())
         {

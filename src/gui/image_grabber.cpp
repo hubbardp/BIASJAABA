@@ -387,7 +387,7 @@ namespace bias {
             releaseLock();
 
             // sync nidaq trigger start/stop
-            if (startTrigger)
+            /*if (startTrigger)
             {
                 resetNidaqTrigger(true);
                 startTrigger = false;
@@ -409,10 +409,28 @@ namespace bias {
                 resetNidaqTrigger(false);
                 stopTrigger = false;
                 std::cout << "CameraNumber " << cameraNumber_ << "Stop Trigger " << stopTrigger << std::endl;
-            }else{}
+            }else{}*/
 
+            if (!nidaqTriggered) {
+                if (cameraNumber_ == 0) {
+                    nidaq_task_->startTasks();
+                    nidaq_task_->start_trigger_signal();
+                }
+                acquireLock();
+                nidaqTriggered = true;
+                if (!nidaq_task_->istrig) {
+                    std::cout << "Nidaq wait" << cameraNumber_ << std::endl;
+                    waitForCond();
+                }
+                else if (nidaq_task_->istrig) {
+                    std::cout << "Nidaq trig" << cameraNumber_ << std::endl;
+                    signalCondMet();
+                    partnerImageGrabberPtr->signalCondMet();
+                }
+                releaseLock();
+            }
 
-            //std::cout << frameCount << "Camera number " << cameraNumber_ << std::endl;
+            //std::cout << frameCount << " Camera number " << cameraNumber_ << std::endl;
             start_process = gettime_->getPCtime();
 
             if (isVideo) {
@@ -485,7 +503,7 @@ namespace bias {
             else {
           
                 if (frameCount == nframes_) {
-
+                    //std::cout << "Yeild frames " << std::endl;
                     QThread::yieldCurrentThread();
                     continue;
                 }
@@ -494,7 +512,7 @@ namespace bias {
                     && nidaq_task_->istrig)
                     nidaq_task_->getCamtrig(frameCount);
                 
-
+                
                 cameraPtr_->acquireLock();
                 try
                 {
@@ -513,11 +531,11 @@ namespace bias {
                 }
                 cameraPtr_->releaseLock();
             }
-     
+            
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty())
             {
-                //std:cout << "Empty images" << std::endl;
+                std:cout << "Empty images" << std::endl;
                 QThread::yieldCurrentThread();
                 continue;
             }
@@ -636,7 +654,7 @@ namespace bias {
                     }
                 }
 
-
+                
                 if (isVideo) {
                     //expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount+1));
                     curTime_vid = max(fstfrmtStampRef_ + (frameCaptureTime*(frameCount + 1) + delay_framethres), prev_curTime);
@@ -667,13 +685,13 @@ namespace bias {
                         newImageQueuePtr_->push(stampImg);
                         newImageQueuePtr_->signalNotEmpty();
                         newImageQueuePtr_->releaseLock();
-
+                        //std::cout << "FrameCount" << frameCount << std::endl;
                     }
                     else {
                       
                         if (isDebug && testConfigEnabled_ && nidaq_task_ != nullptr)
                             ts_nidaqThres[frameCount] = 1.0;
-
+                       
                     }
                 }
                 else {
@@ -707,7 +725,7 @@ namespace bias {
                                 ts_nidaq[frameCount - 1][0] = nidaq_task_->cam_trigger[frameCount - 1];
                                 nidaq_task_->releaseLock();
                                 ts_nidaq[frameCount - 1][1] = read_ondemand_;
-                                imageTimeStamp[frameCount - 1] = stampImg.timeStamp;
+                                imageTimeStamp[frameCount - 1] = timeStampDbl;
 
                             }
                             //#endif
@@ -1167,6 +1185,7 @@ namespace bias {
 
         timeStampDbl = 0.0;
         timeStampDblLast = 0.0;
+        fstfrmtStampRef_ = 0.0;
 
         isReset = true;
 
