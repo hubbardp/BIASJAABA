@@ -762,7 +762,7 @@ namespace bias {
                                 }
 
   
-                                /*if (saveFeat) {
+                                if (saveFeat) {
                                     
                                     saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", 
                                         processScoresPtr_front->HOGHOF_partner->hog_out,
@@ -803,7 +803,7 @@ namespace bias {
                                     frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
                                     frontScoreQueuePtr_->releaseLock();
 
-                                }*/
+                                }
                             }
 
                             //std::cout << "FrameCount front " << processScoresPtr_front->processedFrameCount << 
@@ -838,7 +838,7 @@ namespace bias {
                                     processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
                                 }
 
-                                /*if (saveFeat)
+                                if (saveFeat)
                                 {
                                     saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv", 
                                         processScoresPtr_side->HOGHOF_frame->hog_out,
@@ -879,7 +879,7 @@ namespace bias {
                                     sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
                                     sideScoreQueuePtr_->releaseLock();
 
-                                }*/
+                                }
                             }
 
                             //std::cout << "FrameCount side " << processScoresPtr_side->processedFrameCount 
@@ -2172,7 +2172,7 @@ namespace bias {
             {
                 std::fill(ts_gpuprocess_time.begin(),ts_gpuprocess_time.end(), 0);
                 std::fill(ts_jaaba_start.begin(), ts_jaaba_start.end(), 0);
-                std::fill(ts_jaaba_start.begin(), ts_jaaba_end.end(), 0);
+                std::fill(ts_jaaba_end.begin(), ts_jaaba_end.end(), 0);
                 std::fill(time_cur.begin(), time_cur.end(), 0);
 
             }

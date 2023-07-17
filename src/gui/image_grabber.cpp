@@ -118,7 +118,7 @@ namespace bias {
         // camera trigger timestamps for other threads even if imagegrab is 
         // turned off in testConfig suite
         if (nidaq_task_ != nullptr) {
-            nidaq_task_->cam_trigger.resize(nframes_ + 2, 0);
+            nidaq_task_->cam_trigger.resize(nframes_ + DEFAULT_NUM_STARTUP_SKIP, 0);
         }
 
         gettime_ = gettime;
@@ -281,6 +281,8 @@ namespace bias {
 
         //set nidaq trigger for partner camera
         partnerImageGrabberPtr = partnerCameraWindowPtr->getImageGrabberPtr();
+        QPointer<CameraWindow>cameraWindowPtr = getCameraWindow();
+
         /*connect(
             this,
             SIGNAL(nidaqtriggered(bool)),
@@ -573,23 +575,10 @@ namespace bias {
                         
                         nidaq_task_->acquireLock();
         
-                        if (isVideo)
-                        {
-                            if (nidaq_task_->cam_trigger[(nframes_ ) - 1 + startUpCount] == 0) {
-                                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                                nidaq_task_->cam_trigger[(nframes_) - 1 + startUpCount] = read_buffer_;
-
-                            }
+                        if (nidaq_task_->cam_trigger[(nframes_ ) - 1 + startUpCount] == 0) {
+                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
+                            nidaq_task_->cam_trigger[(nframes_) - 1 + startUpCount] = read_buffer_;
                         }
-                        else {
-
-                            if (nidaq_task_->cam_trigger[(nframes_ ) - 1 + startUpCount] == 0) {
-                                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                                nidaq_task_->cam_trigger[(nframes_ ) - 1 + startUpCount] = read_buffer_;
-
-                            }
-                        }
-
                         nidaq_task_->releaseLock();
                         
                     }

@@ -668,10 +668,6 @@ namespace bias
         imageGrabberPtr_->stop();
         imageGrabberPtr_->releaseLock();
 
-        /*imageDispatcherPtr_->acquireLock();
-        imageDispatcherPtr_->stop();
-        imageDispatcherPtr_->releaseLock();*/
-
         rtnStatus.success = true;
         rtnStatus.message = QString("");
         return rtnStatus;
@@ -682,7 +678,6 @@ namespace bias
     {
         
         RtnStatus rtnStatus;   
-        std::cout << "cameraNumber " << cameraNumber_ << " start Process Threads" << std::endl;
 
         if (isPluginEnabled()) {
 
@@ -977,15 +972,12 @@ namespace bias
         //if(!cmdlineparams_.isVideo)
         //    stopAllCamerasTrigMode();
         
-        if (nidaq_task != nullptr)
+        if (nidaq_task != nullptr && nidaq_task->istrig)
         {
             nidaq_task->stopTasks();
             nidaq_task->stop_trigger_signal();
             //setStopNIDAQTriggerFlag();
         }
-
-        //clear data from all queues 
-        //clearQueues();
 
         startTriggerButtonPtr_->setText(QString("Start Trigger"));
         
