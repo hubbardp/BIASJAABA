@@ -687,7 +687,7 @@ namespace bias
             {      
                 currentPluginPtr->reset();
             }
-            currentPluginPtr->initializeParamsProcessScores();
+            
         }
 
         if (isPluginEnabled() && !isPluginStarted) {
@@ -931,18 +931,14 @@ namespace bias
         numberOfCameras_ = cameraWindowPtrList_->size();
         numImageGrabStarted_ = &numberOfCameras_;
 
-        //QMetaObject::invokeMethod(this, "startThreads", Q_ARG(bool, true));
-        //emit this->finished_vidReading();
-        //if(!imageGrabberPtr_->imagegrab_started)
-        startThreadsAllCamerasTrigMode();
+        if(!imageGrabberPtr_->imagegrab_started)
+            startThreadsAllCamerasTrigMode();
 
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
 
             // start the nidaq tasks
-            //nidaq_task->startTasks();
-            //nidaq_task->start_trigger_signal();
-            //resetImageGrabParams();         
-            //std::cout << "Nidaq Triggered * " << std::endl;
+            resetPluginParams();
+            resetImageGrabParams();
 
         }
         startTriggerButtonPtr_->setText(QString("Stop Trigger"));
@@ -966,7 +962,7 @@ namespace bias
         }*/
 
         //stop threads 
-        stopThreadsAllCamerasTrigMode();
+        //stopThreadsAllCamerasTrigMode();
 
         // stop threads, clear queues, delete objects
         //if(!cmdlineparams_.isVideo)
@@ -976,7 +972,7 @@ namespace bias
         {
             nidaq_task->stopTasks();
             nidaq_task->stop_trigger_signal();
-            //setStopNIDAQTriggerFlag();
+            setStopNIDAQTriggerFlag();
         }
 
         startTriggerButtonPtr_->setText(QString("Start Trigger"));
@@ -8527,7 +8523,7 @@ namespace bias
     {
         QPointer<ImageGrabber>imagegrabptr;
 
-        if ((cameraWindowPtrList_->size()) > 0)
+        if ((cameraWindowPtrList_->size()) > 1)
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
@@ -8539,7 +8535,7 @@ namespace bias
             }
         }    
 
-        /*if ((cameraWindowPtrList_->size()) > 0)
+        /*if ((cameraWindowPtrList_->size()) > 1)
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
@@ -8552,11 +8548,25 @@ namespace bias
         }*/
     }
 
+    void CameraWindow::resetPluginParams()
+    {
+        QPointer<BiasPlugin> currentPluginPtr; 
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                currentPluginPtr = cameraWindowPtr->getCurrentPlugin();
+                if (currentPluginPtr != nullptr && currentPluginPtr->getName() == "jaabaPlugin")
+                    currentPluginPtr->initializeParamsProcessScores();
+            }
+        }
+    }
+
     void CameraWindow::setStopNIDAQTriggerFlag()
     {
         QPointer<ImageGrabber>imagegrabptr;
 
-        if ((cameraWindowPtrList_->size()) > 0)
+        if ((cameraWindowPtrList_->size()) > 1)
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
@@ -8572,7 +8582,7 @@ namespace bias
 
     void CameraWindow::clearQueues()
     {
-        if ((cameraWindowPtrList_->size()) > 0)
+        if ((cameraWindowPtrList_->size()) > 1)
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {

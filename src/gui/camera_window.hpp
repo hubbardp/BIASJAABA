@@ -170,7 +170,8 @@ namespace bias
             //DEVEL
             bool vidFinsihed_reading;
             CmdLineParams cmdlineparams_;
-            unsigned int* numImageGrabStarted_;
+            unsigned int* numImageGrabStarted_; // to checkif imagegrab started for all cameras
+            unsigned int* numImageGrabReset_; // check if imagegrab reset for all cameras
             bool isPluginStarted;
             
         signals:
@@ -425,6 +426,7 @@ namespace bias
             void resetImageGrabParams();
             void clearQueues();
             void setStopNIDAQTriggerFlag();
+            void resetPluginParams();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();

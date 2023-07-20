@@ -543,7 +543,7 @@ namespace bias {
 
         //DEVEL
         int64_t pc_time;
-        uint64_t start_process=0, end_process=0;
+        uint64_t start_process = 0, end_process = 0;
         uint64_t front_read_time, side_read_time, time_now;
         uint64_t start_delay, end_delay;
         string filename;
@@ -553,7 +553,7 @@ namespace bias {
         int64_t wait_thres, avgwait_time;
         double vis_ts = 0.0;
       
-        frameCount_ = 0;
+        frameCount_ = 0; // Incoming frame framecount
 
         if (isVideo) {
             frameGrabAvgTime = 2500;
@@ -566,6 +566,7 @@ namespace bias {
             frameGrabAvgTime = 2500;
             wait_thres = static_cast<int64_t>(1500);
             max_jaaba_compute_time = 2000;
+            //max_jaaba_compute_time = 4000;
             avgwait_time = 0;
         }
 
@@ -578,7 +579,7 @@ namespace bias {
             fstfrmtStampRef_ = stampedImage.fstfrmtStampRef;
             timeStamp_ = stampedImage.timeStamp;
             releaseLock();
-            
+
 
             /*if (!isVideo) {
 
@@ -600,8 +601,26 @@ namespace bias {
 
             if (frameCount_ == 0 && cameraNumber_ == 1)
                 std::cout << " FrameCount on Start " << processScoresPtr_front->processedFrameCount << std::endl;
-            
+
+
             start_process = gettime_->getPCtime();
+
+            // skip frame if process time on gpu is higher than thres
+            /*if (frameCount_ == 0)
+                start_prev = start_process;
+
+            if (cameraNumber_ == 0) {
+                if (jaabaSkipFrame(start_process, start_prev,
+                    processScoresPtr_side->processedFrameCount, max_jaaba_compute_time))
+                    return;
+            }
+            else if (cameraNumber_ == 1){
+                if (jaabaSkipFrame(start_process, start_prev,
+                    processScoresPtr_front->processedFrameCount, max_jaaba_compute_time))
+                    return;
+            }*/
+
+
             if (fstfrmtStampRef_ != 0)
             {
 
@@ -629,17 +648,21 @@ namespace bias {
                     avgwait_time = curTime - expTime;*/
                }
 
-    
-                //if (cameraNumber_ == 0 && (processScoresPtr_side->processedFrameCount < frameCount_))
+   
                 if(cameraNumber_ == 0)
                 {
-                    
+                    //match to see if incoming frame frameCount matches the currently being processed 
+                    //frameCount, otherwise consider it skipped frame
                     while (processScoresPtr_side->processedFrameCount < frameCount_)
                     {
                         std::cout << "side skipped in Jaaba plugin " <<
                             processScoresPtr_side->processedFrameCount << std::endl;
                         if (isDebug && testConfigEnabled_) {
+                            end_process = gettime_->getPCtime();
                             ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
+                            ts_gpuprocess_time[processScoresPtr_side->processedFrameCount] = (end_process - start_process);
+                            ts_jaaba_start[processScoresPtr_side->processedFrameCount] = start_process;
+                            ts_jaaba_end[processScoresPtr_side->processedFrameCount] = end_process;
                             //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
                         }
 
@@ -669,8 +692,7 @@ namespace bias {
                     }
                 }
                 
-                
-                //if (cameraNumber_ == 1 && (processScoresPtr_front->processedFrameCount < frameCount_))
+               
                 if(cameraNumber_ == 1)
                 {
                     while (processScoresPtr_front->processedFrameCount < frameCount_)
@@ -678,7 +700,11 @@ namespace bias {
                         std::cout << "front skipped in Jaaba plugin" << 
                             processScoresPtr_front->processedFrameCount << std::endl;
                         if (isDebug && testConfigEnabled_) {
+                            end_process = gettime_->getPCtime();
                             ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
+                            ts_gpuprocess_time[processScoresPtr_front->processedFrameCount] = (end_process - start_process);
+                            ts_jaaba_start[processScoresPtr_front->processedFrameCount] = start_process;
+                            ts_jaaba_end[processScoresPtr_front->processedFrameCount] = end_process;
                             //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
                         }
 
@@ -2334,6 +2360,28 @@ namespace bias {
         {
             processScoresPtr_side->setTrialNum(trialnum);
         }
+    }
+
+    bool JaabaPlugin::jaabaSkipFrame(uint64_t& ts_cur, uint64_t& ts_prev,
+        int& frameCount, uint64_t wait_thres)
+    {
+        if (frameCount == 1) {
+            std::cout << "prev ts before " << ts_prev <<
+                "cur ts before " << ts_cur << std::endl;
+            std::cout << "start diff " << (ts_cur - ts_prev) << std::endl;
+        }
+        if ((ts_cur - ts_prev) > wait_thres)
+        {
+            std::cout << "Frame skipped " << frameCount << std::endl;
+            frameCount++;       
+            ts_prev = ts_cur;
+            return 1;
+        }
+        ts_prev = ts_cur;
+        if (frameCount == 0)
+            std::cout << "ts prev after " << ts_prev
+            << "ts cur after " << ts_cur << std::endl;
+        return 0;
     }
 
     /*void JaabaPlugin::saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,

@@ -94,6 +94,7 @@ namespace bias
             double dtEstimate = 0.0;
             bool imagegrab_started = false;
             unsigned int* numImagegrabStarted_;
+            unsigned int* numImagegrabReset_;
             bool isReset = true;
 
             TimeStamp timeStamp;

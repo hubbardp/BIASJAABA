@@ -516,9 +516,34 @@ namespace bias {
                 std::cout << "Writing score...." << std::endl;
                 write_score_final(filename,numFrames-1, scores);
                 std::cout << "Written ...." << std::endl;
-                acquireLock();
+                /*acquireLock();
                 done = true;
-                releaseLock();
+                releaseLock();*/
+
+
+                if (sideScoreQueuePtr_ != nullptr) {
+                    if (!sideScoreQueuePtr_->empty()) {
+                        sideScoreQueuePtr_->acquireLock();
+                        sideScoreQueuePtr_->clear();
+                        sideScoreQueuePtr_->releaseLock();
+                        std::cout << "Side Queue Cleared " << std::endl;
+                    }
+                    else {
+                        std::cout << "Side queue is empty" << std::endl;
+                    }
+                }
+
+                if (!frontScoreQueuePtr_->empty()) {
+                    frontScoreQueuePtr_->acquireLock();
+                    frontScoreQueuePtr_->clear();
+                    frontScoreQueuePtr_->releaseLock();
+                    std::cout << "Front Queue Cleared " << std::endl;
+                }
+                else {
+                    std::cout << "Front queue is empty" << std::endl;
+                }
+
+                scoreCount = 0;
             }
 
         }

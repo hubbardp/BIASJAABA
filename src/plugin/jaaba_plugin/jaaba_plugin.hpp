@@ -235,6 +235,9 @@ namespace bias
             //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
             void write_score_final(std::string file, unsigned int numFrames,
                 vector<PredData>& pred_score);
+            bool jaabaSkipFrame(uint64_t& ts_cur, uint64_t& ts_prev,
+                int& frameCount, uint64_t wait_thres);
+
             //void writeAllFeatures(string filename, vector<float>& feat_out,
             //    int feat_size);
             //void saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,
@@ -253,6 +256,8 @@ namespace bias
             bool visualize;
             bool isDebug;
 
+            //test
+            uint64_t start_prev = 0;
 
         signals:
 
