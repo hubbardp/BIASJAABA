@@ -11,10 +11,10 @@ namespace bias {
 
     // Default Jaaba parameters
     const string JaabaConfig::DEFAULT_VIEW = "";
-    const string JaabaConfig::DEFAULT_HOG_FILE = "";
-    const string JaabaConfig::DEFAULT_HOF_FILE = "";
+    const string JaabaConfig::DEFAULT_HOG_FILE = "json_files/HOGParam.json";
+    const string JaabaConfig::DEFAULT_HOF_FILE = "json_files/HOFParam.json";
     const string JaabaConfig::DEFAULT_CROP_FILE = "";
-    const string JaabaConfig::DEFAULT_CLASSIFIER_FILE = "";
+    const string JaabaConfig::DEFAULT_CLASSIFIER_FILE = "json_files/multiclassifier.mat";
     const string JaabaConfig::DEFAULT_CONFIG_FILE_DIR = "";
     const int JaabaConfig::DEFAULT_WINDOW_SIZE = 1;
 

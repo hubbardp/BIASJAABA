@@ -25,7 +25,7 @@
 #include "json_utils.hpp"
 #include "ext_ctl_http_server.hpp"
 #include "plugin_handler.hpp"
-
+#include "NIDAQUtils.hpp"
 
 #include <cstdlib>
 #include <cmath>
@@ -1266,10 +1266,19 @@ namespace bias
         cameraMap.insert("frameRate", frameRateString);
         QString trigTypeString = QString::fromStdString(getTriggerTypeString(trigType));
         cameraMap.insert("triggerType", trigTypeString);
+       
         QString trigExternalTypeString = QString::fromStdString(getTriggerExternalTypeString
                                             (triggerExternalType_));
-        cameraMap.insert("triggerExternalType", trigExternalTypeString);
+        //cameraMap.insert("triggerExternalType", trigExternalTypeString);
+
+        QVariantMap trigExternalTypeMap;
+        QVariantMap NIDAQTriggerExternalConfigMap;
+        trigExternalTypeMap.insert("name", trigExternalTypeString);
+        NIDAQTriggerExternalConfigMap = createNIDAQConfigMap();
+        trigExternalTypeMap.insert("config", NIDAQTriggerExternalConfigMap);
+        cameraMap.insert("triggerExternalType", trigExternalTypeMap);
         //QString trigTypeString = QString::fromStdString(getTriggerExternalTypeString(trigExternalType));
+     
 
         // Create format7 settings map
         QVariantMap format7SettingsMap;
@@ -1593,74 +1602,7 @@ namespace bias
 
         return rtnStatus;
     }
-
-
-    RtnStatus CameraWindow::setMetricsFromMap(
-        QVariantMap configMap,
-        bool showErrorDlg
-    )
-    {
-        RtnStatus rtnStatus;
-        QString errMsgTitle("Load Configuration Error");
-
-        // Get "frame to frame latency" value
-        // -------------------
-        if (!configMap.contains("frametoframe_latency"))
-        {
-            QString errMsgText("Logging configuration: enabled not present");
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, errMsgTitle, errMsgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = errMsgText;
-            return rtnStatus;
-        }
-        if (!configMap["frametoframe_latency"].canConvert<bool>())
-        {
-            QString errMsgText("frametoframe latency configuration: unable to convert logging to bool");
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, errMsgTitle, errMsgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = errMsgText;
-            return rtnStatus;
-        }
-        bool frametoframeLatencyVal = configMap["frametoframe_latency"].toBool();
-        if (frametoframeLatencyVal) {
-            emit valueChangedFrametoFrame(frametoframeLatencyVal);
-        }
-
-        // Get "nidaq latency" value
-        // -------------------
-        if (!configMap.contains("nidaq_latency"))
-        {
-            QString errMsgText("nidaq latency configuration: enabled not present");
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, errMsgTitle, errMsgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = errMsgText;
-            return rtnStatus;
-        }
-        if (!configMap["nidaq_latency"].canConvert<bool>())
-        {
-            QString errMsgText("nidaq latency configuration: unable to convert logging to bool");
-            if (showErrorDlg)
-            {
-                QMessageBox::critical(this, errMsgTitle, errMsgText);
-            }
-            rtnStatus.success = false;
-            rtnStatus.message = errMsgText;
-            return rtnStatus;
-        }
-        bool nidaqLatencyVal = configMap["nidaq_latency"].toBool();
-
-        return rtnStatus;
-    }
-
+ 
 
     RtnStatus CameraWindow::setConfigurationFromTestMap(
         std::shared_ptr<TestConfig> testConfig,
@@ -2098,7 +2040,6 @@ namespace bias
         }
         return currentPluginName;
     }
-
 
     QPointer<BiasPlugin> CameraWindow::getPluginByName(QString pluginName)
     {
@@ -2748,7 +2689,8 @@ namespace bias
     
     void CameraWindow::actionCameraTriggerExternalTriggered()
     {
-        
+        RtnStatus rtnStatus;
+
         if (cameraPtr_ -> tryLock(CAMERA_LOCK_TRY_DT))
         {
             
@@ -2760,8 +2702,8 @@ namespace bias
 
             if (triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
                 
-                std::cout << "Inside****" << std::endl;
-                nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();              
+                std::cout << "Nidaq task has been created*** " << std::endl;
+                nidaq_task = std::make_shared<Lockable<NIDAQUtils>>();  
 
             }else if (triggerExternalType_ == TRIGGER_ELSE && cameraNumber_ == 0) {
 
@@ -5442,6 +5384,8 @@ namespace bias
         // --------------------------------------------------------------------
         QString triggerExternalTypeString;
         TriggerExternalType triggerExternalType;
+        QVariantMap triggerExternalTypeMap;
+        QVariantMap triggerExternalTypeConfigMap;
         switch (triggerType)
         {
             case TRIGGER_INTERNAL:
@@ -5473,20 +5417,38 @@ namespace bias
                     rtnStatus.message = QString("setTriggerInternal - unable to acquire camera lock");
                     return rtnStatus;
                 }
-                actionCameraTriggerInternalPtr_ -> setChecked(false);            
-                triggerExternalTypeString = cameraMap["triggerExternalType"].toString();         
+                actionCameraTriggerInternalPtr_ -> setChecked(false);  
+                triggerExternalTypeMap = cameraMap["triggerExternalType"].toMap();
+                triggerExternalTypeString = triggerExternalTypeMap["name"].toString();         
                 triggerExternalType = convertStringToTriggerExternalType(triggerExternalTypeString);
-               
+                triggerExternalTypeConfigMap = triggerExternalTypeMap["config"].toMap();
+
                 if (triggerExternalType == TRIGGER_NIDAQ) {
                     
                     actionCameraTriggerExternalNIDAQPtr_->setChecked(true);
                     actionCameraTriggerExternalNIDAQPtr_->setEnabled(true);
                     actionCameraTriggerExternalNIDAQPtr_->triggered();
                     updateCameraTriggerMenu();
+
+                    //setup nidaq config from map
+                    if (nidaq_task != nullptr && cameraNumber_ == 0)
+                    {
+                        if (!triggerExternalTypeMap.isEmpty()) {
+                            rtnStatus = nidaq_task->setNIDAQConfigFromMap(triggerExternalTypeConfigMap);
+                            if (!rtnStatus.success) {
+
+                                QString msgTitle("NIDAQ Config error");
+                                QMessageBox::critical(this, msgTitle, rtnStatus.message);
+
+                            }
+                        }
+                    }
+                    
                 }
                 else if (triggerExternalType == TRIGGER_ELSE) {
                     actionCameraTriggerExternalElsePtr_->setChecked(true);
                 }
+
                 break;
 
             default:
@@ -8016,6 +7978,71 @@ namespace bias
         return rtnStatus;
     }
 
+    RtnStatus CameraWindow::setMetricsFromMap(
+        QVariantMap configMap,
+        bool showErrorDlg
+    )
+    {
+        RtnStatus rtnStatus;
+        QString errMsgTitle("Load Configuration Error");
+
+        // Get "frame to frame latency" value
+        // -------------------
+        if (!configMap.contains("frametoframe_latency"))
+        {
+            QString errMsgText("Logging configuration: enabled not present");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        if (!configMap["frametoframe_latency"].canConvert<bool>())
+        {
+            QString errMsgText("frametoframe latency configuration: unable to convert logging to bool");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        bool frametoframeLatencyVal = configMap["frametoframe_latency"].toBool();
+        if (frametoframeLatencyVal) {
+            emit valueChangedFrametoFrame(frametoframeLatencyVal);
+        }
+
+        // Get "nidaq latency" value
+        // -------------------
+        if (!configMap.contains("nidaq_latency"))
+        {
+            QString errMsgText("nidaq latency configuration: enabled not present");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        if (!configMap["nidaq_latency"].canConvert<bool>())
+        {
+            QString errMsgText("nidaq latency configuration: unable to convert logging to bool");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        bool nidaqLatencyVal = configMap["nidaq_latency"].toBool();
+
+        return rtnStatus;
+    }
 
     cv::Mat CameraWindow::calcHistogram(cv::Mat mat)
     {

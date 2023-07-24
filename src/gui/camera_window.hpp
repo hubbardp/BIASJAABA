@@ -526,7 +526,7 @@ namespace bias
             RtnStatus setServerFromMap(QVariantMap serverMap, bool showErrorDlg);
             RtnStatus setConfigFileFromMap(QVariantMap configFileMap, bool showErrorDlg);
             RtnStatus setPluginFromMap(QVariantMap pluginMap, bool showErrorDlg);
-            RtnStatus setMetricsFromMap(QVariantMap pluginMap, bool showErrorDlg);
+            RtnStatus setMetricsFromMap(QVariantMap configMap, bool showErrorDlg);
 
             cv::Mat calcHistogram(cv::Mat mat);
             RtnStatus onError(QString message, QString title, bool showErrorDlg);

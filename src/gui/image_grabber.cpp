@@ -697,8 +697,8 @@ namespace bias {
                       
                         if (isDebug && testConfigEnabled_ && nidaq_task_ != nullptr)
                             ts_nidaqThres[frameCount] = 1.0;
-                        std::cout << "skipped in imagegrab " << frameCount 
-                            << "cameraNumber " << cameraNumber_ << std::endl;
+                        //std::cout << "skipped in imagegrab " << frameCount 
+                        //    << "cameraNumber " << cameraNumber_ << std::endl;
                     }
                 }
                 else {
@@ -1148,6 +1148,10 @@ namespace bias {
         std::cout << "Nidaq trigger value entering the reset fnc " << partnerImageGrabberPtr->nidaqTriggered << std::endl;
         if (nidaqTriggered != turnOn) {
             acquireLock();
+            if (turnOn)
+            {
+                resetParams();
+            }
             nidaqTriggered = turnOn;
             if (partnerImageGrabberPtr->nidaqTriggered != turnOn)
             {
@@ -1158,20 +1162,21 @@ namespace bias {
             {
                 std::cout << "Nidaq wake " << cameraNumber_ << std::endl;
                 //signalCondMet();
-                partnerImageGrabberPtr->signalCondMet();
-                if (turnOn) {
+                if (turnOn && !nidaq_task_->start_tasks && !nidaq_task_->istrig) {
                     std::cout << "Nidaq is triggered " << cameraNumber_ << std::endl;
                     nidaq_task_->startTasks();
                     nidaq_task_->start_trigger_signal();
                 }
+
+                partnerImageGrabberPtr->signalCondMet();
                 std::cout << "Nidaq is turned " << nidaqTriggered << " " << cameraNumber_ << std::endl;
                 std::cout << "Nidaq is turned " << partnerImageGrabberPtr->nidaqTriggered << " " << cameraNumber_ << std::endl;
             }
             releaseLock();
-            if (turnOn)
+            /*if (turnOn)
             {
                 resetParams();
-            }
+            }*/
         }
 
         std::cout << "Nidaq Reset exited " << cameraNumber_ << std::endl;

@@ -4,7 +4,12 @@
 #include "NIDAQmx.h"
 #include <vector>
 #include "lockable.hpp"
+#include "rtn_status.hpp"
+#include <string>
 
+#include<QVariantMap>
+
+using namespace std;
 
 static void NIDAQError(int err);
 #define DAQmxErrChk(functionCall) {int error = 0; if (DAQmxFailed(error = (functionCall))) NIDAQError(error);}
@@ -20,6 +25,48 @@ static void NIDAQError(int error)
 
 namespace bias
 {
+
+    static QVariantMap createNIDAQConfigMap()
+    {
+        QVariantMap nidaqconfigmap;
+        nidaqconfigmap.insert("device_name", "");
+        nidaqconfigmap.insert("fast_outchannel_counter", "");
+        nidaqconfigmap.insert("sample_outchannel_counter", "");
+        nidaqconfigmap.insert("frametrig_inchannel_counter", "");
+        nidaqconfigmap.insert("framegrab_inchannel_counter", "");
+        nidaqconfigmap.insert("frametrig_sampleclk", "");
+        nidaqconfigmap.insert("frametrig_datachannel", "");
+        nidaqconfigmap.insert("digital_trigger_signalout", "");
+        nidaqconfigmap.insert("digital_trigger_sourcein", "");
+        nidaqconfigmap.insert("fast_counter_rate", "");
+        nidaqconfigmap.insert("sample_counter_rate", "");
+        nidaqconfigmap.insert("numSamplesPerChan", "");
+        return nidaqconfigmap;
+    }
+
+    /*class NIDAQConfig 
+    {
+    public:
+        const char* device_name;
+        const char* fast_outchannel_counter;
+        const char* sample_outchannel_counter;
+        const char* frametrig_inchannel_counter;
+        const char* framegrab_inchannel_counter ;
+        const char* frametrig_sampleclk;
+        const char* frametrig_datachannel;
+        const char* framegrab_datachannel;
+        const char* digital_trigger_signalout;
+        const char* digital_trigger_sourcein;
+        float64 fast_counter_rate;
+        float64 sample_counter_rate;
+        uInt64 numsamplesPerChan;
+
+        NIDAQConfig();
+        void initialize();
+        QVariantMap NIDAQConfigMap;
+        RtnStatus fromMap();
+        QVariantMap toMap();
+    };*/
    
     class NIDAQUtils: public Lockable<Empty>
     {
@@ -33,6 +80,23 @@ namespace bias
         uInt32 read_ondemand;
         bool start_tasks = false;
         bool istrig = false;
+        //NIDAQConfig nidaq_config;
+
+        // nidaq config variables
+        string device_name;
+        string fast_outchannel_counter;
+        string sample_outchannel_counter;
+        string frametrig_inchannel_counter;
+        string framegrab_inchannel_counter;
+        string frametrig_sampleclk;
+        string frametrig_datachannel;
+        string framegrab_datachannel;
+        string digital_trigger_signalout;
+        string digital_trigger_sourcein;
+        float64 fast_counter_rate;
+        float64 sample_counter_rate;
+        uInt64 numsamplesPerChan;
+
 
         TaskHandle taskHandle_fout = 0;
         TaskHandle taskHandle_sampout = 0;
@@ -42,6 +106,7 @@ namespace bias
 
         NIDAQUtils();   
         void initialize();
+        RtnStatus setNIDAQConfigFromMap(QVariantMap& nidaqconfigMap);
         void configureNIDAQ();
         void startTasks();
         void stopTasks();
