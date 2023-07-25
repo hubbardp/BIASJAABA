@@ -27,6 +27,7 @@ namespace bias {
             datas_high[i] = half_period_cycle_sampleclk;
             datas_low[i] = half_period_cycle_sampleclk;
             data[i] = (uInt8)(i % 2);
+
         }
     }
 
@@ -305,7 +306,6 @@ namespace bias {
         //Measure frame trigger Channel
         DAQmxErrChk(DAQmxCreateTask("", &taskHandle_trigger_in));
         DAQmxErrChk(DAQmxCreateCICountEdgesChan(taskHandle_trigger_in, (device_name + frametrig_inchannel_counter).c_str(), "", DAQmx_Val_Rising, 0, DAQmx_Val_CountUp));
-        //DAQmxErrChk(DAQmxCfgSampClkTiming(taskHandle_trigger_in, "/Dev1/PFI14", 1000.0, DAQmx_Val_Rising, DAQmx_Val_ContSamps, 1000.0));
         DAQmxErrChk(DAQmxCfgSampClkTiming(taskHandle_trigger_in, ("/" + device_name + frametrig_sampleclk).c_str() , 1000.0, DAQmx_Val_Rising, DAQmx_Val_ContSamps, numsamplesPerChan));
         DAQmxErrChk(DAQmxSetCICountEdgesTerm(taskHandle_trigger_in, (device_name + frametrig_inchannel_counter).c_str(),
                     ("/" + device_name + frametrig_datachannel).c_str()));

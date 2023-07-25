@@ -1269,14 +1269,14 @@ namespace bias
        
         QString trigExternalTypeString = QString::fromStdString(getTriggerExternalTypeString
                                             (triggerExternalType_));
-        //cameraMap.insert("triggerExternalType", trigExternalTypeString);
+        cameraMap.insert("triggerExternalType", trigExternalTypeString);
 
         QVariantMap trigExternalTypeMap;
         QVariantMap NIDAQTriggerExternalConfigMap;
-        trigExternalTypeMap.insert("name", trigExternalTypeString);
+        //trigExternalTypeMap.insert("name", trigExternalTypeString);
         NIDAQTriggerExternalConfigMap = createNIDAQConfigMap();
         trigExternalTypeMap.insert("config", NIDAQTriggerExternalConfigMap);
-        cameraMap.insert("triggerExternalType", trigExternalTypeMap);
+        cameraMap.insert("triggerExternalConfig", trigExternalTypeMap);
         //QString trigTypeString = QString::fromStdString(getTriggerExternalTypeString(trigExternalType));
      
 
@@ -5418,13 +5418,15 @@ namespace bias
                     return rtnStatus;
                 }
                 actionCameraTriggerInternalPtr_ -> setChecked(false);  
-                triggerExternalTypeMap = cameraMap["triggerExternalType"].toMap();
-                triggerExternalTypeString = triggerExternalTypeMap["name"].toString();         
-                triggerExternalType = convertStringToTriggerExternalType(triggerExternalTypeString);
+                triggerExternalTypeMap = cameraMap["triggerExternalConfig"].toMap();
                 triggerExternalTypeConfigMap = triggerExternalTypeMap["config"].toMap();
+                            
+                triggerExternalTypeString = cameraMap["triggerExternalType"].toString();
+                triggerExternalType = convertStringToTriggerExternalType(triggerExternalTypeString);
 
                 if (triggerExternalType == TRIGGER_NIDAQ) {
                     
+                    std::cout << "Entered TRIGGER NIDAQ " << std::endl;
                     actionCameraTriggerExternalNIDAQPtr_->setChecked(true);
                     actionCameraTriggerExternalNIDAQPtr_->setEnabled(true);
                     actionCameraTriggerExternalNIDAQPtr_->triggered();
