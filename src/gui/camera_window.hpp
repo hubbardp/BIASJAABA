@@ -166,6 +166,7 @@ namespace bias
             unsigned long getFrameCount();
             float getFormat7PercentSpeed();
             QPointer<ImageGrabber> getImageGrabberPtr();
+            QPointer<ImageDispatcher> getImageDispatcherPtr();
 
             //DEVEL
             bool vidFinsihed_reading;
@@ -427,6 +428,7 @@ namespace bias
             void clearQueues();
             void setStopNIDAQTriggerFlag();
             void resetPluginParams();
+            void resetImageDispatchParams();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();

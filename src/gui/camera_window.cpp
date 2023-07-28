@@ -939,6 +939,7 @@ namespace bias
             // start the nidaq tasks
             resetPluginParams();
             resetImageGrabParams();
+            resetImageDispatchParams();
 
         }
         startTriggerButtonPtr_->setText(QString("Stop Trigger"));
@@ -968,12 +969,12 @@ namespace bias
         //if(!cmdlineparams_.isVideo)
         //    stopAllCamerasTrigMode();
         
-        if (nidaq_task != nullptr && nidaq_task->istrig)
+        /*if (nidaq_task != nullptr && nidaq_task->istrig)
         {
             nidaq_task->stopTasks();
             nidaq_task->stop_trigger_signal();
             setStopNIDAQTriggerFlag();
-        }
+        }*/
 
         startTriggerButtonPtr_->setText(QString("Start Trigger"));
         
@@ -8382,6 +8383,14 @@ namespace bias
         
     }
 
+    QPointer<ImageDispatcher> CameraWindow::getImageDispatcherPtr()
+    {
+        if (! imageDispatcherPtr_.isNull())
+        {
+            return imageDispatcherPtr_;
+        }
+    }
+
     void CameraWindow::connectSignals()
     {
         QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
@@ -8575,6 +8584,20 @@ namespace bias
 
             }
         }*/
+    }
+
+    void CameraWindow::resetImageDispatchParams()
+    {
+        QPointer<ImageDispatcher>imageDispatcherPtr;
+
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                imageDispatcherPtr = cameraWindowPtr->getImageDispatcherPtr();
+                imageDispatcherPtr->resetParams();
+            }
+        }
     }
 
     void CameraWindow::resetPluginParams()

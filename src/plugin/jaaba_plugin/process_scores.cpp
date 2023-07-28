@@ -192,8 +192,6 @@ namespace bias {
         uint64_t time_now;
         double score_ts;
         uint64_t ts_last_score = INT_MAX, cur_time = 0;
-
-        string filename;
         
 //#if isVidInput
         /*((if (isVideo) {
@@ -205,9 +203,9 @@ namespace bias {
 //#endif
         
         if (testConfigEnabled_)
-            filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
+            scores_filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
         else
-            filename = output_score_dir + "classifier_score.csv";
+            scores_filename = output_score_dir + "classifier_score.csv";
 
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -512,9 +510,9 @@ namespace bias {
             releaseLock();
 
             if (scoreCount == (numFrames-1)) {
-                std::cout << "Score file name " << filename << std::endl;
+                std::cout << "Score file name " << scores_filename << std::endl;
                 std::cout << "Writing score...." << std::endl;
-                write_score_final(filename,numFrames-1, scores);
+                write_score_final(scores_filename,numFrames-1, scores);
                 std::cout << "Written ...." << std::endl;
                 /*acquireLock();
                 done = true;
@@ -639,7 +637,9 @@ namespace bias {
     {
         trial_num_ = trialnum;
         testConfigEnabled_ = 1;
-        std::cout << "Trial number set" << std::endl;
+
+        scores_filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
+        
     }
 
 

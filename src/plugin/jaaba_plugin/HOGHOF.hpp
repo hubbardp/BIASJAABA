@@ -8,6 +8,7 @@
 //#include "utils.hpp"
 #include "rtn_status.hpp"
 #include "jaaba_utils.hpp"
+#include "lockable.hpp"
 
 #include "string.h"
 #include <QDir>
@@ -85,8 +86,8 @@ namespace bias {
             
             std::vector<float> hog_out;
             std::vector<float> hof_out; // jaaba output
-            std::queue<vector<float>> hog_out_past; 
-            std::queue<vector<float>> hof_out_past;// window storing windowed past features
+            LockableQueue<vector<float>> hog_out_past;
+            LockableQueue<vector<float>> hof_out_past;// window storing windowed past features
             std::vector<float> hog_out_avg;
             std::vector<float> hof_out_avg; // moving average features
             std::vector<float>hog_out_skip;
@@ -108,6 +109,7 @@ namespace bias {
                 std::queue<vector<float>>& hog_feat_past, std::queue<vector<float>>& hof_feat_past,
                 int frameCount, int window_size);*/
             void averageWindowFeatures(int window_size, int frameCount, int isSkip);
+            void resetHOGHOFVec();
 
         private: 
 

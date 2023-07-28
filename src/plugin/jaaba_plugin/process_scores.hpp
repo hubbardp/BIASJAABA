@@ -152,6 +152,7 @@ namespace bias
            bool ready_;
            string trial_num_;
            bool testConfigEnabled_;
+           string scores_filename;
            //float threshold_runtime = static_cast<float>(3000);
  
            QQueue<FrameData> frameQueue_;

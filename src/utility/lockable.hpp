@@ -53,7 +53,6 @@ namespace bias
 
             void signalCondMet()
             {
-                //signal_to_process_.wakeAll();
                 wait_to_process_.wakeAll();
             }
 
@@ -65,7 +64,6 @@ namespace bias
         protected:
             QMutex mutex_;
             QWaitCondition wait_to_process_;
-            QWaitCondition signal_to_process_;
             
     };
 
@@ -105,6 +103,19 @@ namespace bias
                 emptyWaitCond_.wakeOne();
             }
 
+            void waitIfNotEmpty()
+            {
+                if (!this->empty())
+                {
+                    notemptyWaitCond_.wait(&mutex_);
+                }
+            }
+
+            void signalEmpty()
+            {
+                noemptyWaitCond_.wakeAll();
+            }
+
 			void erase()
 			{
 				
@@ -116,6 +127,7 @@ namespace bias
 
         protected:
             QWaitCondition emptyWaitCond_;
+            QWaitCondition notemptyWaitCond_;
     };
 
 

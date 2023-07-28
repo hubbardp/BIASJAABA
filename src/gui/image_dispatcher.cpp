@@ -156,6 +156,16 @@ namespace bias
         stopped_ = true;
     }
 
+    void ImageDispatcher::resetParams()
+    {
+        acquireLock();
+        frameCount_ = 0;
+        currentTimeStamp_ = 0.0;
+        fpsEstimator_.reset();
+        releaseLock();
+        std::cout << "ImageDispatcher Params reset for cameraNumber " << cameraNumber_ << std::endl;
+    }
+
     void ImageDispatcher::run()
     {
         bool done = false; 

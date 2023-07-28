@@ -11,28 +11,44 @@ namespace bias {
 
     void NIDAQUtils::initialize()
     {
-        istrig = false;
-        float64 half_period_cycle_fastclk = (float64)1.0 / (float64)(fast_counter_rate*2.0); // divide the period of
-        float64 half_period_cycle_sampleclk = (float64) 1.0 / (float64)(sample_counter_rate*2.0); // cycle by 2 to get half cycle time
-        uint64_t bufSize = numsamplesPerChan;
 
+        istrig = false;
+        half_period_cycle_fastclk = (float64)1.0 / (float64)(fast_counter_rate*2.0); // divide the period of
+        half_period_cycle_sampleclk = (float64) 1.0 / (float64)(sample_counter_rate*2.0); // cycle by 2 to get half cycle time
+        bufsize_samp = numsamplesPerChan;
+        bufsize_fst = numsamplesPerChan;
+
+        dataf_high = new float64[bufsize_fst];
+        dataf_low = new float64[bufsize_fst];
+        data = new uInt8[bufsize_fst];
+        datas_high = new float64[bufsize_samp];
+        datas_low = new float64[bufsize_samp];
+
+        
         printf("half cycle time fast clock %f\n", half_period_cycle_fastclk);
         printf("half cycle time fast clock %f\n", half_period_cycle_sampleclk);
 
         // initialize data buffers 
-        for (int i = 0; i < bufSize; ++i) {
+        for (int i = 0; i < bufsize_samp; ++i) {
+
+            datas_high[i] = half_period_cycle_sampleclk;
+            datas_low[i] = half_period_cycle_sampleclk;
+        }
+
+        //initialize data budders for fst clk
+        for (int i = 0; i < bufsize_fst; ++i) {
 
             dataf_high[i] = half_period_cycle_fastclk;
             dataf_low[i] = half_period_cycle_fastclk;
-            datas_high[i] = half_period_cycle_sampleclk;
-            datas_low[i] = half_period_cycle_sampleclk;
             data[i] = (uInt8)(i % 2);
-
         }
+
     }
 
     RtnStatus NIDAQUtils::setNIDAQConfigFromMap(QVariantMap& nidaqconfigMap)
     {
+
+        printf("NIDAQ config entered ");
         RtnStatus rtnStatus;
         //device name
         if (!nidaqconfigMap.contains("device_name"))
@@ -293,22 +309,23 @@ namespace bias {
         //fast source channel
         DAQmxErrChk(DAQmxCreateTask("", &taskHandle_fout));
         DAQmxErrChk(DAQmxCreateCOPulseChanTime(taskHandle_fout, (device_name + fast_outchannel_counter).c_str(),
-             "", DAQmx_Val_Seconds, DAQmx_Val_Low, 0.0, 0.00001, 0.00001));
-        DAQmxErrChk(DAQmxCfgImplicitTiming(taskHandle_fout, DAQmx_Val_ContSamps, numsamplesPerChan));
-        DAQmxErrChk(DAQmxWriteCtrTime(taskHandle_fout, numsamplesPerChan, 0, 1.0, DAQmx_Val_GroupByChannel, dataf_high, dataf_low, NULL, NULL));
+             "", DAQmx_Val_Seconds, DAQmx_Val_Low, 0.0, half_period_cycle_fastclk, half_period_cycle_fastclk));
+        DAQmxErrChk(DAQmxCfgImplicitTiming(taskHandle_fout, DAQmx_Val_ContSamps, bufsize_fst));
+        DAQmxErrChk(DAQmxWriteCtrTime(taskHandle_fout, bufsize_fst, 0, 1.0, DAQmx_Val_GroupByChannel, dataf_high, dataf_low, NULL, NULL));
 
         // sample clock - framerate
         DAQmxErrChk(DAQmxCreateTask("", &taskHandle_sampout));
-        DAQmxErrChk(DAQmxCreateCOPulseChanTime(taskHandle_sampout, (device_name + sample_outchannel_counter).c_str(), "", DAQmx_Val_Seconds, DAQmx_Val_Low, 0.0, 0.00125, 0.00125));
-        DAQmxErrChk(DAQmxCfgImplicitTiming(taskHandle_sampout, DAQmx_Val_ContSamps, numsamplesPerChan));
-        DAQmxErrChk(DAQmxWriteCtrTime(taskHandle_sampout, numsamplesPerChan, 0, 1.0, DAQmx_Val_GroupByChannel, datas_high, datas_low, NULL, NULL));
+        DAQmxErrChk(DAQmxCreateCOPulseChanTime(taskHandle_sampout, (device_name + sample_outchannel_counter).c_str(), "", DAQmx_Val_Seconds, DAQmx_Val_Low, 0.0,
+                    half_period_cycle_sampleclk, half_period_cycle_sampleclk));
+        DAQmxErrChk(DAQmxCfgImplicitTiming(taskHandle_sampout, DAQmx_Val_ContSamps, bufsize_samp));
+        DAQmxErrChk(DAQmxWriteCtrTime(taskHandle_sampout, bufsize_samp, 0, 1.0, DAQmx_Val_GroupByChannel, datas_high, datas_low, NULL, NULL));
 
         //Measure frame trigger Channel
         DAQmxErrChk(DAQmxCreateTask("", &taskHandle_trigger_in));
         DAQmxErrChk(DAQmxCreateCICountEdgesChan(taskHandle_trigger_in, (device_name + frametrig_inchannel_counter).c_str(), "", DAQmx_Val_Rising, 0, DAQmx_Val_CountUp));
         DAQmxErrChk(DAQmxCfgSampClkTiming(taskHandle_trigger_in, ("/" + device_name + frametrig_sampleclk).c_str() , 1000.0, DAQmx_Val_Rising, DAQmx_Val_ContSamps, numsamplesPerChan));
         DAQmxErrChk(DAQmxSetCICountEdgesTerm(taskHandle_trigger_in, (device_name + frametrig_inchannel_counter).c_str(),
-                    ("/" + device_name + frametrig_datachannel).c_str()));
+                                            ("/" + device_name + frametrig_datachannel).c_str()));
 
         // Measure frame grab Channel
         DAQmxErrChk(DAQmxCreateTask("", &taskHandle_grab_in));
@@ -392,6 +409,11 @@ namespace bias {
             taskHandle_start_signal = 0;
             istrig = false;
             start_tasks = false;
+            delete dataf_high;
+            delete dataf_low;
+            delete datas_high;
+            delete datas_low;
+            delete data;
         }
 
     }

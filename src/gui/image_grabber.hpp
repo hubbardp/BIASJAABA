@@ -186,6 +186,7 @@ namespace bias
             unsigned int getPartnerCameraNumber();
             QPointer<CameraWindow> getCameraWindow();
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
+            void flushCameraBuffer();
             
     };
 

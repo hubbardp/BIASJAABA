@@ -68,6 +68,8 @@ namespace bias
             unsigned long getFrameCount() const;
             // -----------------------------------
 
+            void resetParams();
+
         private:
             bool ready_;
             bool logging_;

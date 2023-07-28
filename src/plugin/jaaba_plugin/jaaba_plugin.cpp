@@ -580,8 +580,21 @@ namespace bias {
             timeStamp_ = stampedImage.timeStamp;
             releaseLock();
 
+            if (frameCount_ == 0 && cameraNumber_ == 0) {
+                std::cout << " FrameCount on Start " << processScoresPtr_side->processedFrameCount << std::endl;
 
-            /*if (!isVideo) {
+                waitForEmptyHOGHOFAvgQueue(processScoresPtr_side->HOGHOF_frame->hog_out_past);
+                waitForEmptyHOGHOFAvgQueue(processScoresPtr_side->HOGHOF_frame->hof_out_past);
+            }
+
+            if (frameCount_ == 0 && cameraNumber_ == 1) {
+                std::cout << " FrameCount on Start " << processScoresPtr_front->processedFrameCount << std::endl;
+
+                waitForEmptyHOGHOFAvgQueue(processScoresPtr_front->HOGHOF_partner->hog_out_past);
+                waitForEmptyHOGHOFAvgQueue(processScoresPtr_front->HOGHOF_partner->hof_out_past);
+            }
+
+            if (!isVideo) {
 
                 if (isDebug) {
                     if (testConfigEnabled_ && nidaq_task_ != nullptr) {
@@ -589,19 +602,10 @@ namespace bias {
                         if (frameCount_ < testConfig_->numFrames) {
 
                             nidaq_task_->getNidaqTimeNow(read_ondemand);
-
                         }
-
                     }
                 }
-            }*/
-
-            if (frameCount_ == 0 && cameraNumber_ == 0)
-                std::cout << " FrameCount on Start " << processScoresPtr_side->processedFrameCount << std::endl;
-
-            if (frameCount_ == 0 && cameraNumber_ == 1)
-                std::cout << " FrameCount on Start " << processScoresPtr_front->processedFrameCount << std::endl;
-
+            }
 
             start_process = gettime_->getPCtime();
 
@@ -619,7 +623,6 @@ namespace bias {
                     processScoresPtr_front->processedFrameCount, max_jaaba_compute_time))
                     return;
             }*/
-
 
             if (fstfrmtStampRef_ != 0)
             {
@@ -646,9 +649,9 @@ namespace bias {
                     curTime = (static_cast<uint64_t>(read_ondemand) * 20);
 
                     avgwait_time = curTime - expTime;*/
-               }
+                }
 
-   
+
                 if(cameraNumber_ == 0)
                 {
                     //match to see if incoming frame frameCount matches the currently being processed 
@@ -688,7 +691,9 @@ namespace bias {
                     
                     if(processScoresPtr_side->processedFrameCount != frameCount_) 
                     {
-                        std::cout << "Error in skipping frames in cameraNumber " << cameraNumber_ << std::endl;
+                        std::cout << "Error in skipping frames in cameraNumber " << cameraNumber_ 
+                           << " " << processScoresPtr_side->processedFrameCount  << " " << frameCount_ << std::endl;
+                        return;
                     }
                 }
                 
@@ -731,10 +736,11 @@ namespace bias {
                     if (processScoresPtr_front->processedFrameCount != frameCount_)
                     {
                         std::cout << "Error in skipping frames in cameraNumber " << cameraNumber_ << std::endl;
+                        return;
                     }
 
                 }
-
+                
                 if (pluginImage.rows != 0 && pluginImage.cols != 0)
                 {
 
@@ -770,7 +776,8 @@ namespace bias {
 
                         if (processScoresPtr_front->isFront)
                         {
-                            //std::cout << "Front image received" << std::endl;
+                            if (frameCount_ == 0)
+                                std::cout << "Front image received" << std::endl;
                             if (compute_jaaba) {
 
                                 if (nDevices_ >= 2)
@@ -787,7 +794,6 @@ namespace bias {
 
                                 }
 
-  
                                 if (saveFeat) {
                                     
                                     saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", 
@@ -810,7 +816,6 @@ namespace bias {
                                 }
 
                                 if (processScoresPtr_front->classifier->isClassifierPathSet)
-                                    //&& processScoresPtr_front->processedFrameCount > 0)
                                 {
 
                                     processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
@@ -833,7 +838,7 @@ namespace bias {
                             }
 
                             //std::cout << "FrameCount front " << processScoresPtr_front->processedFrameCount << 
-                            //      " " << frameCount_ << std::endl;
+                            //     " " << frameCount_ << std::endl;
                             processScoresPtr_front->processedFrameCount++;
 
                         }
@@ -850,7 +855,8 @@ namespace bias {
 
                             if(compute_jaaba)
                             {
-                                //std::cout << "Side image received" << std::endl;
+                                if(frameCount_==0)
+                                    std::cout << "Side image received" << std::endl;
                                 if (nDevices_ >= 2)
                                 {
                                     cudaSetDevice(0);
@@ -884,7 +890,6 @@ namespace bias {
                                 }
 
                                 if (processScoresPtr_side->classifier->isClassifierPathSet)
-                                    //&& processScoresPtr_side->processedFrameCount > 0)
                                 {
 
                                     processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
@@ -928,21 +933,17 @@ namespace bias {
             end_process = gettime_->getPCtime();
         }
 
-        if (!isVideo && isDebug ) {
-
+        /*if (!isVideo && isDebug ) {
             if (testConfigEnabled_ && nidaq_task_ != nullptr) {
 
                 if (frameCount_ < testConfig_->numFrames) {
 
                     nidaq_task_->getNidaqTimeNow(read_ondemand);
-                    /*nidaq_task_->acquireLock();
-                    DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                    nidaq_task_->releaseLock();*/
 
                 }
 
             }
-        }
+        }*/
 
         if(isDebug){
             if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
@@ -2246,6 +2247,7 @@ namespace bias {
         else {
             std::cout << "processScores is NULL" << std::endl;
         }*/
+        std::queue<vector<float>> empty_que;
 
         if (isDebug) {
             refill_testVec();
@@ -2254,11 +2256,20 @@ namespace bias {
         if (isReceiver())
         {
             processScoresPtr_side->initialize(mesPass, gettime_, cmdlineparams_);
+            processScoresPtr_side->HOGHOF_frame->resetHOGHOFVec();
+            processScoresPtr_side->HOGHOF_frame->hog_out_past.clear();
+            processScoresPtr_side->HOGHOF_frame->hof_out_past.clear();
+            std::cout << "reset hoghof vectors"  << cameraNumber_ << std::endl;
         }
         else if(isSender()) 
         {
             processScoresPtr_front->initialize(mesPass, gettime_, cmdlineparams_);
+            processScoresPtr_front->HOGHOF_partner->resetHOGHOFVec();
+            processScoresPtr_front->HOGHOF_partner->hog_out_past.clear();
+            processScoresPtr_front->HOGHOF_partner->hof_out_past.clear();
+            std::cout << "reset hoghof vectors" << cameraNumber_ << std::endl;
         }
+
     }
 
     void JaabaPlugin::loadConfig()
@@ -2382,6 +2393,23 @@ namespace bias {
             std::cout << "ts prev after " << ts_prev
             << "ts cur after " << ts_cur << std::endl;
         return 0;
+    }
+
+    void JaabaPlugin::waitForEmptyHOGHOFAvgQueue(LockableQueue<vector<float>>& avg_que)
+    {
+        avg_que.acquireLock();
+        avg_que.waitIfNotEmpty();
+        if (!avg_que.empty())
+        {
+            std::cout << "Averaging hog queue not empty" << std::endl;
+            avg_que.releaseLock();
+            return;
+        }
+        avg_que.releaseLock();
+
+        if (!avg_que.empty())
+            std::cout << " HOGHOF avg Que not empty ***" << std::endl;
+
     }
 
     /*void JaabaPlugin::saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,

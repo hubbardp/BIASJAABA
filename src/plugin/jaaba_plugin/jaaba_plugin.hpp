@@ -237,6 +237,7 @@ namespace bias
                 vector<PredData>& pred_score);
             bool jaabaSkipFrame(uint64_t& ts_cur, uint64_t& ts_prev,
                 int& frameCount, uint64_t wait_thres);
+            void waitForEmptyHOGHOFAvgQueue(LockableQueue<vector<float>>& avg_que);
 
             //void writeAllFeatures(string filename, vector<float>& feat_out,
             //    int feat_size);

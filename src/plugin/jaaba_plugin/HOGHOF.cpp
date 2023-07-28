@@ -107,15 +107,11 @@ namespace bias
         hof_out_avg.resize(hof_num_elements, 0.0);
         hog_out_skip.resize(hog_num_elements, 0.0);
         hof_out_skip.resize(hof_num_elements, 0.0);
-        
 
     }
 
     void HOGHOF::genFeatures(int frame)
     {
-
-        size_t hog_num_elements = hog_shape.x * hog_shape.y * hog_shape.bin;
-        size_t hof_num_elements = hof_shape.x * hof_shape.y * hof_shape.bin;
 
         //Compute and copy HOG/HOF
 
@@ -143,6 +139,41 @@ namespace bias
         loadCropParams();
         if (Cropparams.ncells == 0)
             printf("CROP NOT Initialzied");
+    }
+
+    void HOGHOF::resetHOGHOFVec()
+    {
+        size_t hog_num_elements = hog_shape.x * hog_shape.y * hog_shape.bin;
+        size_t hof_num_elements = hof_shape.x * hof_shape.y * hof_shape.bin;
+        if (hog_out.size() != 0)
+            fill(hog_out.begin(), hog_out.end(), 0.0);
+        else
+            std::cout << " jaaba hog out vector empty" << std::endl;
+
+        if (hof_out.size() != 0)
+            fill(hof_out.begin(), hof_out.end(), 0.0);
+        else
+            std::cout << " jaaba hof out vector empty" << std::endl;
+
+        if (hog_out_avg.size() != 0)
+            fill(hog_out_avg.begin(), hog_out_avg.end(), 0.0);
+        else
+            std::cout << " jaaba hog out avg vector empty" << std::endl;
+
+        if (hof_out_avg.size() != 0)
+            fill(hof_out_avg.begin(), hof_out_avg.end(), 0.0);
+        else
+            std::cout << " jaaba hof out avg vector empty" << std::endl;
+
+        if (hog_out_skip.size() != 0)
+            fill(hog_out_skip.begin(), hog_out_skip.end(), 0.0);
+        else
+            std::cout << "jaaba hog out skip vector empty" << std::endl;
+
+        if (hof_out_skip.size() != 0)
+            fill(hof_out_skip.begin(), hof_out_skip.end(), 0.0);
+        else
+            std::cout << "jaaba hof out skip vector empty" << std::endl;
     }
 
     //void HOGHOF::genFeatures() 

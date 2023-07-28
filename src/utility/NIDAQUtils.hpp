@@ -73,8 +73,8 @@ namespace bias
    
       public:
 
-        float64  dataf_high[1000], dataf_low[1000], datas_high[1000], datas_low[1000];
-        uInt8 data[1000];
+        float64  *dataf_high, *dataf_low, *datas_high, *datas_low;
+        uInt8 *data;
         std::vector<uInt32>cam_trigger;
         uInt32 read_buffer;
         uInt32 read_ondemand;
@@ -97,6 +97,10 @@ namespace bias
         float64 sample_counter_rate;
         uInt64 numsamplesPerChan;
 
+        float64 half_period_cycle_fastclk; // divide the period of
+        float64 half_period_cycle_sampleclk; // cycle by 2 to get half cycle time
+        uint64_t bufsize_samp;
+        uint64_t bufsize_fst;
 
         TaskHandle taskHandle_fout = 0;
         TaskHandle taskHandle_sampout = 0;
