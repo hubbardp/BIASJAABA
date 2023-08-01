@@ -126,14 +126,12 @@ namespace bias {
     bool JaabaPlugin::isSender()
     {
 
-        if (cameraNumber_ == 1)
+        if (view_ == "viewB")
         {
             return true;
-             
-        }else {
-
+        }
+        else {
             return false;
-
         }
     }
 
@@ -141,12 +139,11 @@ namespace bias {
     bool JaabaPlugin::isReceiver()
     {
 
-        if (cameraNumber_ == 0)
+        if (view_ == "viewA")
         {
             return true;
-
-        }else{
-
+        }
+        else {
             return false;
         }
     }
@@ -2294,9 +2291,11 @@ namespace bias {
             
             if (camera_serial_id == camera_it->second && camera_it->first == "viewA") {
                 sideRadioButtonPtr_->setChecked(true);
+                view_ = "viewA";
             }
             else if (camera_serial_id == camera_it->second && camera_it->first == "viewB") {
                 frontRadioButtonPtr_->setChecked(true);
+                view_ = "viewB";
             }else{}
 
            camera_it++;

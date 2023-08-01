@@ -418,26 +418,6 @@ namespace bias {
             }else{}
             //end_process = gettime_->getPCtime();
 
-            // sync nidaq trigger start/stop with thread restart
-            /*if (!nidaqTriggered) {
-                if (cameraNumber_ == 0) {
-                    nidaq_task_->startTasks();
-                    nidaq_task_->start_trigger_signal();
-                }
-                acquireLock();
-                nidaqTriggered = true;
-                if (!nidaq_task_->istrig) {
-                    std::cout << "Nidaq wait" << cameraNumber_ << std::endl;
-                    waitForCond();
-                }
-                else if (nidaq_task_->istrig) {
-                    std::cout << "Nidaq trig" << cameraNumber_ << std::endl;
-                    signalCondMet();
-                    partnerImageGrabberPtr->signalCondMet();
-                }
-                releaseLock();
-            }*/
-
             start_process = gettime_->getPCtime();
 
             if (isVideo) {
@@ -738,12 +718,10 @@ namespace bias {
                     }
                 }
 
-
                 ///---------------------------------------------------------------
 //#if DEBUG
                 if (isDebug) {
-
-                    
+                 
                     if (testConfigEnabled_ && ((frameCount - 1) < testConfig_->numFrames)) {
 
                         if (!testConfig_->imagegrab_prefix.empty()) {

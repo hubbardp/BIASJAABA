@@ -160,6 +160,7 @@ namespace bias
             bool process_frame_time;
             size_t hog_num_elements;
             size_t hof_num_elements;
+            string view_;
 
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;
