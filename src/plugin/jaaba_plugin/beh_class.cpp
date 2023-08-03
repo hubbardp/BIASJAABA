@@ -105,7 +105,6 @@ namespace bias {
         size_t num_beh = beh_present.size();
         for(int ncls = 0;ncls < num_beh;ncls++)
         {
-
             if(beh_present[ncls]) 
             {
 

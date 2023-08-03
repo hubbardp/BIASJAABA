@@ -236,7 +236,7 @@ namespace bias {
                 {
 
                     cudaSetDevice(0);
-                    genFeatures(HOGHOF_frame, processedFrameCount + 1);
+                    genFeatures(HOGHOF_self, processedFrameCount + 1);
                     acquireLock();
                     processSide = false;
                     isProcessed_side = true;
@@ -247,7 +247,7 @@ namespace bias {
                 if (processFront) {
 
                     cudaSetDevice(1);
-                    genFeatures(HOGHOF_partner, processedFrameCount + 1);
+                    genFeatures(HOGHOF_self, processedFrameCount + 1);
                     acquireLock();
                     processFront = false;
                     isProcessed_front = true;
@@ -288,7 +288,6 @@ namespace bias {
                         scoreCount++;
                         continue;
                     }
-                    //std::cout << "Case 1" << std::endl;
 
                     // to keep up with frames where both views are skipped
                     if (scoreCount < predScorePartner.frameCount)
@@ -298,19 +297,16 @@ namespace bias {
                         scoreCount++;
                         continue;
                     }
-                    //std::cout << "Case 2" << std::endl;
                     
                     if (scoreCount > predScore.frameCount) {
                         sideScoreQueuePtr_->pop();
                         continue;
                     }
-                    //std::cout << "Case 3" << std::endl;
 
                     if (scoreCount > predScorePartner.frameCount){
                         frontScoreQueuePtr_->pop();
                         continue;
                     }
-                    //std::cout << "Case 4" << std::endl;
                     
                     if (predScore.frameCount == predScorePartner.frameCount)
                     {

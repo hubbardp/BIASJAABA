@@ -93,6 +93,7 @@ namespace bias {
             virtual std::string getModelName();
 
             virtual TimeStamp getImageTimeStamp();
+            virtual int64_t getFrameId();
             
             virtual std::string toString();
 
@@ -147,6 +148,7 @@ namespace bias {
             int64_t timeStamp_inc = 0;
             int64_t counter=0;
             TimeStamp timeStampDevice_= {0,0};
+            int64_t frameCount_ = 0;
 
             bool imageOK_ = false;
             spinImage hSpinImage_ = nullptr;
@@ -161,8 +163,9 @@ namespace bias {
             bool destroySpinImage(spinImage &hImage);
 
             void setupTimeStamping();
+            void setupFrameId();
             void updateTimeStamp();
-            
+            void updateFrameId();
 
             // Get Property Info methods
             static std::map<PropertyType, std::function<PropertyInfo(CameraDevice_spin*)>> getPropertyInfoDispatchMap_; 

@@ -90,8 +90,8 @@ namespace bias
            int wait_threshold;
            string portName;
 
-           QPointer<HOGHOF> HOGHOF_frame;
-           QPointer<HOGHOF> HOGHOF_partner;
+           QPointer<HOGHOF> HOGHOF_self;
+           //QPointer<HOGHOF> HOGHOF_partner;
            QPointer<beh_class> classifier;
            QPointer<VisPlots> visplots;
 

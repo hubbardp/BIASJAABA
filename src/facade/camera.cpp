@@ -123,6 +123,12 @@ namespace bias {
     }
 
 
+    int64_t Camera::getFrameId()
+    {
+        return cameraDevicePtr_->getFrameId();
+    }
+
+
     void Camera::initCounter()
     {
         cameraDevicePtr_ ->initCounter(); 

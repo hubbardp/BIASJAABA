@@ -88,7 +88,7 @@ namespace bias {
 
 /*#if isVidInput   
         //DEVEL
-        if(processScoresPtr_side->isVid)
+        if(processScoresPtr_self->isVid)
         {
             std::cout << "inside side " << std::endl;
             image_height = IMAGE_HEIGHT; //height of frame from video input
@@ -96,7 +96,7 @@ namespace bias {
             
         }
 
-        if (processScoresPtr_front->isVid)
+        if (processScoresPtr_self->isVid)
         {
             std::cout << "inside front" << std::endl;
             image_height = IMAGE_HEIGHT; //height of frame from video input
@@ -152,60 +152,35 @@ namespace bias {
     void JaabaPlugin::stop()
     {
 
-        if (processScoresPtr_side != nullptr)
+        if (processScoresPtr_self != nullptr)
         {
 
-            if (sideRadioButtonPtr_->isChecked())
+            if (processScoresPtr_self->HOGHOF_self->isHOGPathSet
+                && processScoresPtr_self->HOGHOF_self->isHOFPathSet 
+                && processScoresPtr_self->classifier->isClassifierPathSet)
             {
-
-                if (processScoresPtr_side->HOGHOF_frame->isHOGPathSet
-                    && processScoresPtr_side->HOGHOF_frame->isHOFPathSet 
-                    && processScoresPtr_side->classifier->isClassifierPathSet)
-                {
                     
-                    HOFTeardown(processScoresPtr_side->HOGHOF_frame->hof_ctx);
-                    HOGTeardown(processScoresPtr_side->HOGHOF_frame->hog_ctx);
-                    std::cout << "side gpu ctx stop " << std::endl;
-                }
-
+                HOFTeardown(processScoresPtr_self->HOGHOF_self->hof_ctx);
+                HOGTeardown(processScoresPtr_self->HOGHOF_self->hog_ctx);
+                std::cout << "side gpu ctx stop " << std::endl;
             }
 
-            if (visualize) {
-                processScoresPtr_side->visplots->stop();
-                delete processScoresPtr_side->visplots;
-            }
           
-            //delete processScoresPtr_side->HOGHOF_frame;
-            //delete processScoresPtr_side;
+            //delete processScoresPtr_self->HOGHOF_self;
+            //delete processScoresPtr_self;
             
         }
         else {
-            std::cout << "ProcessScores side is NULL" << std::endl;
+            std::cout << "ProcessScores is NULL" << std::endl;
         }
 
-
-        if (processScoresPtr_front != nullptr)
+        if (isReceiver())
         {
-
-            if (frontRadioButtonPtr_->isChecked())
-            {
-                
-                if (processScoresPtr_front->HOGHOF_partner->isHOGPathSet
-                    && processScoresPtr_front->HOGHOF_partner->isHOFPathSet
-                    && processScoresPtr_front->classifier->isClassifierPathSet)
-                {
-                    
-                    HOFTeardown(processScoresPtr_front->HOGHOF_partner->hof_ctx);
-                    HOGTeardown(processScoresPtr_front->HOGHOF_partner->hog_ctx);
-                    std::cout << "front gpu ctx stop " << std::endl;
-                }
+            if (visualize) {
+                processScoresPtr_self->visplots->stop();
+                delete processScoresPtr_self->visplots;
             }
-
-            //processScoresPtr_front->stop();
-            //delete processScoresPtr_front->HOGHOF_partner;
-            //delete processScoresPtr_front;
         }
-
     }
 
 
@@ -214,28 +189,19 @@ namespace bias {
         
         if (isReceiver())
         {
-            if ((threadPoolPtr_ != nullptr) && (processScoresPtr_side != nullptr))
+            if ((threadPoolPtr_ != nullptr) && (processScoresPtr_self != nullptr))
             {
                 if (classify_scores) {
-                    threadPoolPtr_->start(processScoresPtr_side);
+                    threadPoolPtr_->start(processScoresPtr_self);
                 }
 
                 if (visualize)
                 {
-                    threadPoolPtr_->start(processScoresPtr_side->visplots);
+                    threadPoolPtr_->start(processScoresPtr_self->visplots);
                 }
 
             }
             
-        }
-
-        if (isSender())
-        {
-            /*if ((threadPoolPtr_ != nullptr) && (processScoresPtr_front != nullptr)
-                && cameraNumber_ == 1)
-            {
-                threadPoolPtr_->start(processScoresPtr_front);
-            }*/
         }
 
     }
@@ -244,15 +210,15 @@ namespace bias {
     {
         if (isReceiver())
         {
-            if ((threadPoolPtr_ != nullptr) && !processScoresPtr_side.isNull())
+            if ((threadPoolPtr_ != nullptr) && !processScoresPtr_self.isNull())
             {
                 if (classify_scores)
                 {
 
-                    processScoresPtr_side->acquireLock();
-                    processScoresPtr_side->stop();
-                    processScoresPtr_side->releaseLock();
-                    if (processScoresPtr_side.isNull())
+                    processScoresPtr_self->acquireLock();
+                    processScoresPtr_self->stop();
+                    processScoresPtr_self->releaseLock();
+                    if (processScoresPtr_self.isNull())
                         std::cout << "ProcessScores is deleted" << std::endl;
                 }
             }
@@ -267,45 +233,51 @@ namespace bias {
         getFormatSettings();
         std::cout << image_height << " " << image_width << std::endl;
 
-        // initialize side gpu context
-        if (isReceiver() && !processScoresPtr_side->isHOGHOFInitialised)
+        if (!processScoresPtr_self->isHOGHOFInitialised)
         {
             std::cout << "ProcessScores is not NULL " << std::endl;
-            if (!(processScoresPtr_side->HOGHOF_frame.isNull()))
+            if (!(processScoresPtr_self->HOGHOF_self.isNull()))
             {
                 std::cout << " HOGHOF is Not NULL" << std::endl;
                 if (nDevices_ >= 2)
                 {
-                    std::cout << "Gpu initialized side******" << std::endl;
-                    cudaSetDevice(0);
-                    processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
-                    hog_num_elements = processScoresPtr_side->HOGHOF_frame->hog_shape.x*
-                                       processScoresPtr_side->HOGHOF_frame->hog_shape.y*
-                                       processScoresPtr_side->HOGHOF_frame->hog_shape.bin;
-                    hof_num_elements = processScoresPtr_side->HOGHOF_frame->hof_shape.x*
-                                       processScoresPtr_side->HOGHOF_frame->hof_shape.y*
-                                       processScoresPtr_side->HOGHOF_frame->hof_shape.bin;
-                    
-                }else {
+                    if (view_ == "viewA")
+                        cudaSetDevice(0);
+                    else if (view_ == "viewB")
+                        cudaSetDevice(1);
+                    processScoresPtr_self->initHOGHOF(processScoresPtr_self->HOGHOF_self, image_width, image_height);
+                    hog_num_elements = processScoresPtr_self->HOGHOF_self->hog_shape.x*
+                        processScoresPtr_self->HOGHOF_self->hog_shape.y*
+                        processScoresPtr_self->HOGHOF_self->hog_shape.bin;
+                    hof_num_elements = processScoresPtr_self->HOGHOF_self->hof_shape.x*
+                        processScoresPtr_self->HOGHOF_self->hof_shape.y*
+                        processScoresPtr_self->HOGHOF_self->hof_shape.bin;
 
-                    processScoresPtr_side->initHOGHOF(processScoresPtr_side->HOGHOF_frame, image_width, image_height);
-                    hog_num_elements = processScoresPtr_side->HOGHOF_frame->hog_shape.x*
-                                       processScoresPtr_side->HOGHOF_frame->hog_shape.y*
-                                       processScoresPtr_side->HOGHOF_frame->hog_shape.bin;
-                    hof_num_elements = processScoresPtr_side->HOGHOF_frame->hof_shape.x*
-                                       processScoresPtr_side->HOGHOF_frame->hof_shape.y*
-                                       processScoresPtr_side->HOGHOF_frame->hof_shape.bin;
+                }
+                else {
+
+                    processScoresPtr_self->initHOGHOF(processScoresPtr_self->HOGHOF_self, image_width, image_height);
+                    hog_num_elements = processScoresPtr_self->HOGHOF_self->hog_shape.x*
+                        processScoresPtr_self->HOGHOF_self->hog_shape.y*
+                        processScoresPtr_self->HOGHOF_self->hog_shape.bin;
+                    hof_num_elements = processScoresPtr_self->HOGHOF_self->hof_shape.x*
+                        processScoresPtr_self->HOGHOF_self->hof_shape.y*
+                        processScoresPtr_self->HOGHOF_self->hof_shape.bin;
 
                 }
                 hoghof_feat.resize(numframes_, std::vector<float>());
                 hoghof_feat_avg.resize(numframes_, std::vector<float>());
-
-                acquireLock();
-                detectStarted = true;
-                processScoresPtr_side->isSide = true;
-                releaseLock();
             }
+        }
 
+        // initialize side gpu context
+        if (isReceiver()){
+
+            acquireLock();
+            detectStarted = true;
+            processScoresPtr_self->isSide = true;
+            releaseLock();
+            
             //call front gpu context 
             if (nDevices_ >= 2)
             {
@@ -320,96 +292,56 @@ namespace bias {
             }
 
             while (!gpuInitialized) {}
-            emit(passHOGShape(processScoresPtr_side->HOGHOF_frame));
+            emit(passHOGShape(processScoresPtr_self->HOGHOF_self));
         }
-        else {
-            std::cout << "Gpu already initialized " << std::endl;
-        }
-
-        if (isSender() && !processScoresPtr_front->isHOGHOFInitialised)
-        {
-            if (!(processScoresPtr_front->HOGHOF_partner.isNull()))
-            {
-
-                if (nDevices_ >= 2)
-                {
-                    std::cout << "Gpu initialized front******" << std::endl;
-                    cudaSetDevice(1);
-                    processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
-                    hog_num_elements = processScoresPtr_front->HOGHOF_partner->hog_shape.x*
-                                       processScoresPtr_front->HOGHOF_partner->hog_shape.y*
-                                       processScoresPtr_front->HOGHOF_partner->hog_shape.bin;
-
-                    hof_num_elements = processScoresPtr_front->HOGHOF_partner->hof_shape.x*
-                                       processScoresPtr_front->HOGHOF_partner->hof_shape.y*
-                                       processScoresPtr_front->HOGHOF_partner->hof_shape.bin;
-                }
-                else {
-
-                    processScoresPtr_front->initHOGHOF(processScoresPtr_front->HOGHOF_partner, image_width, image_height);
-                    hog_num_elements = processScoresPtr_front->HOGHOF_partner->hog_shape.x*
-                        processScoresPtr_front->HOGHOF_partner->hog_shape.y*
-                        processScoresPtr_front->HOGHOF_partner->hog_shape.bin;
-
-                    hof_num_elements = processScoresPtr_front->HOGHOF_partner->hof_shape.x*
-                        processScoresPtr_front->HOGHOF_partner->hof_shape.y*
-                        processScoresPtr_front->HOGHOF_partner->hof_shape.bin;
-
-                }
-                hoghof_feat.resize(numframes_, std::vector<float>());
-                hoghof_feat_avg.resize(numframes_, std::vector<float>());
-
-                acquireLock();
-                detectStarted = true;
-                processScoresPtr_front->isFront = true;
-                releaseLock();
-            }
-
-            emit(processSide(true));
-            emit(passHOGShape(processScoresPtr_front->HOGHOF_partner));
-        }
-
         
+        if (isSender()){
+
+            acquireLock();
+            detectStarted = true;
+            processScoresPtr_self->isFront = true;
+            releaseLock();
+            
+            emit(processSide(true));
+            emit(passHOGShape(processScoresPtr_self->HOGHOF_self));
+        }
+
         // histogram parameters initialize
         if (mesPass) {
 
-            if (processScoresPtr_side->isHOGHOFInitialised && processScoresPtr_front->isHOGHOFInitialised)
+            if (processScoresPtr_self->isHOGHOFInitialised && processScoresPtr_partner->isHOGHOFInitialised)
             {
 
-                processScoresPtr_side->classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape,
-                    &processScoresPtr_front->HOGHOF_partner->hog_shape);
-                std::cout << processScoresPtr_front->HOGHOF_partner->hog_shape.x
-                    << processScoresPtr_front->HOGHOF_partner->hog_shape.y
+                processScoresPtr_self->classifier->translate_mat2C(&processScoresPtr_self->HOGHOF_self->hog_shape,
+                    &processScoresPtr_partner->HOGHOF_self->hog_shape);
+                std::cout << processScoresPtr_self->HOGHOF_self->hog_shape.x
+                    << processScoresPtr_partner->HOGHOF_self->hog_shape.y
                     << std::endl;
             
             }
-
         } 
     }
 
     void JaabaPlugin::gpuDeinit()
     {
-        if (isReceiver()) {
-            processScoresPtr_side->isHOGHOFInitialised = false;
-            if (processScoresPtr_side != nullptr)
+        
+        processScoresPtr_self->isHOGHOFInitialised = false;
+        if (processScoresPtr_self != nullptr)
+        {
+
+            if (processScoresPtr_self->HOGHOF_self->isHOGPathSet
+                && processScoresPtr_self->HOGHOF_self->isHOFPathSet
+                && processScoresPtr_self->classifier->isClassifierPathSet)
             {
 
-                if (sideRadioButtonPtr_->isChecked())
-                {
-
-                    if (processScoresPtr_side->HOGHOF_frame->isHOGPathSet
-                        && processScoresPtr_side->HOGHOF_frame->isHOFPathSet
-                        && processScoresPtr_side->classifier->isClassifierPathSet)
-                    {
-
-                        HOFTeardown(processScoresPtr_side->HOGHOF_frame->hof_ctx);
-                        HOGTeardown(processScoresPtr_side->HOGHOF_frame->hog_ctx);
-                        std::cout << "side gpu ctx stop " << std::endl;
-                    }
-
-                }
+                HOFTeardown(processScoresPtr_self->HOGHOF_self->hof_ctx);
+                HOGTeardown(processScoresPtr_self->HOGHOF_self->hog_ctx);
+                std::cout << "gpu ctx stop in " << view_ << std::endl;
             }
 
+        }
+
+        if (isReceiver()) {
             if (nDevices_ >= 2)
             {
                 QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
@@ -419,28 +351,6 @@ namespace bias {
 
                     QPointer<BiasPlugin> partnerPluginPtr = partnerCameraWindowPtr->getPluginByName("jaabaPlugin");
                     partnerPluginPtr->gpuDeinit();
-                }
-            }
-        }
-
-        if (isSender()) {
-            processScoresPtr_front->isHOGHOFInitialised = false;
-
-            if (processScoresPtr_front != nullptr)
-            {
-
-                if (frontRadioButtonPtr_->isChecked())
-                {
-
-                    if (processScoresPtr_front->HOGHOF_partner->isHOGPathSet
-                        && processScoresPtr_front->HOGHOF_partner->isHOFPathSet
-                        && processScoresPtr_front->classifier->isClassifierPathSet)
-                    {
-
-                        HOFTeardown(processScoresPtr_front->HOGHOF_partner->hof_ctx);
-                        HOGTeardown(processScoresPtr_front->HOGHOF_partner->hog_ctx);
-                        std::cout << "front gpu ctx stop " << std::endl;
-                    }
                 }
             }
         }
@@ -486,7 +396,7 @@ namespace bias {
     }
 
 
-    void JaabaPlugin::resetTrigger()
+    /*void JaabaPlugin::resetTrigger()
     {
         //triggerArmedState = true;
         //updateTrigStateInfo();
@@ -510,15 +420,14 @@ namespace bias {
         }
         updateTrigStateInfo();
 
-    }
+    }*/
 
     void JaabaPlugin::processFrames(StampedImage stampedImage)
     {
         
         if(mesPass)
         {
-
-            processFramePass();
+            //processFramePass();
 
         } else {
 
@@ -549,8 +458,22 @@ namespace bias {
         uint64_t frameGrabAvgTime, max_jaaba_compute_time, avg_frameLatSinceFirstFrame=0;
         int64_t wait_thres, avgwait_time;
         double vis_ts = 0.0;
+        string prefix;
       
         frameCount_ = 0; // Incoming frame framecount
+
+        if (view_ == "viewA")
+        {
+            prefix = "side";
+            if (nDevices_ >= 2)
+                cudaSetDevice(0);
+        }
+        else if(view_ == "viewB") 
+        {
+            prefix = "front";
+            if (nDevices_ >= 2)
+                cudaSetDevice(1);
+        }
 
         if (isVideo) {
             frameGrabAvgTime = 2500;
@@ -563,11 +486,10 @@ namespace bias {
             frameGrabAvgTime = 2500;
             wait_thres = static_cast<int64_t>(1500);
             max_jaaba_compute_time = 2000;
-            //max_jaaba_compute_time = 4000;
             avgwait_time = 0;
         }
 
-        
+
         if (pluginImageQueuePtr_ != nullptr)
         {
             acquireLock();
@@ -577,18 +499,12 @@ namespace bias {
             timeStamp_ = stampedImage.timeStamp;
             releaseLock();
 
-            if (frameCount_ == 0 && cameraNumber_ == 0) {
-                std::cout << " FrameCount on Start " << processScoresPtr_side->processedFrameCount << std::endl;
+            // ensuring hoghof vectors are empty before starting processing
+            if (frameCount_ == 0) {
+                std::cout << " FrameCount on Start " << processScoresPtr_self->processedFrameCount << std::endl;
 
-                waitForEmptyHOGHOFAvgQueue(processScoresPtr_side->HOGHOF_frame->hog_out_past);
-                waitForEmptyHOGHOFAvgQueue(processScoresPtr_side->HOGHOF_frame->hof_out_past);
-            }
-
-            if (frameCount_ == 0 && cameraNumber_ == 1) {
-                std::cout << " FrameCount on Start " << processScoresPtr_front->processedFrameCount << std::endl;
-
-                waitForEmptyHOGHOFAvgQueue(processScoresPtr_front->HOGHOF_partner->hog_out_past);
-                waitForEmptyHOGHOFAvgQueue(processScoresPtr_front->HOGHOF_partner->hof_out_past);
+                waitForEmptyHOGHOFAvgQueue(processScoresPtr_self->HOGHOF_self->hog_out_past);
+                waitForEmptyHOGHOFAvgQueue(processScoresPtr_self->HOGHOF_self->hof_out_past);
             }
 
             if (!isVideo) {
@@ -612,12 +528,12 @@ namespace bias {
 
             if (cameraNumber_ == 0) {
                 if (jaabaSkipFrame(start_process, start_prev,
-                    processScoresPtr_side->processedFrameCount, max_jaaba_compute_time))
+                    processScoresPtr_self->processedFrameCount, max_jaaba_compute_time))
                     return;
             }
             else if (cameraNumber_ == 1){
                 if (jaabaSkipFrame(start_process, start_prev,
-                    processScoresPtr_front->processedFrameCount, max_jaaba_compute_time))
+                    processScoresPtr_self->processedFrameCount, max_jaaba_compute_time))
                     return;
             }*/
 
@@ -631,9 +547,9 @@ namespace bias {
                     avgwait_time = curTime_vid - expTime_vid;
 
                     // this is for visualizer code to run accurately
-                    if (isReceiver() && processScoresPtr_side != nullptr &&
-                        processScoresPtr_side->processedFrameCount == 0)
-                        processScoresPtr_side->fstfrmStampRef = fstfrmtStampRef_;
+                    if (isReceiver() && processScoresPtr_self != nullptr &&
+                        processScoresPtr_self->processedFrameCount == 0)
+                        processScoresPtr_self->fstfrmStampRef = fstfrmtStampRef_;
                 }
                 else {
                    
@@ -649,280 +565,183 @@ namespace bias {
                 }
 
 
-                if(cameraNumber_ == 0)
+                //match to see if incoming frame frameCount matches the currently being processed 
+                //frameCount, otherwise consider it skipped frame
+                while (processScoresPtr_self->processedFrameCount < frameCount_)
                 {
-                    //match to see if incoming frame frameCount matches the currently being processed 
-                    //frameCount, otherwise consider it skipped frame
-                    while (processScoresPtr_side->processedFrameCount < frameCount_)
-                    {
-                        std::cout << "side skipped in Jaaba plugin " <<
-                            processScoresPtr_side->processedFrameCount << std::endl;
-                        if (isDebug && testConfigEnabled_) {
-                            end_process = gettime_->getPCtime();
-                            ts_nidaqThres[processScoresPtr_side->processedFrameCount] = 1;
-                            ts_gpuprocess_time[processScoresPtr_side->processedFrameCount] = (end_process - start_process);
-                            ts_jaaba_start[processScoresPtr_side->processedFrameCount] = start_process;
-                            ts_jaaba_end[processScoresPtr_side->processedFrameCount] = end_process;
-                            //time_cur[processScoresPtr_side->processedFrameCount] = curTime;
-                        }
-
-                        if (saveFeat) {
-
-                            saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv",
-                                processScoresPtr_side->HOGHOF_frame->hog_out_skip,
-                                processScoresPtr_side->HOGHOF_frame->hof_out_skip,
-                                hog_num_elements, hof_num_elements);
-                        }
-
-                        processScoresPtr_side->HOGHOF_frame->averageWindowFeatures(window_size, processScoresPtr_side->processedFrameCount, 1);
-
-                        if (saveFeat) {
-                            saveFeatures(output_feat_directory + "hoghof_avg_side_biasjaaba.csv",
-                                processScoresPtr_side->HOGHOF_frame->hog_out_avg,
-                                processScoresPtr_side->HOGHOF_frame->hof_out_avg,
-                                hog_num_elements, hof_num_elements);
-                        }
-
-                        processScoresPtr_side->processedFrameCount++;
+                    std::cout << view_ << " skipped in Jaaba plugin " <<
+                        processScoresPtr_self->processedFrameCount << std::endl;
+                    if (isDebug && testConfigEnabled_) {
+                        end_process = gettime_->getPCtime();
+                        ts_nidaqThres[processScoresPtr_self->processedFrameCount] = 1;
+                        ts_gpuprocess_time[processScoresPtr_self->processedFrameCount] = (end_process - start_process);
+                        ts_jaaba_start[processScoresPtr_self->processedFrameCount] = start_process;
+                        ts_jaaba_end[processScoresPtr_self->processedFrameCount] = end_process;
+                        //time_cur[processScoresPtr_self->processedFrameCount] = curTime;
                     }
-                    
-                    if(processScoresPtr_side->processedFrameCount != frameCount_) 
-                    {
-                        std::cout << "Error in skipping frames in cameraNumber " << cameraNumber_ 
-                           << " " << processScoresPtr_side->processedFrameCount  << " " << frameCount_ << std::endl;
-                        return;
+
+                    if (saveFeat) {
+
+                        saveFeatures(output_feat_directory + "hoghof_" + prefix + "_biasjaaba.csv",
+                            processScoresPtr_self->HOGHOF_self->hog_out_skip,
+                            processScoresPtr_self->HOGHOF_self->hof_out_skip,
+                            hog_num_elements, hof_num_elements);
                     }
+
+                    processScoresPtr_self->HOGHOF_self->averageWindowFeatures(window_size, processScoresPtr_self->processedFrameCount, 1);
+
+                    if (saveFeat) {
+                        saveFeatures(output_feat_directory + "hoghof_avg_" + prefix + "_biasjaaba.csv",
+                            processScoresPtr_self->HOGHOF_self->hog_out_avg,
+                            processScoresPtr_self->HOGHOF_self->hof_out_avg,
+                            hog_num_elements, hof_num_elements);
+                    }
+
+                    processScoresPtr_self->processedFrameCount++;
                 }
-                
-               
-                if(cameraNumber_ == 1)
+                    
+                if(processScoresPtr_self->processedFrameCount != frameCount_) 
                 {
-                    while (processScoresPtr_front->processedFrameCount < frameCount_)
+                    std::cout << "Error in skipping frames in cameraNumber " << cameraNumber_ 
+                        << " " << processScoresPtr_self->processedFrameCount  << " " << frameCount_ << std::endl;
+                    return;
+                }
+
+                          
+                /*if(cameraNumber_ == 1)
+                {
+                    while (processScoresPtr_self->processedFrameCount < frameCount_)
                     {
                         std::cout << "front skipped in Jaaba plugin" << 
-                            processScoresPtr_front->processedFrameCount << std::endl;
+                            processScoresPtr_self->processedFrameCount << std::endl;
                         if (isDebug && testConfigEnabled_) {
                             end_process = gettime_->getPCtime();
-                            ts_nidaqThres[processScoresPtr_front->processedFrameCount] = 1;
-                            ts_gpuprocess_time[processScoresPtr_front->processedFrameCount] = (end_process - start_process);
-                            ts_jaaba_start[processScoresPtr_front->processedFrameCount] = start_process;
-                            ts_jaaba_end[processScoresPtr_front->processedFrameCount] = end_process;
-                            //time_cur[processScoresPtr_front->processedFrameCount] = curTime;
+                            ts_nidaqThres[processScoresPtr_self->processedFrameCount] = 1;
+                            ts_gpuprocess_time[processScoresPtr_self->processedFrameCount] = (end_process - start_process);
+                            ts_jaaba_start[processScoresPtr_self->processedFrameCount] = start_process;
+                            ts_jaaba_end[processScoresPtr_self->processedFrameCount] = end_process;
+                            //time_cur[processScoresPtr_self->processedFrameCount] = curTime;
                         }
 
                         if (saveFeat) {
                             
                             saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", 
-                                processScoresPtr_front->HOGHOF_partner->hog_out_skip,
-                                processScoresPtr_front->HOGHOF_partner->hof_out_skip,
+                                processScoresPtr_self->HOGHOF_self->hog_out_skip,
+                                processScoresPtr_self->HOGHOF_self->hof_out_skip,
                                 hog_num_elements, hof_num_elements);
                         }
 
-                        processScoresPtr_front->HOGHOF_partner->averageWindowFeatures(window_size, processScoresPtr_front->processedFrameCount, 1);
+                        processScoresPtr_self->HOGHOF_self->averageWindowFeatures(window_size, processScoresPtr_self->processedFrameCount, 1);
 
                         if (saveFeat) {
                             saveFeatures(output_feat_directory + "hoghof_avg_front_biasjaaba.csv",
-                                         processScoresPtr_front->HOGHOF_partner->hog_out_avg,
-                                processScoresPtr_front->HOGHOF_partner->hof_out_avg,
+                                         processScoresPtr_self->HOGHOF_self->hog_out_avg,
+                                processScoresPtr_self->HOGHOF_self->hof_out_avg,
                                          hog_num_elements, hof_num_elements);
                         }
 
-                        processScoresPtr_front->processedFrameCount++;
+                        processScoresPtr_self->processedFrameCount++;
                     }
 
-                    if (processScoresPtr_front->processedFrameCount != frameCount_)
+                    if (processScoresPtr_self->processedFrameCount != frameCount_)
                     {
                         std::cout << "Error in skipping frames in cameraNumber " << cameraNumber_ << std::endl;
                         return;
                     }
 
-                }
+                }*/
                 
                 if (pluginImage.rows != 0 && pluginImage.cols != 0)
                 {
 
-                    if(isSender())//if (isSender() && detectStarted)
+                    if (pluginImage.channels() == 3)
                     {
-                        
-                        if (pluginImage.channels() == 3)
-                        {
-                            cv::cvtColor(pluginImage, pluginImage, cv::COLOR_BGR2GRAY);
-                        }
-
-                        // convert the frame into float32
-                        pluginImage.convertTo(greyFront, CV_32FC1, scaling_factor);
-
+                        cv::cvtColor(pluginImage, pluginImage, cv::COLOR_BGR2GRAY);
                     }
 
+                    // convert the frame into float32
+                    pluginImage.convertTo(greyFront, CV_32FC1, scaling_factor);
 
-                    if(isReceiver())//if (isReceiver() && detectStarted)
-                    {
-                        
-                        if (pluginImage.channels() == 3)
-                        {
-                            cv::cvtColor(pluginImage, pluginImage, cv::COLOR_BGR2GRAY);
-                        }
-
-                        // convert the frame into float32
-                        pluginImage.convertTo(greySide, CV_32FC1, scaling_factor);
-
-                    }
-
-                    if (processScoresPtr_side != nullptr || processScoresPtr_front != nullptr)
+                    if (processScoresPtr_self != nullptr)
                     {
 
-                        if (processScoresPtr_front->isFront)
-                        {
-                            if (frameCount_ == 0)
-                                std::cout << "Front image received" << std::endl;
-                            if (compute_jaaba) {
+                        if (frameCount_ == 0)
+                            std::cout << view_ << " image received" << std::endl;
 
-                                if (nDevices_ >= 2)
-                                {
-                                    cudaSetDevice(1);
-                                    processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                    processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
+                        if (compute_jaaba) {                 
 
-                                }
-                                else {
+                            processScoresPtr_self->HOGHOF_self->img.buf = greyFront.ptr<float>(0);
+                            processScoresPtr_self->genFeatures(processScoresPtr_self->HOGHOF_self, frameCount_);
 
-                                    processScoresPtr_front->HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                    processScoresPtr_front->genFeatures(processScoresPtr_front->HOGHOF_partner, frameCount_);
-
-                                }
-
-                                if (saveFeat) {
+                            if (saveFeat) {
                                     
-                                    saveFeatures(output_feat_directory + "hoghof_front_biasjaaba.csv", 
-                                        processScoresPtr_front->HOGHOF_partner->hog_out,
-                                        processScoresPtr_front->HOGHOF_partner->hof_out,
-                                        hog_num_elements, hof_num_elements);
-                                }
+                                saveFeatures(output_feat_directory + "hoghof_" + prefix + "_biasjaaba.csv", 
+                                    processScoresPtr_self->HOGHOF_self->hog_out,
+                                    processScoresPtr_self->HOGHOF_self->hof_out,
+                                    hog_num_elements, hof_num_elements);
+                            }
 
-                                //average window features
+                            //average window features
 
-                                processScoresPtr_front->HOGHOF_partner->averageWindowFeatures(window_size, processScoresPtr_front->processedFrameCount,0);
+                            processScoresPtr_self->HOGHOF_self->averageWindowFeatures(window_size, processScoresPtr_self->processedFrameCount,0);
                                 
-                                if(saveFeat){
+                            if(saveFeat){
 
-                                    saveFeatures(output_feat_directory + "hoghof_avg_front_biasjaaba.csv",
-                                        processScoresPtr_front->HOGHOF_partner->hog_out_avg,
-                                        processScoresPtr_front->HOGHOF_partner->hof_out_avg,
-                                        hog_num_elements, hof_num_elements);
+                                saveFeatures(output_feat_directory + "hoghof_avg_" + prefix + "_biasjaaba.csv",
+                                    processScoresPtr_self->HOGHOF_self->hog_out_avg,
+                                    processScoresPtr_self->HOGHOF_self->hof_out_avg,
+                                    hog_num_elements, hof_num_elements);
                       
-                                }
-
-                                if (processScoresPtr_front->classifier->isClassifierPathSet)
-                                {
-
-                                    processScoresPtr_front->classifier->boost_classify_front(processScoresPtr_front->classifier->predScoreFront.score,
-                                        processScoresPtr_front->HOGHOF_partner->hog_out_avg, processScoresPtr_front->HOGHOF_partner->hof_out_avg,
-                                        &processScoresPtr_front->HOGHOF_partner->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape,
-                                        processScoresPtr_front->classifier->nframes, processScoresPtr_front->classifier->model,
-                                        processScoresPtr_front->processedFrameCount);
-
-                                    time_now = gettime_->getPCtime();
-                                    processScoresPtr_front->classifier->predScoreFront.frameCount = processScoresPtr_front->processedFrameCount;
-                                    processScoresPtr_front->classifier->predScoreFront.score_front_ts = time_now;
-                                    processScoresPtr_front->classifier->predScoreFront.view = 2;
-                                    
-                                    //std::cout << "Pushing to Front queue" << std::endl;
-                                    frontScoreQueuePtr_->acquireLock();
-                                    frontScoreQueuePtr_->push(processScoresPtr_front->classifier->predScoreFront);
-                                    frontScoreQueuePtr_->releaseLock();
-
-                                }
                             }
 
-                            //std::cout << "FrameCount front " << processScoresPtr_front->processedFrameCount << 
-                            //     " " << frameCount_ << std::endl;
-                            processScoresPtr_front->processedFrameCount++;
+                            if (processScoresPtr_self->classifier->isClassifierPathSet && isSender())
+                            {
 
+                                processScoresPtr_self->classifier->boost_classify_front(processScoresPtr_self->classifier->predScoreFront.score,
+                                    processScoresPtr_self->HOGHOF_self->hog_out_avg, processScoresPtr_self->HOGHOF_self->hof_out_avg,
+                                    &processScoresPtr_self->HOGHOF_self->hog_shape, &processScoresPtr_self->HOGHOF_self->hof_shape,
+                                    processScoresPtr_self->classifier->nframes, processScoresPtr_self->classifier->model,
+                                    processScoresPtr_self->processedFrameCount);
+
+                                time_now = gettime_->getPCtime();
+                                processScoresPtr_self->classifier->predScoreFront.frameCount = processScoresPtr_self->processedFrameCount;
+                                processScoresPtr_self->classifier->predScoreFront.score_front_ts = time_now;
+                                processScoresPtr_self->classifier->predScoreFront.view = 2;
+                                    
+                                //std::cout << "Pushing to Front queue" << std::endl;
+                                frontScoreQueuePtr_->acquireLock();
+                                frontScoreQueuePtr_->push(processScoresPtr_self->classifier->predScoreFront);
+                                frontScoreQueuePtr_->releaseLock();
+
+                            }
                         }
-                        else {
 
-                            //processScoresPtr_front->HOGHOF_partner->setLastInput();
-                            //processScoresPtr_front->skip_frameFront = 0;
-                            //processScoresPtr_front->processedFrameCount++;
-                            //std::cout << "Jaaba isFront False " << cameraNumber_ << std::endl;
-                        }
-
-                        if (processScoresPtr_side->isSide)
+                        if (processScoresPtr_self->classifier->isClassifierPathSet && isReceiver())
                         {
 
-                            if(compute_jaaba)
-                            {
-                                if(frameCount_==0)
-                                    std::cout << "Side image received" << std::endl;
-                                if (nDevices_ >= 2)
-                                {
-                                    cudaSetDevice(0);
-                                    processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                    processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
+                            processScoresPtr_self->classifier->boost_classify_side(processScoresPtr_self->classifier->predScoreSide.score,
+                                processScoresPtr_self->HOGHOF_self->hog_out_avg, processScoresPtr_self->HOGHOF_self->hof_out_avg,
+                                &processScoresPtr_self->HOGHOF_self->hog_shape, &processScoresPtr_self->HOGHOF_self->hof_shape,
+                                processScoresPtr_self->classifier->nframes, processScoresPtr_self->classifier->model,
+                                processScoresPtr_self->processedFrameCount);
 
-                                }
-                                else {
+                            time_now = gettime_->getPCtime();
+                            processScoresPtr_self->classifier->predScoreSide.frameCount = processScoresPtr_self->processedFrameCount;
+                            processScoresPtr_self->classifier->predScoreSide.score_side_ts = time_now;
+                            processScoresPtr_self->classifier->predScoreSide.view = 1;
+                            processScoresPtr_self->isProcessed_side = 1;
 
-                                    processScoresPtr_side->HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                    processScoresPtr_side->genFeatures(processScoresPtr_side->HOGHOF_frame, frameCount_);
-                                }
+                            //processScoresPtr_self->write_score(output_feat_directory + "classifier_side.csv", processScoresPtr_self->classifier->predScoreSide);
+                            //std::cout << "Pushing to side queue" << std::endl;
+                            sideScoreQueuePtr_->acquireLock();
+                            sideScoreQueuePtr_->push(processScoresPtr_self->classifier->predScoreSide);
+                            sideScoreQueuePtr_->releaseLock();
 
-                                if (saveFeat)
-                                {
-                                    saveFeatures(output_feat_directory + "hoghof_side_biasjaaba.csv", 
-                                        processScoresPtr_side->HOGHOF_frame->hog_out,
-                                        processScoresPtr_side->HOGHOF_frame->hof_out,
-                                        hog_num_elements, hof_num_elements);
-                                }
+                        } 
 
-                                //average window features
-                                processScoresPtr_side->HOGHOF_frame->averageWindowFeatures(window_size, processScoresPtr_side->processedFrameCount,0);
-
-                                if (saveFeat)
-                                {
-                                    saveFeatures(output_feat_directory + "hoghof_avg_side_biasjaaba.csv",
-                                        processScoresPtr_side->HOGHOF_frame->hog_out_avg,
-                                        processScoresPtr_side->HOGHOF_frame->hof_out_avg,
-                                        hog_num_elements, hof_num_elements);
-                                }
-
-                                if (processScoresPtr_side->classifier->isClassifierPathSet)
-                                {
-
-                                    processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score,
-                                        processScoresPtr_side->HOGHOF_frame->hog_out_avg, processScoresPtr_side->HOGHOF_frame->hof_out_avg,
-                                        &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_side->HOGHOF_frame->hof_shape,
-                                        processScoresPtr_side->classifier->nframes, processScoresPtr_side->classifier->model,
-                                        processScoresPtr_side->processedFrameCount);
-
-                                    time_now = gettime_->getPCtime();
-                                    processScoresPtr_side->classifier->predScoreSide.frameCount = processScoresPtr_side->processedFrameCount;
-                                    processScoresPtr_side->classifier->predScoreSide.score_side_ts = time_now;
-                                    processScoresPtr_side->classifier->predScoreSide.view = 1;
-                                    processScoresPtr_side->isProcessed_side = 1;
-
-                                    //processScoresPtr_side->write_score(output_feat_directory + "classifier_side.csv", processScoresPtr_side->classifier->predScoreSide);
-                                    //std::cout << "Pushing to side queue" << std::endl;
-                                    sideScoreQueuePtr_->acquireLock();
-                                    sideScoreQueuePtr_->push(processScoresPtr_side->classifier->predScoreSide);
-                                    sideScoreQueuePtr_->releaseLock();
-
-                                }
-                            }
-
-                            //std::cout << "FrameCount side " << processScoresPtr_side->processedFrameCount 
-                            //    << " " << frameCount_ << std::endl;
-                            processScoresPtr_side->processedFrameCount++;
-                            
-                        }
-                        else {
-
-                            //processScoresPtr_side->HOGHOF_frame->setLastInput();
-                            //processScoresPtr_side->processedFrameCount++;
-                            //std::cout << "Jaaba isSide False " << cameraNumber_ << std::endl;
-
-                        }
-
+                        //std::cout << "FrameCount front " << processScoresPtr_self->processedFrameCount << 
+                        //     " " << frameCount_ << std::endl;
+                        processScoresPtr_self->processedFrameCount++;
                     }
                 }
             }  
@@ -1083,7 +902,7 @@ namespace bias {
     }
 
     //void JaabaPlugin::processFrames(QList<StampedImage> frameList)
-    void JaabaPlugin::processFramePass()
+    /*void JaabaPlugin::processFramePass()
     {
 
         cv::Mat sideImage;
@@ -1098,7 +917,7 @@ namespace bias {
         int64_t pc_time, start_process=0, end_process=0;
             
         // initialize memory on the gpu 
-        if (isReceiver() && ((!processScoresPtr_side->isHOGHOFInitialised) || (!processScoresPtr_front->isHOGHOFInitialised)))
+        if (isReceiver() && ((!processScoresPtr_self->isHOGHOFInitialised) || (!processScoresPtr_partner->isHOGHOFInitialised)))
         {
             gpuInit();
         }
@@ -1107,7 +926,7 @@ namespace bias {
         if(pluginImageQueuePtr_ != nullptr && isSender())
         {    
             emit(partnerImageQueue(pluginImageQueuePtr_)); //causes the preview images to be slow
-            processScoresPtr_side -> processedFrameCount += 1;
+            processScoresPtr_self -> processedFrameCount += 1;
         }
 
         
@@ -1149,62 +968,62 @@ namespace bias {
                     releaseLock();
 
                     // Test
-                    /*if(sideImage.ptr<float>(0) != nullptr && frameCount == 1000)
-                    {
-                
-                        imwrite("out_feat/side_" + std::to_string(frameCount) + ".jpg", sideImage);
-                        imwrite("out_feat/front_" + std::to_string(frameCount) + ".jpg", frontImage);
-                        //sideImage.convertTo(sideImage, CV_32FC1);
-                        //frontImage.convertTo(frontImage,CV_32FC1);
-                        //sideImage = sideImage / 255;
-                        //std::cout << sideImage.rows << " " << sideImage.cols << std::endl;
-                        //write_output("out_feat/side" + std::to_string(frameCount_) + ".csv" , sideImage.ptr<float>(0), sideImage.rows, sideImage.cols);
-                        //write_output("out_feat/front" + std::to_string(frameCount_) + ".csv" , frontImage.ptr<float>(0), frontImage.rows , frontImage.cols);
-                    }*/
+                //    if(sideImage.ptr<float>(0) != nullptr && frameCount == 1000)
+                //    {
+                //
+                //        imwrite("out_feat/side_" + std::to_string(frameCount) + ".jpg", sideImage);
+                //        imwrite("out_feat/front_" + std::to_string(frameCount) + ".jpg", frontImage);
+                //        //sideImage.convertTo(sideImage, CV_32FC1);
+                //        //frontImage.convertTo(frontImage,CV_32FC1);
+                //        //sideImage = sideImage / 255;
+                //        //std::cout << sideImage.rows << " " << sideImage.cols << std::endl;
+                //        //write_output("out_feat/side" + std::to_string(frameCount_) + ".csv" , sideImage.ptr<float>(0), sideImage.rows, sideImage.cols);
+                //        //write_output("out_feat/front" + std::to_string(frameCount_) + ".csv" , frontImage.ptr<float>(0), frontImage.rows , frontImage.cols);
+                //    }
                     
 
                     if( stampedImage0.frameCount == stampedImage1.frameCount)
                     {
                         
-                        if(frameCount_  == (processScoresPtr_side -> processedFrameCount+1))
+                        if(frameCount_  == (processScoresPtr_self -> processedFrameCount+1))
                         {
                             // Test - Uncomment to perform preprocesing of video frames
-                            /*if (processScoresPtr_side->capture_sde.isOpened())
-                            {
-                                if (processScoresPtr_side->processedFrameCount < nframes_)
-                                {
+                            //if (processScoresPtr_self->capture_sde.isOpened())
+                            //{
+                            //    if (processScoresPtr_self->processedFrameCount < nframes_)
+                            //    {
 
-                                    sideImage = processScoresPtr_side->vid_sde->getImage(processScoresPtr_side->capture_sde);
-                                    processScoresPtr_side->vid_sde->convertImagetoFloat(sideImage);
-                                    greySide = sideImage;
+                            //        sideImage = processScoresPtr_self->vid_sde->getImage(processScoresPtr_self->capture_sde);
+                            //        processScoresPtr_self->vid_sde->convertImagetoFloat(sideImage);
+                            //        greySide = sideImage;
 
-                                } else {
+                            //    } else {
 
-                                    return;
-                                }
+                            //        return;
+                            //    }
 
-                            }
+                            //}
 
-                            if (processScoresPtr_front->capture_front.isOpened())
-                            {
-                                if (processScoresPtr_front->processedFrameCount < nframes_)
-                                {
+                            //if (processScoresPtr_self->capture_front.isOpened())
+                            //{
+                            //    if (processScoresPtr_self->processedFrameCount < nframes_)
+                            //    {
 
-                                    frontImage = processScoresPtr_front->vid_front->getImage(processScoresPtr_front->capture_front);
-                                    processScoresPtr_front->vid_front->convertImagetoFloat(frontImage);
-                                    greyFront = frontImage;
+                            //        frontImage = processScoresPtr_self->vid_front->getImage(processScoresPtr_self->capture_front);
+                            //        processScoresPtr_self->vid_front->convertImagetoFloat(frontImage);
+                            //        greyFront = frontImage;
 
-                                } else {
+                            //    } else {
 
-                                    return;
-                                }
+                            //        return;
+                            //    }
 
-                            }
-                            else {
+                            //}
+                            //else {
 
-                                processScoresPtr_front->vid_front->releaseCapObject(processScoresPtr_front->capture_front);
-                                
-                            }*/
+                            //    processScoresPtr_self->vid_front->releaseCapObject(processScoresPtr_self->capture_front);
+                            //    
+                            //}
 
                             // preprocessing the frames - Comment this section if using video input 
                             // convert the frame into RGB2GRAY
@@ -1228,97 +1047,97 @@ namespace bias {
                             if(nDevices_>=2)
                             {
                                     
-                                if(processScoresPtr_side -> isSide)
+                                if(processScoresPtr_self -> isSide)
                                 {
 
                                     cudaSetDevice(0);
-                                    processScoresPtr_side -> HOGHOF_frame->img.buf = greySide.ptr<float>(0);
-                                    processScoresPtr_side -> onProcessSide();
+                                    processScoresPtr_self -> HOGHOF_self->img.buf = greySide.ptr<float>(0);
+                                    processScoresPtr_self -> onProcessSide();
                                   
                                 }
 
-                                if(processScoresPtr_front -> isFront)
+                                if(processScoresPtr_self -> isFront)
                                 {
 
                                     cudaSetDevice(1);
-                                    processScoresPtr_front -> HOGHOF_partner->img.buf = greyFront.ptr<float>(0);
-                                    processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
-                                    //processScoresPtr_front->onProcessFront();
+                                    processScoresPtr_self -> HOGHOF_self->img.buf = greyFront.ptr<float>(0);
+                                    processScoresPtr_self -> genFeatures(processScoresPtr_self -> HOGHOF_self, frameCount_);
+                                    //processScoresPtr_self->onProcessFront();
                                     
                                 }
 
-                                while (!processScoresPtr_side->isProcessed_side) {}
+                                while (!processScoresPtr_self->isProcessed_side) {}
 
                             } else {
 
-                                processScoresPtr_side -> HOGHOF_frame -> img.buf = greySide.ptr<float>(0);
-                                processScoresPtr_side -> genFeatures(processScoresPtr_side -> HOGHOF_frame, frameCount_);
-                                processScoresPtr_front -> HOGHOF_partner -> img.buf = greyFront.ptr<float>(0);
-                                processScoresPtr_front -> genFeatures(processScoresPtr_front -> HOGHOF_partner, frameCount_);
+                                processScoresPtr_self -> HOGHOF_self -> img.buf = greySide.ptr<float>(0);
+                                processScoresPtr_self -> genFeatures(processScoresPtr_self -> HOGHOF_self, frameCount_);
+                                processScoresPtr_self -> HOGHOF_self -> img.buf = greyFront.ptr<float>(0);
+                                processScoresPtr_self -> genFeatures(processScoresPtr_self -> HOGHOF_self, frameCount_);
 
                             }
                             
 
                             // Test
-                            /*if(processScoresPtr_->save && frameCount_ == 2000)
-                            {
+                            //if(processScoresPtr_->save && frameCount_ == 2000)
+                            //{
 
-                                QPointer<HOGHOF> HOGHOF_side = processScoresPtr_->HOGHOF_frame;
-                                processScoresPtr_ -> write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount_) 
-                                + ".csv", HOGHOF_side->hog_out.data(), HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
-                                processScoresPtr_ -> write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount_) 
-                                + ".csv", HOGHOF_side->hof_out.data(), HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
+                            //    QPointer<HOGHOF> HOGHOF_side = processScoresPtr_->HOGHOF_self;
+                            //    processScoresPtr_ -> write_histoutput("./out_feat/hog_side_" + std::to_string(frameCount_) 
+                            //    + ".csv", HOGHOF_side->hog_out.data(), HOGHOF_side->hog_shape.x, HOGHOF_side->hog_shape.y, HOGHOF_side->hog_shape.bin);
+                            //    processScoresPtr_ -> write_histoutput("./out_feat/hof_side_" + std::to_string(frameCount_) 
+                            //    + ".csv", HOGHOF_side->hof_out.data(), HOGHOF_side->hof_shape.x, HOGHOF_side->hof_shape.y, HOGHOF_side->hof_shape.bin);
 
 
-                                QPointer<HOGHOF> HOGHOF_front = processScoresPtr_->HOGHOF_partner;
-                                processScoresPtr_ -> write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount_) 
-                                + ".csv", HOGHOF_front->hog_out.data(), HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, 
-                                HOGHOF_front->hog_shape.bin);
-                                    
-                                processScoresPtr_ -> write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount_) 
-                                + ".csv", HOGHOF_front->hof_out.data(), HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, 
-                                HOGHOF_front->hof_shape.bin);
-                            }*/
+                            //    QPointer<HOGHOF> HOGHOF_front = processScoresPtr_->HOGHOF_self;
+                            //    processScoresPtr_ -> write_histoutput("./out_feat/hog_front_" + std::to_string(frameCount_) 
+                            //    + ".csv", HOGHOF_front->hog_out.data(), HOGHOF_front->hog_shape.x, HOGHOF_front->hog_shape.y, 
+                            //    HOGHOF_front->hog_shape.bin);
+                            //        
+                            //    processScoresPtr_ -> write_histoutput("./out_feat/hof_front_" + std::to_string(frameCount_) 
+                            //    + ".csv", HOGHOF_front->hof_out.data(), HOGHOF_front->hof_shape.x, HOGHOF_front->hof_shape.y, 
+                            //    HOGHOF_front->hof_shape.bin);
+                            //}
 
 
                             // compute scores
-                            if(processScoresPtr_side->classifier->isClassifierPathSet & processScoresPtr_side->processedFrameCount >= 0)
+                            if(processScoresPtr_self->classifier->isClassifierPathSet & processScoresPtr_self->processedFrameCount >= 0)
                             {
 
                                 //std::fill(laserRead.begin(), laserRead.end(), 0);
-                                processScoresPtr_side->classifier->boost_classify_side(processScoresPtr_side->classifier->predScoreSide.score, 
-                                 processScoresPtr_side->HOGHOF_frame->hog_out, processScoresPtr_side -> HOGHOF_frame->hof_out, 
-                                 &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_front ->HOGHOF_partner->hof_shape, 
-                                    processScoresPtr_side->classifier-> nframes, processScoresPtr_side->classifier->model, processScoresPtr_side->processedFrameCount);
+                                processScoresPtr_self->classifier->boost_classify_side(processScoresPtr_self->classifier->predScoreSide.score, 
+                                 processScoresPtr_self->HOGHOF_self->hog_out, processScoresPtr_self -> HOGHOF_self->hof_out, 
+                                 &processScoresPtr_self->HOGHOF_self->hog_shape, &processScoresPtr_partner ->HOGHOF_self->hof_shape, 
+                                    processScoresPtr_self->classifier-> nframes, processScoresPtr_self->classifier->model, processScoresPtr_self->processedFrameCount);
 
-                                processScoresPtr_side->classifier->boost_classify_front(processScoresPtr_side->classifier->predScoreFront.score, 
-                                    processScoresPtr_front->HOGHOF_partner->hog_out, processScoresPtr_front->HOGHOF_partner->hof_out, 
-                                    &processScoresPtr_side->HOGHOF_frame->hog_shape, &processScoresPtr_front->HOGHOF_partner->hof_shape, 
-                                    processScoresPtr_side->classifier->nframes, processScoresPtr_side->classifier->model,processScoresPtr_front->processedFrameCount);
+                                processScoresPtr_self->classifier->boost_classify_front(processScoresPtr_self->classifier->predScoreFront.score, 
+                                    processScoresPtr_partner->HOGHOF_self->hog_out, processScoresPtr_partner->HOGHOF_self->hof_out, 
+                                    &processScoresPtr_self->HOGHOF_self->hog_shape, &processScoresPtr_partner->HOGHOF_self->hof_shape, 
+                                    processScoresPtr_self->classifier->nframes, processScoresPtr_self->classifier->model,processScoresPtr_partner->processedFrameCount);
                                 
-                                processScoresPtr_side->classifier->addScores(processScoresPtr_side->classifier->predScoreSide.score,
-                                                                             processScoresPtr_side->classifier->predScoreFront.score);
-                                processScoresPtr_side->write_score("classifierscr.csv",
-                                    processScoresPtr_side->classifier->finalscore);
+                                processScoresPtr_self->classifier->addScores(processScoresPtr_self->classifier->predScoreSide.score,
+                                                                             processScoresPtr_self->classifier->predScoreFront.score);
+                                processScoresPtr_self->write_score("classifierscr.csv",
+                                    processScoresPtr_self->classifier->finalscore);
 
                                 //triggerLaser();
-                                /*visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
-                                visplots -> livePlotSignalVec_Lift.append(double(classifier->score[0]));
-                                visplots -> livePlotSignalVec_Handopen.append(double(classifier->score[1]));
-                                visplots -> livePlotSignalVec_Grab.append(double(classifier->score[2]));
-                                visplots -> livePlotSignalVec_Supinate.append(double(classifier->score[3]));
-                                visplots -> livePlotSignalVec_Chew.append(double(classifier->score[4]));
-                                visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
-                                visplots->livePlotPtr_->show();*/
+                                //visplots -> livePlotTimeVec_.append(stampedImage0.timeStamp);
+                                //visplots -> livePlotSignalVec_Lift.append(double(classifier->score[0]));
+                                //visplots -> livePlotSignalVec_Handopen.append(double(classifier->score[1]));
+                                //visplots -> livePlotSignalVec_Grab.append(double(classifier->score[2]));
+                                //visplots -> livePlotSignalVec_Supinate.append(double(classifier->score[3]));
+                                //visplots -> livePlotSignalVec_Chew.append(double(classifier->score[4]));
+                                //visplots -> livePlotSignalVec_Atmouth.append(double(classifier->score[5]));
+                                //visplots->livePlotPtr_->show();
                                 
 
                             }
                            
-                            //std::cout << frameCount_ << " "  << processScoresPtr_side->processedFrameCount << std::endl;
-                            processScoresPtr_side -> processedFrameCount = frameCount_;
-                            processScoresPtr_front -> processedFrameCount = frameCount_; 
-                            processScoresPtr_side->isProcessed_side = false;
-                            //processScoresPtr_front->isProcessed_front = false;
+                            //std::cout << frameCount_ << " "  << processScoresPtr_self->processedFrameCount << std::endl;
+                            processScoresPtr_self -> processedFrameCount = frameCount_;
+                            processScoresPtr_partner -> processedFrameCount = frameCount_; 
+                            processScoresPtr_self->isProcessed_side = false;
+                            //processScoresPtr_partner->isProcessed_front = false;
 
                         }else{ std::cout << "skipped 1 " << frameCount_ << std::endl; }
 
@@ -1442,7 +1261,7 @@ namespace bias {
             }
 //#endif
         }        
-    }
+    }*/
 
 
     unsigned int JaabaPlugin::getPartnerCameraNumber()
@@ -1498,23 +1317,22 @@ namespace bias {
         score_calculated_ = 0;
         process_frame_time = 1;
         
-        processScoresPtr_side = new ProcessScores(this, mesPass, gettime_ , cmdlineparams);
-        processScoresPtr_front = new ProcessScores(this, mesPass, gettime_, cmdlineparams);
+        processScoresPtr_self = new ProcessScores(this, mesPass, gettime_ , cmdlineparams);
+        processScoresPtr_partner = new ProcessScores(this, mesPass, gettime_, cmdlineparams);
 
         // need to manually call delete to delete the above objects
-        processScoresPtr_side->setAutoDelete(false);
-        processScoresPtr_front->setAutoDelete(false);
+        processScoresPtr_self->setAutoDelete(false);
+        processScoresPtr_partner->setAutoDelete(false);
 
-//#if visualize
         if (visualize)
         {
-            if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
-                processScoresPtr_side->visplots = new VisPlots(livePlotPtr, this);
+            if (processScoresPtr_self != nullptr && cameraNumber_ == 0)
+                processScoresPtr_self->visplots = new VisPlots(livePlotPtr, this);
         }
-//#endif 
-        updateWidgetsOnLoad();
-        setupHOGHOF();
-        setupClassifier();
+
+        //updateWidgetsOnLoad();
+        //setupHOGHOF();
+        //setupClassifier();
 
     }
 
@@ -1539,7 +1357,7 @@ namespace bias {
     void JaabaPlugin::connectWidgets()
     { 
 
-        connect(
+        /*connect(
             sideRadioButtonPtr_,
             SIGNAL(stateChanged(int)),
             this,
@@ -1558,7 +1376,7 @@ namespace bias {
             SIGNAL(currentChanged(currentIndex())),
             this,
             SLOT(setCurrentIndex(currentIndex()))
-        );
+        );*/
 
         /*connect(
             reloadPushButtonPtr_,
@@ -1587,162 +1405,76 @@ namespace bias {
     void JaabaPlugin::setupHOGHOF()
     {
     
-        if(sideRadioButtonPtr_->isChecked())
-        {
-
-            if (isVideo) {
-                if (isReceiver())
-                    processScoresPtr_side->isVid = 1;
-            }
+        if (isVideo) {
+            processScoresPtr_self->isVid = 1;
+        }
       
-            HOGHOF *hoghofside = new HOGHOF();//(this);
+        HOGHOF *hoghofside = new HOGHOF();//(this);
 
-            if (processScoresPtr_side != nullptr)
-            {
-
-                acquireLock();
-                processScoresPtr_side->HOGHOF_frame = hoghofside;
-                processScoresPtr_side->HOGHOF_frame->HOGParam_file = config_file_dir + hog_file;
-                processScoresPtr_side->HOGHOF_frame->HOFParam_file = config_file_dir + hof_file;
-                processScoresPtr_side->HOGHOF_frame->CropParam_file = config_file_dir + crop_file;
-                processScoresPtr_side->HOGHOF_frame->initialize_HOGHOFParams();
-
-                /*processScoresPtr_side->HOGHOF_frame->loadHOGParams();
-                if (processScoresPtr_side->HOGHOF_frame->HOGParams.nbins == 0)
-                    printf("HOG NOT Initialzied");
-
-                processScoresPtr_side->HOGHOF_frame->loadHOFParams();
-                if (processScoresPtr_side->HOGHOF_frame->HOFParams.nbins == 0)
-                    printf("HOF NOT Initialzied");
-
-                processScoresPtr_side->HOGHOF_frame->loadCropParams();
-                if (processScoresPtr_side->HOGHOF_frame->Cropparams.ncells == 0)
-                    printf("CROP NOT Initialzied");*/
-
-                releaseLock();
-                printf("processScores Side allocated\n");
-                
-                
-            }else {
-
-                printf("processScores Side not allocated\n");
-            }
-
-        }
-
-        if(frontRadioButtonPtr_->isChecked()) 
+        if (processScoresPtr_self != nullptr)
         {
 
-//#if isVidInput
-//DEVEL
-            if (isVideo) {
-                if (isSender())
-                    processScoresPtr_front->isVid = 1;
-            }
+            acquireLock();
+            processScoresPtr_self->HOGHOF_self = hoghofside;
+            processScoresPtr_self->HOGHOF_self->HOGParam_file = config_file_dir + hog_file;
+            processScoresPtr_self->HOGHOF_self->HOFParam_file = config_file_dir + hof_file;
+            processScoresPtr_self->HOGHOF_self->CropParam_file = config_file_dir + crop_file;
+            processScoresPtr_self->HOGHOF_self->initialize_HOGHOFParams();
+            releaseLock();
+            printf("processScores allocated in %s\n" , view_);
+                         
+        }else {
 
-//#endif
-
-            HOGHOF *hoghoffront = new HOGHOF();//(this);  
-
-            if (processScoresPtr_front != nullptr)
-            {         
-                acquireLock();
-                processScoresPtr_front->HOGHOF_partner = hoghoffront;
-                processScoresPtr_front->HOGHOF_partner->HOGParam_file = config_file_dir + hog_file;
-                processScoresPtr_front->HOGHOF_partner->HOFParam_file = config_file_dir + hof_file;
-                processScoresPtr_front->HOGHOF_partner->CropParam_file = config_file_dir + crop_file;
-                processScoresPtr_front->HOGHOF_partner->initialize_HOGHOFParams();
-
-                /*processScoresPtr_front->HOGHOF_partner->loadHOGParams();
-                // implement a method to check if struct has been initialized 
-                if (processScoresPtr_front->HOGHOF_partner->HOGParams.nbins == 0)
-                    printf("HOG NOT Initialzied");
-
-                processScoresPtr_front->HOGHOF_partner->loadHOFParams();
-                if (processScoresPtr_front->HOGHOF_partner->HOFParams.nbins == 0)
-                    printf("HOF NOT Initialzied");
-
-                processScoresPtr_front->HOGHOF_partner->loadCropParams();
-                if (processScoresPtr_front->HOGHOF_partner->Cropparams.ncells == 0)
-                    printf("CROP NOT Initialzied");*/
-                releaseLock();
-                printf("processScores Front allocated\n");
-                
-
-            } else {
-                printf("processScores Front not allocated\n");
-            }
+            printf("processScores not allocated in %s\n", view_);
         }
+
     }
 
 
     void JaabaPlugin::setupClassifier() 
     {
-        
-        if (frontRadioButtonPtr_->isChecked() || sideRadioButtonPtr_->isChecked()) {
-            
-
-            if (mesPass && isReceiver())
-            {
-                
-                beh_class *cls = new beh_class(this);
-                processScoresPtr_side->classifier = cls;
-                processScoresPtr_side->classifier->classifier_file = config_file_dir + classifier_filename;
-                processScoresPtr_side->classifier->allocate_model();
-                processScoresPtr_side->classifier->loadclassifier_model();
+       
+        if (mesPass && isReceiver())
+        {
+            beh_class *cls = new beh_class(this);
+            processScoresPtr_self->classifier = cls;
+            processScoresPtr_self->classifier->classifier_file = config_file_dir + classifier_filename;
+            processScoresPtr_self->classifier->allocate_model();
+            processScoresPtr_self->classifier->loadclassifier_model();
                           
-            }
-
-            if (!mesPass)
-            {
-                if (isReceiver()) {
-
-                    beh_class *cls = new beh_class(this);
-                    processScoresPtr_side->classifier = cls;
-                    processScoresPtr_side->classifier->classifier_file = config_file_dir + classifier_filename;
-                    processScoresPtr_side->classifier->allocate_model();
-                    processScoresPtr_side->classifier->loadclassifier_model();
-
-                }
-
-                if (isSender()) {
-
-                    beh_class *cls = new beh_class(this);
-                    processScoresPtr_front->classifier = cls;
-                    processScoresPtr_front->classifier->classifier_file = config_file_dir + classifier_filename;
-                    processScoresPtr_front->classifier->allocate_model();
-                    processScoresPtr_front->classifier->loadclassifier_model();
-                }
-                
-            }
         }
+
+        if (!mesPass)
+        {
+            beh_class *cls = new beh_class(this);
+            processScoresPtr_self->classifier = cls;
+            processScoresPtr_self->classifier->classifier_file = config_file_dir + classifier_filename;
+            processScoresPtr_self->classifier->allocate_model();
+            processScoresPtr_self->classifier->loadclassifier_model();
+    
+        }
+
     }
 
     
     int JaabaPlugin::getNumberofViews() 
     {
-
         return nviews_;
-
     }
 
     int JaabaPlugin::getNumberOfDevices()
     {
-  
         return nDevices_;
-
     }
 
    
     int JaabaPlugin::getLaserTrigger()
     {
-
         return laserOn;
-
     }
 
    
-    void JaabaPlugin::updateWidgetsOnLoad() 
+    /*void JaabaPlugin::updateWidgetsOnLoad() 
     {
 
         if(isSender() && mesPass)
@@ -1803,31 +1535,31 @@ namespace bias {
     void JaabaPlugin::reloadButtonPressed()
     {
 
-        /*pathtodir_->setPlaceholderText(pathtodir_->displayText());
+        pathtodir_->setPlaceholderText(pathtodir_->displayText());
         // load side HOGHOFParams if side view checked
         if(sideRadioButtonPtr_->isChecked())
         {
-            if(processScoresPtr_side -> HOGHOF_frame == nullptr) 
+            if(processScoresPtr_self -> HOGHOF_self == nullptr) 
             {
                 setupHOGHOF();
 
             } else {
             
                 readPluginConfig(jab_conf);
-                pathtodir_->placeholderText() = processScoresPtr_side->HOGHOF_frame->plugin_file;
-                processScoresPtr_side -> HOGHOF_frame->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-                processScoresPtr_side -> HOGHOF_frame->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-                processScoresPtr_side -> HOGHOF_frame->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
-                processScoresPtr_side -> HOGHOF_frame->loadHOGParams();
-                processScoresPtr_side -> HOGHOF_frame->loadHOFParams();
-                processScoresPtr_side -> HOGHOF_frame->loadCropParams();            
+                pathtodir_->placeholderText() = processScoresPtr_self->HOGHOF_self->plugin_file;
+                processScoresPtr_self -> HOGHOF_self->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+                processScoresPtr_self -> HOGHOF_self->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+                processScoresPtr_self -> HOGHOF_self->CropParam_file = pathtodir_->placeholderText() + CropSideParamFilePtr_->placeholderText();
+                processScoresPtr_self -> HOGHOF_self->loadHOGParams();
+                processScoresPtr_self -> HOGHOF_self->loadHOFParams();
+                processScoresPtr_self -> HOGHOF_self->loadCropParams();            
             }
         }
 
         // load front HOGHOFParams if front view checked
         if(frontRadioButtonPtr_->isChecked())
         {
-            if(processScoresPtr_front -> HOGHOF_partner == nullptr)
+            if(processScoresPtr_self -> HOGHOF_self == nullptr)
             {
 
                 setupHOGHOF();        
@@ -1835,13 +1567,13 @@ namespace bias {
             } else {
 
                 readPluginConfig(jab_conf);
-                pathtodir_->placeholderText() = processScoresPtr_front->HOGHOF_partner->plugin_file;
-                processScoresPtr_front -> HOGHOF_partner->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
-                processScoresPtr_front -> HOGHOF_partner->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
-                processScoresPtr_front -> HOGHOF_partner->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
-                processScoresPtr_front -> HOGHOF_partner->loadHOGParams();
-                processScoresPtr_front -> HOGHOF_partner->loadHOFParams();
-                processScoresPtr_front -> HOGHOF_partner->loadCropParams();
+                pathtodir_->placeholderText() = processScoresPtr_self->HOGHOF_self->plugin_file;
+                processScoresPtr_self -> HOGHOF_self->HOGParam_file = pathtodir_->placeholderText() + HOGParamFilePtr_->placeholderText();
+                processScoresPtr_self -> HOGHOF_self->HOFParam_file = pathtodir_->placeholderText() + HOFParamFilePtr_->placeholderText();
+                processScoresPtr_self -> HOGHOF_self->CropParam_file = pathtodir_->placeholderText() + CropFrontParamFilePtr_->placeholderText();
+                processScoresPtr_self -> HOGHOF_self->loadHOGParams();
+                processScoresPtr_self -> HOGHOF_self->loadHOFParams();
+                processScoresPtr_self -> HOGHOF_self->loadCropParams();
             }
         }
 
@@ -1850,23 +1582,23 @@ namespace bias {
         {
             if (isReceiver()) {
 
-                if (processScoresPtr_side->classifier == nullptr)
+                if (processScoresPtr_self->classifier == nullptr)
                 {
 
                     setupClassifier();
 
                 } else {
 
-                    processScoresPtr_side->classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
-                    processScoresPtr_side->classifier->allocate_model();
-                    processScoresPtr_side->classifier->loadclassifier_model();
+                    processScoresPtr_self->classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+                    processScoresPtr_self->classifier->allocate_model();
+                    processScoresPtr_self->classifier->loadclassifier_model();
 
                 }
             }
 
             if (isSender()) {
 
-                if (processScoresPtr_front->classifier == nullptr)
+                if (processScoresPtr_self->classifier == nullptr)
                 {
 
                     setupClassifier();
@@ -1874,25 +1606,24 @@ namespace bias {
                 }
                 else {
 
-                    processScoresPtr_front->classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
-                    processScoresPtr_front->classifier->allocate_model();
-                    processScoresPtr_front->classifier->loadclassifier_model();
+                    processScoresPtr_self->classifier->classifier_file = pathtodir_->placeholderText() + ClassFilePtr_->placeholderText();
+                    processScoresPtr_self->classifier->allocate_model();
+                    processScoresPtr_self->classifier->loadclassifier_model();
 
                 }
             }
-        }*/
-        //detectEnabled();
-       
+        }
+        //detectEnabled(); 
     }
 
 
     void JaabaPlugin::triggerLaser()
     {
 
-        int num_beh = static_cast<int>(processScoresPtr_side->classifier->beh_present.size());
+        int num_beh = static_cast<int>(processScoresPtr_self->classifier->beh_present.size());
         for(int nbeh =0;nbeh < num_beh;nbeh++)
         {
-            if (processScoresPtr_side->classifier->beh_present[nbeh] > 0)  
+            if (processScoresPtr_self->classifier->beh_present[nbeh] > 0)  
                 laserRead[nbeh] = 1;
             else
                 laserRead[nbeh] = 0;
@@ -1938,10 +1669,10 @@ namespace bias {
         {
             trigStateLabelPtr -> setEnabled(false);
             trigResetPushButtonPtr -> setEnabled(false);
-        }*/
+        }
     }
  
-    /*void JaabaPlugin::checkviews() 
+    void JaabaPlugin::checkviews() 
     {
       
         if(~sideRadioButtonPtr_->isChecked() || ~frontRadioButtonPtr_->isChecked()) 
@@ -2000,11 +1731,11 @@ namespace bias {
                 //partner_hogshape_.x = 20; partner_hogshape_.y = 10; partner_hogshape_.bin = 8;
                 //hogshape_.x = 30; hogshape_.y = 10; hogshape_.bin = 8;
 
-                //processScoresPtr_side->classifier->translate_mat2C(&processScoresPtr_side->HOGHOF_frame->hog_shape, 
+                //processScoresPtr_self->classifier->translate_mat2C(&processScoresPtr_self->HOGHOF_self->hog_shape, 
                 //    &partner_hogshape_);
-				//processScoresPtr_side->classifier->translate_featureIndexes(&processScoresPtr_side->HOGHOF_frame->hog_shape,
+				//processScoresPtr_self->classifier->translate_featureIndexes(&processScoresPtr_self->HOGHOF_self->hog_shape,
 				//	&partner_hogshape_, true);
-                processScoresPtr_side->classifier->getviewandfeature(&processScoresPtr_side->HOGHOF_frame->hog_shape,
+                processScoresPtr_self->classifier->getviewandfeature(&processScoresPtr_self->HOGHOF_self->hog_shape,
                         &partner_hogshape_);
             }
 
@@ -2012,12 +1743,12 @@ namespace bias {
             {
                 std::cout << "translated from mat to c front" << std::endl;
                 partner_hogshape_ = partner_hogshape->hog_shape;
-                //processScoresPtr_front->classifier->translate_mat2C(&partner_hogshape_,
-                //    &processScoresPtr_front->HOGHOF_partner->hog_shape);
-				//processScoresPtr_front->classifier->translate_featureIndexes(&partner_hogshape_,
-				//	&processScoresPtr_front->HOGHOF_partner->hog_shape, false);
-                processScoresPtr_front->classifier->getviewandfeature(&partner_hogshape_,
-                        &processScoresPtr_front->HOGHOF_partner->hog_shape);
+                //processScoresPtr_self->classifier->translate_mat2C(&partner_hogshape_,
+                //    &processScoresPtr_self->HOGHOF_self->hog_shape);
+				//processScoresPtr_self->classifier->translate_featureIndexes(&partner_hogshape_,
+				//	&processScoresPtr_self->HOGHOF_self->hog_shape, false);
+                processScoresPtr_self->classifier->getviewandfeature(&partner_hogshape_,
+                        &processScoresPtr_self->HOGHOF_self->hog_shape);
             }
         }
     }
@@ -2033,10 +1764,10 @@ namespace bias {
         
         if (isReceiver())
         {
-            processScoresPtr_side->isProcessed_front = 1;
-            processScoresPtr_side->acquireLock();
-            processScoresPtr_side->frontScoreQueuePtr_->push(predScore);
-            processScoresPtr_side->releaseLock();
+            processScoresPtr_self->isProcessed_front = 1;
+            processScoresPtr_self->acquireLock();
+            processScoresPtr_self->frontScoreQueuePtr_->push(predScore);
+            processScoresPtr_self->releaseLock();
            
         } 
 
@@ -2048,14 +1779,14 @@ namespace bias {
         if (isReceiver())
         {
             acquireLock();
-            processScoresPtr_side->partner_frame_read_stamps[frameCount] = frameReadtime;
+            processScoresPtr_self->partner_frame_read_stamps[frameCount] = frameReadtime;
             releaseLock();
         }
 
         if (isSender())
         {
             acquireLock();
-            processScoresPtr_front->partner_frame_read_stamps[frameCount] = frameReadtime;
+            processScoresPtr_self->partner_frame_read_stamps[frameCount] = frameReadtime;
             releaseLock();
         }
 
@@ -2066,8 +1797,8 @@ namespace bias {
         if (isReceiver())
         {
             partner_frameCount_ = frameReadNum;
-            processScoresPtr_side->predScore.frameCount = frameReadNum;
-            processScoresPtr_side->partner_frameCount_ = frameReadNum;
+            processScoresPtr_self->predScore.frameCount = frameReadNum;
+            processScoresPtr_self->partner_frameCount_ = frameReadNum;
             //std::cout << frameNum << std::endl;
         }
     }*/
@@ -2083,14 +1814,14 @@ namespace bias {
         if (isSender())
         {
             acquireLock();
-            processScoresPtr_front->skipSide = 1;   
+            processScoresPtr_self->skipSide = 1;   
             releaseLock();
         }
 
         if (isReceiver())
         {
             acquireLock();
-            processScoresPtr_side->skipFront = 1;
+            processScoresPtr_self->skipFront = 1;
             releaseLock();
         }
     }
@@ -2106,13 +1837,20 @@ namespace bias {
         trial_num_ = trial_info;
 
         // test vectors allocated for scores
-        if (processScoresPtr_side != nullptr && cameraNumber_ == 0)
+        if (processScoresPtr_self != nullptr && isReceiver())
         {
             std::cout << "Scores && " << numframes_ << std::endl;
-            processScoresPtr_side->scores.resize(numframes_);
-            processScoresPtr_side->numFrames = numframes_;
-            processScoresPtr_side->nidaq_task_= nidaq_task_;
+            processScoresPtr_self->scores.resize(numframes_);
+            processScoresPtr_self->numFrames = numframes_;
+            processScoresPtr_self->nidaq_task_= nidaq_task_;
 			//translated_indexes.resize(numframes_, std::vector<float>());
+        }
+        else if (isSender()) {}
+        else{
+
+            QString errMsgTitle = QString("ProcessScores Initialization");
+            QString errMsgText = QString("ProcessScores params not initialized");
+            QMessageBox::critical(this, errMsgTitle, errMsgText);
         }
 
         if (isDebug)
@@ -2221,25 +1959,23 @@ namespace bias {
         frontScoreQueuePtr_ = frontScoreQueuePtr;
         std::cout << "Score Queue set in JAABA for cameranumber: \n" << cameraNumber_ <<  std::endl;
         
-        if (processScoresPtr_side != nullptr && processScoresPtr_front != nullptr)
+        if (processScoresPtr_self != nullptr)
         {
 
-            //processScoresPtr_side->initialize(mesPass, gettime_, cmdlineparams_);
-            //processScoresPtr_front->initialize(mesPass, gettime_, cmdlineparams_);
+            //processScoresPtr_self->initialize(mesPass, gettime_, cmdlineparams_);
 
             // setQueue for processScores thread 
-            processScoresPtr_side->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
-            processScoresPtr_front->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
+            processScoresPtr_self->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
         }
     }
 
     void JaabaPlugin::initializeParamsProcessScores()
     {
-        /*if (processScoresPtr_side != nullptr && processScoresPtr_front != nullptr)
+        /*if (processScoresPtr_self != nullptr && processScoresPtr_self != nullptr)
         {
             std::cout << "Initialize scores params called" << std::endl;
-            processScoresPtr_side->initialize(mesPass, gettime_, cmdlineparams_);
-            processScoresPtr_front->initialize(mesPass, gettime_, cmdlineparams_);
+            processScoresPtr_self->initialize(mesPass, gettime_, cmdlineparams_);
+            processScoresPtr_self->initialize(mesPass, gettime_, cmdlineparams_);
         }
         else {
             std::cout << "processScores is NULL" << std::endl;
@@ -2250,20 +1986,12 @@ namespace bias {
             refill_testVec();
         }
 
-        if (isReceiver())
+        if (processScoresPtr_self != nullptr)
         {
-            processScoresPtr_side->initialize(mesPass, gettime_, cmdlineparams_);
-            processScoresPtr_side->HOGHOF_frame->resetHOGHOFVec();
-            processScoresPtr_side->HOGHOF_frame->hog_out_past.clear();
-            processScoresPtr_side->HOGHOF_frame->hof_out_past.clear();
-            std::cout << "reset hoghof vectors"  << cameraNumber_ << std::endl;
-        }
-        else if(isSender()) 
-        {
-            processScoresPtr_front->initialize(mesPass, gettime_, cmdlineparams_);
-            processScoresPtr_front->HOGHOF_partner->resetHOGHOFVec();
-            processScoresPtr_front->HOGHOF_partner->hog_out_past.clear();
-            processScoresPtr_front->HOGHOF_partner->hof_out_past.clear();
+            processScoresPtr_self->initialize(mesPass, gettime_, cmdlineparams_);
+            processScoresPtr_self->HOGHOF_self->resetHOGHOFVec();
+            processScoresPtr_self->HOGHOF_self->hog_out_past.clear();
+            processScoresPtr_self->HOGHOF_self->hof_out_past.clear();
             std::cout << "reset hoghof vectors" << cameraNumber_ << std::endl;
         }
 
@@ -2366,9 +2094,9 @@ namespace bias {
     void JaabaPlugin::setTrialNum(string trialnum)
     {
         trial_num_ = trialnum;
-        if (processScoresPtr_side != nullptr && cameraNumber_==0)
+        if (processScoresPtr_self != nullptr && isReceiver())
         {
-            processScoresPtr_side->setTrialNum(trialnum);
+            processScoresPtr_self->setTrialNum(trialnum);
         }
     }
 
@@ -2437,7 +2165,7 @@ namespace bias {
     }*/
 
 
-	void JaabaPlugin::paintEvent(QPainter& painter)
+	/*void JaabaPlugin::paintEvent(QPainter& painter)
 	{
 		setAttribute(Qt::WA_OpaquePaintEvent);
 		
@@ -2449,7 +2177,7 @@ namespace bias {
 		painter.drawPoint(50,50);
 	}
        
-    /*void JaabaPlugin::saveFeatures(string filename, QPointer<HOGHOF> hoghof_obj,//vector<float>& feat_out,
+    void JaabaPlugin::saveFeatures(string filename, QPointer<HOGHOF> hoghof_obj,//vector<float>& feat_out,
         int hog_num_elements, int hof_num_elements) 
     {
         std::ofstream x_out;

@@ -950,6 +950,10 @@ namespace bias {
         return timeStamp_;
     }
 
+    int64_t CameraDevice_spin::getFrameId()
+    {
+        return frameCount_;
+    }
 
     std::string CameraDevice_spin::getVendorName()
     {
@@ -1184,7 +1188,7 @@ namespace bias {
             }
             entries_file << "DEBUG: ChunkSelector entries end " << std::endl;
             entries_file.close();*/
-            chunkSelectorNode.setEntryBySymbolic("Timestamp");
+            chunkSelectorNode.setEntryBySymbolic("Timestamp"); 
         }
         else
         {
@@ -1221,6 +1225,12 @@ namespace bias {
 
         timeStamp_.seconds = (unsigned long long)(seconds);
         timeStamp_.microSeconds = (unsigned int)(microSeconds);
+    }
+
+    void CameraDevice_spin::updateFrameId()
+    {
+        spinError err = spinImageChunkDataGetIntValue(hSpinImage_, "ChunkFrameID", &frameCount_);
+
     }
 
 

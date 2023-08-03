@@ -57,7 +57,7 @@ namespace bias
                 CmdLineParams& cmdlineparams,
                 QWidget *parent=0);
 
-            void resetTrigger();
+            //void resetTrigger();
 
             virtual void finalSetup();
             virtual QString getName();
@@ -85,8 +85,8 @@ namespace bias
             virtual void initializeParamsProcessScores();
             virtual void setTrialNum(string trialnum);
 
-            QPointer<ProcessScores> processScoresPtr_side;
-            QPointer<ProcessScores> processScoresPtr_front;
+            QPointer<ProcessScores> processScoresPtr_self;
+            QPointer<ProcessScores> processScoresPtr_partner;
 
             int scoreCount = 0;
             int side_skip_count = 0;
@@ -133,8 +133,8 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr_;
             unsigned int getPartnerCameraNumber();
 
-            void updateTrigStateInfo();
-            RtnStatus connectTriggerDev();
+            //void updateTrigStateInfo();
+            //RtnStatus connectTriggerDev();
 
             void allocate_testVec();
             void refill_testVec();
@@ -212,10 +212,10 @@ namespace bias
             bool pluginReady();
             bool isSender();
             bool isReceiver(); 
-            void triggerLaser();   
+            //void triggerLaser();   
             int getNumberofViews();
             int getNumberOfDevices();
-            void updateWidgetsOnLoad();
+            //void updateWidgetsOnLoad();
             void initialize(CmdLineParams& cmdlineparams);
             void setupHOGHOF();
             void setupClassifier();
@@ -232,7 +232,7 @@ namespace bias
                                            vector<float>& hog_feat_avg, vector<float>& hof_feat_avg);
 
             void processFrame_inPlugin(StampedImage stampedImage);
-            void processFramePass();
+            //void processFramePass();
             //void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
             void write_score_final(std::string file, unsigned int numFrames,
                 vector<PredData>& pred_score);
@@ -246,7 +246,7 @@ namespace bias
             //                           int frameCount,string filename);
             //void saveFeatures(string filename, QPointer<HOGHOF> hoghof_obj,//vector<float>& feat_out,
             //    int hog_num_elements, int hof_num_elements);
-			void paintEvent(QPainter& paitner);
+			//void paintEvent(QPainter& paitner);
 
             int numframes_;
             //command line variables
@@ -274,18 +274,18 @@ namespace bias
 
         private slots:
 
-            void SideViewCheckBoxChanged(int state);
-            void FrontViewCheckBoxChanged(int state);
+            //void SideViewCheckBoxChanged(int state);
+            //void FrontViewCheckBoxChanged(int state);
             void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
-            void trigResetPushButtonClicked();
-            void trigEnabledCheckBoxStateChanged(int state);
+            //void trigResetPushButtonClicked();
+            //void trigEnabledCheckBoxStateChanged(int state);
             void receiveHOGShape(QPointer<HOGHOF> partner_hogshape);
             void scoreCompute(PredData predScore);
             void receiveFrameRead(int64_t frameReadtime, int frameCount);
             void scoreCalculated(bool score_cal);
             void setSkipFrameProcess(unsigned int frameCount);
             void initialize_classifier();
-            void reloadButtonPressed();
+            //void reloadButtonPressed();
             //void detectClicked();
             //void saveClicked();
             //void receiveFrameNum(unsigned int frameReadNum);

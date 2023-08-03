@@ -171,6 +171,10 @@ namespace bias
         return ts;
     }
 
+    int64_t CameraDevice::getFrameId()
+    { 
+        return 0;
+    }
 
     std::string CameraDevice::toString() 
     {

@@ -48,6 +48,7 @@ namespace bias {
             TimeStamp cam_ofs = {0,0};
 	        TimeStamp cpu_time = {0,0};
             void initCounter();
+            int64_t getFrameId();
 
             bool isConnected();
             bool isCapturing();
