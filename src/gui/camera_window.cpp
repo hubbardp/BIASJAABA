@@ -936,7 +936,6 @@ namespace bias
 
         if (nidaq_task != nullptr && cameraNumber_ == 0) {
 
-            // start the nidaq tasks
             resetPluginParams();
             resetImageGrabParams();
             resetImageDispatchParams();

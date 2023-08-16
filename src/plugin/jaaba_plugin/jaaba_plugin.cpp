@@ -442,8 +442,7 @@ namespace bias {
 
         cv::Mat pluginImage;
         uInt32 read_buffer = 0, read_ondemand = 0;
-        cv::Mat greySide;
-        cv::Mat greyFront;
+        cv::Mat greyImage;
         float scaling_factor = 1.0 / 255.0;
         bool isskip;
 
@@ -660,7 +659,7 @@ namespace bias {
                     }
 
                     // convert the frame into float32
-                    pluginImage.convertTo(greyFront, CV_32FC1, scaling_factor);
+                    pluginImage.convertTo(greyImage, CV_32FC1, scaling_factor);
 
                     if (processScoresPtr_self != nullptr)
                     {
@@ -670,7 +669,7 @@ namespace bias {
 
                         if (compute_jaaba) {                 
 
-                            processScoresPtr_self->HOGHOF_self->img.buf = greyFront.ptr<float>(0);
+                            processScoresPtr_self->HOGHOF_self->img.buf = greyImage.ptr<float>(0);
                             processScoresPtr_self->genFeatures(processScoresPtr_self->HOGHOF_self, frameCount_);
 
                             if (saveFeat) {

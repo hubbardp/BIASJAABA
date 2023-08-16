@@ -440,6 +440,11 @@ namespace bias {
         releaseLock();
     }
 
+    bool NIDAQUtils::getisTrue()
+    {
+        return istrig;
+    }
+
     /*void NIDAQUtils::newFrametrig(uInt32 read_buffer) {
 
         istrig = true;

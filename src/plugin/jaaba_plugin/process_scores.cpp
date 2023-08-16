@@ -444,7 +444,7 @@ namespace bias {
                                 scores[scoreCount].score_ts = read_ondemand_;
                             }
                             //#endif
-                            scores[scoreCount].score[0] = predScore.score[0];
+                            scores[scoreCount].score = predScore.score;
                             scores[scoreCount].frameCount = predScore.frameCount;
                             scores[scoreCount].view = 1;
                             scores[scoreCount].score_side_ts = predScore.score_side_ts;
@@ -483,7 +483,7 @@ namespace bias {
 
                             //write_score("classifierscr.csv", scoreCount, predScorePartner);
                             time_now = gettime->getPCtime();
-                            scores[scoreCount].score[0] = predScorePartner.score[0];
+                            scores[scoreCount].score = predScorePartner.score;
                             scores[scoreCount].frameCount = predScorePartner.frameCount;
                             scores[scoreCount].view = 2;
                             scores[scoreCount].score_front_ts = predScorePartner.score_front_ts;

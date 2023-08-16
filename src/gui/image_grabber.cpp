@@ -225,6 +225,7 @@ namespace bias {
         bool errorEmitted = false;
         unsigned int errorId = 0;
         unsigned int errorCount = 0;
+        bool isFirstTrial = true;
 
         TriggerType trig;
 
@@ -283,12 +284,12 @@ namespace bias {
         partnerImageGrabberPtr = partnerCameraWindowPtr->getImageGrabberPtr();
         QPointer<CameraWindow>cameraWindowPtr = getCameraWindow();
 
-        /*connect(
+        connect(
             this,
             SIGNAL(nidaqtriggered(bool)),
             partnerImageGrabberPtr,
             SLOT(setTriggered(bool))
-        );*/
+        );
         connect(
             this,
             SIGNAL(setImagegrabParams()),
@@ -396,7 +397,7 @@ namespace bias {
                 resetNidaqTrigger(true);
                 startTrigger = false;
                 
-                acquireLock();
+                /*acquireLock();
                 if (!nidaq_task_->istrig) {
                     std::cout << "waiting for nidaq to trig " << cameraNumber_ << std::endl;
                     waitForCond();
@@ -406,15 +407,17 @@ namespace bias {
                     //signalCondMet();
                     partnerImageGrabberPtr->signalCondMet();
                 }
-                releaseLock();
+                releaseLock();*/
 
             }else if(stopTrigger)
             {
                 resetNidaqTrigger(false);
                 stopTrigger = false;
+                nidaqTriggered = false;
                 if(!isVideo)
                     flushCameraBuffer();
                 std::cout << "CameraNumber " << cameraNumber_ << "Stop Trigger " << stopTrigger << std::endl;
+
             }else{}
             //end_process = gettime_->getPCtime();
 
@@ -428,6 +431,7 @@ namespace bias {
                     frameCount = 0;
                     expTime = 0, curTime = 0, prev_curTime = 0;
                     curTime_vid = 0, expTime_vid = 0, delta_now = 0;
+                    avgwait_time = 0;
                     QThread::yieldCurrentThread();
                     continue;
                 }
@@ -497,10 +501,19 @@ namespace bias {
             }
             else {
           
+                // if number of frames to capture have been reached 
+                // set stop trigger and frameCount reset
                 if (frameCount == nframes_) {
                     //std::cout << "Yeild frames " << std::endl;
                     stopTrigger = true;
                     frameCount = 0;
+                    QThread::yieldCurrentThread();
+                    continue;
+                }
+
+                // if nidaq is not triggered yet do not capture frames
+                if (frameCount == 0 && !nidaq_task_->istrig)
+                {
                     QThread::yieldCurrentThread();
                     continue;
                 }
@@ -510,6 +523,11 @@ namespace bias {
 
                     nidaq_task_->getCamtrig(frameCount);
 
+                }
+                else {
+                    if (isDebug) {
+                        //std::cout << "DEBUG:: Nidaq is stopped " << cameraNumber_ << std::endl;
+                    }
                 }
 
                 cameraPtr_->acquireLock();
@@ -535,7 +553,9 @@ namespace bias {
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty())
             {
-                //std:cout << "Empty images" << std::endl;
+                if (isDebug) {
+                    //std:cout << "Empty images" << std::endl;
+                }
                 QThread::yieldCurrentThread();
                 continue;
             }
@@ -679,7 +699,8 @@ namespace bias {
                         if (isDebug && testConfigEnabled_ && nidaq_task_ != nullptr)
                             ts_nidaqThres[frameCount] = 1.0;
                         std::cout << "skipped in imagegrab " << frameCount 
-                            << "cameraNumber " << cameraNumber_ << std::endl;
+                            << " cameraNumber " << cameraNumber_ 
+                            << " Avg wait time " << abs(avgwait_time) << std::endl;
                     }
                 }
                 else {
@@ -1109,7 +1130,9 @@ namespace bias {
     void ImageGrabber::setTriggered(bool istriggered)
     {
         acquireLock();
+        std::cout << "before nidaq Trigger " << nidaqTriggered << std::endl;
         nidaqTriggered = istriggered;
+        std::cout << "after nidaq Trigger " << nidaqTriggered << std::endl;
         releaseLock();
         
     }
@@ -1119,7 +1142,7 @@ namespace bias {
         trial_num = trialnum;
     }
 
-    void ImageGrabber::resetNidaqTrigger(bool turnOn)
+    /*void ImageGrabber::resetNidaqTrigger(bool turnOn)
     {
         std::cout << "Nidaq has to be turned " << turnOn << " " << cameraNumber_ <<  std::endl;
         //std::cout << "Nidaq trigger value entering the reset fnc " << nidaqTriggered << cameraNumber_ << std::endl;
@@ -1157,14 +1180,72 @@ namespace bias {
                 //std::cout << "Nidaq is turned " << partnerImageGrabberPtr->nidaqTriggered << " " << cameraNumber_ << std::endl;
             }
             releaseLock();
-            /*if (turnOn)
-            {
-                resetParams();
-            }*/
+        }
+        std::cout << "Nidaq Reset exited " << cameraNumber_ << std::endl;
+    }*/
+
+    void ImageGrabber::resetNidaqTrigger(bool turnOn)
+    {
+
+        std::cout << "Nidaq has to be turned " << turnOn << " " << cameraNumber_ << std::endl;
+        if (turnOn)
+        {
+            resetParams();
         }
 
-        std::cout << "Nidaq Reset exited " << cameraNumber_ << std::endl;
+        if (cameraNumber_ == 0)
+        {
+            if (turnOn && !nidaq_task_->start_tasks && !nidaq_task_->istrig)
+            {
+                nidaq_task_->startTasks();
+                nidaq_task_->start_trigger_signal();
+                nidaqTriggered = nidaq_task_->istrig;
+                emit nidaqtriggered(nidaqTriggered);
+                std::cout << "cameraNumber " << cameraNumber_ << "Exiting wait " 
+                    "nidaq flag set " << nidaq_task_->istrig << std::endl;
+            }
 
+            if (!turnOn)
+            {
+                nidaq_task_->stopTasks();
+                nidaq_task_->stop_trigger_signal();
+                nidaqTriggered = nidaq_task_->istrig;
+                emit nidaqtriggered(nidaqTriggered);
+            }
+        }
+        else if (cameraNumber_ != 0) {
+
+            if (turnOn && !nidaq_task_->istrig) {
+                
+                bool wait = false;
+                std::cout << "cameraNumber " << cameraNumber_ << "Entering wait " 
+                    << "nidaq flag set " << nidaq_task_->istrig <<  std::endl;
+                while (!wait)
+                {
+                    acquireLock();
+                    wait = nidaqTriggered;
+                    releaseLock();
+                }
+                std::cout << "cameraNumber " << cameraNumber_ << "Exiting wait " << std::endl;
+            }
+
+            if (!turnOn)
+            {
+                std::cout << "cameraNumber " << cameraNumber_ << "Entering wait "
+                    << "nidaq flag reset " << nidaq_task_->istrig << std::endl;
+                bool wait = true;
+                while (wait)
+                {
+                    acquireLock();
+                    wait = nidaqTriggered;
+                    releaseLock();
+
+                }
+                std::cout << "cameraNumber " << cameraNumber_ << "Exiting wait " << std::endl;
+            }
+            
+        }
+        std::cout << "Nidaq Reset exited " << cameraNumber_ << std::endl;
     }
 
     void ImageGrabber::resetParams()
@@ -1182,6 +1263,7 @@ namespace bias {
         fstfrmtStampRef_ = 0.0;
 
         isReset = true;
+        nidaqTriggered = false;
 
         std::cout << " Image grab params set for camera number: " << cameraNumber_ << std::endl;
     }
