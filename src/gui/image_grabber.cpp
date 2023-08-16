@@ -219,13 +219,13 @@ namespace bias {
         imagegrab_started = true;
         startTrigger = false;
         stopTrigger = false;
+        isFirstTrial = true;
         
         bool done = false;
         bool error = false;
         bool errorEmitted = false;
         unsigned int errorId = 0;
         unsigned int errorCount = 0;
-        bool isFirstTrial = true;
 
         TriggerType trig;
 
@@ -376,8 +376,6 @@ namespace bias {
             partnerImageGrabberPtr->signalCondMet();
             startTrigger = true;
             partnerImageGrabberPtr->startTrigger = true;
-            //nidaq_task_->start_trigger_signal();
-            //std::cout << "Nidaq Triggered " << nidaqTriggered << std::endl;
         }
         releaseLock();
 
@@ -573,36 +571,43 @@ namespace bias {
                 }
                 timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
 
-                // Skip some number of frames on startup - recommened by Point Grey. 
-                // During this time compute running avg to get estimate of frame interval
-                if (startUpCount < numStartUpSkip_)
-                {
-                    double dt = timeStampDbl - timeStampDblLast;
-                    if (startUpCount == MIN_STARTUP_SKIP)
+                if (isFirstTrial) {
+                    // Skip some number of frames on startup - recommened by Point Grey. 
+                    // During this time compute running avg to get estimate of frame interval
+                    if (startUpCount < numStartUpSkip_)
                     {
-                        dtEstimate = dt;
-                    }
-                    else if (startUpCount > MIN_STARTUP_SKIP)
-                    {
-                        double c0 = double(startUpCount - 1) / double(startUpCount);
-                        double c1 = double(1.0) / double(startUpCount);
-                        dtEstimate = c0 * dtEstimate + c1 * dt;
-                    }
-
-                    if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_ && nidaq_task_->istrig) {
-                        
-                        nidaq_task_->acquireLock();
-        
-                        if (nidaq_task_->cam_trigger[nframes_  + startUpCount] == 0) {
-                            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
-                            nidaq_task_->cam_trigger[nframes_ + startUpCount] = read_buffer_;
+                        std::cout << "Estimating the fps " << std::endl;
+                        double dt = timeStampDbl - timeStampDblLast;
+                        if (startUpCount == MIN_STARTUP_SKIP)
+                        {
+                            dtEstimate = dt;
                         }
-                        nidaq_task_->releaseLock();
-                        
-                    }
+                        else if (startUpCount > MIN_STARTUP_SKIP)
+                        {
+                            double c0 = double(startUpCount - 1) / double(startUpCount);
+                            double c1 = double(1.0) / double(startUpCount);
+                            dtEstimate = c0 * dtEstimate + c1 * dt;
+                        }
 
-                    startUpCount++;
-                    continue;
+                        if (nidaq_task_ != nullptr && startUpCount < numStartUpSkip_ && nidaq_task_->istrig) {
+
+                            nidaq_task_->acquireLock();
+
+                            if (nidaq_task_->cam_trigger[nframes_ + startUpCount] == 0) {
+                                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer_, NULL));
+                                nidaq_task_->cam_trigger[nframes_ + startUpCount] = read_buffer_;
+                            }
+                            nidaq_task_->releaseLock();
+
+                        }
+
+                        startUpCount++;
+                        if (startUpCount == 2) {
+                            std::cout << "Entered  Only Once " << std::endl;
+                            isFirstTrial = false;
+                        }
+                        continue;
+                    }
                 }
 
                 //std::cout << "dt grabber: " << timeStampDbl - timeStampDblLast << std::endl;
@@ -646,16 +651,14 @@ namespace bias {
                 // Test Configuration
                 //------------------------------------------------------------------------
                 if (!isVideo) {
-                    if (nidaq_task_ != nullptr ){
+                    if (nidaq_task_ != nullptr && nidaq_task_->istrig){
                         if (frameCount == 0) {
                             
                             fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
                             
                         }
                         nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                        /*nidaq_task_->acquireLock();
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand_, NULL));
-                        nidaq_task_->releaseLock();*/
+
                     }
                     else {
                         //fstfrmtStampRef_ = static_cast<uint64_t>(gettime_->getPCtime());
@@ -1251,7 +1254,10 @@ namespace bias {
     void ImageGrabber::resetParams()
     {
         isFirst = true;
-        startUpCount = 0;
+        if (!isFirstTrial)
+            startUpCount = 2;
+        else
+            startUpCount = 0;
         dtEstimate = 0.0;
         frameCount = 0;
 

@@ -96,6 +96,7 @@ namespace bias
             unsigned int* numImagegrabStarted_;
             unsigned int* numImagegrabReset_;
             bool isReset = true;
+            bool isFirstTrial = true;
 
             TimeStamp timeStamp;
             TimeStamp timeStampInit;
