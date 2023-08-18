@@ -113,6 +113,7 @@ namespace bias
             void startCaptureError(unsigned int errorId, QString errorMsg);
             void stopCaptureError(unsigned int errorId, QString errorMsg);
             void captureError(unsigned int errorId, QString errorMsg); 
+            void nidaqtsMatchError(unsigned int erroId, QString errorMsg);
             void nidaqtriggered(bool istriggered);
             void setImagegrabParams();
         
@@ -132,7 +133,7 @@ namespace bias
             uint64_t fstfrmtStampRef_;
             bool process_frame_time_;
             int numTrials_;
-            
+            int64_t cam_frameId;
 
             unsigned int partnerCameraNumber_;
             uInt32 read_buffer_ = 0, read_ondemand_ = 0;
@@ -146,6 +147,8 @@ namespace bias
 
             void run();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
+            bool matchNidaqToCameraTimeStamp(uInt32& nidaqts_curr, uInt32& nidaqts_init, 
+                                             double& camts_curr, uint64_t frameCount);
             QPointer<QThreadPool> threadPoolPtr_;
 
             std::shared_ptr<Lockable<GetTime>> gettime_;
@@ -160,6 +163,8 @@ namespace bias
             std::vector<int64_t>ts_process;
             std::vector<int64_t>ts_end;
             std::vector<double>imageTimeStamp;
+            std::vector<uint64_t>cam_ts;
+            std::vector<int64_t>camFrameId;
 
             int no_of_skips;
             int nframes_;

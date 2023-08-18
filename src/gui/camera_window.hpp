@@ -215,6 +215,7 @@ namespace bias
             void stopImageCaptureError(unsigned int errorId, QString errorMsg);
             void imageCaptureError(unsigned int errorId, QString errorMsg);
             void imageLoggingError(unsigned int errorId, QString errorMsg);
+            void nidaqImagetsMatchError(unsigned int errorId, QString errorMsg);
 
             // Display update and duration check timers
             void updateDisplayOnTimer();

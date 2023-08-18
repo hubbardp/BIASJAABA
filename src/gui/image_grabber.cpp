@@ -143,6 +143,9 @@ namespace bias {
                     ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
                     ts_nidaqThres.resize(testConfig_->numFrames);
                     imageTimeStamp.resize(testConfig_->numFrames);
+                    cam_ts.resize(testConfig_->numFrames);
+                    camFrameId.resize(testConfig_->numFrames);
+                   
                 }
 
                 if (!testConfig_->queue_prefix.empty()) {
@@ -226,6 +229,7 @@ namespace bias {
         bool errorEmitted = false;
         unsigned int errorId = 0;
         unsigned int errorCount = 0;
+        bool errorMatch = false;
 
         TriggerType trig;
 
@@ -248,6 +252,8 @@ namespace bias {
         StampedImage stampImg;
         int numtrailFrames = 0;
         float cur_latency, avg_latency;
+        
+        uInt32 nidaq_ts_curr=0, nidaq_ts_init = 0;
 
         QString errorMsg("no message");
 
@@ -502,7 +508,6 @@ namespace bias {
                 // if number of frames to capture have been reached 
                 // set stop trigger and frameCount reset
                 if (frameCount == nframes_) {
-                    //std::cout << "Yeild frames " << std::endl;
                     stopTrigger = true;
                     frameCount = 0;
                     QThread::yieldCurrentThread();
@@ -520,7 +525,11 @@ namespace bias {
                     && nidaq_task_->istrig) {
 
                     nidaq_task_->getCamtrig(frameCount);
-
+                    if (frameCount == 0)
+                    {
+                        nidaq_ts_init = nidaq_task_->cam_trigger[frameCount];
+                    }
+                    nidaq_ts_curr = nidaq_task_->cam_trigger[frameCount];
                 }
                 else {
                     if (isDebug) {
@@ -535,6 +544,7 @@ namespace bias {
                     stampImg.image = cameraPtr_->grabImage();
                     stampImg.isSpike = false;
                     timeStamp = cameraPtr_->getImageTimeStamp();
+                    cam_frameId = cameraPtr_->getFrameId();
                     error = false;
                 }
                 catch (RuntimeError &runtimeError)
@@ -568,6 +578,7 @@ namespace bias {
                 if ((startUpCount == 0) && (numStartUpSkip_ > 0))
                 {
                     timeStampInit = timeStamp;
+
                 }
                 timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
 
@@ -602,8 +613,7 @@ namespace bias {
                         }
 
                         startUpCount++;
-                        if (startUpCount == 2) {
-                            std::cout << "Entered  Only Once " << std::endl;
+                        if (startUpCount == numStartUpSkip_) {
                             isFirstTrial = false;
                         }
                         continue;
@@ -665,7 +675,16 @@ namespace bias {
                     }
                 }
 
-                
+                // match nidaq ts to camera timestamp
+                errorMatch = matchNidaqToCameraTimeStamp(nidaq_ts_curr, nidaq_ts_init, timeStampDbl, frameCount);
+                if (!errorMatch) {
+
+                    errorMsg = QString::fromStdString("Nidaq ts does not match camera ts ");
+                    errorMsg += QString::number(frameCount);
+                    emit nidaqtsMatchError(0, errorMsg);
+
+                }
+
                 if (isVideo) {
                     //expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount+1));
                     curTime_vid = max(fstfrmtStampRef_ + (frameCaptureTime*(frameCount + 1) + delay_framethres), prev_curTime);
@@ -736,6 +755,9 @@ namespace bias {
                                 nidaq_task_->releaseLock();
                                 ts_nidaq[frameCount - 1][1] = read_ondemand_;
                                 imageTimeStamp[frameCount - 1] = timeStampDbl;
+                                cam_ts[frameCount - 1] = timeStamp.seconds*UINT64_C(1000000) 
+                                                         + static_cast<uint64_t>(timeStamp.microSeconds);
+                                camFrameId[frameCount - 1] = cam_frameId;
 
                             }      
                         }
@@ -814,9 +836,25 @@ namespace bias {
                                     + "_" + "imagetimestamp_" + "cam"
                                     + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
+                                std::string filename3 = testConfig_->dir_list[0] + "/"
+                                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                                    + testConfig_->imagegrab_prefix
+                                    + "_" + "camts_" + "cam"
+                                    + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+
+                                std::string filename4 = testConfig_->dir_list[0] + "/"
+                                    + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+                                    + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+                                    + testConfig_->imagegrab_prefix
+                                    + "_" + "camframeId_" + "cam"
+                                    + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
+
                                 gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, ts_nidaq);
                                 gettime_->write_time_1d<float>(filename1, testConfig_->numFrames, ts_nidaqThres);
                                 gettime_->write_time_1d<double>(filename2, testConfig_->numFrames, imageTimeStamp);
+                                gettime_->write_time_1d<uint64_t>(filename3, testConfig_->numFrames, cam_ts);
+                                gettime_->write_time_1d<int64_t>(filename4, testConfig_->numFrames, camFrameId);
                             }
 
                             if (frameCount == testConfig_->numFrames
@@ -979,7 +1017,7 @@ namespace bias {
                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
             gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, ts_process);
             std::cout << "Written" << std::endl;
-   
+
         }
 
     }*/
@@ -992,6 +1030,29 @@ namespace bias {
         timeStampDbl += (1.0e-6)*double(curr.microSeconds);
         timeStampDbl -= (1.0e-6)*double(init.microSeconds);
         return timeStampDbl;
+    }
+
+    bool ImageGrabber::matchNidaqToCameraTimeStamp(uInt32& nidaqts_curr, uInt32& nidaqts_init, 
+                                                   double& camts_curr, uint64_t frameCount)
+    {
+        double nidaqDbl = 0.0;
+        double ts_diff = 0.0;
+        nidaqDbl = static_cast<double>((nidaqts_curr - nidaqts_init) * (1/nidaq_task_->fast_counter_rate));
+        ts_diff = abs(nidaqDbl - camts_curr);
+        
+        //std::cout << "Nidaq match camera ts "  << 
+        //    nidaqDbl <<  " "  << camts_curr << " "  << ts_diff << " " << frameCount << std::endl;
+
+        if (abs(nidaqDbl - camts_curr) > (1.0e-5))
+        {
+            return false;
+
+        }else{
+
+            return true;
+
+        }
+
     }
 
     /*void ImageGrabber::spikeDetected(unsigned int frameCount) {

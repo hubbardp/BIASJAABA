@@ -230,6 +230,8 @@ namespace bias
 
         connectSignals();
 
+        std::cout << "FrameCount on connect " << cameraPtr_->getFrameId() << std::endl;
+
         rtnStatus.success = true;
         rtnStatus.message = QString("");
 
@@ -593,6 +595,13 @@ namespace bias
                 this,
                 SLOT(stopImageCaptureError(unsigned int, QString))
                );
+        
+        connect(
+               imageGrabberPtr_,
+               SIGNAL(nidaqtsMatchError(unsigned int, QString)),
+               this,
+               SLOT(nidaqImagetsMatchError(unsigned int, QString))
+               );
 
         if (actionTimerEnabledPtr_ -> isChecked())
         {
@@ -705,7 +714,7 @@ namespace bias
 
     RtnStatus CameraWindow::stopThreads()
     {
-        std::cout << "cameraNumber " << cameraNumber_ << " start Process Threads" << std::endl;
+        std::cout << "cameraNumber " << cameraNumber_ << " stop Threads" << std::endl;
         RtnStatus rtnStatus;
 
         //imageGrabberPtr_->acquireLock();
@@ -931,6 +940,7 @@ namespace bias
         numberOfCameras_ = cameraWindowPtrList_->size();
         numImageGrabStarted_ = &numberOfCameras_;
 
+        //start threads all cameras
         if(!imageGrabberPtr_->imagegrab_started)
             startThreadsAllCamerasTrigMode();
 
@@ -2293,26 +2303,6 @@ namespace bias
     void CameraWindow::startTriggerButtonClicked()
     {
 
-        /*QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
-        if (currentPluginPtr != nullptr)
-        {
-            if (currentPluginPtr->getName() == "signalSlotDemo" ||
-                currentPluginPtr->getName() == "jaabaPlugin") {
-                currentPluginPtr->gpuInit();
-            }
-        }
-
-        QMetaObject::invokeMethod(this, "startThreads", Q_ARG(bool,true));
-        emit this->finished_vidReading();
-
-        if (nidaq_task != nullptr && cameraNumber_ == 0) {
-            
-            // start the nidaq tasks
-            nidaq_task ->start_trigger_signal();
-
-        }
-        startTriggerButtonPtr_->setText(QString("Stop Trigger"));*/
-
         //check to see if cameras have been started
         if (nidaq_task != nullptr) {
             (!(nidaq_task->istrig) && capturing_) ? startTrigger() : stopTrigger();
@@ -2502,6 +2492,11 @@ namespace bias
         }
     }
 
+    void CameraWindow::nidaqImagetsMatchError(unsigned int errorId, QString errorMsg)
+    {
+        QString msgTitle("Nidaq Mismatch Error");
+        QMessageBox::critical(this, msgTitle, errorMsg);
+    }
 
     void CameraWindow::actionFileLoadConfigTriggered()
     {
@@ -8622,8 +8617,6 @@ namespace bias
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
                 imagegrabptr = cameraWindowPtr->getImageGrabberPtr();
-                //imagegrabptr->resetNidaqTrigger(false);
-                //emit imagegrabptr->nidaqtriggered(imagegrabptr->nidaqTriggered);
                 imagegrabptr->stopTrigger = true;
 
             }

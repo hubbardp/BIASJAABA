@@ -42,10 +42,6 @@ namespace bias {
             throw RuntimeError(ERROR_SPIN_CREATE_CONTEXT, ssError.str());
         }
         
-        std::cout << "initialized " << "skip " << std::endl;
-        //skipFrames.resize(100000,0);
-        //time_stamp3.resize(500000, std::vector<uInt32>(2, 0));
-        
     }
 
     CameraDevice_spin::~CameraDevice_spin()
@@ -1064,50 +1060,11 @@ namespace bias {
         }
 
         imageOK_ = true;
-        numFrameskip++;
-        /*if (nidaq_task_ != nullptr) {
-
-            //nidaq_task_->acquireLock();
-            if (cameraNumber_ == 0
-                && numFrameskip <= 500001) {
-
-                nidaq_task_->acquireLock();
-                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
-                nidaq_task_->releaseLock();
-
-            }
         
-
-            if (nidaq_task_ != nullptr && numFrameskip <= 500001) {
-
-                nidaq_task_->acquireLock();
-                DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                nidaq_task_->releaseLock();
-                
-                if (numFrameskip > 2) {
-                    if (cameraNumber_ == 0)
-                        time_stamp3[numFrameskip - 3][0] = read_buffer;
-                    else
-                        time_stamp3[numFrameskip - 3][0] = 0;
-                    time_stamp3[numFrameskip - 3][1] = read_ondemand;
-                }
-            }
-            //nidaq_task_->releaseLock();
-            
-        }     
-        
-        if (numFrameskip == 500001)
-        {
-            gettime_->acquireLock();
-            std::string filename = "imagegrab_cam2sys" + std::to_string(cameraNumber_) + ".csv";
-            gettime_->write_time_2d<uInt32>(filename, 500000, time_stamp3);
-            gettime_->releaseLock();
-
-        }*/
-
         //pc_ts = gettime->getPCtime();
         //pc_ts1 = pc_ts.seconds*1000000 + pc_ts.microSeconds;
         updateTimeStamp();
+        updateFrameId();
         //std::cout << "timeStamp_ns_           = " << timeStamp_ns_ << std::endl;
         //std::cout << "timeStamp_.seconds      = " << timeStamp_.seconds << std::endl;
         //std::cout << "timeStamp_.microSeconds = " << timeStamp_.microSeconds << std::endl;
@@ -1188,7 +1145,8 @@ namespace bias {
             }
             entries_file << "DEBUG: ChunkSelector entries end " << std::endl;
             entries_file.close();*/
-            chunkSelectorNode.setEntryBySymbolic("Timestamp"); 
+            chunkSelectorNode.setEntryBySymbolic("Timestamp");
+            chunkSelectorNode.setEntryBySymbolic("FrameID");
         }
         else
         {
@@ -1230,7 +1188,14 @@ namespace bias {
     void CameraDevice_spin::updateFrameId()
     {
         spinError err = spinImageChunkDataGetIntValue(hSpinImage_, "ChunkFrameID", &frameCount_);
-
+        if (err != SPINNAKER_ERR_SUCCESS)
+        {
+            std::stringstream ssError;
+            ssError << __FUNCTION__;
+            ssError << ": unable to get frameId from image chunk data, error = " << err;
+            throw RuntimeError(ERROR_SPIN_CHUNKDATA_TIMESTAMP, ssError.str());
+        }
+        //std::cout << frameCount_ << std::endl;
     }
 
 
