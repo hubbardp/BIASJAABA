@@ -316,7 +316,7 @@ namespace bias
     RtnStatus CameraWindow::startImageCapture(bool showErrorDlg) 
     {
         RtnStatus rtnStatus;
-        
+        std::cout << "Called Once***** " <<  cameraNumber_ << std::endl;
         if (!connected_)
         {
             QString msgTitle("Capture Error");
@@ -347,6 +347,10 @@ namespace bias
         timeStamp_ = 0.0;
         framesPerSec_ = 0.0;
         skippedFramesWarning_ = false;
+
+        //initializations
+        isPluginStarted = false;
+        numImageGrabStarted_ = &numberOfCameras_;
 
         newImageQueuePtr_ -> clear();
         logImageQueuePtr_ -> clear();
@@ -603,6 +607,13 @@ namespace bias
                SLOT(nidaqImagetsMatchError(unsigned int, QString))
                );
 
+        connect(
+            imageGrabberPtr_,
+            SIGNAL(framecountMatchError(unsigned int, QString)),
+            this,
+            SLOT(frameImageMatchError(unsigned int, QString))
+        );
+
         if (actionTimerEnabledPtr_ -> isChecked())
         {
             connect(
@@ -714,7 +725,7 @@ namespace bias
 
     RtnStatus CameraWindow::stopThreads()
     {
-        std::cout << "cameraNumber " << cameraNumber_ << " stop Threads" << std::endl;
+        std::cout << "cameraNumber " << cameraNumber_ << " stop Threads*** " << std::endl;
         RtnStatus rtnStatus;
 
         //imageGrabberPtr_->acquireLock();
@@ -831,7 +842,7 @@ namespace bias
             //pluginImageQueuePtr_ -> releaseLock();
         }
 
-        /*if (isPluginEnabled())
+        if (isPluginEnabled())
         {
             // stop the score compute thread
             QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
@@ -839,7 +850,7 @@ namespace bias
             {
                 currentPluginPtr->stopThread();   
             }
-        }*/
+        }
 
         // Wait until threads are finished
         bool threadsDone = false;
@@ -864,14 +875,14 @@ namespace bias
 
         //std::cout << "Threads Done exited" << std::endl;
 
-        /*if (isPluginEnabled())
+        if (isPluginEnabled())
         {
             QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
             if (!currentPluginPtr.isNull())
             {
                 currentPluginPtr->stop();
             }
-        }*/
+        }
 
         // Clear any stale data out of existing queues
         newImageQueuePtr_ -> acquireLock();
@@ -886,10 +897,10 @@ namespace bias
         pluginImageQueuePtr_ -> clear();
         pluginImageQueuePtr_ -> releaseLock();
 
-        /*if (nidaq_task != nullptr)
+        if (nidaq_task != nullptr)
         {
             nidaq_task->Cleanup();
-        }*/
+        }
 
         // Update data GUI information
         startButtonPtr_ -> setText(QString("Start"));
@@ -2498,6 +2509,13 @@ namespace bias
         QMessageBox::critical(this, msgTitle, errorMsg);
     }
 
+    void CameraWindow::frameImageMatchError(unsigned int errorId, QString errorMsg)
+    {
+        QString msgTitle("FrameCount Mismatch Error");
+        QMessageBox::critical(this, msgTitle, errorMsg);
+
+    }
+
     void CameraWindow::actionFileLoadConfigTriggered()
     {
         QString configFileFullPath = getConfigFileFullPath();
@@ -3265,7 +3283,7 @@ namespace bias
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(guid.toString(), 
                                                                threadPoolPtr_, gettime_,cmdlineparams,
                                                                this);
-        isPluginStarted = false;
+        
         //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
         //pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] -> show();
         // -------------------------------------------------------------------------------
@@ -8498,7 +8516,8 @@ namespace bias
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
-                emit cameraWindowPtr->threadStarted();
+                //emit cameraWindowPtr->threadStarted();
+                cameraWindowPtr->startProcessThreads();
             }
         }
 
@@ -8507,7 +8526,8 @@ namespace bias
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
-                emit cameraWindowPtr->threadImageGrabStarted();
+                //emit cameraWindowPtr->threadImageGrabStarted();
+                cameraWindowPtr->startImageGrabThreads();
             }
         }
         std::cout << "Active thread count: " << threadPoolPtr_->activeThreadCount() << std::endl;
@@ -8520,7 +8540,8 @@ namespace bias
         {
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
-                emit cameraWindowPtr->threadImageGrabStopped();
+                //emit cameraWindowPtr->threadImageGrabStopped();
+                cameraWindowPtr->stopImageGrabThreads();
             }
         }
 
@@ -8628,9 +8649,12 @@ namespace bias
     {
         if ((cameraWindowPtrList_->size()) > 1)
         {
+            std::cout << "Entering clear queues "  << cameraWindowPtrList_->size() << std::endl;
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
-                emit cameraWindowPtr->clear();
+                std::cout << cameraWindowPtr->cameraNumber_ << std::endl;
+                //emit cameraWindowPtr->clear();
+                cameraWindowPtr->clearAllQueues();
             }
         }
     }

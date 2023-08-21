@@ -172,7 +172,7 @@ namespace bias
             bool vidFinsihed_reading;
             CmdLineParams cmdlineparams_;
             unsigned int* numImageGrabStarted_; // to checkif imagegrab started for all cameras
-            unsigned int* numImageGrabReset_; // check if imagegrab reset for all cameras
+            //unsigned int* numImageGrabReset_; // check if imagegrab reset for all cameras
             bool isPluginStarted;
             
         signals:
@@ -216,6 +216,7 @@ namespace bias
             void imageCaptureError(unsigned int errorId, QString errorMsg);
             void imageLoggingError(unsigned int errorId, QString errorMsg);
             void nidaqImagetsMatchError(unsigned int errorId, QString errorMsg);
+            void frameImageMatchError(unsigned int errorId, QString errorMsg);
 
             // Display update and duration check timers
             void updateDisplayOnTimer();

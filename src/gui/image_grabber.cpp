@@ -230,6 +230,7 @@ namespace bias {
         unsigned int errorId = 0;
         unsigned int errorCount = 0;
         bool errorMatch = false;
+        bool errorMatchFrame = false;
 
         TriggerType trig;
 
@@ -238,6 +239,8 @@ namespace bias {
 
         timeStampDbl = 0.0;
         timeStampDblLast = 0.0;
+
+        cameraFrameCountInit = 0;
 
         uInt32 read_start = 0, read_end = 0, frameCaptureTime_nidaq = 0;
 
@@ -400,18 +403,6 @@ namespace bias {
 
                 resetNidaqTrigger(true);
                 startTrigger = false;
-                
-                /*acquireLock();
-                if (!nidaq_task_->istrig) {
-                    std::cout << "waiting for nidaq to trig " << cameraNumber_ << std::endl;
-                    waitForCond();
-                }
-                else if (nidaq_task_->istrig) {
-                    std::cout << "nidaq trig " << cameraNumber_ << std::endl;
-                    //signalCondMet();
-                    partnerImageGrabberPtr->signalCondMet();
-                }
-                releaseLock();*/
 
             }else if(stopTrigger)
             {
@@ -420,10 +411,10 @@ namespace bias {
                 nidaqTriggered = false;
                 if(!isVideo)
                     flushCameraBuffer();
+                cameraWindowPtr->stopTrigger();
                 std::cout << "CameraNumber " << cameraNumber_ << "Stop Trigger " << stopTrigger << std::endl;
 
             }else{}
-            //end_process = gettime_->getPCtime();
 
             start_process = gettime_->getPCtime();
 
@@ -578,9 +569,12 @@ namespace bias {
                 if ((startUpCount == 0) && (numStartUpSkip_ > 0))
                 {
                     timeStampInit = timeStamp;
+                    cameraFrameCountInit = cam_frameId;
 
                 }
                 timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
+                cameraFrameCount = convertCameraFrameCount(cam_frameId, cameraFrameCountInit);
+
 
                 if (isFirstTrial) {
                     // Skip some number of frames on startup - recommened by Point Grey. 
@@ -625,10 +619,12 @@ namespace bias {
                 // Reset initial time stamp for image acquisition
                 if ((isFirst) && (startUpCount >= numStartUpSkip_))
                 {
+                    cameraFrameCountInit = cam_frameId;
                     timeStampInit = timeStamp;
                     timeStampDblLast = 0.0;
                     isFirst = false;
                     timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
+                    cameraFrameCount = convertCameraFrameCount(cam_frameId, cameraFrameCountInit);
                     emit startTimer();
                 }
 
@@ -673,6 +669,16 @@ namespace bias {
                     else {
                         //fstfrmtStampRef_ = static_cast<uint64_t>(gettime_->getPCtime());
                     }
+                }
+
+                //match frameCount from camera and current frameCount from BIAS
+                errorMatchFrame = matchCameraFrameCount(cameraFrameCount, frameCount);
+                if (!errorMatchFrame) {
+
+                    errorMsg = QString::fromStdString("Camera framecount does not match BIAS framecount ");
+                    errorMsg += QString::number(frameCount);
+                    emit framecountMatchError(0, errorMsg);
+
                 }
 
                 // match nidaq ts to camera timestamp
@@ -1032,6 +1038,13 @@ namespace bias {
         return timeStampDbl;
     }
 
+    unsigned long ImageGrabber::convertCameraFrameCount(int64_t camera, int64_t cameraInit)
+    {
+        unsigned long frameCountConvert = 0;
+        frameCountConvert = camera - cameraInit;
+        return frameCountConvert;
+    }
+
     bool ImageGrabber::matchNidaqToCameraTimeStamp(uInt32& nidaqts_curr, uInt32& nidaqts_init, 
                                                    double& camts_curr, uint64_t frameCount)
     {
@@ -1043,7 +1056,7 @@ namespace bias {
         //std::cout << "Nidaq match camera ts "  << 
         //    nidaqDbl <<  " "  << camts_curr << " "  << ts_diff << " " << frameCount << std::endl;
 
-        if (abs(nidaqDbl - camts_curr) > (1.0e-5))
+        if (ts_diff > (1.0e-5))
         {
             return false;
 
@@ -1053,6 +1066,22 @@ namespace bias {
 
         }
 
+    }
+
+    bool ImageGrabber::matchCameraFrameCount(unsigned long cameraframeCount_curr,
+        unsigned long frameCount_curr)
+    {
+        unsigned long frame_diff = 0;
+        frame_diff = cameraframeCount_curr - frameCount_curr;
+
+        if (frame_diff > 0)
+        {
+            return false;
+        }
+        else {
+            return true;
+        }
+        
     }
 
     /*void ImageGrabber::spikeDetected(unsigned int frameCount) {
@@ -1340,12 +1369,14 @@ namespace bias {
     void ImageGrabber::flushCameraBuffer()
     {
         StampedImage stampImg;
+        unsigned int frameCount_before=0 ,frameCount_after = 0;
 
         cameraPtr_->acquireLock();
         try
         {
 
             stampImg.image = cameraPtr_->grabImage();
+            frameCount_before = cameraPtr_->getFrameId();
 
         }
         catch (RuntimeError &runtimeError)
@@ -1364,7 +1395,7 @@ namespace bias {
             {
 
                 stampImg.image = cameraPtr_->grabImage();
-
+                //std::cout << "Frame flushed " << std::endl;
             }
             catch (RuntimeError &runtimeError)
             {
@@ -1376,6 +1407,12 @@ namespace bias {
             cameraPtr_->releaseLock();
 
         }
+
+        //get the last frameCount from the camera
+        cameraPtr_->acquireLock();
+        frameCount_after = cameraPtr_->getFrameId();
+        cameraPtr_->releaseLock();
+        std::cout << "Number of frames skipped " << (frameCount_after - frameCount_before)+1 << std::endl;
 
     }
    

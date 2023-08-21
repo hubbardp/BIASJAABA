@@ -166,6 +166,7 @@ namespace bias {
             }
 
           
+            processScoresPtr_self->isHOGHOFInitialised = false;
             //delete processScoresPtr_self->HOGHOF_self;
             //delete processScoresPtr_self;
             
@@ -181,6 +182,7 @@ namespace bias {
                 delete processScoresPtr_self->visplots;
             }
         }
+        
     }
 
 

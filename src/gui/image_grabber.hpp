@@ -101,6 +101,9 @@ namespace bias
             TimeStamp timeStamp;
             TimeStamp timeStampInit;
 
+            int64_t cameraFrameCountInit = 0;
+            unsigned long cameraFrameCount = 0;
+
             double timeStampDbl = 0.0;
             double timeStampDblLast = 0.0;
 
@@ -114,6 +117,7 @@ namespace bias
             void stopCaptureError(unsigned int errorId, QString errorMsg);
             void captureError(unsigned int errorId, QString errorMsg); 
             void nidaqtsMatchError(unsigned int erroId, QString errorMsg);
+            void framecountMatchError(unsigned int errorId, QString errorMsg);
             void nidaqtriggered(bool istriggered);
             void setImagegrabParams();
         
@@ -147,8 +151,11 @@ namespace bias
 
             void run();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);
+            unsigned long convertCameraFrameCount(int64_t camera, int64_t cameraInit);
             bool matchNidaqToCameraTimeStamp(uInt32& nidaqts_curr, uInt32& nidaqts_init, 
                                              double& camts_curr, uint64_t frameCount);
+            bool matchCameraFrameCount(unsigned long cameraframeCount_curr,
+                                       unsigned long frameCount_curr);
             QPointer<QThreadPool> threadPoolPtr_;
 
             std::shared_ptr<Lockable<GetTime>> gettime_;
@@ -184,7 +191,6 @@ namespace bias
 
             void initializeVidBackend();
             void initiateVidSkips(priority_queue<int, vector<int>, greater<int>>& skip_frames);
-            //void initiateVidSkips(vector<int>& skip_frames);
             void readVidFrames();
             void add_delay(int delay_us);
             //void spikeDetected(unsigned int frameCount);
