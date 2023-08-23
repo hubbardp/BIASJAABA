@@ -88,6 +88,7 @@ namespace bias
             virtual void stopThread();
             virtual void initializeParamsProcessScores();
             virtual void setTrialNum(string trialnum);
+            virtual void setHOGHOFShape();
 
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;

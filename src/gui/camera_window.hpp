@@ -217,6 +217,7 @@ namespace bias
             void imageLoggingError(unsigned int errorId, QString errorMsg);
             void nidaqImagetsMatchError(unsigned int errorId, QString errorMsg);
             void frameImageMatchError(unsigned int errorId, QString errorMsg);
+            void frameJaabaMatchError(unsigned int errorId, QString errorMsg);
 
             // Display update and duration check timers
             void updateDisplayOnTimer();

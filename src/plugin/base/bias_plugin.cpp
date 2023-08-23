@@ -215,6 +215,7 @@ namespace bias
 
     }
 
+    // Jaaba specific virtual methods
     void BiasPlugin::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
                                 bool testConfigEnabled, string trial_info,
                                 std::shared_ptr<TestConfig> testConfig){}
@@ -231,6 +232,8 @@ namespace bias
     void BiasPlugin::initializeParamsProcessScores() {}
 
     void BiasPlugin::setTrialNum(string trialnum) {}
+
+    void BiasPlugin::setHOGHOFShape() {}
 
     // Protected methods
     // ------------------------------------------------------------------------

@@ -316,7 +316,7 @@ namespace bias
     RtnStatus CameraWindow::startImageCapture(bool showErrorDlg) 
     {
         RtnStatus rtnStatus;
-        std::cout << "Called Once***** " <<  cameraNumber_ << std::endl;
+
         if (!connected_)
         {
             QString msgTitle("Capture Error");
@@ -543,6 +543,32 @@ namespace bias
             }
             pluginHandlerPtr_->setAutoDelete(false);
 
+            if (!currentPluginPtr.isNull() && 
+                currentPluginPtr->getName() == "jaabaPlugin")
+            {
+                connect(
+                    currentPluginPtr,
+                    SIGNAL(framecountMatchError(unsigned int, QString)),
+                    this,
+                    SLOT(frameJaabaMatchError(unsigned int, QString))
+                );
+            }
+
+            //ReInitialize jaaba params
+            //QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+            if (currentPluginPtr != nullptr)
+            {
+                if (currentPluginPtr->getName() == "jaabaPlugin" && !isPluginStarted) {
+                    currentPluginPtr->gpuInit();
+                }
+                else {
+                    std::cout << "Gpu already initialzed" << std::endl;
+                }
+            }
+            else {
+                std::cout << "Gpu not initialzed" << std::endl;
+            }
+
         } 
         actionPluginsEnabledPtr_->setEnabled(false);
         
@@ -612,7 +638,7 @@ namespace bias
             SIGNAL(framecountMatchError(unsigned int, QString)),
             this,
             SLOT(frameImageMatchError(unsigned int, QString))
-        );
+            );
 
         if (actionTimerEnabledPtr_ -> isChecked())
         {
@@ -937,12 +963,15 @@ namespace bias
         QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
         if (currentPluginPtr != nullptr)
         {
-            if (currentPluginPtr->getName() == "jaabaPlugin") {
-                currentPluginPtr->gpuInit();
+            if (currentPluginPtr->getName() == "jaabaPlugin" && !isPluginStarted) {
+                currentPluginPtr->setHOGHOFShape();
+            }
+            else {
+                std::cout << "Gpu hoghof shape already initialized " << std::endl;
             }
         }
         else {
-            std::cout << "Gpu not initialzed" << std::endl;
+            std::cout << "Gpu hoghof shape not initialzed" << std::endl;
         }
 
         //clear data from all queues 
@@ -2512,6 +2541,13 @@ namespace bias
     void CameraWindow::frameImageMatchError(unsigned int errorId, QString errorMsg)
     {
         QString msgTitle("FrameCount Mismatch Error");
+        QMessageBox::critical(this, msgTitle, errorMsg);
+
+    }
+
+    void CameraWindow::frameJaabaMatchError(unsigned int errorId, QString errorMsg)
+    {
+        QString msgTitle("Jaaba FrameCount Mismatch Error");
         QMessageBox::critical(this, msgTitle, errorMsg);
 
     }

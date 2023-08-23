@@ -84,6 +84,7 @@ namespace bias
             virtual RtnStatus setConfigFromMap(QVariantMap configMap);
             virtual void initializeParamsProcessScores();
             virtual void setTrialNum(string trialnum);
+            virtual void setHOGHOFShape();
 
             QPointer<ProcessScores> processScoresPtr_self;
             QPointer<ProcessScores> processScoresPtr_partner;
@@ -271,6 +272,7 @@ namespace bias
             void passFrameRead(int64_t frameRead, int);
             void passScoreDone(bool score_cal);
             void doNotProcess(unsigned int frameCount);
+            void framecountMatchError(unsigned int, QString);
 
         private slots:
 
@@ -279,7 +281,7 @@ namespace bias
             void onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>> partnerPluginImageQueuePtr);
             //void trigResetPushButtonClicked();
             //void trigEnabledCheckBoxStateChanged(int state);
-            void receiveHOGShape(QPointer<HOGHOF> partner_hogshape);
+            void receiveHOGShape(QPointer<HOGHOF> partner_hoghof);
             void scoreCompute(PredData predScore);
             void receiveFrameRead(int64_t frameReadtime, int frameCount);
             void scoreCalculated(bool score_cal);

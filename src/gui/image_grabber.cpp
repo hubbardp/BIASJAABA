@@ -271,9 +271,9 @@ namespace bias {
  
             cur_latency = 0.0;
             avg_latency = 3.00;
-            frameGrabAvgTime = 2200;
+            frameGrabAvgTime = 3000;
             frameCaptureTime = 2500;
-            wait_thres = static_cast<int64_t>(1800);
+            wait_thres = static_cast<int64_t>(1000);
             avgwait_time = 0;
         }
 
@@ -511,7 +511,8 @@ namespace bias {
                     QThread::yieldCurrentThread();
                     continue;
                 }
-                      
+                   
+                //get nidaq trigger timestamp
                 if (nidaq_task_ != nullptr && startUpCount >= numStartUpSkip_
                     && nidaq_task_->istrig) {
 
@@ -528,6 +529,7 @@ namespace bias {
                     }
                 }
 
+                //grab images from camera 
                 cameraPtr_->acquireLock();
                 try
                 {
@@ -672,13 +674,15 @@ namespace bias {
                 }
 
                 //match frameCount from camera and current frameCount from BIAS
-                errorMatchFrame = matchCameraFrameCount(cameraFrameCount, frameCount);
-                if (!errorMatchFrame) {
+                if (!isVideo) {
+                    errorMatchFrame = matchCameraFrameCount(cameraFrameCount, frameCount);
+                    if (!errorMatchFrame) {
 
-                    errorMsg = QString::fromStdString("Camera framecount does not match BIAS framecount ");
-                    errorMsg += QString::number(frameCount);
-                    emit framecountMatchError(0, errorMsg);
+                        errorMsg = QString::fromStdString("Camera framecount does not match BIAS framecount ");
+                        errorMsg += QString::number(frameCount);
+                        emit framecountMatchError(0, errorMsg);
 
+                    }
                 }
 
                 // match nidaq ts to camera timestamp
