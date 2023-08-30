@@ -23,7 +23,7 @@ namespace bias {
         // is called but some variables need to be reinitialized when multiple trials of the plugin
         //are run. this is the variable that does not need to be reinitialized foe every trial
         
-        isHOGHOFInitialised = false;
+        //isHOGHOFInitialised = false;
         stopped_ = true;
         isSide = false;
         isFront = false;
@@ -41,7 +41,7 @@ namespace bias {
         //stopped_ = true;
         //detectStarted_ = false;
         save = false;
-        processedFrameCount = 0;
+        //processedFrameCount = 0;
         processSide = false;
         processFront = false;
         isProcessed_side = false;
@@ -97,7 +97,7 @@ namespace bias {
 
     }
    
-    void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
+    /*void ProcessScores::initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width)
     {
 
         hoghof->initHOGHOF(img_height,img_width);
@@ -111,7 +111,7 @@ namespace bias {
 
         hoghof->genFeatures(frame);
 
-    }
+    }*/
 
 
     void ProcessScores::onProcessSide()
@@ -232,7 +232,7 @@ namespace bias {
             if (mesPass_) 
             {
 
-                if (processSide)
+                /*if (processSide)
                 {
 
                     cudaSetDevice(0);
@@ -252,7 +252,7 @@ namespace bias {
                     processFront = false;
                     isProcessed_front = true;
                     releaseLock();
-                }
+                }*/
 
             }
             else {

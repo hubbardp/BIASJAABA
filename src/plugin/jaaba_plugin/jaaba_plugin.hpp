@@ -180,6 +180,10 @@ namespace bias
             unordered_map<string, unsigned int> camera_list;
             unordered_map<unsigned int, string> jab_crop_list;
 
+            int processedFrameCount;
+            QPointer<HOGHOF> HOGHOF_self;
+            QPointer<HOGHOF> HOGHOF_partner;
+
             //test
             QString file_frt; // video input for front
             QString file_sde; // video input for side
@@ -197,8 +201,8 @@ namespace bias
             //test
             std::vector<std::vector<float>>hoghof_feat;
             std::vector<std::vector<float>>hoghof_feat_avg;
+
             //std::vector<PredData>scores;
-            
             //int no_of_skips = 10;
             //priority_queue<int, vector<int>, greater<int>>skipframes_view1; // side skips
             //priority_queue<int, vector<int>, greater<int>>skipframes_view2; // front skips
@@ -286,7 +290,7 @@ namespace bias
             void receiveFrameRead(int64_t frameReadtime, int frameCount);
             void scoreCalculated(bool score_cal);
             void setSkipFrameProcess(unsigned int frameCount);
-            void initialize_classifier();
+            void setgpuInitializeFlag();
             //void reloadButtonPressed();
             //void detectClicked();
             //void saveClicked();

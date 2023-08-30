@@ -1060,7 +1060,7 @@ namespace bias {
         //std::cout << "Nidaq match camera ts "  << 
         //    nidaqDbl <<  " "  << camts_curr << " "  << ts_diff << " " << frameCount << std::endl;
 
-        if (ts_diff > (1.0e-5))
+        if (ts_diff > (2.0e-5))
         {
             return false;
 

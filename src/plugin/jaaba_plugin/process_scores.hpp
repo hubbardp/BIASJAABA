@@ -77,8 +77,8 @@ namespace bias
           
            bool isProcessed_side;
            bool isProcessed_front; 
-           bool isHOGHOFInitialised;
-           int processedFrameCount;
+           //bool isHOGHOFInitialised;
+           //int processedFrameCount;
            int frameCount_;
            int partner_frameCount_;
            uint64_t side_read_time_, front_read_time_;
@@ -90,7 +90,7 @@ namespace bias
            int wait_threshold;
            string portName;
 
-           QPointer<HOGHOF> HOGHOF_self;
+           //QPointer<HOGHOF> HOGHOF_self;
            //QPointer<HOGHOF> HOGHOF_partner;
            QPointer<beh_class> classifier;
            QPointer<VisPlots> visplots;
@@ -127,8 +127,8 @@ namespace bias
 
            void onProcessSide();
            void onProcessFront();
-           void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
-           void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
+           //void initHOGHOF(QPointer<HOGHOF> hoghof, int img_height, int img_width);
+           //void genFeatures(QPointer<HOGHOF> hoghof, int frameCount);
            void visualizeScores(vector<float>& scr_vec);
            void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
                std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
@@ -153,7 +153,6 @@ namespace bias
            string trial_num_;
            bool testConfigEnabled_;
            string scores_filename;
-           //float threshold_runtime = static_cast<float>(3000);
  
            QQueue<FrameData> frameQueue_;
            QPointer<BiasPlugin> partnerPluginPtr_;

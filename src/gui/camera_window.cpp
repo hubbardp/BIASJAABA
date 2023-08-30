@@ -554,9 +554,8 @@ namespace bias
                 );
             }
 
-            //ReInitialize jaaba params
-            //QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
-            if (currentPluginPtr != nullptr)
+            //Initialize gpu memory
+            /*if (currentPluginPtr != nullptr)
             {
                 if (currentPluginPtr->getName() == "jaabaPlugin" && !isPluginStarted) {
                     currentPluginPtr->gpuInit();
@@ -567,7 +566,7 @@ namespace bias
             }
             else {
                 std::cout << "Gpu not initialzed" << std::endl;
-            }
+            }*/
 
         } 
         actionPluginsEnabledPtr_->setEnabled(false);
@@ -959,23 +958,12 @@ namespace bias
         
         RtnStatus rtnStatus;
 
-        //ReInitialize jaaba params
-        QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
-        if (currentPluginPtr != nullptr)
-        {
-            if (currentPluginPtr->getName() == "jaabaPlugin" && !isPluginStarted) {
-                currentPluginPtr->setHOGHOFShape();
-            }
-            else {
-                std::cout << "Gpu hoghof shape already initialized " << std::endl;
-            }
-        }
-        else {
-            std::cout << "Gpu hoghof shape not initialzed" << std::endl;
-        }
+        // initialize gpu memory
+        gpuInitializeAllJaabaPlugins();
 
         //clear data from all queues 
         clearQueues();
+
         std::cout << "Number of cameras " << cameraWindowPtrList_->size() << std::endl;
         numberOfCameras_ = cameraWindowPtrList_->size();
         numImageGrabStarted_ = &numberOfCameras_;
@@ -984,7 +972,7 @@ namespace bias
         if(!imageGrabberPtr_->imagegrab_started)
             startThreadsAllCamerasTrigMode();
 
-        if (nidaq_task != nullptr && cameraNumber_ == 0) {
+        if (nidaq_task != nullptr) {
 
             resetPluginParams();
             resetImageGrabParams();
@@ -1003,13 +991,13 @@ namespace bias
     {
         RtnStatus rtnStatus;
 
-        /*QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+        QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
         if (currentPluginPtr != nullptr)
         {
             if (currentPluginPtr->getName() == "jaabaPlugin") {
                 currentPluginPtr->gpuDeinit();
             }
-        }*/
+        }
 
         //stop threads 
         //stopThreadsAllCamerasTrigMode();
@@ -8546,7 +8534,7 @@ namespace bias
 
     void CameraWindow::startThreadsAllCamerasTrigMode()
     {
-        //std::cout << "Only once  " << std::endl;
+
         // start plugin processing threads
         if ((cameraWindowPtrList_->size()) > 1)
         {
@@ -8678,14 +8666,14 @@ namespace bias
 
             }
         }
-        std::cout << "nidaq stop nidaq trigger flag exited" << std::endl;
+        //std::cout << "DEBUG:: nidaq stop nidaq trigger flag exited" << std::endl;
     }
 
     void CameraWindow::clearQueues()
     {
         if ((cameraWindowPtrList_->size()) > 1)
         {
-            std::cout << "Entering clear queues "  << cameraWindowPtrList_->size() << std::endl;
+            //std::cout << "DEBUG:: Entering clear queues "  << cameraWindowPtrList_->size() << std::endl;
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
                 std::cout << cameraWindowPtr->cameraNumber_ << std::endl;
@@ -8693,6 +8681,32 @@ namespace bias
                 cameraWindowPtr->clearAllQueues();
             }
         }
+    }
+
+    void CameraWindow::gpuInitializeAllJaabaPlugins()
+    {
+        // both gpu memory initialization and seetHOGHOFShape should be called 
+        // for each plugin view and should be called one after the other 
+        QPointer<BiasPlugin> currentPluginPtr;
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            // Initialize the gpu memory
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                currentPluginPtr = cameraWindowPtr->getCurrentPlugin();
+                if (currentPluginPtr != nullptr && currentPluginPtr->getName() == "jaabaPlugin")
+                    currentPluginPtr->gpuInit();
+            }
+
+            // pass the hoghof shape to partner plugins after gpu init
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                currentPluginPtr = cameraWindowPtr->getCurrentPlugin();
+                if (currentPluginPtr != nullptr && currentPluginPtr->getName() == "jaabaPlugin")
+                    currentPluginPtr->setHOGHOFShape();
+            }
+        }
+
     }
 
 } // namespace bias

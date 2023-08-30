@@ -72,6 +72,7 @@ namespace bias {
             size_t hog_outputbytes;
             size_t hof_outputbytes;
             bool isInitialized=false;
+            bool isHOGHOFInitialised=false;
             HOGHOF(); //(QWidget *parent);
     
          

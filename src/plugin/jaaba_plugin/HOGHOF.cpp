@@ -82,8 +82,10 @@ namespace bias
         loadImageParams(img_width, img_height);
         struct HOGContext hogctx = HOGInitialize(logger, HOGParams, img_width, img_height, Cropparams);
         struct HOFContext hofctx = HOFInitialize(logger, HOFParams, Cropparams);
+        
         hog_ctx = (HOGContext*)malloc(sizeof(hogctx));
         hof_ctx = (HOFContext*)malloc(sizeof(hofctx));
+        
         memcpy(hog_ctx, &hogctx, sizeof(hogctx));
         memcpy(hof_ctx, &hofctx, sizeof(hofctx));
         //hoghof->startFrameSet = false;
@@ -94,9 +96,9 @@ namespace bias
         
         //output shape 
         struct HOGFeatureDims hogshape;
-        HOGOutputShape(&hogctx, &hogshape);
+        HOGOutputShape(hog_ctx, &hogshape);
         struct HOGFeatureDims hofshape;
-        HOFOutputShape(&hofctx, &hofshape);
+        HOFOutputShape(hof_ctx, &hofshape);
         hog_shape = hogshape;
         hof_shape = hofshape;
         size_t hog_num_elements = hog_shape.x * hog_shape.y * hog_shape.bin;
@@ -107,16 +109,24 @@ namespace bias
         hof_out_avg.resize(hof_num_elements, 0.0);
         hog_out_skip.resize(hog_num_elements, 0.0);
         hof_out_skip.resize(hof_num_elements, 0.0);
+        
 
     }
 
     void HOGHOF::genFeatures(int frame)
     {
+        
+        // Test
+        //HOGImage fake_img;
+        //fake_img.w = 448;
+        //fake_img.h = 290;
+        //fake_img.pitch = 448;
+        //fake_img.type = hog_f32;
+        //fake_img.buf = nullptr;
+        //cv::Mat fake_img_test = cv::Mat::zeros(cv::Size(448, 290), CV_32FC1);
+        //fake_img.buf = fake_img_test.ptr<float>(0);
 
         //Compute and copy HOG/HOF
-
-        //HOGCompute(hog_ctx, img);
-        //HOGOutputCopy(hog_ctx, hog_out.data(), hog_outputbytes);
 
         HOFCompute(hof_ctx, img.buf, hof_f32); // call to compute and copy is asynchronous
         HOFOutputCopy(hof_ctx, hof_out.data(), hof_outputbytes); // should be called one after 
