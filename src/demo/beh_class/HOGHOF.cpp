@@ -210,13 +210,15 @@ void HOGHOF::initializeHOGHOF(int& width, int& height,
                               int& num_frames) {
 
     // create input HOGContext / HOFConntext
-    struct HOGContext hog_ctx_ = HOGInitialize(logger, HOGParams, width, height, Cropparams);
-    struct HOFContext hof_ctx_ = HOFInitialize(logger, HOFParams, Cropparams);
+    //struct HOGContext hog_ctx_ = HOGInitialize(logger, HOGParams, width, height, Cropparams);
+    //struct HOFContext hof_ctx_ = HOFInitialize(logger, HOFParams, Cropparams);
+    hog_ctx = HOGInitialize(logger, HOGParams, width, height, Cropparams);;
+    hof_ctx = HOFInitialize(logger, HOFParams, Cropparams);
 
-    hog_ctx = (HOGContext*)malloc(sizeof(hog_ctx_));
-    hof_ctx = (HOFContext*)malloc(sizeof(hof_ctx_));
-    memcpy(hog_ctx, &hog_ctx_, sizeof(hog_ctx_));
-    memcpy(hof_ctx, &hof_ctx_, sizeof(hof_ctx_));
+    //hog_ctx = (HOGContext*)malloc(sizeof(hog_ctx_));
+    //hof_ctx = (HOFContext*)malloc(sizeof(hof_ctx_));
+    //memcpy(hog_ctx, &hog_ctx_, sizeof(hog_ctx_));
+    //memcpy(hof_ctx, &hof_ctx_, sizeof(hof_ctx_));
 
     struct HOGFeatureDims hogshape;
     HOGOutputShape(hog_ctx, &hogshape);
@@ -301,19 +303,19 @@ void HOGHOF::genFeatures(QString vidname, QString& CropFile) {
     loadCropParams();
 
     // create input HOGContext / HOFConntext
-    struct HOGContext hog_ctx = HOGInitialize(logger, HOGParams, width, height, Cropparams);
-    struct HOFContext hof_ctx = HOFInitialize(logger, HOFParams, Cropparams);
+    struct HOGContext* hog_ctx = HOGInitialize(logger, HOGParams, width, height, Cropparams);
+    struct HOFContext* hof_ctx = HOFInitialize(logger, HOFParams, Cropparams);
 
     //allocate output HOG/HOF per frame 
-    size_t hog_outputbytes = HOGOutputByteCount(&hog_ctx);
-    size_t hof_outputbytes = HOFOutputByteCount(&hof_ctx);
+    size_t hog_outputbytes = HOGOutputByteCount(hog_ctx);
+    size_t hof_outputbytes = HOFOutputByteCount(hof_ctx);
     float* tmp_hog = (float*)malloc(hog_outputbytes);
     float* tmp_hof = (float*)malloc(hof_outputbytes);
 
     struct HOGFeatureDims hogshape;
-    HOGOutputShape(&hog_ctx, &hogshape);
+    HOGOutputShape(hog_ctx, &hogshape);
     struct HOGFeatureDims hofshape;
-    HOFOutputShape(&hof_ctx, &hofshape);
+    HOFOutputShape(hof_ctx, &hofshape);
 
     hog_shape = hogshape;
     hof_shape = hofshape;
@@ -341,11 +343,11 @@ void HOGHOF::genFeatures(QString vidname, QString& CropFile) {
         //Compute and copy HOG/HOF     
 
         timer1.Start();
-        HOFCompute(&hof_ctx, img.buf, hof_f32); // call to compute and copy is asynchronous
-        HOFOutputCopy(&hof_ctx, tmp_hof, hof_outputbytes); // should be called one after 
+        HOFCompute(hof_ctx, img.buf, hof_f32); // call to compute and copy is asynchronous
+        HOFOutputCopy(hof_ctx, tmp_hof, hof_outputbytes); // should be called one after 
                                                            // the other to get correct answer                                                             
-        HOGCompute(&hog_ctx, img);
-        HOGOutputCopy(&hog_ctx, tmp_hog, hog_outputbytes);
+        HOGCompute(hog_ctx, img);
+        HOGOutputCopy(hog_ctx, tmp_hog, hog_outputbytes);
 
       
         timer1.Stop();
@@ -364,8 +366,8 @@ void HOGHOF::genFeatures(QString vidname, QString& CropFile) {
     //write_time("offline_time.csv",num_frames,time_result);
 
     vid.releaseCapObject(capture) ;
-    HOFTeardown(&hof_ctx);
-    HOGTeardown(&hog_ctx);
+    HOFTeardown(hof_ctx);
+    HOGTeardown(hog_ctx);
     free(tmp_hog);
     free(tmp_hof);
 

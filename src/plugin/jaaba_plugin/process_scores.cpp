@@ -505,10 +505,10 @@ namespace bias {
             done = stopped_;
             releaseLock();
 
-            if (scoreCount == (numFrames-1)) {
+            if (scoreCount == (numFrames)) {
                 std::cout << "Score file name " << scores_filename << std::endl;
                 std::cout << "Writing score...." << std::endl;
-                write_score_final(scores_filename,numFrames-1, scores);
+                write_score_final(scores_filename,numFrames, scores);
                 std::cout << "Written ...." << std::endl;
                 /*acquireLock();
                 done = true;

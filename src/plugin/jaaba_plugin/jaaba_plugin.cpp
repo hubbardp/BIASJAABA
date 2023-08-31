@@ -152,28 +152,6 @@ namespace bias {
     void JaabaPlugin::stop()
     {
         gpuInitialized = false;
-        /*if (processScoresPtr_self != nullptr)
-        {
-
-            if (HOGHOF_self->isHOGPathSet
-                && HOGHOF_self->isHOFPathSet 
-                && processScoresPtr_self->classifier->isClassifierPathSet)
-            {
-                    
-                HOFTeardown(HOGHOF_self->hof_ctx);
-                HOGTeardown(HOGHOF_self->hog_ctx);
-                std::cout << "side gpu ctx stop " << std::endl;
-            }
-
-          
-            HOGHOF_self->isHOGHOFInitialised = false;
-            //delete processScoresPtr_self->HOGHOF_self;
-            //delete processScoresPtr_self;
-            
-        }
-        else {
-            std::cout << "ProcessScores is NULL" << std::endl;
-        }*/
 
         if (isReceiver())
         {
@@ -2106,6 +2084,7 @@ namespace bias {
 
             if (isReceiver()){
                 if (gpuInitialized) {
+
                     emit(passHOGShape(HOGHOF_self));
                 }
                 else {

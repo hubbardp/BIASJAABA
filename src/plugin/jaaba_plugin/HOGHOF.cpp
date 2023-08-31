@@ -17,7 +17,6 @@ namespace bias
     }
 
 
-
     void HOGHOF::initialize() 
     {
 
@@ -75,21 +74,22 @@ namespace bias
 
     void HOGHOF::initHOGHOF(int img_height, int img_width)
     {
+
         std::cout << "Gpu Initialized - - - " << std::endl;
         int nDevices;
         cudaError_t err = cudaGetDeviceCount(&nDevices);
         if (err != cudaSuccess) printf("%s\n", cudaGetErrorString(err));
         loadImageParams(img_width, img_height);
-        struct HOGContext hogctx = HOGInitialize(logger, HOGParams, img_width, img_height, Cropparams);
-        struct HOFContext hofctx = HOFInitialize(logger, HOFParams, Cropparams);
-        
-        hog_ctx = (HOGContext*)malloc(sizeof(hogctx));
-        hof_ctx = (HOFContext*)malloc(sizeof(hofctx));
-        
-        memcpy(hog_ctx, &hogctx, sizeof(hogctx));
-        memcpy(hof_ctx, &hofctx, sizeof(hofctx));
-        //hoghof->startFrameSet = false;
+        hog_ctx = HOGInitialize(logger, HOGParams, img_width, img_height, Cropparams);
+        hof_ctx = HOFInitialize(logger, HOFParams, Cropparams);       
 
+        //hog_ctx = (HOGContext*)malloc(sizeof(hogctx));
+        //hof_ctx = (HOFContext*)malloc(sizeof(hofctx));
+        
+        //memcpy(hog_ctx, &hogctx, sizeof(hogctx));
+        //memcpy(hof_ctx, &hofctx, sizeof(hofctx));
+        //hoghof->startFrameSet = false;
+        
         //allocate output bytes HOG/HOF per frame
         hog_outputbytes = HOGOutputByteCount(hog_ctx);
         hof_outputbytes = HOFOutputByteCount(hof_ctx);
@@ -101,15 +101,19 @@ namespace bias
         HOFOutputShape(hof_ctx, &hofshape);
         hog_shape = hogshape;
         hof_shape = hofshape;
+
         size_t hog_num_elements = hog_shape.x * hog_shape.y * hog_shape.bin;
         size_t hof_num_elements = hof_shape.x * hof_shape.y * hof_shape.bin;
+#if 0        
+           std::cout << "hog_num_elements" << hog_num_elements << std::endl;
+           std::cout << "hof_num_elements" << hof_num_elements << std::endl;
+#endif
         hog_out.resize(hog_num_elements);
         hof_out.resize(hof_num_elements);
         hog_out_avg.resize(hog_num_elements, 0.0);
         hof_out_avg.resize(hof_num_elements, 0.0);
         hog_out_skip.resize(hog_num_elements, 0.0);
         hof_out_skip.resize(hof_num_elements, 0.0);
-        
 
     }
 
@@ -138,6 +142,7 @@ namespace bias
 
     void HOGHOF::initialize_HOGHOFParams()
     {
+
         loadHOGParams();
         if (HOGParams.nbins == 0)
             printf("HOG NOT Initialzied");
@@ -149,10 +154,12 @@ namespace bias
         loadCropParams();
         if (Cropparams.ncells == 0)
             printf("CROP NOT Initialzied");
+
     }
 
     void HOGHOF::resetHOGHOFVec()
     {
+
         size_t hog_num_elements = hog_shape.x * hog_shape.y * hog_shape.bin;
         size_t hof_num_elements = hof_shape.x * hof_shape.y * hof_shape.bin;
         if (hog_out.size() != 0)
@@ -467,7 +474,8 @@ namespace bias
     }
 
 
-    void HOGHOF::setLastInput() {
+    void HOGHOF::setLastInput() 
+    {
 
         std::cout << "vid HOGHOF" << std::endl;
         HOFSetLastInput(hof_ctx);
