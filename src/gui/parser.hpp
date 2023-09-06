@@ -23,6 +23,10 @@ namespace bias {
         int window_size = 5;
         bool debug = false;
         string comport = "";
+        unsigned long frameGrabAvgTime = 2500; // avg time to 
+        unsigned long framerate = 400;
+        int skip_latency = 4000; // time in us
+        double ts_match_thres = 1.0e-4; // ts match threshold
     };
     
     void print(CmdLineParams& cmdlineparams);

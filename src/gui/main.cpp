@@ -19,7 +19,7 @@ namespace bias {
 
         // place ':' in the beginning of the string so that program can 
         //tell between '?' and ':' 
-        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:p:d:n:")) != -1)
+        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:p:d:n:g:r:m:q:")) != -1)
         {
             switch (opt)
             {
@@ -58,6 +58,18 @@ namespace bias {
                 break;
             case 'p':
                 cmdlineparams.comport = optarg;
+                break;
+            case 'g':
+                cmdlineparams.frameGrabAvgTime = stoi(optarg);
+                break;
+            case 'r':
+                cmdlineparams.framerate = stoi(optarg);
+                break;
+            case 'm':
+                cmdlineparams.ts_match_thres = stod(optarg);
+                break;
+            case 'q':
+                cmdlineparams.skip_latency = stoi(optarg);
                 break;
             case ':':
                 printf("Required argument %c", opt);
@@ -113,7 +125,7 @@ int main (int argc, char *argv[])
     {
         QString msgTitle("Camera Enumeration Error");
         QString msgText("No cameras found");
-        QMessageBox::critical(0, msgTitle,msgText);
+        QMessageBox::critical(0, msgTitle, msgText);
         return 0;
     }
 

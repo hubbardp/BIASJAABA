@@ -85,6 +85,10 @@ namespace bias
             bool isVideo;
             bool isSkip;
             bool isDebug;
+            unsigned long frameGrabAvgTime;
+            int skip_latency;
+            unsigned long framerate;
+            double ts_match_thres;
 
             // moved from imagegrgab run method to public
             bool isFirst = true;

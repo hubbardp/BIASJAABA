@@ -65,6 +65,12 @@ namespace bias {
         isSkip = cmdlineparams.isSkip;
         isDebug = cmdlineparams.debug;
         nframes_ = cmdlineparams.numframes;
+        frameGrabAvgTime = cmdlineparams.frameGrabAvgTime; // uint in us: time taken for frame
+                                                           //to reach from camera to system buffers
+        framerate = cmdlineparams.framerate;
+        skip_latency = cmdlineparams.skip_latency;
+        ts_match_thres = cmdlineparams.ts_match_thres;
+
         std::cout << "Imagegrab Debug :" << isDebug << "Numframes: " << nframes_ << std::endl;
             
         initialize(cameraNumber, cameraPtr, newImageQueuePtr,
@@ -250,31 +256,29 @@ namespace bias {
         uint64_t start_delay, end_delay = 0;
         uint64_t expTime = 0, curTime = 0, prev_curTime = 0;
         uint64_t curTime_vid = 0, expTime_vid = 0, delta_now=0;
-        uint64_t frameGrabAvgTime, frameCaptureTime, avg_frameLatSinceFirstFrame = 0;
-        int64_t wait_thres, avgwait_time, delay_framethres;
+        uint64_t frameCaptureTime, avg_frameLatSinceFirstFrame = 0;
+        int64_t  wait_thres, avgwait_time, delay_framethres;
         StampedImage stampImg;
         int numtrailFrames = 0;
-        float cur_latency, avg_latency;
         
         uInt32 nidaq_ts_curr=0, nidaq_ts_init = 0;
 
         QString errorMsg("no message");
 
         if (isVideo) {
-            frameCaptureTime = 2500;
+            frameCaptureTime = static_cast<uint64>((1.0 / (float)framerate) * 1000000);
             frameCaptureTime_nidaq = 125;
-            wait_thres = static_cast<int64_t>(100);
+            wait_thres = static_cast<int64>(100);
             avgwait_time = 0;
             int num_skipFrames = 0;
         }
         else {
  
-            cur_latency = 0.0;
-            avg_latency = 3.00;
-            frameGrabAvgTime = 3000;
-            frameCaptureTime = 2500;
-            wait_thres = static_cast<int64_t>(1000);
+            frameCaptureTime = static_cast<uint64>((1.0/(float)framerate) * 1000000);  // unit useconds
+            wait_thres = static_cast<int64>(skip_latency - frameGrabAvgTime);
             avgwait_time = 0;
+            std::cout << "Wait thres skip " << wait_thres << "frameCaptureTime " << frameCaptureTime 
+                       <<  "frameGrabTime " << frameGrabAvgTime << "nidaq ts match thres " << ts_match_thres << std::endl;
         }
 
         if (!ready_)
@@ -396,7 +400,6 @@ namespace bias {
             done = stopped_;
             releaseLock();
 
-            //start_process = gettime_->getPCtime();
             // sync nidaq trigger start/stop without thread restart
             if (startTrigger)
             {
@@ -478,7 +481,7 @@ namespace bias {
                         }
                         else {
                             //std::cout << "Get Image" << std::endl;
-                            nidaq_task_->getCamtrig(frameCount);
+                            //nidaq_task_->getCamtrig(frameCount);
 
                         }
 
@@ -512,24 +515,8 @@ namespace bias {
                     continue;
                 }
                    
-                //get nidaq trigger timestamp
-                if (nidaq_task_ != nullptr && startUpCount >= numStartUpSkip_
-                    && nidaq_task_->istrig) {
-
-                    nidaq_task_->getCamtrig(frameCount);
-                    if (frameCount == 0)
-                    {
-                        nidaq_ts_init = nidaq_task_->cam_trigger[frameCount];
-                    }
-                    nidaq_ts_curr = nidaq_task_->cam_trigger[frameCount];
-                }
-                else {
-                    if (isDebug) {
-                        //std::cout << "DEBUG:: Nidaq is stopped " << cameraNumber_ << std::endl;
-                    }
-                }
-
                 //grab images from camera 
+                //start_process = gettime_->getPCtime();
                 cameraPtr_->acquireLock();
                 try
                 {
@@ -548,6 +535,7 @@ namespace bias {
                     error = true;
                 }
                 cameraPtr_->releaseLock();
+                //end_process = gettime_->getPCtime();
 
             }
             
@@ -577,13 +565,29 @@ namespace bias {
                 timeStampDbl = convertTimeStampToDouble(timeStamp, timeStampInit);
                 cameraFrameCount = convertCameraFrameCount(cam_frameId, cameraFrameCountInit);
 
+                //set the initial nidaq ts
+                if (nidaq_task_ != nullptr && startUpCount >= numStartUpSkip_
+                    && nidaq_task_->istrig) {
+
+                    //get nidaq trigger timestamp
+                    nidaq_task_->getCamtrig(frameCount);
+                    if (frameCount == 0)
+                    {
+                        nidaq_ts_init = nidaq_task_->cam_trigger[frameCount];
+                    }
+                    nidaq_ts_curr = nidaq_task_->cam_trigger[frameCount];
+                }
+                else {
+                    if (isDebug) {
+                        //std::cout << "DEBUG:: Nidaq is stopped " << cameraNumber_ << std::endl;
+                    }
+                }
 
                 if (isFirstTrial) {
                     // Skip some number of frames on startup - recommened by Point Grey. 
                     // During this time compute running avg to get estimate of frame interval
                     if (startUpCount < numStartUpSkip_)
                     {
-                        std::cout << "Estimating the fps " << std::endl;
                         double dt = timeStampDbl - timeStampDblLast;
                         if (startUpCount == MIN_STARTUP_SKIP)
                         {
@@ -659,6 +663,7 @@ namespace bias {
                 // Test Configuration
                 //------------------------------------------------------------------------
                 if (!isVideo) {
+                    
                     if (nidaq_task_ != nullptr && nidaq_task_->istrig){
                         if (frameCount == 0) {
                             
@@ -686,13 +691,15 @@ namespace bias {
                 }
 
                 // match nidaq ts to camera timestamp
-                errorMatch = matchNidaqToCameraTimeStamp(nidaq_ts_curr, nidaq_ts_init, timeStampDbl, frameCount);
-                if (!errorMatch) {
+                if (!isVideo) {
+                    errorMatch = matchNidaqToCameraTimeStamp(nidaq_ts_curr, nidaq_ts_init, timeStampDbl, frameCount);
+                    if (!errorMatch) {
 
-                    errorMsg = QString::fromStdString("Nidaq ts does not match camera ts ");
-                    errorMsg += QString::number(frameCount);
-                    emit nidaqtsMatchError(0, errorMsg);
+                        errorMsg = QString::fromStdString("Nidaq ts does not match camera ts ");
+                        errorMsg += QString::number(frameCount);
+                        emit nidaqtsMatchError(0, errorMsg);
 
+                    }
                 }
 
                 if (isVideo) {
@@ -703,11 +710,12 @@ namespace bias {
                     //std::cout << "Avg wait time" << avgwait_time << std::endl;
                 } 
                 else {
-                    avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime;
-                    expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
-                    curTime = (static_cast<uint64_t>(read_ondemand_) * 20);
+                    avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime; // time in us
+                    expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame; //time in us
+                    curTime = (static_cast<uint64_t>(read_ondemand_) * 20); //time in us
                     avgwait_time = curTime - expTime;
                 }
+                
       
                 if (isSkip) {
                     // Set image data timestamp, framecount and frame interval estimate
@@ -1055,12 +1063,12 @@ namespace bias {
         double nidaqDbl = 0.0;
         double ts_diff = 0.0;
         nidaqDbl = static_cast<double>((nidaqts_curr - nidaqts_init) * (1/nidaq_task_->fast_counter_rate));
-        ts_diff = abs(nidaqDbl - camts_curr);
+        ts_diff = abs(nidaqDbl - camts_curr); // difference in seconds
         
         //std::cout << "Nidaq match camera ts "  << 
         //    nidaqDbl <<  " "  << camts_curr << " "  << ts_diff << " " << frameCount << std::endl;
 
-        if (ts_diff > (2.0e-5))
+        if (ts_diff > (ts_match_thres)) // threshold in seconds 
         {
             return false;
 

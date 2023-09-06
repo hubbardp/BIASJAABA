@@ -61,8 +61,8 @@ namespace bias{
             << "\nvisualize " << cmdlineparams.visualize
             << "\nnumframes " << cmdlineparams.numframes
             << "\nisskip " << cmdlineparams.isSkip
-            << "\n wait threshold" << cmdlineparams.wait_thres
-            << "\ nwindow_size " << cmdlineparams.window_size
+            << "\n wait threshold" << cmdlineparams.wait_thres // wait time between jaaba views for computing a score
+            << "\ nwindow_size " << cmdlineparams.window_size // averaging window size hoghof features
             << "\n DEBUG " << cmdlineparams.debug
             << "\n com port" << cmdlineparams.comport
             << std::endl;

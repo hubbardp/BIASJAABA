@@ -26,7 +26,7 @@ namespace bias {
 
         
         printf("half cycle time fast clock %f\n", half_period_cycle_fastclk);
-        printf("half cycle time fast clock %f\n", half_period_cycle_sampleclk);
+        printf("half cycle time sample clock %f\n", half_period_cycle_sampleclk);
 
         // initialize data buffers 
         for (int i = 0; i < bufsize_samp; ++i) {
