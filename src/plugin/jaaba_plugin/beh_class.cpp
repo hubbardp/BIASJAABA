@@ -6,13 +6,14 @@
 #include <algorithm>
 #include <functional>
 #include <iomanip>
+#include <unordered_map>
 
 #define DEBUG 0
 
 namespace bias {
 
     //DEBUG variables test
-    static int test_frameCount=1347;
+    static int test_frameCount=0;
     static int test_classifier_index=0;
 
     beh_class::beh_class(QWidget *parent): QDialog(parent) {}
@@ -36,6 +37,14 @@ namespace bias {
 
             //initialize other arrays
             translated_index.resize(num_beh);
+            translation_index_map_hog.resize(num_beh);
+            translation_index_map_hof.resize(num_beh);
+
+            for (int beh_id = 0; beh_id < num_beh; beh_id++)
+            {
+                translation_index_map_hog[beh_id] = {};
+                translation_index_map_hof[beh_id] = {};
+            }
             flag.resize(num_beh);
             finalscore.score.resize(num_beh,0);
             predScoreSide.score.resize(num_beh, 0);
@@ -452,7 +461,7 @@ namespace bias {
         x_out.close();
     }
 
-	void beh_class::getviewandfeature(HOGShape *shape_side, HOGShape *shape_front)
+	void beh_class::getviewandfeature(HOGShape *shape_side, HOGShape *shape_front, string view)
 	{
 		//shape of hist side
 		unsigned int side_x = shape_side->x;
@@ -466,10 +475,13 @@ namespace bias {
 
 		unsigned int feat_dim_side = shape_side->x * shape_side->y*shape_side->bin;
 		unsigned int feat_dim_front = shape_front->x* shape_front->y*shape_front->bin;
+
+#if DEBUG
 		//std::cout << "feat_dim_side = " << feat_dim_side << std::endl;
 		//std::cout << "feat_dim_front = " << feat_dim_front << std::endl;
 		//std::cout <<"limits: "<<"1 "<< feat_dim_side<<" "<< (feat_dim_side + feat_dim_front)
 		//	<< " " << ((2 * feat_dim_side) + feat_dim_front) << std::endl;
+#endif
 
 		size_t numWkCls = model[0].cls_alpha.size();
 		size_t num_beh = beh_present.size();
@@ -506,11 +518,208 @@ namespace bias {
 				}
 			}
 		}
+
+#if DEBUG
+        std::ofstream x_out_hog;
+        string filename_hog = "./translated_indexes_lift_hog_original.csv";
+        x_out_hog.open(filename_hog.c_str(), std::ios_base::app);
+
+        std::ofstream x_out_hof;
+        string filename_hof = "./translated_indexes_lift_hof_original.csv";
+        x_out_hof.open(filename_hof.c_str(), std::ios_base::app);
+
+        int translated_dim, dim;
+        for (int beh_id = 0; beh_id < 1; beh_id++) {
+            for (int i = 0; i < numWkCls; i++)
+            {
+                if (i == 0) {
+                    x_out_hog << "classifier index " << "," << "translated index " << "\n";
+                    x_out_hof << "classifier index " << "," << "translated_index " << "\n";
+                }
+
+                if ((this->flag[beh_id][i] == 3) || (this->flag[beh_id][i] == 4)) 
+                {
+                    translated_dim = this->translated_index[beh_id][i];
+                    x_out_hog << i << "," << translated_dim;
+                    x_out_hog << "\n";
+                }
+
+                if ((this->flag[beh_id][i] == 1) || (this->flag[beh_id][i] == 2))
+                {
+                    translated_dim = this->translated_index[beh_id][i];
+                    x_out_hof << i << "," << translated_dim;
+                    x_out_hof << "\n";
+                }
+                
+            }
+            x_out_hog << "\n";
+            x_out_hof << "\n";
+        }
+
+        x_out_hog.close();
+        x_out_hof.close();
+#endif
 	}
+
+    /*void beh_class::getviewandfeature(HOGShape *shape_viewA, HOGShape *shape_viewB, string view)
+    {
+
+        //shape of hist side
+        unsigned int viewA_x = shape_viewA->x;
+        unsigned int viewA_y = shape_viewA->y;
+        unsigned int viewA_bin = shape_viewA->bin;
+
+        //shape of hist front 
+        unsigned int viewB_x = shape_viewB->x;
+        unsigned int viewB_y = shape_viewB->y;
+        unsigned int viewB_bin = shape_viewB->bin;
+
+        unsigned int feat_dim_viewA = shape_viewA->x * shape_viewA->y * shape_viewA->bin;
+        unsigned int feat_dim_viewB = shape_viewB->x * shape_viewB->y * shape_viewB->bin;
+
+        size_t numWkCls = model[0].cls_alpha.size();
+        size_t num_beh = beh_present.size();
+        int cls_dim = 0;
+        int cuda_feat_dim = 0;
+        int flag=0;
+
+
+        for (int beh_id = 0; beh_id < num_beh; beh_id++)
+        {
+            if (beh_present[beh_id]) {
+
+                for (int cls_id = 0; cls_id < numWkCls; cls_id++)
+                {
+                    cls_dim = this->model[beh_id].cls_dim[cls_id];
+                    cuda_feat_dim = cls_dim - 1;
+                    flag = 0;
+
+                    if (cls_dim > 0 && cls_dim <= feat_dim_viewA && (view == "viewA")) {
+                        translation_index_map_hof[beh_id].insert(make_pair(cls_id, cuda_feat_dim ));
+                        flag = 1;
+                    }
+                    else if (cls_dim > feat_dim_viewA && cls_dim <= (feat_dim_viewA + feat_dim_viewB)
+                             && (view == "viewB")) {
+                        cuda_feat_dim -= feat_dim_viewA;
+                        translation_index_map_hof[beh_id].insert(make_pair(cls_id, cuda_feat_dim));
+                        flag = 2;
+                    }
+                    else if (cls_dim > (feat_dim_viewA + feat_dim_viewB) 
+                             && cls_dim <= ((2 * feat_dim_viewA) + feat_dim_viewB)
+                             && (view == "viewA")) {
+                        cuda_feat_dim -= (feat_dim_viewA + feat_dim_viewB);
+                        translation_index_map_hog[beh_id].insert(make_pair(cls_id, cuda_feat_dim));
+                        flag = 3;
+                    }
+                    else if(cls_dim > ((2 * feat_dim_viewA) + feat_dim_viewB) && (view == "viewB")){
+
+                        cuda_feat_dim -= ((2 * feat_dim_viewA) + feat_dim_viewB);
+                        translation_index_map_hog[beh_id].insert(make_pair(cls_id, cuda_feat_dim));
+                        flag = 4;
+                    }
+                    else {
+                        //nothing to do
+                    }
+                    
+                    //this->translated_index[beh_id][cls_id] = cuda_feat_dim;
+#if DEBUG
+                    this->flag[beh_id][cls_id] = flag; // this data struct only for debugging purposes
+#endif
+                }
+            }
+        }
+
+#if DEBUG
+        if (view == "viewA")
+        {
+            std::ofstream x_out_hog_viewA;
+            string filename_hog_viewA = "./translated_indexes_lift_hog_viewA.csv";
+            x_out_hog_viewA.open(filename_hog_viewA.c_str(), std::ios_base::app);
+
+            std::ofstream x_out_hof_viewA;
+            string filename_hof_viewA = "./translated_indexes_lift_hof_viewA.csv";
+            x_out_hof_viewA.open(filename_hof_viewA.c_str(), std::ios_base::app);
+
+            int translated_dim, dim;
+            for (int beh_id = 0; beh_id < 1; beh_id++) {
+                for (int i = 0; i < numWkCls; i++)
+                {
+                    if (i == 0) {
+                        x_out_hog_viewA << "classifier index " << "," << "translated index " << "\n";
+                        x_out_hof_viewA << "classifier index " << "," << "translated_index " << "\n";
+
+                    }
+
+                    if (this->flag[beh_id][i] == 3)
+                    {
+                        translated_dim = this->translation_index_map_hog[beh_id][i];
+                        x_out_hog_viewA << i << "," << translated_dim;
+                        x_out_hog_viewA << "\n";
+                    }
+
+                    if ((this->flag[beh_id][i] == 1))
+                    {
+                        translated_dim = this->translation_index_map_hof[beh_id][i];
+                        x_out_hof_viewA << i << "," << translated_dim;
+                        x_out_hof_viewA << "\n";
+                    }
+
+                }
+                x_out_hog_viewA << "\n";
+                x_out_hof_viewA << "\n";
+            }
+            x_out_hog_viewA.close();
+            x_out_hof_viewA.close();
+        }
+
+        if (view == "viewB")
+        {
+            std::ofstream x_out_hog_viewB;
+            string filename_hog_viewB = "./translated_indexes_lift_hog_viewB.csv";
+            x_out_hog_viewB.open(filename_hog_viewB.c_str(), std::ios_base::app);
+
+            std::ofstream x_out_hof_viewB;
+            string filename_hof_viewB = "./translated_indexes_lift_hof_viewB.csv";
+            x_out_hof_viewB.open(filename_hof_viewB.c_str(), std::ios_base::app);
+
+            int translated_dim, dim;
+            for (int beh_id = 0; beh_id < 1; beh_id++) {
+                for (int i = 0; i < numWkCls; i++)
+                {
+                    if (i == 0) {
+                        x_out_hog_viewB << "classifier index " << "," << "translated index " << "\n";
+                        x_out_hof_viewB << "classifier index " << "," << "translated_index " << "\n";
+                    }
+
+                    if (this->flag[beh_id][i] == 4)
+                    {
+                        translated_dim = this->translation_index_map_hog[beh_id][i];
+                        x_out_hog_viewB << i << "," << translated_dim;
+                        x_out_hog_viewB << "\n";
+                    }
+
+                    if ((this->flag[beh_id][i] == 2))
+                    {
+                        translated_dim = this->translation_index_map_hof[beh_id][i];
+                        x_out_hof_viewB << i << "," << translated_dim;
+                        x_out_hof_viewB << "\n";
+                    }
+
+                }
+                x_out_hog_viewB << "\n";
+                x_out_hof_viewB << "\n";
+            }
+            x_out_hog_viewB.close();
+            x_out_hof_viewB.close();
+        }
+
+#endif
+
+    }*/
 
     // boost score from a single stump of the model 
     void beh_class::boost_compute(float &scr, std::vector<float> &features, int ind,
-			   int num_feat, int feat_len, int dir, float tr, float alpha, int framecount, int cls_idx ) 
+			   int dir, float tr, float alpha, int framecount, int cls_idx)
     {
       
 		float addscores = 0.0;
@@ -525,15 +734,15 @@ namespace bias {
 				addscores = -1;
 			}
 #if DEBUG
-            if (framecount == test_frameCount && cls_idx == test_classifier_index)
-                printf("%.7f: feat val, %7f: addscore val, %.7f: tr,  %.7f scr before", features[ind], addscores, tr,scr);
+            //if (framecount == test_frameCount && cls_idx == test_classifier_index)
+            //    printf("%.7f: feat val, %7f: addscore val, %.7f: tr,  %.7f scr before", features[ind], addscores, tr,scr);
 #endif
             addscores = addscores * alpha;
             scr = scr + addscores;
 
 #if DEBUG
-            if (framecount == test_frameCount && cls_idx == test_classifier_index)
-                printf("%.7f scr after, %.7f", scr, alpha);
+            //if (framecount == test_frameCount && cls_idx == test_classifier_index)
+            //    printf("%.7f scr after, %.7f", scr, alpha);
 #endif
 
 		} else {
@@ -547,23 +756,127 @@ namespace bias {
 				addscores = -1;
 			}
 #if DEBUG
-            if (framecount == test_frameCount && cls_idx == test_classifier_index)
-                printf("%.7f: feat val, %.7f: addscore val, %.7f: tr,  %.7f scr before", features[ind], addscores, tr, scr);
+            //if (framecount == test_frameCount && cls_idx == test_classifier_index)
+            //    printf("%.7f: feat val, %.7f: addscore val, %.7f: tr,  %.7f scr before", features[ind], addscores, tr, scr);
 #endif			
             addscores = addscores * alpha;
 			scr = scr + addscores;
 
 #if DEBUG
-            if (framecount == test_frameCount && cls_idx == test_classifier_index)
-                printf("%.7f scr after, %.7f",  scr, alpha);
+            //if (framecount == test_frameCount && cls_idx == test_classifier_index)
+            //    printf("%.7f scr after, %.7f",  scr, alpha);
 #endif
 		}
 
     }
 
+
+    // frameCount and view are passed to this function as arguments only for testing purposes
+    void beh_class::boost_classify(std::vector<float> &scr, std::vector<float> &hog_features,
+        std::vector<float> &hof_features, struct HOGShape *shape_viewA,
+        struct HOFShape *shape_viewB,
+        std::vector<boost_classifier> &model, int frameCount, string view)
+    {
+        int dir, dim;
+        float alpha, tr;
+        float scr_before;
+        int index_hog, index_hof;
+        int cls_id;
+
+        size_t numWkCls = model[0].cls_alpha.size();
+        size_t num_beh = beh_present.size();
+        std::fill(scr.begin(), scr.end(), 0.0);
+        unordered_map<int,int>::iterator hof_it_start;
+        unordered_map<int, int>::iterator hog_it_start;
+
+        unordered_map<int, int>::iterator hof_it_end;
+        unordered_map<int, int>::iterator hog_it_end;
+
+#if DEBUG
+        bool haveprinted_hof = false;
+        bool haveprinted_hog = false;
+        std::ofstream x_out;
+        string file = "test_" + view + ".csv";
+
+        if (frameCount == test_frameCount)
+            x_out.open(file.c_str(), std::ios_base::app);
+#endif
+
+        for (int beh_id = 0; beh_id < num_beh; beh_id++)
+        {
+            if (beh_present[beh_id])
+            {
+               
+                if (!translation_index_map_hof.empty()) {
+                    hof_it_start = translation_index_map_hof[beh_id].begin();
+                    hof_it_end = translation_index_map_hof[beh_id].end();
+                }
+
+                if (!translation_index_map_hog.empty())
+                {
+                    hog_it_start = translation_index_map_hog[beh_id].begin();
+                    hog_it_end = translation_index_map_hog[beh_id].end();
+                }
+
+                // compute score for hof features
+                for (auto it_hof = hof_it_start; it_hof != hof_it_end; it_hof++)
+                {
+                    cls_id = it_hof->first;
+                    index_hof = it_hof->second;
+
+                    dim = model[beh_id].cls_dim[cls_id];
+                    dir = model[beh_id].cls_dir[cls_id];
+                    alpha = model[beh_id].cls_alpha[cls_id];
+                    tr = model[beh_id].cls_tr[cls_id];
+
+                    boost_compute(scr[beh_id], hof_features, index_hof, dir, tr, alpha, frameCount, cls_id);
+
+#if DEBUG
+                    if (!haveprinted_hof && frameCount == test_frameCount) {
+
+                        x_out << cls_id << "," << scr[beh_id] << "\n";
+                    }
+#endif
+                }
+
+                //// compute score for hog features
+                for(auto it_hog = hog_it_start; it_hog != hog_it_end; it_hog++)
+                {
+                    cls_id = it_hog->first;
+                    index_hog = it_hog->second;
+
+                    dim = model[beh_id].cls_dim[cls_id];
+                    dir = model[beh_id].cls_dir[cls_id];
+                    alpha = model[beh_id].cls_alpha[cls_id];
+                    tr = model[beh_id].cls_tr[cls_id];
+
+                    boost_compute(scr[beh_id], hog_features, index_hog, dir, tr, alpha, frameCount, cls_id);
+
+#if DEBUG
+                    if (!haveprinted_hog && frameCount == test_frameCount) {
+
+                        x_out << cls_id << "," << scr[beh_id] << "\n";
+                    }
+#endif
+                }
+
+#if DEBUG
+                haveprinted_hof = true;
+                haveprinted_hog = true;
+#endif
+            }
+        }
+
+#if DEBUG
+        if (frameCount == test_frameCount)
+            x_out.close();
+#endif
+
+    }
+
     void beh_class::boost_classify_side(std::vector<float> &scr, std::vector<float> &hogs_features,
 			  std::vector<float> &hofs_features, struct HOGShape *shape_side,
-			  struct HOFShape *shape_front, int feat_len,
+			  struct HOFShape *shape_front,
 			  std::vector<boost_classifier> &model, int frameCount) 
     {
 		//std::cout << "Entered boost classify side " << std::endl;
@@ -597,7 +910,7 @@ namespace bias {
 
 #if DEBUG
         std::ofstream x_out;
-        string file = "test_side.csv";
+        string file = "test_side_original.csv";
         
         if(frameCount == test_frameCount)
             x_out.open(file.c_str(), std::ios_base::app);
@@ -626,8 +939,8 @@ namespace bias {
 					if(this->flag[ncls][midx] == 1) {  // book keeping to check which feature to choose
 
 						index = this->translated_index[ncls][midx];
-						boost_compute(scr[ncls], hofs_features, index, num_feat, feat_len, dir, tr, alpha,
-                            frameCount, midx);
+                        boost_compute(scr[ncls], hofs_features, index, dir, tr, alpha, frameCount, midx);
+                           
 
 #if DEBUG
 						if (!haveprinted_hof && frameCount == test_frameCount) {
@@ -650,8 +963,7 @@ namespace bias {
 
 						index = this->translated_index[ncls][midx];
 						num_feat = side_x * side_y * side_bin;
-						boost_compute(scr[ncls], hogs_features, index, num_feat, feat_len, dir, tr, alpha,
-                            frameCount, midx);
+                        boost_compute(scr[ncls], hogs_features, index, dir, tr, alpha, frameCount, midx);
 
 #if DEBUG
 						if (!haveprinted_hog && frameCount == test_frameCount) {
@@ -672,9 +984,10 @@ namespace bias {
 					} 
 
 				}
-                //haveprinted_hog = true;
-                //haveprinted_hof = true;
-
+#if DEBUG
+                haveprinted_hog = true;
+                haveprinted_hof = true;
+#endif
 			}
 
         }
@@ -686,7 +999,7 @@ namespace bias {
 
     void beh_class::boost_classify_front(std::vector<float> &scr, std::vector<float>& hogf_features,
         std::vector<float>& hoff_features, struct HOGShape *shape_side,
-        struct HOFShape *shape_front, int feat_len,
+        struct HOFShape *shape_front,
         std::vector<boost_classifier> &model, int frameCount)
     {
 		//std::cout << "Entered boost classify front " << std::endl;
@@ -720,7 +1033,7 @@ namespace bias {
         
 #if DEBUG
         std::ofstream x_out;
-        string file = "test_front.csv";
+        string file = "test_front_original.csv";
 
         if(frameCount == test_frameCount)
             x_out.open(file.c_str(), std::ios_base::app);
@@ -748,8 +1061,8 @@ namespace bias {
                     if (this->flag[ncls][midx] == 2) {  // book keeping to check which feature to choose
 
                         index = this->translated_index[ncls][midx];
-						boost_compute(scr[ncls], hoff_features, index, num_feat, feat_len, dir, tr, alpha,
-                            frameCount, midx);
+                        boost_compute(scr[ncls], hoff_features, index, dir, tr, alpha, frameCount, midx);
+                            
 #if DEBUG                        
 						if (!haveprinted_hof && frameCount == test_frameCount) {
 							/*std::cout << "front hof weak classifier = " << midx
@@ -771,8 +1084,7 @@ namespace bias {
                     else if (this->flag[ncls][midx] == 4) {
 
                         index = this->translated_index[ncls][midx];
-                        boost_compute(scr[ncls], hogf_features, index, num_feat, feat_len, dir, tr, alpha,
-                            frameCount, midx);
+                        boost_compute(scr[ncls], hogf_features, index, dir, tr, alpha, frameCount, midx);
 		
 #if DEBUG
 
@@ -794,8 +1106,10 @@ namespace bias {
                     }
 
                 }
-                //haveprinted_hog = true;
-                //haveprinted_hof = true;
+#if DEBUG
+                haveprinted_hog = true;
+                haveprinted_hof = true;
+#endif
 
             }
 

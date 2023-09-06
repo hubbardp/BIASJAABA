@@ -152,13 +152,26 @@ namespace bias {
     void JaabaPlugin::stop()
     {
         gpuInitialized = false;
-
+        
         if (isReceiver())
         {
             if (visualize) {
                 processScoresPtr_self->visplots->stop();
                 delete processScoresPtr_self->visplots;
             }
+
+            delete processScoresPtr_self->classifier;
+        }
+
+
+        if (!HOGHOF_self.isNull())
+        {
+            delete HOGHOF_self;
+        }
+
+        if (!processScoresPtr_self.isNull())
+        {
+            delete processScoresPtr_self;
         }
         
     }
@@ -627,8 +640,7 @@ namespace bias {
                                     hog_num_elements, hof_num_elements);
                       
                             }
-
-                            
+                  
                         }
 
                         if (processScoresPtr_self->classifier->isClassifierPathSet && isSender())
@@ -637,8 +649,9 @@ namespace bias {
                             processScoresPtr_self->classifier->boost_classify_front(processScoresPtr_self->classifier->predScoreFront.score,
                                 HOGHOF_self->hog_out_avg, HOGHOF_self->hof_out_avg,
                                 &HOGHOF_self->hog_shape, &HOGHOF_self->hof_shape,
-                                processScoresPtr_self->classifier->nframes, processScoresPtr_self->classifier->model,
+                                processScoresPtr_self->classifier->model,
                                 processedFrameCount);
+
 
                             time_now = gettime_->getPCtime();
                             processScoresPtr_self->classifier->predScoreFront.frameCount = processedFrameCount;
@@ -659,7 +672,7 @@ namespace bias {
                             processScoresPtr_self->classifier->boost_classify_side(processScoresPtr_self->classifier->predScoreSide.score,
                                 HOGHOF_self->hog_out_avg, HOGHOF_self->hof_out_avg,
                                 &HOGHOF_self->hog_shape, &HOGHOF_self->hof_shape,
-                                processScoresPtr_self->classifier->nframes, processScoresPtr_self->classifier->model,
+                                processScoresPtr_self->classifier->model,
                                 processedFrameCount);
 
                             time_now = gettime_->getPCtime();
@@ -669,12 +682,43 @@ namespace bias {
                             processScoresPtr_self->isProcessed_side = 1;
 
                             //processScoresPtr_self->write_score(output_feat_directory + "classifier_side.csv", processScoresPtr_self->classifier->predScoreSide);
-                            //std::cout << "Pushing to side queue" << std::endl;
                             sideScoreQueuePtr_->acquireLock();
                             sideScoreQueuePtr_->push(processScoresPtr_self->classifier->predScoreSide);
                             sideScoreQueuePtr_->releaseLock();
 
                         }
+#if 0
+                        processScoresPtr_self->classifier->boost_classify(processScoresPtr_self->classifier->predScore.score,
+                            HOGHOF_self->hog_out_avg, HOGHOF_self->hof_out_avg,
+                            &HOGHOF_self->hog_shape, &HOGHOF_self->hof_shape,
+                            processScoresPtr_self->classifier->model,
+                            processedFrameCount, view_);
+
+                        if (processScoresPtr_self->classifier->isClassifierPathSet && isReceiver())
+                        {
+                            time_now = gettime_->getPCtime();
+                            processScoresPtr_self->classifier->predScore.frameCount = processedFrameCount;
+                            processScoresPtr_self->classifier->predScore.score_side_ts = time_now;
+                            processScoresPtr_self->classifier->predScore.view = 1;
+                            processScoresPtr_self->isProcessed_side = 1;
+
+                            sideScoreQueuePtr_->acquireLock();
+                            sideScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);
+                            sideScoreQueuePtr_->releaseLock();
+                        }
+
+                        if (processScoresPtr_self->classifier->isClassifierPathSet && isSender())
+                        {
+                            time_now = gettime_->getPCtime();
+                            processScoresPtr_self->classifier->predScore.frameCount = processedFrameCount;
+                            processScoresPtr_self->classifier->predScore.score_front_ts = time_now;
+                            processScoresPtr_self->classifier->predScore.view = 2;
+
+                            frontScoreQueuePtr_->acquireLock();
+                            frontScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);
+                            frontScoreQueuePtr_->releaseLock();
+                        }
+#endif
 
                         processedFrameCount++;
                     }
@@ -691,7 +735,6 @@ namespace bias {
                     nidaq_task_->getNidaqTimeNow(read_ondemand);
 
                 }
-
             }
         }
 
@@ -1253,11 +1296,11 @@ namespace bias {
         gpuInitialized = false;
         
         processScoresPtr_self = new ProcessScores(this, mesPass, gettime_ , cmdlineparams);
-        processScoresPtr_partner = new ProcessScores(this, mesPass, gettime_, cmdlineparams);
+        //processScoresPtr_partner = new ProcessScores(this, mesPass, gettime_, cmdlineparams);
 
         // need to manually call delete to delete the above objects
         processScoresPtr_self->setAutoDelete(false);
-        processScoresPtr_partner->setAutoDelete(false);
+        //processScoresPtr_partner->setAutoDelete(false);
 
         if (visualize)
         {
@@ -1678,7 +1721,7 @@ namespace bias {
 				//processScoresPtr_self->classifier->translate_featureIndexes(&processScoresPtr_self->HOGHOF_self->hog_shape,
 				//	&partner_hogshape_, true);
                 processScoresPtr_self->classifier->getviewandfeature(&HOGHOF_self->hog_shape,
-                        &partner_hogshape_);
+                        &partner_hogshape_, view_);
             }
 
             if (isSender())
@@ -1690,7 +1733,7 @@ namespace bias {
 				//processScoresPtr_self->classifier->translate_featureIndexes(&partner_hogshape_,
 				//	&processScoresPtr_self->HOGHOF_self->hog_shape, false);
                 processScoresPtr_self->classifier->getviewandfeature(&partner_hogshape_,
-                        &HOGHOF_self->hog_shape);
+                        &HOGHOF_self->hog_shape, view_);
             }
         }
     }
