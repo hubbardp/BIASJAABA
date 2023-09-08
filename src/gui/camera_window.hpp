@@ -167,6 +167,7 @@ namespace bias
             float getFormat7PercentSpeed();
             QPointer<ImageGrabber> getImageGrabberPtr();
             QPointer<ImageDispatcher> getImageDispatcherPtr();
+            QPointer<ImageLogger> getImageLoggerPtr();
 
             //DEVEL
             bool vidFinsihed_reading;
@@ -433,6 +434,7 @@ namespace bias
             void resetPluginParams();
             void resetImageDispatchParams();
             void gpuInitializeAllJaabaPlugins();
+            void resetImageLoggerParams();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();

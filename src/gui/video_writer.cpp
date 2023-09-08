@@ -129,5 +129,7 @@ namespace bias
         return fileInfo;
     }
 
+    void VideoWriter::resetVideoWriterParams() {}
+
 
 } // namespace bias

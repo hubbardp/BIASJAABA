@@ -510,7 +510,7 @@ namespace bias
                     SLOT(imageLoggingError(unsigned int, QString))
                    );
 
-            threadPoolPtr_ -> start(imageLoggerPtr_);
+            //threadPoolPtr_ -> start(imageLoggerPtr_);
 
         } // if (logging_)
         
@@ -740,6 +740,11 @@ namespace bias
             threadPoolPtr_->start(pluginHandlerPtr_);
         }
 
+        if (isLoggingEnabled())
+        {
+            threadPoolPtr_->start(imageLoggerPtr_);
+        }
+
         isPluginStarted = true;
      
         rtnStatus.success = true;
@@ -765,6 +770,11 @@ namespace bias
             //pluginHandlerPtr_->acquireLock();
             pluginHandlerPtr_->stop();
             //pluginHandlerPtr_->releaseLock();
+        }
+
+        if (isLoggingEnabled())
+        {
+            imageLoggerPtr_->stop();
         }
 
         // initialize some plugin params for next trial  
@@ -974,6 +984,7 @@ namespace bias
 
         if (nidaq_task != nullptr) {
 
+            resetImageLoggerParams();
             resetPluginParams();
             resetImageGrabParams();
             resetImageDispatchParams();
@@ -8427,6 +8438,14 @@ namespace bias
         }
     }
 
+    QPointer<ImageLogger> CameraWindow::getImageLoggerPtr()
+    {
+        if (!imageLoggerPtr_.isNull())
+        {
+            return imageLoggerPtr_;
+        }
+    }
+
     void CameraWindow::connectSignals()
     {
         QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
@@ -8651,6 +8670,23 @@ namespace bias
                     currentPluginPtr->initializeParamsProcessScores();
             }
         }
+    }
+
+    void CameraWindow::resetImageLoggerParams()
+    {
+        QPointer<ImageLogger> imageLoggerPtr;
+
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                imageLoggerPtr = cameraWindowPtr->getImageLoggerPtr();
+                imageLoggerPtr->resetImageLoggerParams();
+                    
+            }
+        }
+
+
     }
 
     void CameraWindow::setStopNIDAQTriggerFlag()

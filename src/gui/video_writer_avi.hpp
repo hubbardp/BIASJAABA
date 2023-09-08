@@ -27,6 +27,7 @@ namespace bias
                     );
             virtual ~VideoWriter_avi();
             virtual void addFrame(StampedImage stampedImg);
+            virtual void resetVideoWriterParams();
 
             // Static variables 
             static const int DEFAULT_FOURCC;

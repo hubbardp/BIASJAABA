@@ -116,12 +116,11 @@ namespace bias
         // Set thread priority to normal
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
-        ThreadAffinityService::assignThreadAffinity(false,cameraNumber_);
+        //ThreadAffinityService::assignThreadAffinity(false,cameraNumber_);
 
         acquireLock();
         stopped_ = false;
         frameCount_ = 0;
-        int startUpCount = 0;
         releaseLock();
         cv::Mat tmp_img;
 
@@ -143,7 +142,6 @@ namespace bias
             if (logImageQueuePtr_ -> empty())
             {
                 logImageQueuePtr_ -> releaseLock();
-                std::cout << "inside......." << std::endl;
                 break;
 
             }
@@ -233,7 +231,7 @@ namespace bias
                     std::string filename = testConfig_->dir_list[0] + "/"
                         + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
                         + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                        + testConfig_->imagegrab_prefix
+                        + testConfig_->logging_prefix
                         + "_" + testConfig_->f2f_prefix + "cam"
                         + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
 
@@ -248,7 +246,7 @@ namespace bias
                     std::string filename = testConfig_->dir_list[0] + "/"
                         + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
                         + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                        + testConfig_->imagegrab_prefix
+                        + testConfig_->logging_prefix
                         + "_" + testConfig_->nidaq_prefix + "cam"
                         + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
 
@@ -262,7 +260,7 @@ namespace bias
                     string filename = testConfig_->dir_list[0] + "/"
                         + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
                         + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                        + testConfig_->imagegrab_prefix
+                        + testConfig_->logging_prefix
                         + "_" + testConfig_->queue_prefix + "cam"
                         + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
 
@@ -291,6 +289,15 @@ namespace bias
         }
     
     }  // void ImageLogger::run()
+
+    void ImageLogger::resetImageLoggerParams()
+    {
+        stopped_ = false;
+        frameCount_ = 0;
+
+        videoWriterPtr_->resetVideoWriterParams();
+
+    }
 
 
 } // namespace bias

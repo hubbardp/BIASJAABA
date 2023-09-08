@@ -231,5 +231,9 @@ namespace bias
         }
     }
 
+    void VideoWriter_avi::resetVideoWriterParams()
+    {
+        isFirst_ = true;
+    }
 } // namespace bias
 

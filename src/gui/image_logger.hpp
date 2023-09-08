@@ -59,7 +59,8 @@ namespace bias
             void stop();
 
             unsigned int getLogQueueSize();
-
+            void resetImageLoggerParams();
+            
 
             // Debugging --------------------------
             //cv::Mat getBackgroundMembershipImage();

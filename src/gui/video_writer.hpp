@@ -27,6 +27,7 @@ namespace bias
             virtual cv::Size getSize() const;
             virtual unsigned int getFrameSkip() const;
             virtual void finish();
+            virtual void resetVideoWriterParams();
 
         signals:
             void imageLoggingError(unsigned int errorId, QString errorMsg);
