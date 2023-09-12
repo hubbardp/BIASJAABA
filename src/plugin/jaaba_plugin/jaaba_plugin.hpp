@@ -101,6 +101,7 @@ namespace bias
             string crop_file;
             string classifier_filename;
             int window_size;
+            int cuda_device;
 
 
         protected:

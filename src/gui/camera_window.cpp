@@ -982,10 +982,14 @@ namespace bias
         if(!imageGrabberPtr_->imagegrab_started)
             startThreadsAllCamerasTrigMode();
 
+        if (isLoggingEnabled())
+            resetImageLoggerParams();
+
+        if (isPluginEnabled())
+            resetPluginParams();
+
         if (nidaq_task != nullptr) {
 
-            resetImageLoggerParams();
-            resetPluginParams();
             resetImageGrabParams();
             resetImageDispatchParams();
 

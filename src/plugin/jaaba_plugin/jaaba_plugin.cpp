@@ -234,10 +234,7 @@ namespace bias {
             {
                 if (nDevices_ >= 2)
                 {
-                    if (view_ == "viewA")
-                        cudaSetDevice(0);
-                    else if (view_ == "viewB")
-                        cudaSetDevice(1);
+                    cudaSetDevice(cuda_device);
 
                     HOGHOF_self->initHOGHOF(image_width, image_height);
                     hog_num_elements = HOGHOF_self->hog_shape.x*
@@ -317,7 +314,7 @@ namespace bias {
         {
             if (nDevices_ >= 2)
             {
-                if (view_ == "viewA"){
+                /*if (view_ == "viewA"){
                     cudaSetDevice(0);
                     HOFTeardown(HOGHOF_self->hof_ctx);
                     HOGTeardown(HOGHOF_self->hog_ctx);
@@ -328,7 +325,12 @@ namespace bias {
                     HOFTeardown(HOGHOF_self->hof_ctx);
                     HOGTeardown(HOGHOF_self->hog_ctx);
                     cudaDeviceReset();
-                }
+                }*/
+
+                cudaSetDevice(cuda_device);
+                HOFTeardown(HOGHOF_self->hof_ctx);
+                HOGTeardown(HOGHOF_self->hog_ctx);
+                cudaDeviceReset();
                 std::cout << "gpu ctx deInit in " << view_ << std::endl;
                 
             }
@@ -451,15 +453,16 @@ namespace bias {
         if (view_ == "viewA")
         {
             prefix = "side";
-            if (nDevices_ >= 2)
-                cudaSetDevice(0);
+
         }
         else if(view_ == "viewB") 
         {
             prefix = "front";
-            if (nDevices_ >= 2)
-                cudaSetDevice(1);
+
         }
+
+        if (nDevices_ >= 2)
+            cudaSetDevice(cuda_device);
 
         if (isVideo) {
             frameGrabAvgTime = 2500;
@@ -1993,7 +1996,8 @@ namespace bias {
         camera_list = jab_conf.camera_serial_id;
         jab_crop_list = jab_conf.crop_file_list;
         window_size = jab_conf.window_size;
-
+        cuda_device = jab_conf.cuda_device;
+        
         camera_it = camera_list.begin();
 
         while (camera_it != camera_list.end())
@@ -2019,6 +2023,8 @@ namespace bias {
                 crop_file = crop_file_it->second;
             crop_file_it++;
         }
+
+        std::cout << "cuda device set in " << view_ <<  " " << cuda_device << std::endl;
         
         setupHOGHOF();
         setupClassifier();

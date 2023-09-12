@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include <QVariantMap>
+#include <QMessageBox>
 
 namespace bias {
 
@@ -17,6 +18,7 @@ namespace bias {
     const string JaabaConfig::DEFAULT_CLASSIFIER_FILE = "json_files/multiclassifier.mat";
     const string JaabaConfig::DEFAULT_CONFIG_FILE_DIR = "";
     const int JaabaConfig::DEFAULT_WINDOW_SIZE = 1;
+    const int JaabaConfig::DEFAULT_CUDA_DEVICE = 0;
 
     JaabaConfig::JaabaConfig()
     {
@@ -50,6 +52,7 @@ namespace bias {
         configMap.insert("classifier_filename", "");
         configMap.insert("config_file_dir", "");
         configMap.insert("window_size", 1);
+        configMap.insert("cuda_device", 0);
 
         return configMap;
     }
@@ -119,23 +122,22 @@ namespace bias {
         }
 
 
-        //read hof file from config
+        //read window size from config
         if (configMap.contains("window_size"))
         {
             if (configMap["window_size"].canConvert<QString>())
             {
                 window_size = configMap["window_size"].toInt();
-                std::cout << "Window size" << window_size << std::endl;
+     
             }
             else
             {
                 rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert hof file to string");
+                rtnStatus.appendMessage("unable to convert window size to int");
             }
         }
         
         //read camera views guids 
-
         if (configMap.contains("view"))
         {
             QVariantMap viewMap;
@@ -148,7 +150,7 @@ namespace bias {
             }
         }
 
-        //read crop liost from Map
+        //read crop list from Map
         if (configMap.contains("crop_file_list"))
         {
             QVariantMap cropListMap;
@@ -161,7 +163,19 @@ namespace bias {
             }
         }
 
-
+        //read cuda device from the list 
+        if(configMap.contains("cuda_device"))
+        {
+            if (configMap["cuda_device"].canConvert<QString>())
+            {
+                cuda_device = configMap["cuda_device"].toInt();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert cuda device to int");
+            }
+        }
+      
         return rtnStatus;
     }
 
