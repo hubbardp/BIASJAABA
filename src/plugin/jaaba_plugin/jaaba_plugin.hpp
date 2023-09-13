@@ -75,8 +75,8 @@ namespace bias
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
                                        std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
             
-            virtual void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
-                                       std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
+            virtual void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr,
+                                       std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr);
             //made it virtual void because of the need to access the function through base class pointer.
             virtual void gpuInit();
             virtual void gpuDeinit();
@@ -102,7 +102,9 @@ namespace bias
             string classifier_filename;
             int window_size;
             int cuda_device;
-
+            int num_behs;
+            vector<string> beh_names;
+ 
 
         protected:
  
@@ -126,8 +128,10 @@ namespace bias
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
-            std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
-            std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
+            //std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
+            //std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
+            std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr_;
+            std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr_;
 
             QSharedPointer<QList<QPointer<CameraWindow>>> cameraWindowPtrList_;
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
@@ -224,7 +228,7 @@ namespace bias
             //void updateWidgetsOnLoad();
             void initialize(CmdLineParams& cmdlineparams);
             void setupHOGHOF();
-            void setupClassifier();
+            void setupClassifier(const int& num_behs, vector<string>& beh_names);
             void connectWidgets();
             void detectEnabled();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);

@@ -25,8 +25,8 @@ namespace bias {
 
         vector<float>score = vector<float>(6,0.0);
         uint64_t score_ts = 0;
-        uint64_t score_side_ts = 0;
-        uint64_t score_front_ts = 0;
+        uint64_t score_viewA_ts = 0;
+        uint64_t score_viewB_ts = 0;
         unsigned int frameCount=0;
         int view = -1;
     };
@@ -44,7 +44,8 @@ namespace bias {
             static const string DEFAULT_CONFIG_FILE_DIR;
             static const int DEFAULT_WINDOW_SIZE;
             static const int DEFAULT_CUDA_DEVICE;
-
+            static const int DEFAULT_NUM_BEHS;
+            static const string DEFAULT_BEH_NAMES;
 
             //Jaaba parameters
             string config_file_dir = "";
@@ -55,6 +56,8 @@ namespace bias {
             string classifier_filename = "";
             int window_size;
             int cuda_device;
+            int num_behs;
+            string beh_names="";
             unordered_map<string, unsigned int> camera_serial_id;
             unordered_map<unsigned int, string> crop_file_list;
             

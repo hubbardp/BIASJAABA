@@ -46,8 +46,8 @@ namespace bias
             void setCameraNumber(unsigned int cameraNumber);
             void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
                                std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
-            void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
-                std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
+            void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr,
+                               std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr);
             void setPlugin(BiasPlugin *pluginPtr);
             cv::Mat getImage() const;
 
@@ -62,8 +62,8 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
             std::vector<unsigned int>skippedFrames_;
-            std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
-            std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
+            std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr_;
+            std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr_;
 
             void run();
             void setReadyState();

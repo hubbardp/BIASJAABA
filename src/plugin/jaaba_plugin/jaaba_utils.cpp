@@ -19,6 +19,8 @@ namespace bias {
     const string JaabaConfig::DEFAULT_CONFIG_FILE_DIR = "";
     const int JaabaConfig::DEFAULT_WINDOW_SIZE = 1;
     const int JaabaConfig::DEFAULT_CUDA_DEVICE = 0;
+    const int JaabaConfig::DEFAULT_NUM_BEHS = 6;
+    const string JaabaConfig::DEFAULT_BEH_NAMES = "Lift,Handopen,Grab,Supinate,Chew,Atmouth";
 
     JaabaConfig::JaabaConfig()
     {
@@ -28,6 +30,9 @@ namespace bias {
         crop_file = DEFAULT_CROP_FILE;
         classifier_filename = DEFAULT_CLASSIFIER_FILE;
         window_size = DEFAULT_WINDOW_SIZE;
+        cuda_device = DEFAULT_CUDA_DEVICE;
+        num_behs = DEFAULT_NUM_BEHS;
+        beh_names = DEFAULT_BEH_NAMES;
     }
 
     QVariantMap JaabaConfig::toMap()
@@ -53,6 +58,8 @@ namespace bias {
         configMap.insert("config_file_dir", "");
         configMap.insert("window_size", 1);
         configMap.insert("cuda_device", 0);
+        configMap.insert("num_behs", 6);
+        configMap.insert("beh_names","");
 
         return configMap;
     }
@@ -163,12 +170,39 @@ namespace bias {
             }
         }
 
-        //read cuda device from the list 
+        //read cuda device 
         if(configMap.contains("cuda_device"))
         {
             if (configMap["cuda_device"].canConvert<QString>())
             {
                 cuda_device = configMap["cuda_device"].toInt();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert cuda device to int");
+            }
+        }
+
+        //read number of behaviors 
+        if (configMap.contains("num_behaviors"))
+        {
+            if (configMap["num_behaviors"].canConvert<QString>())
+            {
+                num_behs = configMap["num_behaviors"].toInt();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert cuda device to int");
+            }
+        }
+
+        //read behavior names 
+        if (configMap.contains("behavior_names"))
+        {
+            if (configMap["behavior_names"].canConvert<QString>())
+            {
+                beh_names = configMap["behavior_names"].toString().toStdString();
+          
             }
             else {
                 rtnStatus.success = false;

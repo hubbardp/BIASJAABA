@@ -37,15 +37,19 @@ namespace bias {
         PredData finalscore;
 
         string classifier_file;
-	    std::vector<boost_classifier> model = std::vector<boost_classifier>(6);
-	    std::vector<std::string> model_params{"alpha","dim","dir","error","tr"};
-        std::vector<std::string> beh{"Lift","Handopen","Grab","Supinate","Chew","Atmouth"};
-        std::vector<int>beh_present = {0,0,0,0,0,0};
-	    std::vector<std::vector<int>> translated_index; //translated mat style 2 C style indexing
-	    std::vector<std::vector<int>> flag; // book kepping for features
-		std::vector<int>translated_featureindexes;//translated mat style 2 C style indexing
-        std::vector<unordered_map<int, int>> translation_index_map_hog;
-        std::vector<unordered_map<int, int>> translation_index_map_hof;
+        vector<boost_classifier> model;
+	    vector<string> model_params{"alpha","dim","dir","error","tr"};
+        //vector<string> beh{"Lift","Handopen","Grab","Supinate","Chew","Atmouth"};
+                                     
+        int num_behs;
+        vector<string>beh_names; // need these to open Groups from hdf5 file
+        vector<int>beh_present = {0,0,0,0,0,0};
+        vector<char>behavior_output_signal;
+	    vector<vector<int>> translated_index; //translated mat style 2 C style indexing
+	    vector<vector<int>> flag; // book kepping for features
+		vector<int>translated_featureindexes;//translated mat style 2 C style indexing
+        vector<unordered_map<int, int>> translation_index_map_hog;
+        vector<unordered_map<int, int>> translation_index_map_hof;
         beh_class(QWidget *parent);
 
 	    void allocate_model();

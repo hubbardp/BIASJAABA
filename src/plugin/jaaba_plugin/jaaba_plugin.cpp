@@ -453,12 +453,10 @@ namespace bias {
         if (view_ == "viewA")
         {
             prefix = "side";
-
         }
         else if(view_ == "viewB") 
         {
             prefix = "front";
-
         }
 
         if (nDevices_ >= 2)
@@ -620,9 +618,7 @@ namespace bias {
                             //std::cout << view_ << " image received in " << cameraNumber_ << std::endl;
                             
                             HOGHOF_self->img.buf = greyImage.ptr<float>(0);
-                            //start_process = gettime_->getPCtime();
                             HOGHOF_self->genFeatures(frameCount_);
-                            //end_process = gettime_->getPCtime();
 
                             if (saveFeat) {
                                     
@@ -646,7 +642,38 @@ namespace bias {
                   
                         }
 
+                        processScoresPtr_self->classifier->boost_classify(processScoresPtr_self->classifier->predScore.score,
+                            HOGHOF_self->hog_out_avg, HOGHOF_self->hof_out_avg,
+                            &HOGHOF_self->hog_shape, &HOGHOF_self->hof_shape,
+                            processScoresPtr_self->classifier->model,
+                            processedFrameCount, view_);
+
+                        processScoresPtr_self->classifier->predScore.frameCount = processedFrameCount;
+                        time_now = gettime_->getPCtime();
+
+                        if (processScoresPtr_self->classifier->isClassifierPathSet && isReceiver())
+                        {
+
+                            processScoresPtr_self->classifier->predScore.view = 1;
+                            processScoresPtr_self->classifier->predScore.score_viewA_ts = time_now;
+
+                            selfScoreQueuePtr_->acquireLock();
+                            selfScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);
+                            selfScoreQueuePtr_->releaseLock();
+                        }
+
                         if (processScoresPtr_self->classifier->isClassifierPathSet && isSender())
+                        {
+                            processScoresPtr_self->classifier->predScore.view = 2;
+                            processScoresPtr_self->classifier->predScore.score_viewB_ts = time_now;
+
+                            partnerScoreQueuePtr_->acquireLock();
+                            partnerScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);
+                            partnerScoreQueuePtr_->releaseLock();
+                        }
+
+                        // obsolete code
+                        /*if (processScoresPtr_self->classifier->isClassifierPathSet && isSender())
                         {
 
                             processScoresPtr_self->classifier->boost_classify_front(processScoresPtr_self->classifier->predScoreFront.score,
@@ -654,11 +681,11 @@ namespace bias {
                                 &HOGHOF_self->hog_shape, &HOGHOF_self->hof_shape,
                                 processScoresPtr_self->classifier->model,
                                 processedFrameCount);
-
+                            //std::cout << "Scr in Jaaba " << processScoresPtr_self->classifier->predScoreFront.score[0] << std::endl;
 
                             time_now = gettime_->getPCtime();
                             processScoresPtr_self->classifier->predScoreFront.frameCount = processedFrameCount;
-                            processScoresPtr_self->classifier->predScoreFront.score_front_ts = time_now;
+                            processScoresPtr_self->classifier->predScoreFront.score_viewB_ts = time_now;
                             processScoresPtr_self->classifier->predScoreFront.view = 2;
 
                             //std::cout << "Pushing to Front queue" << std::endl;
@@ -677,10 +704,11 @@ namespace bias {
                                 &HOGHOF_self->hog_shape, &HOGHOF_self->hof_shape,
                                 processScoresPtr_self->classifier->model,
                                 processedFrameCount);
+                            std::cout << "Scr in Jaaba " << processScoresPtr_self->classifier->predScoreSide.score[0] << std::endl;
 
                             time_now = gettime_->getPCtime();
                             processScoresPtr_self->classifier->predScoreSide.frameCount = processedFrameCount;
-                            processScoresPtr_self->classifier->predScoreSide.score_side_ts = time_now;
+                            processScoresPtr_self->classifier->predScoreSide.score_viewA_ts = time_now;
                             processScoresPtr_self->classifier->predScoreSide.view = 1;
                             processScoresPtr_self->isProcessed_side = 1;
 
@@ -689,39 +717,7 @@ namespace bias {
                             sideScoreQueuePtr_->push(processScoresPtr_self->classifier->predScoreSide);
                             sideScoreQueuePtr_->releaseLock();
 
-                        }
-#if 0
-                        processScoresPtr_self->classifier->boost_classify(processScoresPtr_self->classifier->predScore.score,
-                            HOGHOF_self->hog_out_avg, HOGHOF_self->hof_out_avg,
-                            &HOGHOF_self->hog_shape, &HOGHOF_self->hof_shape,
-                            processScoresPtr_self->classifier->model,
-                            processedFrameCount, view_);
-
-                        if (processScoresPtr_self->classifier->isClassifierPathSet && isReceiver())
-                        {
-                            time_now = gettime_->getPCtime();
-                            processScoresPtr_self->classifier->predScore.frameCount = processedFrameCount;
-                            processScoresPtr_self->classifier->predScore.score_side_ts = time_now;
-                            processScoresPtr_self->classifier->predScore.view = 1;
-                            processScoresPtr_self->isProcessed_side = 1;
-
-                            sideScoreQueuePtr_->acquireLock();
-                            sideScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);
-                            sideScoreQueuePtr_->releaseLock();
-                        }
-
-                        if (processScoresPtr_self->classifier->isClassifierPathSet && isSender())
-                        {
-                            time_now = gettime_->getPCtime();
-                            processScoresPtr_self->classifier->predScore.frameCount = processedFrameCount;
-                            processScoresPtr_self->classifier->predScore.score_front_ts = time_now;
-                            processScoresPtr_self->classifier->predScore.view = 2;
-
-                            frontScoreQueuePtr_->acquireLock();
-                            frontScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);
-                            frontScoreQueuePtr_->releaseLock();
-                        }
-#endif
+                        }*/
 
                         processedFrameCount++;
                     }
@@ -1419,24 +1415,28 @@ namespace bias {
     }
 
 
-    void JaabaPlugin::setupClassifier() 
+    void JaabaPlugin::setupClassifier(const int& num_behs, vector<string>& beh_names) 
     {
        
-        if (mesPass && isReceiver())
+        /*if (mesPass && isReceiver())
         {
             beh_class *cls = new beh_class(this);
             processScoresPtr_self->classifier = cls;
             processScoresPtr_self->classifier->classifier_file = config_file_dir + classifier_filename;
+            //processScoresPtr_self->classifier->num_behs = num_behs;
+            //processScoresPtr_self->classifier->beh_names = beh_names;
             processScoresPtr_self->classifier->allocate_model();
             processScoresPtr_self->classifier->loadclassifier_model();
                           
-        }
+        }*/
 
         if (!mesPass)
         {
             beh_class *cls = new beh_class(this);
             processScoresPtr_self->classifier = cls;
             processScoresPtr_self->classifier->classifier_file = config_file_dir + classifier_filename;
+            processScoresPtr_self->classifier->num_behs = num_behs;
+            processScoresPtr_self->classifier->beh_names = beh_names;
             processScoresPtr_self->classifier->allocate_model();
             processScoresPtr_self->classifier->loadclassifier_model();
     
@@ -1754,7 +1754,7 @@ namespace bias {
         {
             processScoresPtr_self->isProcessed_front = 1;
             processScoresPtr_self->acquireLock();
-            processScoresPtr_self->frontScoreQueuePtr_->push(predScore);
+            processScoresPtr_self->partnerScoreQueuePtr_->push(predScore);
             processScoresPtr_self->releaseLock();
            
         } 
@@ -1880,10 +1880,7 @@ namespace bias {
             }
             
         }
-
-//#if DEBUG     
-       //time_stamps1.resize(testConfig_->numFrames, 0.0);
-//#endif        
+       
     }
 
     void JaabaPlugin::refill_testVec()
@@ -1939,21 +1936,41 @@ namespace bias {
         
     }
 
-    void JaabaPlugin::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
-                                    std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr)
+    void JaabaPlugin::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr,
+                                    std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr)
     {
 
-        sideScoreQueuePtr_ = sideScoreQueuePtr;
-        frontScoreQueuePtr_ = frontScoreQueuePtr;
+        if (selfScoreQueuePtr != nullptr) 
+        {
+            selfScoreQueuePtr_ = selfScoreQueuePtr;
+        }
+        else 
+        {
+            QString errMsgTitle = QString("setScore Queue");
+            QString errMsgText = QString("score queue self is null ");
+            QMessageBox::critical(this, errMsgTitle, errMsgText);
+        }
+
+        if (partnerScoreQueuePtr != nullptr)
+        {
+            partnerScoreQueuePtr_ = partnerScoreQueuePtr;
+        }
+        else 
+        {
+            QString errMsgTitle = QString("setScore Queue");
+            QString errMsgText = QString("score queue partner is null ");
+            QMessageBox::critical(this, errMsgTitle, errMsgText);
+        }
         std::cout << "Score Queue set in JAABA for cameranumber: \n" << cameraNumber_ <<  std::endl;
         
         if (processScoresPtr_self != nullptr)
         {
 
-            //processScoresPtr_self->initialize(mesPass, gettime_, cmdlineparams_);
-
             // setQueue for processScores thread 
-            processScoresPtr_self->setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
+            processScoresPtr_self->setScoreQueue(selfScoreQueuePtr_, partnerScoreQueuePtr_);
+            
+            if(isReceiver())
+                processScoresPtr_self->initSerialOutputPort();
         }
     }
 
@@ -1997,9 +2014,14 @@ namespace bias {
         jab_crop_list = jab_conf.crop_file_list;
         window_size = jab_conf.window_size;
         cuda_device = jab_conf.cuda_device;
-        
+        num_behs = jab_conf.num_behs;
+
+        std::cout << "num behs " << num_behs;
+        std::cout << "cuda device set in " << view_ << " " << cuda_device << std::endl;
+
         camera_it = camera_list.begin();
 
+        // map camera guid names to camera view
         while (camera_it != camera_list.end())
         {
             
@@ -2015,6 +2037,7 @@ namespace bias {
            camera_it++;
         }
 
+        // map camera guid names to crop file name
         crop_file_it = jab_crop_list.begin();
         while (crop_file_it != jab_crop_list.end())
         {
@@ -2024,10 +2047,20 @@ namespace bias {
             crop_file_it++;
         }
 
-        std::cout << "cuda device set in " << view_ <<  " " << cuda_device << std::endl;
+        //extract behavior names
+        string behavior_names = jab_conf.beh_names;
+        stringstream behnamestream(behavior_names);
+        string cur_beh;
+        while(!behnamestream.eof())
+        {
+            getline(behnamestream , cur_beh , ',');
+            beh_names.push_back(cur_beh);
+            //std::cout << cur_beh << std::endl;
+        }
+       
         
         setupHOGHOF();
-        setupClassifier();
+        setupClassifier(num_behs, beh_names);
         if (cameraNumber_ == 0)
             std::cout << "all side setup done\n" << std::endl;
         else if (cameraNumber_ == 1)
@@ -2248,8 +2281,8 @@ namespace bias {
 
         for (unsigned int frm_id = 0; frm_id < numFrames; frm_id++)
         {
-            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_side_ts
-                << "," << pred_score[frm_id].score_front_ts << "," << pred_score[frm_id].score[0]
+            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_viewA_ts
+                << "," << pred_score[frm_id].score_viewB_ts << "," << pred_score[frm_id].score[0]
                 << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
                 "\n";
         }

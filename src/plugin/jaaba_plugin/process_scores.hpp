@@ -51,6 +51,7 @@ namespace bias
         RtnStatus connectTriggerDev(QSerialPortInfo portInfo);
         void refreshPortList();
         RtnStatus initPort(string portName);
+        //void trigger(char output_signal);
         void trigger();
         void disconnectTriggerDev();
     };
@@ -98,8 +99,8 @@ namespace bias
            PredData predScore;
            PredData predScorePartner;
            PredData predScoreFinal;
-           std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
-           std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
+           std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr_;
+           std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr_;
            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
 
            std::vector<int64_t> frame_read_stamps; // frame read pass timings
@@ -145,6 +146,7 @@ namespace bias
            void writeAllFeatures(string filename, vector<float>& feat_out,
                int feat_size);
            void setTrialNum(string trialnum);
+           void initSerialOutputPort();
 
         private :
 
@@ -159,7 +161,11 @@ namespace bias
            //QQueue<FrameData> senderImageQueue_;
            //QQueue<FrameData> receiverImageQueue_;
 
+           SerialPortOutput portOutput;
+
            void run();
+           void clearQueues();
+           void triggerOnClassifierOutput(PredData& classifierPredScore, int frameCount);
 
         signals:
 

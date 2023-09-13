@@ -364,7 +364,7 @@ namespace bias
         //set nidaq pointer for cam 1
         if (cameraNumber_ == 1)
         {
-            setScoreQueue();
+            setScoreQueue(); //pass the shared score queue ptrs to all the camera windows 
             QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
             if (partnerCameraWindowPtr->nidaq_task != nullptr) {
                 nidaq_task = partnerCameraWindowPtr->nidaq_task;
@@ -526,12 +526,12 @@ namespace bias
             
             // clear score queues
             skippedFramesPluginPtr_->clear();
-            sideScoreQueuePtr_->clear();
-            frontScoreQueuePtr_->clear();
+            selfScoreQueuePtr_->clear();
+            partnerScoreQueuePtr_->clear();
 
             pluginHandlerPtr_ -> setCameraNumber(cameraNumber_);
             pluginHandlerPtr_ -> setImageQueue(pluginImageQueuePtr_, skippedFramesPluginPtr_);
-            pluginHandlerPtr_-> setScoreQueue(sideScoreQueuePtr_, frontScoreQueuePtr_);
+            pluginHandlerPtr_-> setScoreQueue(selfScoreQueuePtr_, partnerScoreQueuePtr_);
             
             pluginHandlerPtr_ -> setPlugin(currentPluginPtr);
             
@@ -3292,8 +3292,8 @@ namespace bias
         pluginImageQueuePtr_ = std::make_shared<LockableQueue<StampedImage>>();
         skippedFramesPluginPtr_ = std::make_shared<LockableQueue<unsigned int>>();
         if (cameraNumber_ == 0) {
-            sideScoreQueuePtr_ = std::make_shared<LockableQueue<PredData>>();
-            frontScoreQueuePtr_ = std::make_shared<LockableQueue<PredData>>();
+            selfScoreQueuePtr_ = std::make_shared<LockableQueue<PredData>>();
+            partnerScoreQueuePtr_ = std::make_shared<LockableQueue<PredData>>();
         }
         setDefaultFileDirs();
         currentVideoFileDir_ = defaultVideoFileDir_;
@@ -8515,16 +8515,16 @@ namespace bias
     void CameraWindow::setScoreQueue()
     {
         QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
-        if (partnerCameraWindowPtr->sideScoreQueuePtr_ != nullptr) {
-            sideScoreQueuePtr_ = partnerCameraWindowPtr->sideScoreQueuePtr_;
+        if (partnerCameraWindowPtr->selfScoreQueuePtr_ != nullptr) {
+            selfScoreQueuePtr_ = partnerCameraWindowPtr->selfScoreQueuePtr_;
             printf(" Queue set - %d\n", cameraNumber_);
         }
         else {
             printf(" Queue not set - %d\n", cameraNumber_);
         }
 
-        if (partnerCameraWindowPtr->frontScoreQueuePtr_ != nullptr) {
-            frontScoreQueuePtr_ = partnerCameraWindowPtr->frontScoreQueuePtr_;
+        if (partnerCameraWindowPtr->partnerScoreQueuePtr_ != nullptr) {
+            partnerScoreQueuePtr_ = partnerCameraWindowPtr->partnerScoreQueuePtr_;
             printf(" Queue set - %d\n", cameraNumber_);
         }
         else {

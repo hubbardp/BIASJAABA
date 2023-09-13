@@ -9,9 +9,7 @@
 
 namespace bias {
 
-
     // public 
- 
     ProcessScores::ProcessScores(QObject *parent, bool mesPass,
                                  std::shared_ptr<Lockable<GetTime>> getTime,
                                  CmdLineParams& cmdlineparams) : QObject(parent)
@@ -21,16 +19,13 @@ namespace bias {
         
         // this is defined separately here because it is initialised when constructor
         // is called but some variables need to be reinitialized when multiple trials of the plugin
-        //are run. this is the variable that does not need to be reinitialized foe every trial
+        //are run. this is the variable that does not need to be reinitialized for every trial
         
         //isHOGHOFInitialised = false;
         stopped_ = true;
         isSide = false;
         isFront = false;
         
-        //frame_read_stamps.resize(2798,0);
-        //predScoreFront_ = &classifier->predScoreFront;
-        //predScoreSide_ = &classifier->predScoreSide;
 
     }
 
@@ -64,36 +59,7 @@ namespace bias {
         wait_threshold = cmdlineparams.wait_thres;
         portName = cmdlineparams.comport;
         
-        if (sideScoreQueuePtr_ != nullptr) {
-            if (!sideScoreQueuePtr_->empty()){
-                sideScoreQueuePtr_->acquireLock();
-                sideScoreQueuePtr_->clear();
-                sideScoreQueuePtr_->releaseLock();
-                std::cout << "Side Queue Cleared " << std::endl;
-            }
-            else {
-                std::cout << "Side queue is empty" << std::endl;
-            }
-        }
-        else {
-            std::cout << "Side Score NULL" << std::endl;
-        }
-
-        if (frontScoreQueuePtr_ != nullptr) {
-            if (!frontScoreQueuePtr_->empty()) {
-                frontScoreQueuePtr_->acquireLock();
-                frontScoreQueuePtr_->clear();
-                frontScoreQueuePtr_->releaseLock();
-                std::cout << "Front Queue Cleared " << std::endl;
-            }
-            else {
-                std::cout << "Front queue is empty" << std::endl;
-            }
-            
-        }
-        else {
-            std:cout << "Front Score NULL" << std::endl;
-        }
+        clearQueues();
 
     }
    
@@ -153,13 +119,15 @@ namespace bias {
 
     }*/
 
-    void ProcessScores::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
-        std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr)
+
+    void ProcessScores::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr,
+        std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr)
     {
-        sideScoreQueuePtr_ = sideScoreQueuePtr;
-        frontScoreQueuePtr_ = frontScoreQueuePtr;
+        selfScoreQueuePtr_ = selfScoreQueuePtr;
+        partnerScoreQueuePtr_ = partnerScoreQueuePtr;
         std::cout << "Score Queue set in ProcessScore " <<  std::endl;
     }
+
 
     void ProcessScores::visualizeScores(vector<float>& scr_vec)
     {
@@ -177,30 +145,65 @@ namespace bias {
         visplots->livePlotSignalVec_Atmouth.append(double(scr_vec[5]));
         visplots->livePlotPtr_->show();
     }
-          
+
+
+    void ProcessScores::setTrialNum(string trialnum)
+    {
+        trial_num_ = trialnum;
+        testConfigEnabled_ = 1;
+
+        scores_filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
+
+    }
+
+    void ProcessScores::initSerialOutputPort()
+    {
+        // initialize the serial port output
+        const  bool outputTrigger = true;
+
+        if (outputTrigger) {
+            std::cout << "In ProcessScores constructor, calling initPort.\n";
+            if (!portOutput.initPort(portName).success) {
+                std::cout << "Error initializing serial port\n";
+            }
+        }
+    }
+
+    /// Private methods
+
+    void ProcessScores::triggerOnClassifierOutput(PredData& classifierPredScore, int frameCount)
+    {
+        
+        SerialPortOutput portOutput;
+        const double classifierThresh = 0.0;
+
+        for (auto classifierNum = 0; classifierNum < 1; classifierNum++)
+        {
+            
+            if (classifierPredScore.score[classifierNum] > classifierThresh) {
+
+                //std::cout << classifierNum << " Frame "  << frameCount << std::endl;
+                portOutput.trigger();// classifier->behavior_output_signal[classifierNum]);
+            }
+        }
+    }
+        
+
     void ProcessScores::run()
     {
 
-        SerialPortOutput portOutput;
+        
         const int classifierNum = 0;
         const double classifierThresh = 0.0;
         const bool DEBUGTRIGGER = false;
         const int debugTriggerSkip = 100;
-        const bool outputTrigger = false;
+        const bool outputTrigger = true;
 
         bool done = false;
         uint64_t time_now;
         double score_ts;
         uint64_t ts_last_score = INT_MAX, cur_time = 0;
         
-//#if isVidInput
-        /*((if (isVideo) {
-             wait_threshold = 1500;
-//#else if
-        }else {
-            wait_threshold = 1500;
-        }*/
-//#endif
         
         if (testConfigEnabled_)
             scores_filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
@@ -211,13 +214,6 @@ namespace bias {
         QThread *thisThread = QThread::currentThread();
         thisThread -> setPriority(QThread::NormalPriority);
           
-        // initialize the serial port output
-        if (outputTrigger) {
-            std::cout << "In ProcessScores constructor, calling initPort.\n";
-            if (!portOutput.initPort(portName).success) {
-                std::cout << "Error initializing serial port\n";
-            }
-        }
 
         acquireLock();
         stopped_ = false;
@@ -259,22 +255,22 @@ namespace bias {
                 skipFront = false;
                 skipSide = false;
 
-                if (sideScoreQueuePtr_->empty() && frontScoreQueuePtr_->empty()) {
+                if (selfScoreQueuePtr_->empty() && partnerScoreQueuePtr_->empty()) {
 
                     continue;
 
                 } 
-                else if (!sideScoreQueuePtr_->empty() && !frontScoreQueuePtr_->empty()) {
+                else if (!selfScoreQueuePtr_->empty() && !partnerScoreQueuePtr_->empty()) {
 
                     //std::cout << "Both queues Filled" << std::endl;
 
-                    frontScoreQueuePtr_->acquireLock();
-                    predScorePartner = frontScoreQueuePtr_->front();
-                    frontScoreQueuePtr_->releaseLock();
+                    partnerScoreQueuePtr_->acquireLock();
+                    predScorePartner = partnerScoreQueuePtr_->front();
+                    partnerScoreQueuePtr_->releaseLock();
 
-                    sideScoreQueuePtr_->acquireLock();
-                    predScore = sideScoreQueuePtr_->front();
-                    sideScoreQueuePtr_->releaseLock();
+                    selfScoreQueuePtr_->acquireLock();
+                    predScore = selfScoreQueuePtr_->front();
+                    selfScoreQueuePtr_->releaseLock();
 
                     //std::cout << "PredScore FrameCount " << predScore.frameCount
                     //    << "PredScore Partner FrameCount " << predScorePartner.frameCount
@@ -284,7 +280,7 @@ namespace bias {
                     if (scoreCount < predScore.frameCount)
                     {
                         //if (predScore.frameCount > predScorePartner.frameCount)
-                        //    frontScoreQueuePtr_->pop();
+                        //    partnerScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }
@@ -293,18 +289,18 @@ namespace bias {
                     if (scoreCount < predScorePartner.frameCount)
                     {
                         //if (predScorePartner.frameCount > predScore.frameCount)
-                        //    sideScoreQueuePtr_->pop();
+                        //    selfScoreQueuePtr_->pop();
                         scoreCount++;
                         continue;
                     }
                     
                     if (scoreCount > predScore.frameCount) {
-                        sideScoreQueuePtr_->pop();
+                        selfScoreQueuePtr_->pop();
                         continue;
                     }
 
                     if (scoreCount > predScorePartner.frameCount){
-                        frontScoreQueuePtr_->pop();
+                        partnerScoreQueuePtr_->pop();
                         continue;
                     }
                     
@@ -316,13 +312,13 @@ namespace bias {
                         skipSide = false;
                         skipFront = false;
 
-                        sideScoreQueuePtr_->acquireLock();
-                        sideScoreQueuePtr_->pop();
-                        sideScoreQueuePtr_->releaseLock();
+                        selfScoreQueuePtr_->acquireLock();
+                        selfScoreQueuePtr_->pop();
+                        selfScoreQueuePtr_->releaseLock();
 
-                        frontScoreQueuePtr_->acquireLock();
-                        frontScoreQueuePtr_->pop();
-                        frontScoreQueuePtr_->releaseLock();
+                        partnerScoreQueuePtr_->acquireLock();
+                        partnerScoreQueuePtr_->pop();
+                        partnerScoreQueuePtr_->releaseLock();
          
                         if (isVideo) {
                             time_now = gettime->getPCtime();
@@ -332,23 +328,20 @@ namespace bias {
                         else {
                             nidaq_task_->getNidaqTimeNow(read_ondemand_);
                             scores[scoreCount].score_ts = read_ondemand_;
-                            //scores[scoreCount-1].score_ts = read_ondemand_;
-                        }
 
+                        }
 
                         scores[scoreCount].score = classifier->finalscore.score;
                         scores[scoreCount].frameCount = predScore.frameCount;
                         scores[scoreCount].view = 3;
                         
-                        scores[scoreCount].score_side_ts = predScore.score_side_ts;
-                        scores[scoreCount].score_front_ts = predScorePartner.score_front_ts;
+                        scores[scoreCount].score_viewA_ts = predScore.score_viewA_ts;
+                        scores[scoreCount].score_viewB_ts = predScorePartner.score_viewB_ts;
                                               // - max(predScore.score_ts, predScorePartner.score_ts);
-                        //write_score("classifierscr.csv", scoreCount, scores[scoreCount-1]);
 
-                        if(visualize){
-
+                        if(visualize)
+                        {
                             visualizeScores(classifier->finalscore.score);
-                
                         }
 
                         //KB add output code here
@@ -360,10 +353,11 @@ namespace bias {
                                 }
                             }
                             else {
-                                if (classifier->finalscore.score[classifierNum] > classifierThresh) {
-                                    std::cout << scoreCount << std::endl;
+                                if (classifier->finalscore.score[0] > classifierThresh) {
+                                    //std::cout << scoreCount << std::endl;
                                     portOutput.trigger();
                                 }
+                                //triggerOnClassifierOutput(classifier->finalscore, scoreCount);
                             }
                         }
 
@@ -371,15 +365,15 @@ namespace bias {
                                              
                     }
                     
-                }else if (!frontScoreQueuePtr_->empty()) {
+                }else if (!partnerScoreQueuePtr_->empty()) {
 
-                    frontScoreQueuePtr_->acquireLock();
-                    predScorePartner = frontScoreQueuePtr_->front();
-                    frontScoreQueuePtr_->releaseLock();
+                    partnerScoreQueuePtr_->acquireLock();
+                    predScorePartner = partnerScoreQueuePtr_->front();
+                    partnerScoreQueuePtr_->releaseLock();
 
                     // check if this is not already a processed scoreCount
                     //if (scoreCount > predScorePartner.frameCount) {
-                    //    frontScoreQueuePtr_->pop();
+                    //    partnerScoreQueuePtr_->pop();
                     //    continue;
                     //}
 
@@ -387,7 +381,7 @@ namespace bias {
                         scoreCount++;
 
                     time_now = gettime->getPCtime();
-                    score_ts = predScorePartner.score_front_ts;
+                    score_ts = predScorePartner.score_viewB_ts;
                     
                     if ((time_now - score_ts) > wait_threshold)
                     {
@@ -395,15 +389,15 @@ namespace bias {
                     }
 
                 }
-                else if (!sideScoreQueuePtr_->empty()) {
+                else if (!selfScoreQueuePtr_->empty()) {
 
-                    sideScoreQueuePtr_->acquireLock();
-                    predScore = sideScoreQueuePtr_->front();
-                    sideScoreQueuePtr_->releaseLock();
+                    selfScoreQueuePtr_->acquireLock();
+                    predScore = selfScoreQueuePtr_->front();
+                    selfScoreQueuePtr_->releaseLock();
 
                     // check if this is not already a processed scoreCount
                     //if (scoreCount > predScore.frameCount) {
-                    //    sideScoreQueuePtr_->pop();
+                    //    selfScoreQueuePtr_->pop();
                     //    continue;
                     //}
 
@@ -411,7 +405,7 @@ namespace bias {
                         scoreCount++;
 
                     time_now = gettime->getPCtime();
-                    score_ts = predScore.score_side_ts;
+                    score_ts = predScore.score_viewA_ts;
                     
                     if ((time_now - score_ts) > wait_threshold)
                     {                       
@@ -428,30 +422,40 @@ namespace bias {
                         if (scoreCount == predScore.frameCount)
                         {
 
-                            sideScoreQueuePtr_->acquireLock();
-                            sideScoreQueuePtr_->pop();
-                            sideScoreQueuePtr_->releaseLock();
-
-                            //write_score("classifierscr.csv", scoreCount, predScore);
+                            selfScoreQueuePtr_->acquireLock();
+                            selfScoreQueuePtr_->pop();
+                            selfScoreQueuePtr_->releaseLock();
 
                             if (isVideo) {
                                 time_now = gettime->getPCtime();
                                 scores[scoreCount].score_ts = time_now;
                             }
                             else {
-                                //#else
                                 nidaq_task_->getNidaqTimeNow(read_ondemand_);
                                 scores[scoreCount].score_ts = read_ondemand_;
                             }
-                            //#endif
+
                             scores[scoreCount].score = predScore.score;
                             scores[scoreCount].frameCount = predScore.frameCount;
                             scores[scoreCount].view = 1;
-                            scores[scoreCount].score_side_ts = predScore.score_side_ts;
+                            scores[scoreCount].score_viewA_ts = predScore.score_viewA_ts;
 
-                            if (visualize) {
+                            if (visualize) 
+                            {
                                 visualizeScores(predScore.score);
                             }
+
+                            /*if (outputTrigger) {
+                                if (DEBUGTRIGGER) {
+                                    std::cout << scoreCount << std::endl;
+                                    if ((scoreCount%debugTriggerSkip) == 0) {
+                                        portOutput.trigger();
+                                    }
+                                }
+                                else {
+                                    triggerOnClassifierOutput(predScore);
+                                }
+                            }*/
                             
                             scoreCount++;
                         }
@@ -466,32 +470,42 @@ namespace bias {
                         if (scoreCount == predScorePartner.frameCount)
                         {
 
-                            frontScoreQueuePtr_->acquireLock();
-                            frontScoreQueuePtr_->pop();
-                            frontScoreQueuePtr_->releaseLock();
-                            //#if isVidInput                         
+                            partnerScoreQueuePtr_->acquireLock();
+                            partnerScoreQueuePtr_->pop();
+                            partnerScoreQueuePtr_->releaseLock();         
+
                             if (isVideo) {
                                 time_now = gettime->getPCtime();
                                 scores[scoreCount].score_ts = time_now;
                             }
                             else {
-                                //#else
+
                                 nidaq_task_->getNidaqTimeNow(read_ondemand_);
                                 scores[scoreCount].score_ts = read_ondemand_;
                             }
-                            //#endif
 
-                            //write_score("classifierscr.csv", scoreCount, predScorePartner);
                             time_now = gettime->getPCtime();
                             scores[scoreCount].score = predScorePartner.score;
                             scores[scoreCount].frameCount = predScorePartner.frameCount;
                             scores[scoreCount].view = 2;
-                            scores[scoreCount].score_front_ts = predScorePartner.score_front_ts;
+                            scores[scoreCount].score_viewB_ts = predScorePartner.score_viewB_ts;
 
                             if (visualize)
                             {
                                 visualizeScores(predScorePartner.score);
                             }
+
+                            /*if (outputTrigger) {
+                                if (DEBUGTRIGGER) {
+                                    std::cout << scoreCount << std::endl;
+                                    if ((scoreCount%debugTriggerSkip) == 0) {
+                                        portOutput.trigger();
+                                    }
+                                }
+                                else {
+                                    triggerOnClassifierOutput(predScorePartner);
+                                }
+                            }*/
        
                             scoreCount++;
 
@@ -514,28 +528,7 @@ namespace bias {
                 done = true;
                 releaseLock();*/
 
-
-                if (sideScoreQueuePtr_ != nullptr) {
-                    if (!sideScoreQueuePtr_->empty()) {
-                        sideScoreQueuePtr_->acquireLock();
-                        sideScoreQueuePtr_->clear();
-                        sideScoreQueuePtr_->releaseLock();
-                        std::cout << "Side Queue Cleared " << std::endl;
-                    }
-                    else {
-                        std::cout << "Side queue is empty" << std::endl;
-                    }
-                }
-
-                if (!frontScoreQueuePtr_->empty()) {
-                    frontScoreQueuePtr_->acquireLock();
-                    frontScoreQueuePtr_->clear();
-                    frontScoreQueuePtr_->releaseLock();
-                    std::cout << "Front Queue Cleared " << std::endl;
-                }
-                else {
-                    std::cout << "Front queue is empty" << std::endl;
-                }
+                clearQueues();
 
                 scoreCount = 0;
             }
@@ -547,6 +540,41 @@ namespace bias {
             portOutput.disconnectTriggerDev();
         }
 
+    }
+
+    void ProcessScores::clearQueues()
+    {
+        
+        if (selfScoreQueuePtr_ != nullptr) {
+            if (!selfScoreQueuePtr_->empty()) {
+                selfScoreQueuePtr_->acquireLock();
+                selfScoreQueuePtr_->clear();
+                selfScoreQueuePtr_->releaseLock();
+                std::cout << "Side Queue Cleared " << std::endl;
+            }
+            else {
+                std::cout << "Side queue is empty" << std::endl;
+            }
+        }
+        else {
+            std::cout << "Side Score NULL" << std::endl;
+        }
+
+        if (partnerScoreQueuePtr_ != nullptr) {
+            if (!partnerScoreQueuePtr_->empty()) {
+                partnerScoreQueuePtr_->acquireLock();
+                partnerScoreQueuePtr_->clear();
+                partnerScoreQueuePtr_->releaseLock();
+                std::cout << "Front Queue Cleared " << std::endl;
+            }
+            else {
+                std::cout << "Front queue is empty" << std::endl;
+            }
+
+        }
+        else {
+        std:cout << "Front Score NULL" << std::endl;
+        }
     }
 
 
@@ -574,6 +602,7 @@ namespace bias {
         }
     }
 
+
     void ProcessScores::write_score(std::string file,PredData& score)
     {
 
@@ -590,6 +619,7 @@ namespace bias {
 
     }
 
+
     void ProcessScores::write_score_final(std::string file, unsigned int numFrames,
                                           vector<PredData>& pred_score)
     {
@@ -600,8 +630,8 @@ namespace bias {
 
         for (unsigned int frm_id = 0; frm_id < numFrames; frm_id++)
         {
-            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_side_ts 
-                << "," << pred_score[frm_id].score_front_ts << "," 
+            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_viewA_ts 
+                << "," << pred_score[frm_id].score_viewB_ts << "," 
                 << setprecision(6) << pred_score[frm_id].score[0]
 				<< "," << setprecision(6) << pred_score[frm_id].score[1] 
                 << "," << setprecision(6) << pred_score[frm_id].score[2]
@@ -628,16 +658,7 @@ namespace bias {
 
     }
 
-
-    void ProcessScores::setTrialNum(string trialnum)
-    {
-        trial_num_ = trialnum;
-        testConfigEnabled_ = 1;
-
-        scores_filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
-        
-    }
-
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // copied from GrabDetectorPlugin::refreshPortList
     // todo: refactor code to share
@@ -660,6 +681,7 @@ namespace bias {
         }
     }
 
+
     RtnStatus SerialPortOutput::initPort(string portName) {
 
         RtnStatus rtnStatus;
@@ -672,6 +694,7 @@ namespace bias {
 
         for (QSerialPortInfo serialInfo : serialInfoList_)
         {
+            //std::cout << serialInfo.portName().toStdString() << std::endl;
             if (portName_ == serialInfo.portName())
             {
                 portFound = true;
@@ -698,6 +721,7 @@ namespace bias {
 
         return rtnStatus;
     }
+
 
     RtnStatus SerialPortOutput::connectTriggerDev(QSerialPortInfo portInfo)
     {
@@ -767,7 +791,9 @@ namespace bias {
         return rtnStatus;
     }
 
-    void SerialPortOutput::trigger() {
+
+    void SerialPortOutput::trigger() 
+    {
         if (pulseDevice_.isOpen())
         {
             std::cout << "Sending pulse to serial port\n";
@@ -777,6 +803,7 @@ namespace bias {
             std::cout << "Port not open, not sending pulse\n";
         }
     }
+
 
     void SerialPortOutput::disconnectTriggerDev()
     {

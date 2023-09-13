@@ -27,39 +27,51 @@ namespace bias {
         try 
         {
            
+            // allocate model vector
+            if (num_behs != 0)
+            {
+                model = std::vector<boost_classifier>(num_behs);
+            }
+            else
+            {
+                QString errMsgTitle = QString("allocate model");
+                QString errMsgText = QString("Number of behaviors is zero");
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+                
+            }
+
             // open classfier file
 			//int rank;
 			int ndims;
 			H5::H5File file(this->classifier_file, H5F_ACC_RDONLY);
 
             // check the number of behaviors present
-            size_t num_beh = beh.size();
+            //size_t num_behs = beh_names.size();
 
             //initialize other arrays
-            translated_index.resize(num_beh);
-            translation_index_map_hog.resize(num_beh);
-            translation_index_map_hof.resize(num_beh);
+            translated_index.resize(num_behs);
+            translation_index_map_hog.resize(num_behs);
+            translation_index_map_hof.resize(num_behs);
 
-            for (int beh_id = 0; beh_id < num_beh; beh_id++)
+            for (int beh_id = 0; beh_id < num_behs; beh_id++)
             {
                 translation_index_map_hog[beh_id] = {};
                 translation_index_map_hof[beh_id] = {};
             }
-            flag.resize(num_beh);
-            finalscore.score.resize(num_beh,0);
-            predScoreSide.score.resize(num_beh, 0);
-            predScoreFront.score.resize(num_beh, 0);
+            flag.resize(num_behs);
+            finalscore.score.resize(num_behs,0);
+            predScoreSide.score.resize(num_behs, 0);
+            predScoreFront.score.resize(num_behs, 0);
 
-            for(unsigned int nbeh =0;nbeh < num_beh;nbeh++)
+            for(unsigned int nbeh =0;nbeh < num_behs;nbeh++)
             {
-                if(pathExists(file.getId(), beh[nbeh]))
+                if(pathExists(file.getId(), beh_names[nbeh]))
                 {
-
                     try
                     {
                           
                         //allocate the model
-                        H5::Group multbeh = file.openGroup(beh[nbeh]);
+                        H5::Group multbeh = file.openGroup(beh_names[nbeh]);
                         H5::DataSet dataset = multbeh.openDataSet(this->model_params[0]);
                         H5::DataSpace dataspace = dataset.getSpace();
                         ndims = dataspace.getSimpleExtentDims(dims_out,NULL);
@@ -79,7 +91,7 @@ namespace bias {
                 
                         QString errMsgTitle = QString("Classifier Params");
                         QString errMsgText = QString("In parameter file, %1").arg(QString::fromStdString(this->classifier_file));
-                        errMsgText += QString(" Beh not present, %1").arg(QString::fromStdString(beh[nbeh]));
+                        errMsgText += QString(" Beh not present, %1").arg(QString::fromStdString(beh_names[nbeh]));
                         QMessageBox::critical(this, errMsgTitle, errMsgText);
 
                     }                   
@@ -111,8 +123,8 @@ namespace bias {
  
         RtnStatus rtnstatus; 
         std::string class_file = this->classifier_file;
-        size_t num_beh = beh_present.size();
-        for(int ncls = 0;ncls < num_beh;ncls++)
+        //size_t num_behs = beh_present.size();
+        for(int ncls = 0;ncls < num_behs;ncls++)
         {
             if(beh_present[ncls]) 
             {
@@ -123,12 +135,21 @@ namespace bias {
 
             }
         }
+
+        // allocate and assign classifier output signals
+        behavior_output_signal.resize(num_behs);
+        char out_signal[1];
+        for (auto i = 1; i <= num_behs; i++)
+        {
+            sprintf(out_signal, "%d", i);
+            behavior_output_signal.push_back(out_signal[0]);
+        }
     }
 
 
     //https://support.hdfgroup.org/HDF5/doc/cpplus_RM/readdata_8cpp-example.html
     RtnStatus beh_class::readh5(std::string filename, std::vector<std::string> &model_params, 
-                                boost_classifier &data_out, int beh_id) 
+                                boost_classifier& data_out, int beh_id) 
     {
 
         RtnStatus rtnstatus;
@@ -147,7 +168,7 @@ namespace bias {
             for(int paramid = 0; paramid < nparams; paramid++)
             {  
 				H5::H5File file(filename, H5F_ACC_RDONLY);
-                H5::Group multbeh = file.openGroup(beh[beh_id]);
+                H5::Group multbeh = file.openGroup(beh_names[beh_id]);
 				H5::DataSet dataset = multbeh.openDataSet(model_params[paramid]);
 				H5::DataSpace dataspace = dataset.getSpace();
 				rank = dataspace.getSimpleExtentNdims();
@@ -197,8 +218,8 @@ namespace bias {
 		int flag = 0;
 		size_t numWkCls = model[0].cls_alpha.size();
 
-        size_t num_beh = beh_present.size();
-        for(int ncls = 0;ncls < num_beh;ncls++)
+        //size_t num_behs = beh_present.size();
+        for(int ncls = 0;ncls < num_behs;ncls++)
         {
            
             if(beh_present[ncls])
@@ -426,10 +447,10 @@ namespace bias {
 
 
         /*size_t numWkCls = model[0].cls_alpha.size();
-        //size_t num_beh = beh_present.size();
-        size_t num_beh = 1;
+        //size_t num_behs = beh_present.size();
+        size_t num_behs = 1;
 
-        for (int ncls = 0; ncls < num_beh; ncls++)
+        for (int ncls = 0; ncls < num_behs; ncls++)
         {
             std::cout << "started writing " << std::endl;
             if (ncls == 0)
@@ -461,7 +482,8 @@ namespace bias {
         x_out.close();
     }
 
-	void beh_class::getviewandfeature(HOGShape *shape_side, HOGShape *shape_front, string view)
+    // obsolete version of this code
+	/*void beh_class::getviewandfeature(HOGShape *shape_side, HOGShape *shape_front, string view)
 	{
 		//shape of hist side
 		unsigned int side_x = shape_side->x;
@@ -484,12 +506,12 @@ namespace bias {
 #endif
 
 		size_t numWkCls = model[0].cls_alpha.size();
-		size_t num_beh = beh_present.size();
+		//size_t num_behs = beh_present.size();
 		int cls_dim = 0;
 		int flag = 0;
 		int cuda_feat_dim = 0;
 
-		for (int beh_id = 0; beh_id < num_beh; beh_id++)
+		for (int beh_id = 0; beh_id < num_behs; beh_id++)
 		{
 			if (beh_present[beh_id]) {
 				for (int cls_id = 0; cls_id < numWkCls; cls_id++)
@@ -513,7 +535,7 @@ namespace bias {
 					}
 					this->translated_index[beh_id][cls_id] = cuda_feat_dim;
 					this->flag[beh_id][cls_id] = flag;
-					//std::cout << "beh " << beh_id << ", cls_id = " << cls_id << ", cls_dim = " << cls_dim << ", flag = " << flag << std::endl;
+					//std::cout << "beh_names " << beh_id << ", cls_id = " << cls_id << ", cls_dim = " << cls_dim << ", flag = " << flag << std::endl;
                     //std::cout << "cuda dim " << cuda_feat_dim << ", matlab dim = " << cls_dim  << ", flag = " << flag << std::endl;
 				}
 			}
@@ -559,9 +581,9 @@ namespace bias {
         x_out_hog.close();
         x_out_hof.close();
 #endif
-	}
+	}*/
 
-    /*void beh_class::getviewandfeature(HOGShape *shape_viewA, HOGShape *shape_viewB, string view)
+    void beh_class::getviewandfeature(HOGShape *shape_viewA, HOGShape *shape_viewB, string view)
     {
 
         //shape of hist side
@@ -578,13 +600,13 @@ namespace bias {
         unsigned int feat_dim_viewB = shape_viewB->x * shape_viewB->y * shape_viewB->bin;
 
         size_t numWkCls = model[0].cls_alpha.size();
-        size_t num_beh = beh_present.size();
+        size_t num_behs = beh_present.size();
         int cls_dim = 0;
         int cuda_feat_dim = 0;
         int flag=0;
 
 
-        for (int beh_id = 0; beh_id < num_beh; beh_id++)
+        for (int beh_id = 0; beh_id < num_behs; beh_id++)
         {
             if (beh_present[beh_id]) {
 
@@ -715,7 +737,7 @@ namespace bias {
 
 #endif
 
-    }*/
+    }
 
     // boost score from a single stump of the model 
     void beh_class::boost_compute(float &scr, std::vector<float> &features, int ind,
@@ -784,7 +806,7 @@ namespace bias {
         int cls_id;
 
         size_t numWkCls = model[0].cls_alpha.size();
-        size_t num_beh = beh_present.size();
+        //size_t num_behs = beh_present.size();
         std::fill(scr.begin(), scr.end(), 0.0);
         unordered_map<int,int>::iterator hof_it_start;
         unordered_map<int, int>::iterator hog_it_start;
@@ -802,7 +824,7 @@ namespace bias {
             x_out.open(file.c_str(), std::ios_base::app);
 #endif
 
-        for (int beh_id = 0; beh_id < num_beh; beh_id++)
+        for (int beh_id = 0; beh_id < num_behs; beh_id++)
         {
             if (beh_present[beh_id])
             {
@@ -905,7 +927,7 @@ namespace bias {
 		//int flag = 0;
 
 		size_t numWkCls = model[0].cls_alpha.size();
-        size_t num_beh = beh_present.size();
+        //size_t num_behs = beh_present.size();
         std::fill(scr.begin(), scr.end(), 0.0);
 
 #if DEBUG
@@ -916,9 +938,9 @@ namespace bias {
             x_out.open(file.c_str(), std::ios_base::app);
 #endif
 		num_feat = side_x * side_y * side_bin;
-        //std::cout << "numWkCls " << numWkCls << "num_beh " << num_beh << std::endl;
+        //std::cout << "numWkCls " << numWkCls << "num_behs " << num_behs << std::endl;
 
-        for(int ncls = 0;ncls < num_beh;ncls++)
+        for(int ncls = 0;ncls < num_behs;ncls++)
         {
   
             if(beh_present[ncls])
@@ -1028,7 +1050,7 @@ namespace bias {
         //int flag = 0;
 
         size_t numWkCls = model[0].cls_alpha.size();
-        size_t num_beh = beh_present.size();
+        //size_t num_behs = beh_present.size();
         std::fill(scr.begin(), scr.end(), 0.0);
         
 #if DEBUG
@@ -1041,9 +1063,9 @@ namespace bias {
 
 		num_feat = front_x * front_y * front_bin;
 
-		//std::cout << "num_beh = " << num_beh << std::endl;
+		//std::cout << "num_behs = " << num_behs << std::endl;
 
-        for (int ncls = 0; ncls < num_beh; ncls++)
+        for (int ncls = 0; ncls < num_behs; ncls++)
         {
              
             if (beh_present[ncls])
@@ -1125,12 +1147,18 @@ namespace bias {
     void beh_class::addScores(std::vector<float>& scr_side, 
                               std::vector<float>& scr_front)
     {
-        size_t num_beh = beh_present.size();
-        for (int ncls = 0; ncls < num_beh; ncls++)
+        //size_t num_behs = beh_present.size();
+        for (int ncls = 0; ncls < num_behs; ncls++)
         {
             if (beh_present[ncls])
             {
-               
+#if 0
+                if (ncls == 0) {
+                    std::cout << "final scr  " << finalscore.score[0]
+                        << "scr side " << scr_side[0]
+                        << "Scr front " << scr_front[0] << std::endl;
+                }
+#endif
                 finalscore.score[ncls] = scr_side[ncls] + scr_front[ncls];
             }
         }

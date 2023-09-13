@@ -372,8 +372,8 @@ namespace bias
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr_;
             std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr_;
-            std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr_;
-            std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr_;
+            std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr_;
+            std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr_;
         
             //Test
             string trial_num;
