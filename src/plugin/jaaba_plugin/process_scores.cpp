@@ -59,6 +59,8 @@ namespace bias {
         wait_threshold = cmdlineparams.wait_thres;
         portName = cmdlineparams.comport;
         
+        frame_triggered = 0;
+
         clearQueues();
 
     }
@@ -174,18 +176,39 @@ namespace bias {
     void ProcessScores::triggerOnClassifierOutput(PredData& classifierPredScore, int frameCount)
     {
         
-        SerialPortOutput portOutput;
         const double classifierThresh = 0.0;
+        int numBehs = classifier->num_behs;
 
-        for (auto classifierNum = 0; classifierNum < 1; classifierNum++)
+        //reset the output every frame
+        std::fill(classifier->behavior_output_signal.begin(),
+            classifier->behavior_output_signal.end(), '0');
+
+        for (auto classifierNum = 0; classifierNum < numBehs; classifierNum++)
         {
-            
-            if (classifierPredScore.score[classifierNum] > classifierThresh) {
+            if (classifierPredScore.score[classifierNum] > classifierThresh
+                && classifierNum < 3) {
 
-                //std::cout << classifierNum << " Frame "  << frameCount << std::endl;
-                portOutput.trigger();// classifier->behavior_output_signal[classifierNum]);
+                classifier->behavior_output_signal[classifierNum] = '1';        
             }
         }
+
+        string output_binary_signal(classifier->behavior_output_signal.begin(), 
+                                    classifier->behavior_output_signal.end());
+
+        
+        int output_int_val = stoi(output_binary_signal, 0, 2);
+        
+        if (output_int_val > 0) {
+
+            char output_char_signal = (char)(output_int_val + '0');
+            //std::cout << "binary signal " <<   output_binary_signal 
+            //    << "char signal " << output_char_signal 
+            //    << "int signal " << output_int_val << "FrameCount " << frameCount << std::endl;
+            portOutput.trigger(output_char_signal);
+            frame_triggered += 1;
+        }
+
+
     }
         
 
@@ -320,6 +343,21 @@ namespace bias {
                         partnerScoreQueuePtr_->pop();
                         partnerScoreQueuePtr_->releaseLock();
          
+
+                        //KB add output code here
+                        if (outputTrigger) {
+                            if (DEBUGTRIGGER) {
+                                std::cout << scoreCount << std::endl;
+                                if ((scoreCount%debugTriggerSkip) == 0) {
+                                    portOutput.trigger('1');
+                                }
+                            }
+                            else {
+
+                                triggerOnClassifierOutput(classifier->finalscore, scoreCount);
+                            }
+                        }
+
                         if (isVideo) {
                             time_now = gettime->getPCtime();
                             scores[scoreCount].score_ts = time_now;
@@ -342,23 +380,6 @@ namespace bias {
                         if(visualize)
                         {
                             visualizeScores(classifier->finalscore.score);
-                        }
-
-                        //KB add output code here
-                        if (outputTrigger) {
-                            if (DEBUGTRIGGER) {
-                                std::cout << scoreCount << std::endl;
-                                if ((scoreCount%debugTriggerSkip) == 0) {
-                                    portOutput.trigger();
-                                }
-                            }
-                            else {
-                                if (classifier->finalscore.score[0] > classifierThresh) {
-                                    //std::cout << scoreCount << std::endl;
-                                    portOutput.trigger();
-                                }
-                                //triggerOnClassifierOutput(classifier->finalscore, scoreCount);
-                            }
                         }
 
                         scoreCount++;
@@ -426,6 +447,18 @@ namespace bias {
                             selfScoreQueuePtr_->pop();
                             selfScoreQueuePtr_->releaseLock();
 
+                            if (outputTrigger) {
+                                if (DEBUGTRIGGER) {
+                                    std::cout << scoreCount << std::endl;
+                                    if ((scoreCount%debugTriggerSkip) == 0) {
+                                        portOutput.trigger('1');
+                                    }
+                                }
+                                else {
+                                    triggerOnClassifierOutput(predScore, scoreCount);
+                                }
+                            }
+
                             if (isVideo) {
                                 time_now = gettime->getPCtime();
                                 scores[scoreCount].score_ts = time_now;
@@ -444,18 +477,6 @@ namespace bias {
                             {
                                 visualizeScores(predScore.score);
                             }
-
-                            /*if (outputTrigger) {
-                                if (DEBUGTRIGGER) {
-                                    std::cout << scoreCount << std::endl;
-                                    if ((scoreCount%debugTriggerSkip) == 0) {
-                                        portOutput.trigger();
-                                    }
-                                }
-                                else {
-                                    triggerOnClassifierOutput(predScore);
-                                }
-                            }*/
                             
                             scoreCount++;
                         }
@@ -472,7 +493,19 @@ namespace bias {
 
                             partnerScoreQueuePtr_->acquireLock();
                             partnerScoreQueuePtr_->pop();
-                            partnerScoreQueuePtr_->releaseLock();         
+                            partnerScoreQueuePtr_->releaseLock();  
+
+                            if (outputTrigger) {
+                                if (DEBUGTRIGGER) {
+                                    std::cout << scoreCount << std::endl;
+                                    if ((scoreCount%debugTriggerSkip) == 0) {
+                                        portOutput.trigger('1');
+                                    }
+                                }
+                                else {
+                                    triggerOnClassifierOutput(predScorePartner, scoreCount);
+                                }
+                            }
 
                             if (isVideo) {
                                 time_now = gettime->getPCtime();
@@ -494,18 +527,6 @@ namespace bias {
                             {
                                 visualizeScores(predScorePartner.score);
                             }
-
-                            /*if (outputTrigger) {
-                                if (DEBUGTRIGGER) {
-                                    std::cout << scoreCount << std::endl;
-                                    if ((scoreCount%debugTriggerSkip) == 0) {
-                                        portOutput.trigger();
-                                    }
-                                }
-                                else {
-                                    triggerOnClassifierOutput(predScorePartner);
-                                }
-                            }*/
        
                             scoreCount++;
 
@@ -523,7 +544,8 @@ namespace bias {
                 std::cout << "Score file name " << scores_filename << std::endl;
                 std::cout << "Writing score...." << std::endl;
                 write_score_final(scores_filename,numFrames, scores);
-                std::cout << "Written ...." << std::endl;
+                std::cout << "frames triggered ...." << frame_triggered << std::endl;
+              
                 /*acquireLock();
                 done = true;
                 releaseLock();*/
@@ -792,12 +814,12 @@ namespace bias {
     }
 
 
-    void SerialPortOutput::trigger() 
+    void SerialPortOutput::trigger(char output_signal) 
     {
         if (pulseDevice_.isOpen())
         {
-            std::cout << "Sending pulse to serial port\n";
-            pulseDevice_.startPulse();
+            //std::cout << "Sending pulse to serial port\n";
+            pulseDevice_.startPulse(output_signal);
         }
         else {
             std::cout << "Port not open, not sending pulse\n";

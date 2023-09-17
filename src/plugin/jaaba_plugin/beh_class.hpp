@@ -28,7 +28,6 @@ namespace bias {
 
       public:
 
-	    //int nframes = 100000; // nframe prediction
         int nbeh_present; // number of beh classification
         bool isClassifierPathSet = false;
         PredData predScoreSide;

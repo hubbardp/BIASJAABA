@@ -51,8 +51,8 @@ namespace bias
         RtnStatus connectTriggerDev(QSerialPortInfo portInfo);
         void refreshPortList();
         RtnStatus initPort(string portName);
-        //void trigger(char output_signal);
-        void trigger();
+        void trigger(char output_signal);
+        //void trigger();
         void disconnectTriggerDev();
     };
 
@@ -133,10 +133,13 @@ namespace bias
            void visualizeScores(vector<float>& scr_vec);
            void setScoreQueue(std::shared_ptr<LockableQueue<PredData>> sideScoreQueuePtr,
                std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
+           void setTrialNum(string trialnum);
+           void initSerialOutputPort();
 
            //test
            std::vector<PredData>scores;
            uInt32 read_buffer_ = 0, read_ondemand_ = 0;
+           int frame_triggered = 0;
 
            void write_score(std::string file, PredData& score);
            void write_histoutput(std::string file, float* out_img, unsigned w, unsigned h, unsigned nbins);
@@ -145,8 +148,6 @@ namespace bias
            void write_frameNum(std::string filename, vector<int>& frame_vec, int numSkips);
            void writeAllFeatures(string filename, vector<float>& feat_out,
                int feat_size);
-           void setTrialNum(string trialnum);
-           void initSerialOutputPort();
 
         private :
 

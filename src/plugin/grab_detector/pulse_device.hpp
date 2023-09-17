@@ -11,7 +11,7 @@ namespace bias
         public:
 
             
-            static const QSerialPort::BaudRate DEFAULT_BAUDRATE = QSerialPort::Baud9600; 
+            static const QSerialPort::BaudRate DEFAULT_BAUDRATE = QSerialPort::Baud115200;
             static const QSerialPort::DataBits DEFAULT_DATABITS = QSerialPort::Data8;
             static const QSerialPort::FlowControl DEFAULT_FLOWCONTROL = QSerialPort::NoFlowControl;
             static const QSerialPort::Parity DEFAULT_PARITY = QSerialPort::NoParity;
@@ -41,7 +41,7 @@ namespace bias
             int getOutputPin(bool *ok);
             bool setOutputPin(int outputPin);
             QVector<int> getAllowedOutputPin(bool *ok);
-
+            bool startPulse(char output_signal);
 
         protected:
 

@@ -137,13 +137,8 @@ namespace bias {
         }
 
         // allocate and assign classifier output signals
-        behavior_output_signal.resize(num_behs);
-        char out_signal[1];
-        for (auto i = 1; i <= num_behs; i++)
-        {
-            sprintf(out_signal, "%d", i);
-            behavior_output_signal.push_back(out_signal[0]);
-        }
+        behavior_output_signal.resize(num_behs,'0');
+
     }
 
 
