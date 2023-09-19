@@ -161,22 +161,23 @@ namespace bias {
     void ProcessScores::initSerialOutputPort()
     {
         // initialize the serial port output
-        const  bool outputTrigger = true;
 
         if (outputTrigger) {
             std::cout << "In ProcessScores constructor, calling initPort.\n";
             if (!portOutput.initPort(portName).success) {
                 std::cout << "Error initializing serial port\n";
             }
+
+            // set baudrate
+            portOutput.setBaudRate(baudRate);
         }
     }
 
-    /// Private methods
 
+    /// Private methods
     void ProcessScores::triggerOnClassifierOutput(PredData& classifierPredScore, int frameCount)
     {
-        
-        const double classifierThresh = 0.0;
+
         int numBehs = classifier->num_behs;
 
         //reset the output every frame
@@ -185,29 +186,31 @@ namespace bias {
 
         for (auto classifierNum = 0; classifierNum < numBehs; classifierNum++)
         {
-            if (classifierPredScore.score[classifierNum] > classifierThresh
-                && classifierNum < 3) {
+            if (classifierPredScore.score[classifierNum] > classifierThres) {
 
                 classifier->behavior_output_signal[classifierNum] = '1';        
             }
         }
 
+        // binary string output signal
         string output_binary_signal(classifier->behavior_output_signal.begin(), 
                                     classifier->behavior_output_signal.end());
 
         
+        //convert binary string to int
         int output_int_val = stoi(output_binary_signal, 0, 2);
         
         if (output_int_val > 0) {
 
+            //convert output from int to char to send over the serial port
             char output_char_signal = (char)(output_int_val + '0');
+            portOutput.trigger(output_char_signal);
+            frame_triggered += 1;
+
             //std::cout << "binary signal " <<   output_binary_signal 
             //    << "char signal " << output_char_signal 
             //    << "int signal " << output_int_val << "FrameCount " << frameCount << std::endl;
-            portOutput.trigger(output_char_signal);
-            frame_triggered += 1;
         }
-
 
     }
         
@@ -215,18 +218,13 @@ namespace bias {
     void ProcessScores::run()
     {
 
-        
-        const int classifierNum = 0;
-        const double classifierThresh = 0.0;
         const bool DEBUGTRIGGER = false;
         const int debugTriggerSkip = 100;
-        const bool outputTrigger = true;
 
         bool done = false;
         uint64_t time_now;
         double score_ts;
         uint64_t ts_last_score = INT_MAX, cur_time = 0;
-        
         
         if (testConfigEnabled_)
             scores_filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
@@ -285,7 +283,6 @@ namespace bias {
                 } 
                 else if (!selfScoreQueuePtr_->empty() && !partnerScoreQueuePtr_->empty()) {
 
-                    //std::cout << "Both queues Filled" << std::endl;
 
                     partnerScoreQueuePtr_->acquireLock();
                     predScorePartner = partnerScoreQueuePtr_->front();
@@ -799,6 +796,7 @@ namespace bias {
             else {
                 std::cout << "Could not set pulse length, hopefully this will be ok!!\n";
             }
+
         }
         else
         {
@@ -816,10 +814,16 @@ namespace bias {
 
     void SerialPortOutput::trigger(char output_signal) 
     {
+        bool writeSuccess = false;
         if (pulseDevice_.isOpen())
         {
-            //std::cout << "Sending pulse to serial port\n";
-            pulseDevice_.startPulse(output_signal);
+            
+            writeSuccess = pulseDevice_.startPulse(output_signal);
+            if (!writeSuccess) {
+
+                std::cout << "Write to serial failed " << std::endl;
+            }
+
         }
         else {
             std::cout << "Port not open, not sending pulse\n";
@@ -845,7 +849,16 @@ namespace bias {
 
     }
 
-
+    void SerialPortOutput::setBaudRate(int baudRate)
+    {
+        bool ok = pulseDevice_.setBaudRate(qint32(baudRate));
+        if (ok) {
+            std::cout << "Set baudrate\n";
+        }
+        else {
+            std::cout << "Could not set baud rate\n";
+        }
+    }
 
 }
 

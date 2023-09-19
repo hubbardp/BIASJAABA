@@ -16,11 +16,13 @@ namespace bias {
     const string JaabaConfig::DEFAULT_HOF_FILE = "json_files/HOFParam.json";
     const string JaabaConfig::DEFAULT_CROP_FILE = "";
     const string JaabaConfig::DEFAULT_CLASSIFIER_FILE = "json_files/multiclassifier.mat";
+    const string JaabaConfig::DEFAULT_BEH_NAMES = "Lift,Handopen,Grab,Supinate,Chew,Atmouth";
     const string JaabaConfig::DEFAULT_CONFIG_FILE_DIR = "";
     const int JaabaConfig::DEFAULT_WINDOW_SIZE = 1;
     const int JaabaConfig::DEFAULT_CUDA_DEVICE = 0;
     const int JaabaConfig::DEFAULT_NUM_BEHS = 6;
-    const string JaabaConfig::DEFAULT_BEH_NAMES = "Lift,Handopen,Grab,Supinate,Chew,Atmouth";
+    const int JaabaConfig::DEFAULT_BAUDRATE = 9600;
+
 
     JaabaConfig::JaabaConfig()
     {
@@ -60,6 +62,9 @@ namespace bias {
         configMap.insert("cuda_device", 0);
         configMap.insert("num_behs", 6);
         configMap.insert("beh_names","");
+        configMap.insert("classifier_threshold", 0.0);
+        configMap.insert("setoutputTrigger", true);
+        configMap.insert("triggerDevcieBaudRate", 9600);
 
         return configMap;
     }
@@ -207,6 +212,46 @@ namespace bias {
             else {
                 rtnStatus.success = false;
                 rtnStatus.appendMessage("unable to convert cuda device to int");
+            }
+        }
+
+        //read output Trigger
+        if (configMap.contains("classifier_threshold"))
+        {
+            if (configMap["classifier_threshold"].canConvert<QString>())
+            {
+                classsifer_thres = configMap["classifier_threshold"].toFloat();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert classifier thres to float");
+            }
+        }
+
+        //read outputTrigger boolean value
+        if (configMap.contains("setOutputTrigger"))
+        {
+            if (configMap["setOutputTrigger"].canConvert<QString>())
+            {
+                output_trigger = configMap["setOutputTrigger"].toBool();
+                std::cout << "set output trigger ********** " << output_trigger << std::endl;
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert output trigger to bool");
+            }
+        }
+
+        // read baudrate int value
+        if (configMap.contains("triggerDeviceBaudRate"))
+        {
+            if (configMap["triggerDeviceBaudRate"].canConvert<QString>())
+            {
+                baudRate = configMap["triggerDeviceBaudRate"].toInt();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert baudRate to Int");
             }
         }
       

@@ -1415,7 +1415,7 @@ namespace bias {
     }
 
 
-    void JaabaPlugin::setupClassifier(const int& num_behs, vector<string>& beh_names) 
+    void JaabaPlugin::setupClassifier() 
     {
        
         /*if (mesPass && isReceiver())
@@ -1430,6 +1430,28 @@ namespace bias {
                           
         }*/
 
+        float classifier_thres = jab_conf.classsifer_thres;
+        bool output_trigger = jab_conf.output_trigger;
+        int baudRate = jab_conf.baudRate;
+
+        std::cout <<  "Classifier Threshold " << classifier_thres  
+                  <<  "output Trigger " << output_trigger  
+                  <<  "BaudRate " << baudRate
+                  << std::endl;
+        
+        //extract behavior names
+        string behavior_names = jab_conf.beh_names;
+        stringstream behnamestream(behavior_names);
+        string cur_beh;
+        while (!behnamestream.eof())
+        {
+            getline(behnamestream, cur_beh, ',');
+            beh_names.push_back(cur_beh);
+        }
+        num_behs = jab_conf.num_behs;
+
+        std::cout << "num behs " << num_behs << std::endl;
+
         if (!mesPass)
         {
             beh_class *cls = new beh_class(this);
@@ -1439,6 +1461,9 @@ namespace bias {
             processScoresPtr_self->classifier->beh_names = beh_names;
             processScoresPtr_self->classifier->allocate_model();
             processScoresPtr_self->classifier->loadclassifier_model();
+            processScoresPtr_self->classifierThres = classifier_thres;
+            processScoresPtr_self->outputTrigger = output_trigger;
+            processScoresPtr_self->baudRate = baudRate;
     
         }
 
@@ -1449,6 +1474,7 @@ namespace bias {
     {
         return nviews_;
     }
+
 
     int JaabaPlugin::getNumberOfDevices()
     {
@@ -1747,6 +1773,7 @@ namespace bias {
         gpuInitialized = true;
     }
 
+
     void JaabaPlugin::scoreCompute(PredData predScore)
     {
         
@@ -1760,6 +1787,7 @@ namespace bias {
         } 
 
     }
+
 
     void JaabaPlugin::receiveFrameRead(int64_t frameReadtime, int frameCount)
     {
@@ -1780,6 +1808,7 @@ namespace bias {
 
     }
 
+
     /*void JaabaPlugin::receiveFrameNum(unsigned int frameReadNum)
     {
         if (isReceiver())
@@ -1797,6 +1826,7 @@ namespace bias {
             score_calculated_ = score_cal;
     }
 
+
     void JaabaPlugin::setSkipFrameProcess(unsigned int frameCount)
     {
         if (isSender())
@@ -1813,6 +1843,7 @@ namespace bias {
             releaseLock();
         }
     }
+
 
     void JaabaPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
                                     bool testConfigEnabled, string trial_info,
@@ -1845,6 +1876,7 @@ namespace bias {
             allocate_testVec();
           
     }
+
 
     void JaabaPlugin::allocate_testVec()
     {
@@ -1882,6 +1914,7 @@ namespace bias {
         }
        
     }
+
 
     void JaabaPlugin::refill_testVec()
     {
@@ -1927,6 +1960,7 @@ namespace bias {
         }
     }
 
+
     void JaabaPlugin::setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
                                     std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr)
     {
@@ -1935,6 +1969,7 @@ namespace bias {
         skippedFramesPluginPtr_ = skippedFramesPluginPtr;
         
     }
+
 
     void JaabaPlugin::setScoreQueue(std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr,
                                     std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr)
@@ -1974,6 +2009,7 @@ namespace bias {
         }
     }
 
+
     void JaabaPlugin::initializeParamsProcessScores()
     {
 
@@ -1999,6 +2035,7 @@ namespace bias {
 
     }
 
+
     void JaabaPlugin::loadConfig()
     {
         std::cout << "Jaaba load Config reached\n" << std::endl;
@@ -2014,9 +2051,7 @@ namespace bias {
         jab_crop_list = jab_conf.crop_file_list;
         window_size = jab_conf.window_size;
         cuda_device = jab_conf.cuda_device;
-        num_behs = jab_conf.num_behs;
 
-        std::cout << "num behs " << num_behs;
         std::cout << "cuda device set in " << view_ << " " << cuda_device << std::endl;
 
         camera_it = camera_list.begin();
@@ -2048,19 +2083,17 @@ namespace bias {
         }
 
         //extract behavior names
-        string behavior_names = jab_conf.beh_names;
+        /*string behavior_names = jab_conf.beh_names;
         stringstream behnamestream(behavior_names);
         string cur_beh;
         while(!behnamestream.eof())
         {
             getline(behnamestream , cur_beh , ',');
             beh_names.push_back(cur_beh);
-            //std::cout << cur_beh << std::endl;
-        }
-       
-        
+        }*/
+          
         setupHOGHOF();
-        setupClassifier(num_behs, beh_names);
+        setupClassifier();
         if (cameraNumber_ == 0)
             std::cout << "all side setup done\n" << std::endl;
         else if (cameraNumber_ == 1)
@@ -2074,6 +2107,7 @@ namespace bias {
         return configMap;
     }
 
+
     RtnStatus JaabaPlugin::setConfigFromMap(QVariantMap configMap)
     {
 
@@ -2084,6 +2118,7 @@ namespace bias {
         }
         return rtnStatus;
     }
+
 
     void JaabaPlugin::average_windowFeatures(vector<float>& hog_feat, vector<float>& hof_feat, 
                                              vector<float>& hog_feat_avg, vector<float>& hof_feat_avg, int window_size)
@@ -2100,6 +2135,7 @@ namespace bias {
 
     }
 
+
     void JaabaPlugin::subtractLastwindowfeature(vector<float>& hog_past, vector<float>& hof_past,
                                                 vector<float>& hog_feat_avg, vector<float>& hof_feat_avg)
     {
@@ -2112,6 +2148,7 @@ namespace bias {
 
     }
 
+
     void JaabaPlugin::setTrialNum(string trialnum)
     {
         trial_num_ = trialnum;
@@ -2120,6 +2157,7 @@ namespace bias {
             processScoresPtr_self->setTrialNum(trialnum);
         }
     }
+
 
     bool JaabaPlugin::jaabaSkipFrame(uint64_t& ts_cur, uint64_t& ts_prev,
         int& frameCount, uint64_t wait_thres)
@@ -2143,6 +2181,7 @@ namespace bias {
         return 0;
     }
 
+
     void JaabaPlugin::waitForEmptyHOGHOFAvgQueue(LockableQueue<vector<float>>& avg_que)
     {
         avg_que.acquireLock();
@@ -2159,6 +2198,7 @@ namespace bias {
             std::cout << " HOGHOF avg Que not empty ***" << std::endl;
 
     }
+
 
     void JaabaPlugin::setHOGHOFShape()
     {
@@ -2192,6 +2232,7 @@ namespace bias {
             std::cout << " HOGHOF is NULL in setHOGHOFShape" << std::endl;
         }
     }
+
 
     /*void JaabaPlugin::saveAvgwindowfeatures(vector<vector<float>>& hoghof_feat, QPointer<HOGHOF> hoghof_obj,
                                             int frameCount, string filename) {

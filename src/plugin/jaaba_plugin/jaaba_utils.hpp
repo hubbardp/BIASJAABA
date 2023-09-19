@@ -46,6 +46,9 @@ namespace bias {
             static const int DEFAULT_CUDA_DEVICE;
             static const int DEFAULT_NUM_BEHS;
             static const string DEFAULT_BEH_NAMES;
+            static const float DEFAULT_CLASSIFIER_THRES;
+            static const bool DEFAULT_SETOUTPUT_TRIGGER;
+            static const int DEFAULT_BAUDRATE;
 
             //Jaaba parameters
             string config_file_dir = "";
@@ -58,6 +61,9 @@ namespace bias {
             int cuda_device;
             int num_behs;
             string beh_names="";
+            float classsifer_thres;
+            bool output_trigger;
+            int baudRate;
             unordered_map<string, unsigned int> camera_serial_id;
             unordered_map<unsigned int, string> crop_file_list;
             

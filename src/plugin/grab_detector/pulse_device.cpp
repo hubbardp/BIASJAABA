@@ -157,7 +157,7 @@ namespace bias
     {
         QByteArray cmd;
         cmd.append(QString("[%1,]\n").arg(output_signal));
-        return writeCmd(cmd);
+        return writeCmdFlush(cmd);
     }
 
     // Prottected methods
@@ -182,6 +182,19 @@ namespace bias
         return ok;
     }
 
+    //non blocking write to underlying pulse device
+    bool PulseDevice::writeCmdFlush(QByteArray cmd)
+    {
+        bool ok = false;
+        int cnt = 0;
+        while ((!ok) && (cnt < MAX_WRITE_CNT))
+        {
+            write(cmd);
+            ok = flush();
+            cnt++;
+        }
+        return ok;
+    }
 
     bool PulseDevice::writeCmdGetRsp(QByteArray cmd, QByteArray &rsp)
     {

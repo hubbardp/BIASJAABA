@@ -104,7 +104,6 @@ namespace bias
             int cuda_device;
             int num_behs;
             vector<string> beh_names;
- 
 
         protected:
  
@@ -228,7 +227,7 @@ namespace bias
             //void updateWidgetsOnLoad();
             void initialize(CmdLineParams& cmdlineparams);
             void setupHOGHOF();
-            void setupClassifier(const int& num_behs, vector<string>& beh_names);
+            void setupClassifier();
             void connectWidgets();
             void detectEnabled();
             double convertTimeStampToDouble(TimeStamp curr, TimeStamp init);

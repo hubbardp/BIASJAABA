@@ -54,6 +54,7 @@ namespace bias
         void trigger(char output_signal);
         //void trigger();
         void disconnectTriggerDev();
+        void setBaudRate(int baudRate);
     };
 
     class ProcessScores : public QObject, public QRunnable, public Lockable<Empty>
@@ -90,6 +91,9 @@ namespace bias
            bool visualize;
            int wait_threshold;
            string portName;
+           float classifierThres;
+           bool outputTrigger;
+           int baudRate;
 
            //QPointer<HOGHOF> HOGHOF_self;
            //QPointer<HOGHOF> HOGHOF_partner;
