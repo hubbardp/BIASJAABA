@@ -494,7 +494,7 @@ namespace bias {
                 waitForEmptyHOGHOFAvgQueue(HOGHOF_self->hof_out_past);
             }
 
-            /*(if (!isVideo) {
+            /*if (!isVideo) {
 
                 if (isDebug) {
                     if (testConfigEnabled_ && nidaq_task_ != nullptr) {
@@ -649,13 +649,38 @@ namespace bias {
                             processedFrameCount, view_);
 
                         processScoresPtr_self->classifier->predScore.frameCount = processedFrameCount;
-                        time_now = gettime_->getPCtime();
+                        
+                        if(!isVideo) 
+                        {
+                            if (nidaq_task_ != nullptr) {
+
+                                if (frameCount_ < numframes_) {
+
+                                    nidaq_task_->getNidaqTimeNow(read_ondemand);
+                                }
+                                
+                            }
+                            else {
+
+                                time_now = gettime_->getPCtime();
+                            }
+                        }
+                        else if(isVideo)
+                        {
+                            time_now = gettime_->getPCtime();
+                        }
 
                         if (processScoresPtr_self->classifier->isClassifierPathSet && isReceiver())
                         {
 
                             processScoresPtr_self->classifier->predScore.view = 1;
-                            processScoresPtr_self->classifier->predScore.score_viewA_ts = time_now;
+                            processScoresPtr_self->classifier->predScore.fstfrmtStampRef_ = fstfrmtStampRef_;
+                            if (isVideo || (nidaq_task_ == nullptr))
+                                processScoresPtr_self->classifier->predScore.score_viewA_ts = time_now;
+                            else {
+                                processScoresPtr_self->classifier->predScore.score_viewA_ts
+                                    = static_cast<uint64_t>(read_ondemand);
+                            }
 
                             selfScoreQueuePtr_->acquireLock();
                             selfScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);
@@ -665,7 +690,12 @@ namespace bias {
                         if (processScoresPtr_self->classifier->isClassifierPathSet && isSender())
                         {
                             processScoresPtr_self->classifier->predScore.view = 2;
-                            processScoresPtr_self->classifier->predScore.score_viewB_ts = time_now;
+                            processScoresPtr_self->classifier->predScore.fstfrmtStampRef_ = fstfrmtStampRef_;
+                            if (isVideo || (nidaq_task_ == nullptr))
+                                processScoresPtr_self->classifier->predScore.score_viewB_ts = time_now;
+                            else
+                                processScoresPtr_self->classifier->predScore.score_viewB_ts 
+                                                                  = static_cast<uint64_t>(read_ondemand);
 
                             partnerScoreQueuePtr_->acquireLock();
                             partnerScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);
@@ -724,17 +754,6 @@ namespace bias {
                 }
             }  
             end_process = gettime_->getPCtime();
-        }
-
-        if (!isVideo && isDebug ) {
-            if (testConfigEnabled_ && nidaq_task_ != nullptr) {
-
-                if (frameCount_ < testConfig_->numFrames) {
-
-                    nidaq_task_->getNidaqTimeNow(read_ondemand);
-
-                }
-            }
         }
 
         if(isDebug){
@@ -1433,10 +1452,12 @@ namespace bias {
         float classifier_thres = jab_conf.classsifer_thres;
         bool output_trigger = jab_conf.output_trigger;
         int baudRate = jab_conf.baudRate;
+        int perFrameLat = jab_conf.perFrameLat;
 
         std::cout <<  "Classifier Threshold " << classifier_thres  
                   <<  "output Trigger " << output_trigger  
                   <<  "BaudRate " << baudRate
+                  << "Perframe latency " << perFrameLat 
                   << std::endl;
         
         //extract behavior names
@@ -1464,6 +1485,7 @@ namespace bias {
             processScoresPtr_self->classifierThres = classifier_thres;
             processScoresPtr_self->outputTrigger = output_trigger;
             processScoresPtr_self->baudRate = baudRate;
+            processScoresPtr_self->perFrameLat = perFrameLat;
     
         }
 
@@ -1855,6 +1877,9 @@ namespace bias {
         testConfigEnabled_ = testConfigEnabled;
         trial_num_ = trial_info;
 
+        if(nidaq_task != nullptr)
+            ts_nidaq.resize(numframes_, std::vector<uInt32>(2, 0));
+
         // test vectors allocated for scores
         if (processScoresPtr_self != nullptr && isReceiver())
         {
@@ -1891,7 +1916,7 @@ namespace bias {
 
             if (!testConfig_->nidaq_prefix.empty()) {
                 
-                ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+                //ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
                 ts_nidaqThres.resize(testConfig_->numFrames, 0);
                 //scores.resize(testConfig_->numFrames);
                 imageTimeStamp.resize(testConfig_->numFrames, 0.0);

@@ -258,6 +258,7 @@ namespace bias {
         uint64_t curTime_vid = 0, expTime_vid = 0, delta_now=0;
         uint64_t frameCaptureTime, avg_frameLatSinceFirstFrame = 0;
         int64_t  wait_thres, avgwait_time, delay_framethres;
+        uint64_t fast_clock_period;
         StampedImage stampImg;
         int numtrailFrames = 0;
         
@@ -266,19 +267,26 @@ namespace bias {
         QString errorMsg("no message");
 
         if (isVideo) {
-            frameCaptureTime = static_cast<uint64>((1.0 / (float)framerate) * 1000000);
+            frameCaptureTime = static_cast<uint64_t>((1.0 / (float)framerate) * 1000000);
             frameCaptureTime_nidaq = 125;
-            wait_thres = static_cast<int64>(100);
+            wait_thres = static_cast<int64_t>(100);
             avgwait_time = 0;
             int num_skipFrames = 0;
         }
         else {
  
-            frameCaptureTime = static_cast<uint64>((1.0/(float)framerate) * 1000000);  // unit useconds
+            frameCaptureTime = static_cast<uint64>((1.0/(float)framerate) * 1000000);  // unit uses
             wait_thres = static_cast<int64>(skip_latency - frameGrabAvgTime);
             avgwait_time = 0;
+            if (nidaq_task_ != nullptr)
+            {
+                fast_clock_period = static_cast<uint64>(1.0/ float(nidaq_task_->fast_counter_rate) * 1000000); // uint usecs
+            }
             std::cout << "Wait thres skip " << wait_thres << "frameCaptureTime " << frameCaptureTime 
-                       <<  "frameGrabTime " << frameGrabAvgTime << "nidaq ts match thres " << ts_match_thres << std::endl;
+                       <<  "frameGrabTime " << frameGrabAvgTime 
+                       << "nidaq ts match thres " << ts_match_thres 
+                       << "nidaq fast clock period " << fast_clock_period  
+                       << std::endl;
         }
 
         if (!ready_)
@@ -711,8 +719,8 @@ namespace bias {
                 } 
                 else {
                     avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime; // time in us
-                    expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame; //time in us
-                    curTime = (static_cast<uint64_t>(read_ondemand_) * 20); //time in us
+                    expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * fast_clock_period) + avg_frameLatSinceFirstFrame; //time in us
+                    curTime = (static_cast<uint64_t>(read_ondemand_) * fast_clock_period); //time in us
                     avgwait_time = curTime - expTime;
                 }
                 

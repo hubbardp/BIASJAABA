@@ -29,6 +29,7 @@ namespace bias {
         uint64_t score_viewB_ts = 0;
         unsigned int frameCount=0;
         int view = -1;
+        uint64_t fstfrmtStampRef_ = 0;
     };
 
     class JaabaConfig {
@@ -49,6 +50,7 @@ namespace bias {
             static const float DEFAULT_CLASSIFIER_THRES;
             static const bool DEFAULT_SETOUTPUT_TRIGGER;
             static const int DEFAULT_BAUDRATE;
+            static const int DEFAULT_PERFRAME_LATENCY;
 
             //Jaaba parameters
             string config_file_dir = "";
@@ -64,6 +66,7 @@ namespace bias {
             float classsifer_thres;
             bool output_trigger;
             int baudRate;
+            int perFrameLat;
             unordered_map<string, unsigned int> camera_serial_id;
             unordered_map<unsigned int, string> crop_file_list;
             
@@ -80,6 +83,9 @@ namespace bias {
     QJsonObject loadParams(const string& param_file);
     void saveFeatures(string filename,vector<float>& hog_feat, vector<float>& hof_feat,
                      int hog_num_elements, int hof_num_elements);
+    uint64_t calculateExpectedlatency(const uint64_t fstframets, const int lat_thres,
+                                  const unsigned int frameCount, int conversion_factor,
+                                  unsigned long framerate);
     
 }
 

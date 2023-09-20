@@ -22,7 +22,9 @@ namespace bias {
     const int JaabaConfig::DEFAULT_CUDA_DEVICE = 0;
     const int JaabaConfig::DEFAULT_NUM_BEHS = 6;
     const int JaabaConfig::DEFAULT_BAUDRATE = 9600;
-
+    const bool JaabaConfig::DEFAULT_SETOUTPUT_TRIGGER = 1;
+    const float JaabaConfig::DEFAULT_CLASSIFIER_THRES = 0.0;
+    const int JaabaConfig::DEFAULT_PERFRAME_LATENCY = 6000; // time in usec
 
     JaabaConfig::JaabaConfig()
     {
@@ -65,7 +67,7 @@ namespace bias {
         configMap.insert("classifier_threshold", 0.0);
         configMap.insert("setoutputTrigger", true);
         configMap.insert("triggerDevcieBaudRate", 9600);
-
+        configMap.insert("latency_threshold_perframe", 6000);
         return configMap;
     }
 
@@ -89,7 +91,6 @@ namespace bias {
                 rtnStatus.appendMessage("unable to convert config file dir to string");
             }
         }
-
 
         //read hog file from config
         if (configMap.contains("hog_file"))
@@ -252,6 +253,19 @@ namespace bias {
             else {
                 rtnStatus.success = false;
                 rtnStatus.appendMessage("unable to convert baudRate to Int");
+            }
+        }
+
+        // read latency threshold per frame
+        if (configMap.contains("latency_threshold_perframe"))
+        {
+            if (configMap["latency_threshold_perframe"].canConvert<QString>())
+            {
+                perFrameLat = configMap["latency_threshold_perframe"].toInt();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert preframe latency to int");
             }
         }
       
@@ -489,6 +503,18 @@ namespace bias {
 
         x_out.close();
 
+    }
+
+    uint64_t calculateExpectedlatency(const uint64_t fstframets, const int lat_thres,
+                                      const unsigned int frameCount, int conversion_factor,
+                                      unsigned long framerate)
+    {
+
+        uint64_t datarate = static_cast<uint64_t>((1.0 / (float)framerate) * 1000000); // unit usecs
+        //std::cout << "datarate " << datarate << std::endl;
+        uint64_t expLat = (fstframets*conversion_factor) + static_cast<uint64_t>(lat_thres)
+                          + static_cast<uint64_t>(datarate*(frameCount));
+        return expLat;
     }
 
 }

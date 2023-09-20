@@ -94,6 +94,8 @@ namespace bias
            float classifierThres;
            bool outputTrigger;
            int baudRate;
+           float perFrameLat;
+           unsigned long framerate;
 
            //QPointer<HOGHOF> HOGHOF_self;
            //QPointer<HOGHOF> HOGHOF_partner;
