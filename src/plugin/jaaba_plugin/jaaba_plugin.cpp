@@ -650,6 +650,15 @@ namespace bias {
 
                         processScoresPtr_self->classifier->predScore.frameCount = processedFrameCount;
                         
+                        if (nidaq_task_ != nullptr) {
+
+                            /*if (frameCount_ < numframes_) {
+
+                                nidaq_task_->getNidaqTimeNow(read_ondemand);
+                            }*/
+
+                        }
+
                         if(!isVideo) 
                         {
                             if (nidaq_task_ != nullptr) {
@@ -658,7 +667,7 @@ namespace bias {
 
                                     nidaq_task_->getNidaqTimeNow(read_ondemand);
                                 }
-                                
+                                time_now = static_cast<uint64_t>(read_ondemand);
                             }
                             else {
 
@@ -675,12 +684,7 @@ namespace bias {
 
                             processScoresPtr_self->classifier->predScore.view = 1;
                             processScoresPtr_self->classifier->predScore.fstfrmtStampRef_ = fstfrmtStampRef_;
-                            if (isVideo || (nidaq_task_ == nullptr))
-                                processScoresPtr_self->classifier->predScore.score_viewA_ts = time_now;
-                            else {
-                                processScoresPtr_self->classifier->predScore.score_viewA_ts
-                                    = static_cast<uint64_t>(read_ondemand);
-                            }
+                            processScoresPtr_self->classifier->predScore.score_viewA_ts = time_now;
 
                             selfScoreQueuePtr_->acquireLock();
                             selfScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);
@@ -691,11 +695,7 @@ namespace bias {
                         {
                             processScoresPtr_self->classifier->predScore.view = 2;
                             processScoresPtr_self->classifier->predScore.fstfrmtStampRef_ = fstfrmtStampRef_;
-                            if (isVideo || (nidaq_task_ == nullptr))
-                                processScoresPtr_self->classifier->predScore.score_viewB_ts = time_now;
-                            else
-                                processScoresPtr_self->classifier->predScore.score_viewB_ts 
-                                                                  = static_cast<uint64_t>(read_ondemand);
+                            processScoresPtr_self->classifier->predScore.score_viewB_ts = time_now;
 
                             partnerScoreQueuePtr_->acquireLock();
                             partnerScoreQueuePtr_->push(processScoresPtr_self->classifier->predScore);

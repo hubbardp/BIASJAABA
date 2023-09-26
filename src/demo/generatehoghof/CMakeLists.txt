@@ -26,9 +26,9 @@ add_executable(
      
 target_link_libraries(
                       generate_hoghof
+					  bias_utility
                       heffalump_gpu 
-                      bias_backend_video 
-                      bias_utility  
+                      bias_backend_video   
 					  jaaba_plugin
                      )
 

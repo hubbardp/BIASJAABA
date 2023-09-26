@@ -44,6 +44,7 @@ namespace bias {
         
     }
 
+
     CameraDevice_spin::~CameraDevice_spin()
     {
 

@@ -173,6 +173,7 @@ namespace bias
            void run();
            void clearQueues();
            void triggerOnClassifierOutput(PredData& classifierPredScore, int frameCount);
+           void resetScoresVector();
 
         signals:
 

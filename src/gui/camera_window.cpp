@@ -671,7 +671,7 @@ namespace bias
         captureStopDateTime_ = captureStartDateTime_.addSecs(captureDurationSec_);
 
         // Update GUI widget for capturing state
-        startButtonPtr_->setText(QString("Stop"));
+        startButtonPtr_->setText(QString("Stop Setup"));
         connectButtonPtr_->setEnabled(false);
         pluginActionGroupPtr_->setEnabled(false);
         updateStatusLabel();
@@ -938,7 +938,7 @@ namespace bias
         }
 
         // Update data GUI information
-        startButtonPtr_ -> setText(QString("Start"));
+        startButtonPtr_ -> setText(QString("Setup"));
         connectButtonPtr_ -> setEnabled(true);
         actionPluginsEnabledPtr_ -> setEnabled(true);
         pluginActionGroupPtr_ -> setEnabled(true);
@@ -994,7 +994,7 @@ namespace bias
             resetImageDispatchParams();
 
         }
-        startTriggerButtonPtr_->setText(QString("Stop Trigger"));
+        startTriggerButtonPtr_->setText(QString("Stop"));
         std::cout << "Start Trigger Button pressed Exited " << std::endl;
         rtnStatus.success = true;
         rtnStatus.message = QString("");
@@ -1028,7 +1028,7 @@ namespace bias
             setStopNIDAQTriggerFlag();
         }*/
 
-        startTriggerButtonPtr_->setText(QString("Start Trigger"));
+        startTriggerButtonPtr_->setText(QString("Start"));
         
         rtnStatus.success = true;
         rtnStatus.message = QString("");
@@ -3355,8 +3355,8 @@ namespace bias
         setCaptureTimeLabel(0.0);
 
         connectButtonPtr_ -> setText(QString("Connect"));
-        startButtonPtr_ -> setText(QString("Start"));
-        startTriggerButtonPtr_->setText(QString("Start Trigger"));
+        startButtonPtr_ -> setText(QString("Setup"));
+        startTriggerButtonPtr_->setText(QString("Start"));
         startButtonPtr_ -> setEnabled(false);
         startTriggerButtonPtr_->setEnabled(false);
         connectButtonPtr_ -> setEnabled(true);

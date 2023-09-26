@@ -152,14 +152,14 @@
        <item>
         <widget class="QPushButton" name="startButtonPtr_">
          <property name="text">
-          <string>Start</string>
+          <string>Setup</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="startTriggerButtonPtr_">
          <property name="text">
-          <string>Start Trigger</string>
+          <string>Start</string>
          </property>
         </widget>
        </item>

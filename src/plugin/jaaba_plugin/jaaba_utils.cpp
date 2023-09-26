@@ -272,7 +272,6 @@ namespace bias {
         return rtnStatus;
     }
 
-
     RtnStatus JaabaConfig::setViewFromMap(QVariantMap configMap)
     {
         RtnStatus rtnStatus;
@@ -344,7 +343,6 @@ namespace bias {
 
         return rtnStatus;
     }
-
 
     //void readPluginConfig(JaabaConfig& jaaba_config, string param_file)
     void JaabaConfig::readPluginConfig(string param_file)
@@ -511,7 +509,9 @@ namespace bias {
     {
 
         uint64_t datarate = static_cast<uint64_t>((1.0 / (float)framerate) * 1000000); // unit usecs
-        //std::cout << "datarate " << datarate << std::endl;
+        //std::cout << "datarate " << datarate << "\n"
+        //    << "fstframets " << fstframets  << "\n"
+        //    << "conversion factor " << conversion_factor << std::endl;
         uint64_t expLat = (fstframets*conversion_factor) + static_cast<uint64_t>(lat_thres)
                           + static_cast<uint64_t>(datarate*(frameCount));
         return expLat;
