@@ -16,6 +16,9 @@ namespace bias {
     static int test_frameCount=0;
     static int test_classifier_index=0;
 
+
+    beh_class::beh_class()  {}
+
     beh_class::beh_class(QWidget *parent): QDialog(parent) {}
   
 
@@ -126,13 +129,19 @@ namespace bias {
         //size_t num_behs = beh_present.size();
         for(int ncls = 0;ncls < num_behs;ncls++)
         {
-            if(beh_present[ncls]) 
+            if (beh_present[ncls])
             {
 
                 rtnstatus = readh5(class_file, this->model_params, this->model[ncls], ncls);
-                if(rtnstatus.success)
+                if (rtnstatus.success)
+                {
                     this->isClassifierPathSet = true;
-
+                }
+                else {
+                    QString errMsgTitle = QString("Classifier Loading");
+                    QString errMsgText = QString("Classifier loading failed");
+                    QMessageBox::critical(this, errMsgTitle, errMsgText);
+                }
             }
         }
 

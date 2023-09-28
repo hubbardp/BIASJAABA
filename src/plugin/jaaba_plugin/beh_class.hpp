@@ -50,6 +50,7 @@ namespace bias {
         vector<unordered_map<int, int>> translation_index_map_hog;
         vector<unordered_map<int, int>> translation_index_map_hof;
         beh_class(QWidget *parent);
+        beh_class();
 
 	    void allocate_model();
 	    void loadclassifier_model();

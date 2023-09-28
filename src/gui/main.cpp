@@ -19,7 +19,7 @@ namespace bias {
 
         // place ':' in the beginning of the string so that program can 
         //tell between '?' and ':' 
-        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:p:d:n:g:r:m:q:")) != -1)
+        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:p:d:n:g:r:m:q:a:")) != -1)
         {
             switch (opt)
             {
@@ -70,6 +70,9 @@ namespace bias {
                 break;
             case 'q':
                 cmdlineparams.skip_latency = stoi(optarg);
+                break;
+            case 'a':
+                cmdlineparams.movie_name_suffix = optarg;
                 break;
             case ':':
                 printf("Required argument %c", opt);

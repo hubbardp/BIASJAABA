@@ -497,6 +497,7 @@ namespace bias {
 
                     // wait for nidaq trigger signal to grab frame
                     stampImg.image = vid_images[frameCount].image;
+
                 }
                 else {
                     //std::cout << "Yield thread Video" << std::endl;
@@ -699,7 +700,7 @@ namespace bias {
                 }
 
                 // match nidaq ts to camera timestamp
-                if (!isVideo) {
+                /*if (!isVideo) {
                     errorMatch = matchNidaqToCameraTimeStamp(nidaq_ts_curr, nidaq_ts_init, timeStampDbl, frameCount);
                     if (!errorMatch) {
 
@@ -708,7 +709,7 @@ namespace bias {
                         emit nidaqtsMatchError(0, errorMsg);
 
                     }
-                }
+                }*/
 
                 if (isVideo) {
                     //expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount+1));
@@ -725,7 +726,7 @@ namespace bias {
                 }
                 
       
-                if (isSkip) {
+                /*if (isSkip) {
                     // Set image data timestamp, framecount and frame interval estimate
                     if (abs(avgwait_time) <= wait_thres)              
                     {
@@ -764,7 +765,38 @@ namespace bias {
                     newImageQueuePtr_->signalNotEmpty();
                     newImageQueuePtr_->releaseLock();
                     //std::cout << "Not skipped " << frameCount << std::endl;
+                }*/
+
+                if (isSkip) {
+                    if (abs(avgwait_time) <= wait_thres)
+                    {
+                        stampImg.isSpike = false;
+                    }
+                    else {
+                        stampImg.isSpike = true;
+                        
+                        if (isDebug && testConfigEnabled_ && nidaq_task_ != nullptr)
+                            ts_nidaqThres[frameCount] = 1.0;
+
+                        std::cout << "skipped to plugin " << frameCount
+                            << " cameraNumber " << cameraNumber_
+                            << " Avg wait time " << abs(avgwait_time) << std::endl;
+                    }
                 }
+                else {
+                    stampImg.isSpike = false;
+                }
+                stampImg.timeStamp = timeStampDbl;
+                stampImg.timeStampInit = timeStampInit;
+                stampImg.timeStampVal = timeStamp;
+                stampImg.frameCount = frameCount;
+                stampImg.dtEstimate = dtEstimate;
+                stampImg.fstfrmtStampRef = fstfrmtStampRef_;
+
+                newImageQueuePtr_->acquireLock();
+                newImageQueuePtr_->push(stampImg);
+                newImageQueuePtr_->signalNotEmpty();
+                newImageQueuePtr_->releaseLock();
                 end_process = gettime_->getPCtime();
                 frameCount++;
                 

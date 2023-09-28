@@ -226,7 +226,7 @@ namespace bias
                 logImageQueuePtr_->releaseLock();
             }
 
-            if (pluginEnabled_)
+            if (pluginEnabled_ && !newStampImage.isSpike)
             {
                 pluginImageQueuePtr_->acquireLock();
                 frameCount_ = newStampImage.frameCount;

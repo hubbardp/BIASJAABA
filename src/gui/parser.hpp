@@ -12,6 +12,7 @@ namespace bias {
     struct CmdLineParams {
 
         string output_dir = "";
+        string movie_name_suffix = "";
         bool isVideo = false;
         bool saveFeat = false;
         bool compute_jaaba = false;
