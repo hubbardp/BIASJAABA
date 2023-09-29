@@ -35,8 +35,8 @@ namespace bias
         : VideoWriter(fileName,cameraNumber,parent)
     {
         isFirst_ = true;
-        fps_ = 0;//DEFAULT_FPS;
-        fourcc_ = 0;// stringToFourcc(params.codec);
+        fps_ = DEFAULT_FPS;
+        fourcc_ = stringToFourcc(params.codec);
         setFrameSkip(params.frameSkip);
     }
 
@@ -172,7 +172,7 @@ namespace bias
         map[cv::VideoWriter::fourcc('U','2','6','3')] = QString("H263");
         map[cv::VideoWriter::fourcc('F','L','V','1')] = QString("FLV1");
         map[cv::VideoWriter::fourcc('H','F','Y','U')] = QString("HFYU");
-        map[cv::VideoWriter::fourcc('M', 'J', 'P', 'G')] = QString("MJPG");
+        map[cv::VideoWriter::fourcc('M','J','P','G')] = QString("MJPG");
 
         return map;
     }

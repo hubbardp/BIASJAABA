@@ -352,6 +352,8 @@ namespace bias
             
         }
 
+        std::cout << "ImageDispatcher Run method exited " << std::endl;
+
         // DEVEL
         // --------------------------------------------------------------------
         //stampOutStream.close();

@@ -101,6 +101,7 @@ namespace bias
             unsigned int* numImagegrabReset_;
             bool isReset = true;
             bool isFirstTrial = true;
+            bool isDoneWriting = false;
 
             TimeStamp timeStamp;
             TimeStamp timeStampInit;
@@ -124,6 +125,7 @@ namespace bias
             void framecountMatchError(unsigned int errorId, QString errorMsg);
             void nidaqtriggered(bool istriggered);
             void setImagegrabParams();
+            void signalGpuDeinit();
         
         private slots:
             void setTriggered(bool istriggered);

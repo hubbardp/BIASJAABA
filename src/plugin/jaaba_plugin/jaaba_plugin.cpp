@@ -556,8 +556,8 @@ namespace bias {
                 //frameCount, otherwise consider it skipped frame
                 while (processedFrameCount < frameCount_)
                 {
-                    std::cout << view_ << " skipped in Jaaba plugin " <<
-                        processedFrameCount << std::endl;
+                    //std::cout << view_ << " skipped in Jaaba plugin " <<
+                    //    processedFrameCount << std::endl;
                     if (isDebug && testConfigEnabled_) {
                         end_process = gettime_->getPCtime();
                         ts_nidaqThres[processedFrameCount] = 1;

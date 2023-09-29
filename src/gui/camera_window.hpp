@@ -286,6 +286,7 @@ namespace bias
             RtnStatus stopImageGrabThreads(bool showErrorDlg=true);
             //void loadPluginFile(QPointer<BiasPlugin> pluginPtr);
             //void loadPluginFile();
+            void gpuDeInitialize();
 
         private:
 

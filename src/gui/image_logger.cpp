@@ -287,6 +287,7 @@ namespace bias
             QString errorMsg = QString::fromStdString(runtimeError.what());
             emit imageLoggingError(errorId, errorMsg);
         }
+        std::cout << "DEBUG: Image Logger run method exited " << std::endl;
     
     }  // void ImageLogger::run()
 
