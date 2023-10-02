@@ -59,7 +59,6 @@ namespace bias{
             << "\ncompute jaaba: " << cmdlineparams.compute_jaaba
             << "\nclassify scores: " << cmdlineparams.classify_scores
             << "\nvisualize " << cmdlineparams.visualize
-            << "\nnumframes " << cmdlineparams.numframes
             << "\nisskip " << cmdlineparams.isSkip
             << "\n wait threshold" << cmdlineparams.wait_thres // wait time between jaaba views for computing a score
             << "\ nwindow_size " << cmdlineparams.window_size // averaging window size hoghof features

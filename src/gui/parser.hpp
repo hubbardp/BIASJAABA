@@ -19,7 +19,6 @@ namespace bias {
         bool classify_scores = false;
         bool visualize = false;
         bool isSkip = false;
-        int numframes = 0;
         int wait_thres = 1500;
         int window_size = 5;
         bool debug = false;

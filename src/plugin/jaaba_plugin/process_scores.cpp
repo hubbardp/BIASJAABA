@@ -26,6 +26,7 @@ namespace bias {
         isSide = false;
         isFront = false;
         
+        versionNumber = 0;
     }
 
     void ProcessScores::initialize(bool mesPass, std::shared_ptr<Lockable<GetTime>> getTime,
@@ -40,6 +41,8 @@ namespace bias {
         processFront = false;
         isProcessed_side = false;
         isProcessed_front = false;
+        isnewscrfile_ = false;
+        writeScoreFlag_ = false;
         mesPass_ = mesPass;
         frameCount_ = 0;
         partner_frameCount_ = -1;
@@ -159,6 +162,7 @@ namespace bias {
 
     }
 
+
     void ProcessScores::initSerialOutputPort()
     {
         // initialize the serial port output
@@ -172,6 +176,18 @@ namespace bias {
             // set baudrate
             portOutput.setBaudRate(baudRate);
         }
+    }
+
+
+    void ProcessScores::setWriteScoreFlag(bool writeScoreFlag)
+    {
+        writeScoreFlag_ = writeScoreFlag;
+    }
+
+
+    void ProcessScores::setnewscrfileFlag(bool isnewscrfile)
+    {
+        isnewscrfile_ = isnewscrfile;
     }
 
 
@@ -214,6 +230,20 @@ namespace bias {
         }
 
     }
+
+
+    string  ProcessScores::getFileName()
+    {
+        string scrfilename;
+        string verNum;
+
+        versionNumber++;
+        verNum = (QString("_v%1").arg(versionNumber, 3, 10, QChar('0'))).toStdString();
+        scrfilename = output_score_dir + "classifier" + verNum + ".csv";
+        std::cout << "Scr file name " << scrfilename << std::endl;
+        return scrfilename;
+
+    }
         
 
     void ProcessScores::run()
@@ -227,16 +257,11 @@ namespace bias {
         //double score_ts;
         uint64_t score_ts;
         uint64_t ts_last_score = INT_MAX, cur_time = 0;
-        bool once = true;
 
         // varibles to estimate latency
         uint64_t fstframets, expLat;
         int diff_lat;
         
-        if (testConfigEnabled_)
-            scores_filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
-        else
-            scores_filename = output_score_dir + "classifier_score.csv";
 
         //period of fast clock that used in nidaq to sample counter values
         uint64_t fast_clock_period;
@@ -245,7 +270,6 @@ namespace bias {
             fast_clock_period = static_cast<uint64_t>((1.0 /
                 (float)nidaq_task_->fast_counter_rate) * 1000000);
         }
-
 
         // Set thread priority to idle - only run when no other thread are running
         QThread *thisThread = QThread::currentThread();
@@ -291,6 +315,27 @@ namespace bias {
                 skipFront = false;
                 skipSide = false;
 
+                //if new trial get score file name
+                if(isnewscrfile_)
+                {
+                    scores_filename = getFileName();
+                    isnewscrfile_ = false;
+                }
+
+                // if end of trial write scores to file
+                if (writeScoreFlag_) {
+
+                    std::cout << "Score file name " << scores_filename << std::endl;
+
+                    numFrames = scores.size();
+                    write_score_final(scores_filename, numFrames, scores);
+                    writeScoreFlag_ = false;
+                    clearQueues();
+                    scoreCount = 0;
+
+                    std::cout << "frames triggered ...." << frame_triggered << std::endl;
+                }
+
                 if (selfScoreQueuePtr_->empty() && partnerScoreQueuePtr_->empty()) 
                 {
                     continue;
@@ -306,9 +351,6 @@ namespace bias {
                     predScore = selfScoreQueuePtr_->front();
                     selfScoreQueuePtr_->releaseLock();
 
-                    //std::cout << "PredScore FrameCount " << predScore.frameCount
-                    //    << "PredScore Partner FrameCount " << predScorePartner.frameCount
-                    //    << std::endl;
 
                     // to keep up with frame where both views are skipped 
                     if (scoreCount < predScore.frameCount)
@@ -372,17 +414,27 @@ namespace bias {
 
                         if (isVideo) {
                             time_now = gettime->getPCtime();
-                            scores[scoreCount].score_ts = time_now;
+                            predScoreFinal.score_ts = time_now;
+                            //scores[scoreCount].score_ts = time_now;
                             //expLat = calculateExpectedlatency(fstframets, perFrameLat,
                             //    scoreCount, 1, framerate);
                         }
                         else {
                             nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                            scores[scoreCount].score_ts = read_ondemand_;
-                            time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
+                            //time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
+                            predScoreFinal.score_ts = read_ondemand_;
+                            //scores[scoreCount].score_ts = read_ondemand_;
                             //expLat = calculateExpectedlatency(fstframets, perFrameLat,
                             //    scoreCount, fast_clock_period, framerate);
                         }
+
+                        predScoreFinal.score = classifier->finalscore.score;
+                        predScoreFinal.frameCount = predScore.frameCount;
+                        predScoreFinal.view = 3;
+                        predScoreFinal.score_viewA_ts = predScore.score_viewA_ts;
+                        predScoreFinal.score_viewB_ts = predScorePartner.score_viewB_ts;
+
+                        scores.push_back(predScoreFinal);
 
                         /*if (scoreCount < 100) {
                             std::cout << "time now " << time_now
@@ -391,16 +443,13 @@ namespace bias {
                             << std::endl;
                         }*/
 
-                        //if (once) {
-                            scores[scoreCount].score = classifier->finalscore.score;
-                            scores[scoreCount].frameCount = predScore.frameCount;
-                            scores[scoreCount].view = 3;
+                        //scores[scoreCount].score = classifier->finalscore.score;
+                        //scores[scoreCount].frameCount = predScore.frameCount;
+                        //scores[scoreCount].view = 3;
 
-                            scores[scoreCount].score_viewA_ts = predScore.score_viewA_ts;
-                            scores[scoreCount].score_viewB_ts = predScorePartner.score_viewB_ts;
+                        //scores[scoreCount].score_viewA_ts = predScore.score_viewA_ts;
+                        //scores[scoreCount].score_viewB_ts = predScorePartner.score_viewB_ts;
                             // - max(predScore.score_ts, predScorePartner.score_ts);
-
-                        //}
 
                         if(visualize)
                         {
@@ -524,20 +573,29 @@ namespace bias {
 
                             if (isVideo) {
                                 time_now = gettime->getPCtime();
-                                scores[scoreCount].score_ts = time_now;
+                                predScoreFinal.score_ts = time_now;
+                                //scores[scoreCount].score_ts = time_now;
                             }
                             else {
                                 nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                                scores[scoreCount].score_ts = read_ondemand_;
+                                predScoreFinal.score_ts = read_ondemand_;
+                                //scores[scoreCount].score_ts = read_ondemand_;
                             }
 
-                            //if (once) {
-                                scores[scoreCount].score = predScore.score;
-                                scores[scoreCount].frameCount = predScore.frameCount;
-                                scores[scoreCount].view = 1;
-                                scores[scoreCount].score_viewA_ts = predScore.score_viewA_ts;
-                                scores[scoreCount].score_viewB_ts = 0;
-                            //}
+                            predScoreFinal.score = predScore.score;
+                            predScoreFinal.frameCount = predScore.frameCount;
+                            predScoreFinal.view = 1;
+                            predScoreFinal.score_viewA_ts = predScore.score_viewA_ts;
+                            predScoreFinal.score_viewB_ts = 0;
+
+                            scores.push_back(predScoreFinal);
+
+                            //scores[scoreCount].score = predScore.score;
+                            //scores[scoreCount].frameCount = predScore.frameCount;
+                            //scores[scoreCount].view = 1;
+                            //scores[scoreCount].score_viewA_ts = predScore.score_viewA_ts;
+                            //scores[scoreCount].score_viewB_ts = 0;
+
 
                             if (visualize) 
                             {
@@ -575,20 +633,29 @@ namespace bias {
 
                             if (isVideo) {
                                 time_now = gettime->getPCtime();
-                                scores[scoreCount].score_ts = time_now;
+                                predScoreFinal.score_ts = time_now;
+                                //scores[scoreCount].score_ts = time_now;
                             }
                             else {
 
                                 nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                                scores[scoreCount].score_ts = read_ondemand_;
+                                predScoreFinal.score_ts = read_ondemand_;
+                                //scores[scoreCount].score_ts = read_ondemand_;
                             }
 
-                            //time_now = gettime->getPCtime();
-                            scores[scoreCount].score = predScorePartner.score;
-                            scores[scoreCount].frameCount = predScorePartner.frameCount;
-                            scores[scoreCount].view = 2;
-                            scores[scoreCount].score_viewB_ts = predScorePartner.score_viewB_ts;
-                            scores[scoreCount].score_viewA_ts = 0;
+                            predScoreFinal.score = predScorePartner.score;
+                            predScoreFinal.frameCount = predScorePartner.frameCount;
+                            predScoreFinal.view = 2;
+                            predScoreFinal.score_viewA_ts = 0;
+                            predScoreFinal.score_viewB_ts = predScorePartner.score_viewB_ts;
+
+                            scores.push_back(predScoreFinal);
+
+                            //scores[scoreCount].score = predScorePartner.score;
+                            //scores[scoreCount].frameCount = predScorePartner.frameCount;
+                            //scores[scoreCount].view = 2;
+                            //scores[scoreCount].score_viewB_ts = predScorePartner.score_viewB_ts;
+                            //scores[scoreCount].score_viewA_ts = 0;
                         
                             if (visualize)
                             {
@@ -596,34 +663,15 @@ namespace bias {
                             }
        
                             scoreCount++;
-
                         }       
                     }
-                }
-                
+                }  
             }
 
             //std::cout << scoreCount << std::endl;
             acquireLock();
             done = stopped_;
             releaseLock();
-
-            if (scoreCount == (numFrames)) {
-
-                std::cout << "Score file name " << scores_filename << std::endl;
-                std::cout << "Writing score...." << std::endl;
-                write_score_final(scores_filename,numFrames, scores);
-                std::cout << "frames triggered ...." << frame_triggered << std::endl;
-              
-                //acquireLock();
-                //done = true;
-                //releaseLock();
-
-                clearQueues();
-
-                scoreCount = 0;
-                once = false;
-            }
 
         }
      
@@ -642,14 +690,14 @@ namespace bias {
                 selfScoreQueuePtr_->acquireLock();
                 selfScoreQueuePtr_->clear();
                 selfScoreQueuePtr_->releaseLock();
-                std::cout << "Side Queue Cleared " << std::endl;
+                std::cout << "Queue Cleared for self" << std::endl;
             }
             else {
-                std::cout << "Side queue is empty" << std::endl;
+                std::cout << "Self queue is empty" << std::endl;
             }
         }
         else {
-            std::cout << "Side Score NULL" << std::endl;
+            std::cout << "Self queue score NULL" << std::endl;
         }
 
         if (partnerScoreQueuePtr_ != nullptr) {
@@ -657,21 +705,21 @@ namespace bias {
                 partnerScoreQueuePtr_->acquireLock();
                 partnerScoreQueuePtr_->clear();
                 partnerScoreQueuePtr_->releaseLock();
-                std::cout << "Front Queue Cleared " << std::endl;
+                std::cout << "Queue Cleared for partner" << std::endl;
             }
             else {
-                std::cout << "Front queue is empty" << std::endl;
+                std::cout << "Partner queue is empty" << std::endl;
             }
 
         }
         else {
-        std:cout << "Front Score NULL" << std::endl;
+            std:cout << "Partner queue score NULL" << std::endl;
         }
     }
 
     void ProcessScores::resetScoresVector()
     {
-        unsigned int scores_sz = scores.size();
+        /*unsigned int scores_sz = scores.size();
         for (unsigned int scr_id = 0; scr_id < scores_sz; scr_id++)
         {
             fill(scores[scr_id].score.begin(),
@@ -682,7 +730,8 @@ namespace bias {
             scores[scr_id].score_viewB_ts = 0;
             scores[scr_id].view = -1;
             scores[scr_id].fstfrmtStampRef_ = 0;
-        }
+        }*/
+        scores.clear();
     }
 
 

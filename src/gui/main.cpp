@@ -19,7 +19,7 @@ namespace bias {
 
         // place ':' in the beginning of the string so that program can 
         //tell between '?' and ':' 
-        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:p:d:n:g:r:m:q:a:")) != -1)
+        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:k:w:p:d:n:g:r:m:q:a:")) != -1)
         {
             switch (opt)
             {
@@ -40,9 +40,6 @@ namespace bias {
                 break;
             case 'v':
                 cmdlineparams.visualize = stoi(optarg);
-                break;
-            case 'f':
-                cmdlineparams.numframes = stoi(optarg);
                 break;
             case 'k':
                 cmdlineparams.isSkip = stoi(optarg);

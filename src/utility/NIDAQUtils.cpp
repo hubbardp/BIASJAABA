@@ -418,15 +418,15 @@ namespace bias {
 
     }
 
-    void NIDAQUtils::getCamtrig(unsigned int frameCount)
+    void NIDAQUtils::getCamtrig(unsigned int frameCount, unsigned int buffer_size)
     {
         //Fills cam_trigger vector depending on whichever camera gets to it first. 
         float64 timeout_seconds = 10.0;
         acquireLock();
-        if(cam_trigger[frameCount] == 0)
+        if(cam_trigger[frameCount%buffer_size] == 0)
         {
             DAQmxErrChk(DAQmxReadCounterScalarU32(taskHandle_trigger_in, timeout_seconds, &read_buffer, NULL));
-            cam_trigger[frameCount] = read_buffer;
+            cam_trigger[frameCount%buffer_size] = read_buffer;
         }
         releaseLock();
         

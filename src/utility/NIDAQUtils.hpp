@@ -117,7 +117,7 @@ namespace bias
         void start_trigger_signal();
         void stop_trigger_signal();
         void Cleanup();
-        void getCamtrig(unsigned int frameCount);
+        void getCamtrig(unsigned int frameCount, unsigned int buffer_size);
         void getNidaqTimeNow(uInt32& read_ondemand);
         bool getisTrue();
         ~NIDAQUtils();

@@ -23,7 +23,7 @@ namespace bias {
 
         // place ':' in the beginning of the string so that program can 
         //tell between '?' and ':' 
-        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:f:k:w:n:d:a:")) != -1)
+        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:k:w:n:d:a:")) != -1)
         {
             switch (opt)
             {
@@ -44,9 +44,6 @@ namespace bias {
                 break;
             case 'v':
                 cmdlineparams.visualize = stoi(optarg);
-                break;
-            case 'f':
-                cmdlineparams.numframes = stoi(optarg);
                 break;
             case 'k':
                 cmdlineparams.isSkip = stoi(optarg);
@@ -127,7 +124,6 @@ int main(int argc, char* argv[]) {
 
     int window_size = cmdlineparams.window_size;
     int saveFeatures = cmdlineparams.saveFeat;
-    int nframestocompute = cmdlineparams.numframes;
     int debug = cmdlineparams.debug;
     int classify_scores = cmdlineparams.classify_scores;
 
@@ -144,7 +140,6 @@ int main(int argc, char* argv[]) {
         << "\ncompute jaaba: " << cmdlineparams.compute_jaaba
         << "\nclassify scores: " << cmdlineparams.classify_scores
         << "\nvisualize " << cmdlineparams.visualize
-        << "\nnumframes " << cmdlineparams.numframes
         << "\nisskip " << cmdlineparams.isSkip
         << "\n wait threshold" << cmdlineparams.wait_thres // wait time between jaaba views for computing a score
         << "\ nwindow_size " << cmdlineparams.window_size // averaging window size hoghof features
@@ -212,10 +207,10 @@ int main(int argc, char* argv[]) {
 
     feat_dim_side = feat_side->hog_shape.x* feat_side->hog_shape.y*feat_side->hog_shape.bin;
     feat_dim_front = feat_front->hog_shape.x* feat_front->hog_shape.y*feat_front->hog_shape.bin;
-    feats_hog_out = new float[nframestocompute * feat_dim_side];
-    featf_hog_out = new float[nframestocompute * feat_dim_front];
-    feats_hof_out = new float[nframestocompute * feat_dim_side];
-    featf_hof_out = new float[nframestocompute * feat_dim_front];
+    feats_hog_out = new float[numFrames * feat_dim_side];
+    featf_hog_out = new float[numFrames * feat_dim_front];
+    feats_hof_out = new float[numFrames * feat_dim_side];
+    featf_hof_out = new float[numFrames * feat_dim_front];
     printf("Feature dims side and front - %d-%d", feat_dim_side, feat_dim_front);
 
     if (classify_scores)
@@ -243,7 +238,7 @@ int main(int argc, char* argv[]) {
         //std:cout << classifier_sde->translation_index_map_hof[0].size() << std::endl;
         
         //allocate scores for the classifier
-        scores.resize(nframestocompute);
+        scores.resize(numFrames);
 
     }
 
@@ -253,7 +248,7 @@ int main(int argc, char* argv[]) {
     int start_time = 0, end_time = 0;
     string jaaba_process_time_file;  
     vector<int64_t> jaaba_process_time;
-    jaaba_process_time.resize(nframestocompute);
+    jaaba_process_time.resize(numFrames);
     bias::GetTime* gettime_ = new bias::GetTime();
 
     while (cur_run < nRuns)
@@ -261,7 +256,7 @@ int main(int argc, char* argv[]) {
         imageCnt = 0;
         if(debug)
             jaaba_process_time_file = input_dir_path + "jaaba_process_time_" + to_string(cur_run) + ".csv";
-        while (imageCnt < nframestocompute) {
+        while (imageCnt < numFrames) {
 
             start_time = gettime_->getPCtime();
 
@@ -330,7 +325,7 @@ int main(int argc, char* argv[]) {
         } // finished reading video from movies 
             
         if (debug) {
-            gettime_->write_time_1d<int64_t>(jaaba_process_time_file, nframestocompute, jaaba_process_time);
+            gettime_->write_time_1d<int64_t>(jaaba_process_time_file, numFrames, jaaba_process_time);
             std::cout << "Time elapsed to process video frames " << (end_time - start_time)*0.001 << std::endl;
         }
 
@@ -339,7 +334,7 @@ int main(int argc, char* argv[]) {
             classifier_scr_file = output_dir_path + "classifier_trial" + movie_name_suffix.back() + ".csv";
         else
             classifier_scr_file = output_dir_path + "classifier_score.csv";
-        write_score_final(classifier_scr_file, nframestocompute,scores);
+        write_score_final(classifier_scr_file, numFrames,scores);
         cur_run++;
     }
 

@@ -24,6 +24,7 @@ namespace bias {
     //Public static variables 
     const QString JaabaPlugin::PLUGIN_NAME = QString("jaabaPlugin");
     const QString JaabaPlugin::PLUGIN_DISPLAY_NAME = QString("Jaaba Plugin");
+    const unsigned int JaabaPlugin::DEFAULT_TIMING_BUFFER_SIZE = 250; // future add this to nidaq config
 
     // Public Methods
     JaabaPlugin::JaabaPlugin(string camera_id, 
@@ -47,7 +48,6 @@ namespace bias {
         compute_jaaba = cmdlineparams.compute_jaaba;
         classify_scores = cmdlineparams.classify_scores;
         visualize = cmdlineparams.visualize;
-        numframes_ = cmdlineparams.numframes;
         isDebug = cmdlineparams.debug;
 
         print(cmdlineparams);
@@ -649,24 +649,12 @@ namespace bias {
                             processedFrameCount, view_);
 
                         processScoresPtr_self->classifier->predScore.frameCount = processedFrameCount;
-                        
-                        if (nidaq_task_ != nullptr) {
-
-                            /*if (frameCount_ < numframes_) {
-
-                                nidaq_task_->getNidaqTimeNow(read_ondemand);
-                            }*/
-
-                        }
 
                         if(!isVideo) 
                         {
                             if (nidaq_task_ != nullptr) {
 
-                                if (frameCount_ < numframes_) {
-
-                                    nidaq_task_->getNidaqTimeNow(read_ondemand);
-                                }
+                                nidaq_task_->getNidaqTimeNow(read_ondemand);
                                 time_now = static_cast<uint64_t>(read_ondemand);
                             }
                             else {
@@ -762,7 +750,7 @@ namespace bias {
 
                 if (!testConfig_->nidaq_prefix.empty()) {
 
-                    ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
+                    ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_%DEFAULT_TIMING_BUFFER_SIZE];
                     ts_nidaq[frameCount_][1] = read_ondemand;
                     imageTimeStamp[frameCount_] = timeStamp_;
                     
@@ -1877,15 +1865,15 @@ namespace bias {
         testConfigEnabled_ = testConfigEnabled;
         trial_num_ = trial_info;
 
-        if(nidaq_task != nullptr)
-            ts_nidaq.resize(numframes_, std::vector<uInt32>(2, 0));
+        //if(nidaq_task != nullptr)
+        //    ts_nidaq.resize(numframes_, std::vector<uInt32>(2, 0));
 
         // test vectors allocated for scores
         if (processScoresPtr_self != nullptr && isReceiver())
         {
             std::cout << "Scores && " << numframes_ << std::endl;
-            processScoresPtr_self->scores.resize(numframes_);
-            processScoresPtr_self->numFrames = numframes_;
+            //processScoresPtr_self->scores.resize(numframes_);
+            //processScoresPtr_self->numFrames = numframes_;
             processScoresPtr_self->nidaq_task_= nidaq_task_;
 			//translated_indexes.resize(numframes_, std::vector<float>());
         }
@@ -1916,7 +1904,7 @@ namespace bias {
 
             if (!testConfig_->nidaq_prefix.empty()) {
                 
-                //ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+                ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
                 ts_nidaqThres.resize(testConfig_->numFrames, 0);
                 //scores.resize(testConfig_->numFrames);
                 imageTimeStamp.resize(testConfig_->numFrames, 0.0);
@@ -2058,6 +2046,16 @@ namespace bias {
             std::cout << "reset hoghof vectors" << cameraNumber_ << std::endl;
         }
 
+    }
+
+
+    void JaabaPlugin::setWriteScoreFlag()
+    {
+        if (processScoresPtr_self != nullptr)
+        {
+            processScoresPtr_self->setWriteScoreFlag(true);
+            processScoresPtr_self->setnewscrfileFlag(true);
+        }
     }
 
 

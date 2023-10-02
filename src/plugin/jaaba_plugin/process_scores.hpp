@@ -141,6 +141,8 @@ namespace bias
                std::shared_ptr<LockableQueue<PredData>> frontScoreQueuePtr);
            void setTrialNum(string trialnum);
            void initSerialOutputPort();
+           void setWriteScoreFlag(bool writeScoreFlag);
+           void setnewscrfileFlag(bool isnewscrfile);
 
            //test
            std::vector<PredData>scores;
@@ -162,6 +164,10 @@ namespace bias
            string trial_num_;
            bool testConfigEnabled_;
            string scores_filename;
+           unsigned int versionNumber;
+
+           bool isnewscrfile_;
+           bool writeScoreFlag_;
  
            QQueue<FrameData> frameQueue_;
            QPointer<BiasPlugin> partnerPluginPtr_;
@@ -174,6 +180,7 @@ namespace bias
            void clearQueues();
            void triggerOnClassifierOutput(PredData& classifierPredScore, int frameCount);
            void resetScoresVector();
+           string getFileName();
 
         signals:
 

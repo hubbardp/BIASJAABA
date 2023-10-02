@@ -73,6 +73,7 @@ namespace bias
             static unsigned int DEFAULT_NUM_STARTUP_SKIP;
             static unsigned int MIN_STARTUP_SKIP;
             static unsigned int MAX_ERROR_COUNT;
+            static unsigned int DEFAULT_TIMING_BUFFER_SIZE;
 
             void initializeVid();
             void setTrialNum(string trialnum);
@@ -180,7 +181,8 @@ namespace bias
             std::vector<int64_t>camFrameId;
 
             int no_of_skips;
-            int nframes_;
+            int nframes_; // default timing buffer size (cyclic buffer)
+            int vid_numFrames; // number of frames in test video
             bool finished_reading_ = 0;
             bool isOpen_ = 0;
             bool start_reading = 0;

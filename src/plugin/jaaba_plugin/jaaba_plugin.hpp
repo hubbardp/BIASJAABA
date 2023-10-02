@@ -50,6 +50,7 @@ namespace bias
 
             static const QString PLUGIN_NAME;
             static const QString PLUGIN_DISPLAY_NAME;
+            static const unsigned int DEFAULT_TIMING_BUFFER_SIZE;
 
             JaabaPlugin(string camera_id, 
                 QPointer<QThreadPool> threadPoolPtr,
@@ -85,6 +86,7 @@ namespace bias
             virtual void initializeParamsProcessScores();
             virtual void setTrialNum(string trialnum);
             virtual void setHOGHOFShape();
+            virtual void setWriteScoreFlag();
 
             QPointer<ProcessScores> processScoresPtr_self;
             QPointer<ProcessScores> processScoresPtr_partner;

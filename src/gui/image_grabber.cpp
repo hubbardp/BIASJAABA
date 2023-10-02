@@ -35,6 +35,7 @@ namespace bias {
 
     unsigned int ImageGrabber::MIN_STARTUP_SKIP = 2;
     unsigned int ImageGrabber::MAX_ERROR_COUNT = 500;
+    unsigned int ImageGrabber::DEFAULT_TIMING_BUFFER_SIZE = 250; // future add this to nidaq config
 	//string input_video_dir = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
 
     ImageGrabber::ImageGrabber(QObject *parent) : QObject(parent)
@@ -64,12 +65,14 @@ namespace bias {
         isVideo = cmdlineparams.isVideo;
         isSkip = cmdlineparams.isSkip;
         isDebug = cmdlineparams.debug;
-        nframes_ = cmdlineparams.numframes;
+        //nframes_ = cmdlineparams.numframes;
         frameGrabAvgTime = cmdlineparams.frameGrabAvgTime; // uint in us: time taken for frame
                                                            //to reach from camera to system buffers
         framerate = cmdlineparams.framerate;
         skip_latency = cmdlineparams.skip_latency;
         ts_match_thres = cmdlineparams.ts_match_thres;
+
+        nframes_ = DEFAULT_TIMING_BUFFER_SIZE;
 
         std::cout << "Imagegrab Debug :" << isDebug << "Numframes: " << nframes_ << std::endl;
             
@@ -125,7 +128,6 @@ namespace bias {
         // turned off in testConfig suite
         if (nidaq_task_ != nullptr) {
             nidaq_task_->cam_trigger.resize(nframes_ + DEFAULT_NUM_STARTUP_SKIP, 0);
-            //nidaq_task -> cam_trigger.resize(10);
         }
 
         gettime_ = gettime;
@@ -188,8 +190,8 @@ namespace bias {
 
         vid_obj_ = new videoBackend(filename);
         cap_obj_ = vid_obj_->videoCapObject();
-        //nframes_ = vid_obj_->getNumFrames(cap_obj_);
-        std::cout << "Vid frames: " << nframes_ << std::endl;
+        vid_numFrames = vid_obj_->getNumFrames(cap_obj_);
+        std::cout << "Vid frames: " << vid_numFrames << std::endl;
 
         if (cap_obj_.isOpened())
             isOpen_ = 1;
@@ -447,15 +449,15 @@ namespace bias {
             if (isVideo) {
                 delay_framethres = 0;
 
-                /*if (frameCount == nframes_) {
-                    stopTrigger = true;
-                    frameCount = 0;
+                if (frameCount == vid_numFrames) {
+                    //stopTrigger = true;
+                    //frameCount = 0;
                     expTime = 0, curTime = 0, prev_curTime = 0;
                     curTime_vid = 0, expTime_vid = 0, delta_now = 0;
                     avgwait_time = 0;
                     QThread::yieldCurrentThread();
                     continue;
-                }*/
+                }
 
                 if (nidaq_task_->istrig) {
                     if (nidaq_task_ != nullptr && frameCount == 0) {
@@ -601,12 +603,17 @@ namespace bias {
                     && nidaq_task_->istrig) {
 
                     //get nidaq trigger timestamp
-                    nidaq_task_->getCamtrig(frameCount);
+                    nidaq_task_->getCamtrig(frameCount, nframes_);
                     if (frameCount == 0)
                     {
-                        nidaq_ts_init = nidaq_task_->cam_trigger[frameCount];
+                        nidaq_ts_init = nidaq_task_->cam_trigger[frameCount%nframes_];
                     }
-                    nidaq_ts_curr = nidaq_task_->cam_trigger[frameCount];
+                    nidaq_ts_curr = nidaq_task_->cam_trigger[frameCount%nframes_];
+
+                    //reset nidaq buffer for future frames
+                    //reset is important as there is a single read from nidaq per frame
+                    //and we do not use the same values from previouds frames
+                    nidaq_task_->cam_trigger[(frameCount + ((nframes_) / 2)) % nframes_] = 0;
                 }
                 else {
                     if (isDebug) {
@@ -698,7 +705,7 @@ namespace bias {
                     if (nidaq_task_ != nullptr && nidaq_task_->istrig){
                         if (frameCount == 0) {
                             
-                            fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount]);
+                            fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount%nframes_]);
                             
                         }
                         nidaq_task_->getNidaqTimeNow(read_ondemand_);
@@ -831,7 +838,7 @@ namespace bias {
                             {
 
                                 nidaq_task_->acquireLock();
-                                ts_nidaq[frameCount - 1][0] = nidaq_task_->cam_trigger[frameCount - 1];
+                                ts_nidaq[frameCount - 1][0] = nidaq_task_->cam_trigger[(frameCount - 1)%nframes_];
                                 nidaq_task_->releaseLock();
                                 ts_nidaq[frameCount - 1][1] = read_ondemand_;
                                 imageTimeStamp[frameCount - 1] = timeStampDbl;
@@ -1228,7 +1235,7 @@ namespace bias {
             else
             {
               
-                framenumber = rand() % (nframes_-1);
+                framenumber = rand() % (vid_numFrames-1);
                 s.insert(framenumber);
             }
     
@@ -1254,10 +1261,10 @@ namespace bias {
     void ImageGrabber::readVidFrames()
     {
         StampedImage stampedImg;
-        vid_images.resize(nframes_);
+        vid_images.resize(vid_numFrames);
         int count = 0;
 
-        while (isOpen_ && (count < nframes_))
+        while (isOpen_ && (count < vid_numFrames))
         {
 
             stampedImg.image = vid_obj_->getImage(cap_obj_);
@@ -1283,7 +1290,7 @@ namespace bias {
 
         initializeVidBackend();
         initiateVidSkips(delayFrames);
-        delay_view.resize(nframes_, vector<int64_t>(2,0));
+        delay_view.resize(vid_numFrames, vector<int64_t>(2,0));
 
         //important this is the last function called before imagegrabber starts 
         //grabbing frames. The camera trigger signal is on and the both threads

@@ -131,7 +131,6 @@ namespace bias
             printf("nidaq not set-%d", cameraNumber_);
         }
 
-
         while (!done)
         {
             pc1 = 0, pc2 = 0;
@@ -164,20 +163,12 @@ namespace bias
                     emit imageLoggingError(errorId, errorMsg);
                     errorFlag = true;
                 }
-                //std::cout << "cam: " << cameraNumber_ << ", queue size: " << logQueueSize;
-                //std::cout << "/" << MAX_LOG_QUEUE_SIZE << std::endl;
 
                 // Add frame to video writer
                 //pc1 = gettime_->getPCtime();
                 try 
                 {
                     videoWriterPtr_ -> addFrame(newStampedImage);
-                    //tmp_img = newStampedImage.image;
-                    //imwrite("./out_feat/imgtest_" + std::to_string(newStampedImage.frameCount) + ".jpg",newStampedImage.image);
-                    //newStampedImage.image.convertTo(tmp_img, CV_32FC1);
-                    //tmp_img = tmp_img / 255;
-                    //write_output("./out_feat/img_" + std::to_string(newStampedImage.frameCount) + ".csv", tmp_img.ptr<float>(0),
-                    //          tmp_img.cols, tmp_img.rows);
 
                 }
                 catch (RuntimeError &runtimeError)

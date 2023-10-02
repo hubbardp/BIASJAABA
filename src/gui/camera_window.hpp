@@ -436,6 +436,7 @@ namespace bias
             void resetImageDispatchParams();
             void gpuInitializeAllJaabaPlugins();
             void resetImageLoggerParams();
+            void setWriteScoreFlag();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();

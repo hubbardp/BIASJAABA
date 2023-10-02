@@ -235,6 +235,8 @@ namespace bias
 
     void BiasPlugin::setHOGHOFShape() {}
 
+    void BiasPlugin::setWriteScoreFlag() {}
+
     // Protected methods
     // ------------------------------------------------------------------------
 

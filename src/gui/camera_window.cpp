@@ -702,7 +702,7 @@ namespace bias
         std::cout << "cameraNumber " << cameraNumber_ << " start Image grab Threads" << std::endl;
 
         threadPoolPtr_->start(imageGrabberPtr_);
-        //threadPoolPtr_->start(imageDispatcherPtr_);
+        threadPoolPtr_->start(imageDispatcherPtr_);
 
         rtnStatus.success = true;
         rtnStatus.message = QString("");
@@ -742,7 +742,7 @@ namespace bias
         }
 
         if (isPluginEnabled() && !isPluginStarted) {
-            threadPoolPtr_->start(imageDispatcherPtr_);
+            //threadPoolPtr_->start(imageDispatcherPtr_);
             threadPoolPtr_->start(pluginHandlerPtr_);
         }
 
@@ -1037,6 +1037,7 @@ namespace bias
 
         // set stopTrigger flag in imagegrab for all cameras
         setStopNIDAQTriggerFlag();
+        setWriteScoreFlag();
 
         startTriggerButtonPtr_->setText(QString("Start"));
         
@@ -8152,6 +8153,20 @@ namespace bias
         return rtnStatus;
     }
 
+    //might want to merge this with resetPluginParams later
+    void CameraWindow::setWriteScoreFlag()
+    {
+        if (isPluginEnabled())
+        {
+            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+            if (currentPluginPtr != nullptr)
+            {
+                if (currentPluginPtr->getName() == "jaabaPlugin") {
+                    currentPluginPtr->setWriteScoreFlag();
+                }
+            }
+        }
+    }
 
     // Utility functions
     // ----------------------------------------------------------------------------------
