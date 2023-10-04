@@ -106,6 +106,7 @@ namespace bias
             int cuda_device;
             int num_behs;
             vector<string> beh_names;
+            vector<string>classifier_concatenation_order;
 
         protected:
  

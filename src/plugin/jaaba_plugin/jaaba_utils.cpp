@@ -18,6 +18,7 @@ namespace bias {
     const string JaabaConfig::DEFAULT_CLASSIFIER_FILE = "json_files/multiclassifier.mat";
     const string JaabaConfig::DEFAULT_BEH_NAMES = "Lift,Handopen,Grab,Supinate,Chew,Atmouth";
     const string JaabaConfig::DEFAULT_CONFIG_FILE_DIR = "";
+    const string JaabaConfig::DEFAULT_CLASSIFIER_CONCATENATE_ORDER = "";
     const int JaabaConfig::DEFAULT_WINDOW_SIZE = 1;
     const int JaabaConfig::DEFAULT_CUDA_DEVICE = 0;
     const int JaabaConfig::DEFAULT_NUM_BEHS = 6;
@@ -37,6 +38,7 @@ namespace bias {
         cuda_device = DEFAULT_CUDA_DEVICE;
         num_behs = DEFAULT_NUM_BEHS;
         beh_names = DEFAULT_BEH_NAMES;
+        classifier_concatenation_order = DEFAULT_CLASSIFIER_CONCATENATE_ORDER;
     }
 
     QVariantMap JaabaConfig::toMap()
@@ -60,6 +62,7 @@ namespace bias {
         configMap.insert("crop_file_list", cropListMap);
         configMap.insert("classifier_filename", "");
         configMap.insert("config_file_dir", "");
+        configMap.insert("classifier_concatenation_order", "");
         configMap.insert("window_size", 1);
         configMap.insert("cuda_device", 0);
         configMap.insert("num_behs", 6);
@@ -198,7 +201,7 @@ namespace bias {
             }
             else {
                 rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert cuda device to int");
+                rtnStatus.appendMessage("unable to convert num beahviors to int");
             }
         }
 
@@ -212,7 +215,7 @@ namespace bias {
             }
             else {
                 rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert cuda device to int");
+                rtnStatus.appendMessage("unable to convert behavior names to string");
             }
         }
 
@@ -266,6 +269,19 @@ namespace bias {
             else {
                 rtnStatus.success = false;
                 rtnStatus.appendMessage("unable to convert preframe latency to int");
+            }
+        }
+
+        if (configMap.contains("classifier_concatenation_order"))
+        {
+            if (configMap["classifier_concatenation_order"].canConvert<QString>())
+            {
+                classifier_concatenation_order = configMap["classifier_concatenation_order"].toString().toStdString();
+
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert classifier_concatenation_order to string");
             }
         }
       
@@ -426,6 +442,17 @@ namespace bias {
 
         std::cout << "Window Size" << window_size << std::endl;
         std::cout << filename << std::endl;
+    }
+
+    void JaabaConfig::convertStringtoVector(string& convertString, vector<string>& vectorString)
+    {
+        stringstream convertstringstream(convertString);
+        string cur_str;
+        while (!convertstringstream.eof())
+        {
+            getline(convertstringstream, cur_str, ',');
+            vectorString.push_back(cur_str);
+        }
     }
 
     QJsonObject loadParams(const string& param_file)

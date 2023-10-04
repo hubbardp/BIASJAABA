@@ -49,6 +49,7 @@ namespace bias {
 		vector<int>translated_featureindexes;//translated mat style 2 C style indexing
         vector<unordered_map<int, int>> translation_index_map_hog;
         vector<unordered_map<int, int>> translation_index_map_hof;
+        vector<string>classifier_concatenation_order;
         beh_class(QWidget *parent);
         beh_class();
 
@@ -75,7 +76,8 @@ namespace bias {
 
 		void translate_featureIndexes(HOGShape *shape_side, HOGShape *shape_front, bool isSide);
 		void write_translated_indexes(string filenam, vector<int>& index_vector, int feat_dim);
-		void getviewandfeature(HOGShape *shape_side, HOGShape *shape_front, string view);
+		void getviewandfeature(HOGShape *shape_side, HOGShape *shape_front,
+                               string view);
         void boost_classify(std::vector<float> &scr, std::vector<float> &hog_features,
             std::vector<float> &hof_features, struct HOGShape *shape_viewA,
             struct HOFShape *shape_viewB,

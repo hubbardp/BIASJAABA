@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <map>
 #include <fstream>
+#include <sstream>
 
 #include <QPointer>
 #include <QDir>
@@ -43,10 +44,11 @@ namespace bias {
             static const string DEFAULT_CROP_FILE;
             static const string DEFAULT_CLASSIFIER_FILE;
             static const string DEFAULT_CONFIG_FILE_DIR;
+            static const string DEFAULT_BEH_NAMES;
+            static const string DEFAULT_CLASSIFIER_CONCATENATE_ORDER;
             static const int DEFAULT_WINDOW_SIZE;
             static const int DEFAULT_CUDA_DEVICE;
             static const int DEFAULT_NUM_BEHS;
-            static const string DEFAULT_BEH_NAMES;
             static const float DEFAULT_CLASSIFIER_THRES;
             static const bool DEFAULT_SETOUTPUT_TRIGGER;
             static const int DEFAULT_BAUDRATE;
@@ -59,10 +61,11 @@ namespace bias {
             string hof_file = "";
             string crop_file = "";
             string classifier_filename = "";
+            string beh_names = "";
+            string classifier_concatenation_order = "";
             int window_size;
             int cuda_device;
             int num_behs;
-            string beh_names="";
             float classsifer_thres;
             bool output_trigger;
             int baudRate;
@@ -78,6 +81,7 @@ namespace bias {
             RtnStatus fromMap(QVariantMap configMap);
             RtnStatus setViewFromMap(QVariantMap configMap);
             RtnStatus setCropListFromMap(QVariantMap configMap);
+            void convertStringtoVector(string& convertString, vector<string>& vectorString);
     };
 
     QJsonObject loadParams(const string& param_file);

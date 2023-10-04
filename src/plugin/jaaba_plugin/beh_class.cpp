@@ -587,9 +587,10 @@ namespace bias {
 #endif
 	}*/
 
-    void beh_class::getviewandfeature(HOGShape *shape_viewA, HOGShape *shape_viewB, string view)
+    void beh_class::getviewandfeature(HOGShape *shape_viewA, HOGShape *shape_viewB, 
+                                      string view)
     {
-
+        int num_views = classifier_concatenation_order.size();
         //shape of hist side
         unsigned int viewA_x = shape_viewA->x;
         unsigned int viewA_y = shape_viewA->y;
@@ -600,8 +601,26 @@ namespace bias {
         unsigned int viewB_y = shape_viewB->y;
         unsigned int viewB_bin = shape_viewB->bin;
 
-        unsigned int feat_dim_viewA = shape_viewA->x * shape_viewA->y * shape_viewA->bin;
-        unsigned int feat_dim_viewB = shape_viewB->x * shape_viewB->y * shape_viewB->bin;
+        unsigned int feat_dim_viewA; 
+        unsigned int feat_dim_viewB;
+        string classifier_first_view;
+        string classifier_second_view;
+        vector<unsigned int>feat_dims_order = vector<unsigned int>(num_views,0);
+        //std::cout << "viewA x" << viewA_x << std::endl;
+        //std::cout << "viewB x" << viewB_x << std::endl;
+
+        for(int cls_ord_id = 0; cls_ord_id < num_views; cls_ord_id++)
+        {
+            if (classifier_concatenation_order[cls_ord_id] == "viewA") {
+                feat_dim_viewA = shape_viewA->x * shape_viewA->y * shape_viewA->bin;
+                feat_dims_order[cls_ord_id] = feat_dim_viewA;
+            }
+            else if (classifier_concatenation_order[cls_ord_id] == "viewB") {
+                feat_dim_viewB = shape_viewB->x * shape_viewB->y * shape_viewB->bin;
+                feat_dims_order[cls_ord_id] = feat_dim_viewB;
+            }
+        }
+        //std::cout << feat_dims_order[0] << " " << feat_dims_order[1] << std::endl;
 
         size_t numWkCls = model[0].cls_alpha.size();
         size_t num_behs = beh_present.size();
@@ -620,26 +639,27 @@ namespace bias {
                     cuda_feat_dim = cls_dim - 1;
                     flag = 0;
 
-                    if (cls_dim > 0 && cls_dim <= feat_dim_viewA && (view == "viewA")) {
+                    if (cls_dim > 0 && cls_dim <= feat_dims_order[0] && (view == classifier_concatenation_order[0])) {
                         translation_index_map_hof[beh_id].insert(make_pair(cls_id, cuda_feat_dim ));
                         flag = 1;
                     }
-                    else if (cls_dim > feat_dim_viewA && cls_dim <= (feat_dim_viewA + feat_dim_viewB)
-                             && (view == "viewB")) {
-                        cuda_feat_dim -= feat_dim_viewA;
+                    else if (cls_dim > feat_dims_order[0] && cls_dim <= (feat_dims_order[0] + feat_dims_order[1])
+                             && (view == classifier_concatenation_order[1])) {
+                        cuda_feat_dim -= feat_dims_order[0];
                         translation_index_map_hof[beh_id].insert(make_pair(cls_id, cuda_feat_dim));
                         flag = 2;
                     }
-                    else if (cls_dim > (feat_dim_viewA + feat_dim_viewB) 
-                             && cls_dim <= ((2 * feat_dim_viewA) + feat_dim_viewB)
-                             && (view == "viewA")) {
-                        cuda_feat_dim -= (feat_dim_viewA + feat_dim_viewB);
+                    else if (cls_dim > (feat_dims_order[0] + feat_dims_order[1])
+                             && cls_dim <= ((2 * feat_dims_order[0]) + feat_dims_order[1])
+                             && (view == classifier_concatenation_order[0])) {
+                        cuda_feat_dim -= (feat_dims_order[0] + feat_dims_order[1]);
                         translation_index_map_hog[beh_id].insert(make_pair(cls_id, cuda_feat_dim));
                         flag = 3;
                     }
-                    else if(cls_dim > ((2 * feat_dim_viewA) + feat_dim_viewB) && (view == "viewB")){
+                    else if(cls_dim > ((2 * feat_dims_order[0]) + feat_dims_order[1]) &&
+                             (view == classifier_concatenation_order[1])){
 
-                        cuda_feat_dim -= ((2 * feat_dim_viewA) + feat_dim_viewB);
+                        cuda_feat_dim -= ((2 * feat_dims_order[0]) + feat_dims_order[1]);
                         translation_index_map_hog[beh_id].insert(make_pair(cls_id, cuda_feat_dim));
                         flag = 4;
                     }

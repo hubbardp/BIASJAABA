@@ -1458,8 +1458,14 @@ namespace bias {
             beh_names.push_back(cur_beh);
         }
         num_behs = jab_conf.num_behs;
-
         std::cout << "num behs " << num_behs << std::endl;
+
+        // extract classifier order
+        string classifier_order = jab_conf.classifier_concatenation_order;
+        jab_conf.convertStringtoVector(classifier_order, 
+                              classifier_concatenation_order);
+        //std::cout << classifier_concatenation_order[0] << std::endl;
+        //std::cout << classifier_concatenation_order[1] << std::endl;
 
         if (!mesPass)
         {
@@ -1468,6 +1474,8 @@ namespace bias {
             processScoresPtr_self->classifier->classifier_file = config_file_dir + classifier_filename;
             processScoresPtr_self->classifier->num_behs = num_behs;
             processScoresPtr_self->classifier->beh_names = beh_names;
+            processScoresPtr_self->classifier->classifier_concatenation_order 
+                                                               = classifier_concatenation_order;
             processScoresPtr_self->classifier->allocate_model();
             processScoresPtr_self->classifier->loadclassifier_model();
             processScoresPtr_self->classifierThres = classifier_thres;
@@ -1749,11 +1757,9 @@ namespace bias {
             if (isReceiver()) 
             {
 
-                std::cout << "translated from mat to c Side" << std::endl;
                 partner_hogshape_ = partner_hoghof->hog_shape;
-                
-                //partner_hogshape_.x = 20; partner_hogshape_.y = 10; partner_hogshape_.bin = 8;
-                //hogshape_.x = 30; hogshape_.y = 10; hogshape_.bin = 8;
+                //std::cout << " " << partner_hogshape_.x << "" << partner_hogshape_.y 
+                //    << "" << partner_hogshape_.bin << std::endl;
 
                 //processScoresPtr_self->classifier->translate_mat2C(&processScoresPtr_self->HOGHOF_self->hog_shape, 
                 //    &partner_hogshape_);
@@ -1765,8 +1771,10 @@ namespace bias {
 
             if (isSender())
             {
-                std::cout << "translated from mat to c front" << std::endl;
+                
                 partner_hogshape_ = partner_hoghof->hog_shape;
+                //std::cout << " " << partner_hogshape_.x << "" << partner_hogshape_.y
+                //    << "" << partner_hogshape_.bin << std::endl;
                 //processScoresPtr_self->classifier->translate_mat2C(&partner_hogshape_,
                 //    &processScoresPtr_self->HOGHOF_self->hog_shape);
 				//processScoresPtr_self->classifier->translate_featureIndexes(&partner_hogshape_,
@@ -2084,11 +2092,9 @@ namespace bias {
         {
             
             if (camera_serial_id == camera_it->second && camera_it->first == "viewA") {
-                sideRadioButtonPtr_->setChecked(true);
                 view_ = "viewA";
             }
             else if (camera_serial_id == camera_it->second && camera_it->first == "viewB") {
-                frontRadioButtonPtr_->setChecked(true);
                 view_ = "viewB";
             }else{}
 
@@ -2117,10 +2123,8 @@ namespace bias {
           
         setupHOGHOF();
         setupClassifier();
-        if (cameraNumber_ == 0)
-            std::cout << "all side setup done\n" << std::endl;
-        else if (cameraNumber_ == 1)
-            std::cout << "all front setup done\n" << std::endl;
+
+        std::cout << view_ << "plugin setup done\n" << std::endl;
     }
 
 
