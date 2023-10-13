@@ -84,7 +84,7 @@ namespace bias
            int frameCount_;
            int partner_frameCount_;
            uint64_t side_read_time_, front_read_time_;
-           uint64_t fstfrmStampRef;
+           //uint64_t fstfrmStampRef;
            unsigned int numFrames;
            string output_score_dir;
            bool isVideo;
@@ -168,6 +168,7 @@ namespace bias
 
            bool isnewscrfile_;
            bool writeScoreFlag_;
+           uint64_t fstfrmtsRef_;
  
            QQueue<FrameData> frameQueue_;
            QPointer<BiasPlugin> partnerPluginPtr_;
@@ -187,6 +188,9 @@ namespace bias
            void newShapeData(ShapeData data);
            void sideProcess(bool side);
            void frontProcess(bool front);
+
+        private slots:
+            void setfstFrametsRef(uint64_t fstframetsRef);
 
     };
 

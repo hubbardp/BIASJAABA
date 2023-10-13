@@ -256,8 +256,9 @@ namespace bias {
                         HOGHOF_self->hof_shape.bin;
 
                 }
-                hoghof_feat.resize(numframes_, std::vector<float>());
-                hoghof_feat_avg.resize(numframes_, std::vector<float>());
+                //not required ???
+                //hoghof_feat.resize(numframes_, std::vector<float>());
+                //hoghof_feat_avg.resize(numframes_, std::vector<float>());
             }
             else {
                 QString errMsgTitle = QString("gpuInit");
@@ -355,6 +356,7 @@ namespace bias {
             qRegisterMetaType<PredData>("PredData");
             qRegisterMetaType<unsigned int>("unsigned int");
             qRegisterMetaType<int64_t>("int64_t");
+            qRegisterMetaType<int64_t>("uint64_t");
             qRegisterMetaType<bool>("bool");
             connect(partnerPluginPtr, SIGNAL(partnerImageQueue(std::shared_ptr<LockableQueue<StampedImage>>)),
                 this, SLOT(onPartnerPlugin(std::shared_ptr<LockableQueue<StampedImage>>)));
@@ -658,7 +660,7 @@ namespace bias {
                                 time_now = static_cast<uint64_t>(read_ondemand);
                             }
                             else {
-
+                                
                                 time_now = gettime_->getPCtime();
                             }
                         }
@@ -736,7 +738,7 @@ namespace bias {
                             sideScoreQueuePtr_->releaseLock();
 
                         }*/
-
+                        //std::cout << "Processed Frame " << processedFrameCount << std::endl;
                         processedFrameCount++;
                     }
                 }
@@ -1308,6 +1310,12 @@ namespace bias {
         processScoresPtr_self->setAutoDelete(false);
         //processScoresPtr_partner->setAutoDelete(false);
 
+        connect(this,
+            SIGNAL(passfstFrametsRef(uint64_t)),
+            processScoresPtr_self,
+            SLOT(setfstFrametsRef(uint64_t))
+        );
+
         if (visualize)
         {
             if (processScoresPtr_self != nullptr && cameraNumber_ == 0)
@@ -1862,6 +1870,18 @@ namespace bias {
         }
     }
 
+    void JaabaPlugin::setfstFrametsRef(uint64_t fstframetsRef)
+    {
+        fstfrmtStampRef_ = fstframetsRef;
+
+        if (isReceiver())
+        {
+            emit(passfstFrametsRef(fstfrmtStampRef_));
+        }
+        std::cout << "fst frame ts ref " << fstfrmtStampRef_
+            << "in cameraNumber " << cameraNumber_ << std::endl;
+    }
+
 
     void JaabaPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
                                     bool testConfigEnabled, string trial_info,
@@ -1879,7 +1899,6 @@ namespace bias {
         // test vectors allocated for scores
         if (processScoresPtr_self != nullptr && isReceiver())
         {
-            std::cout << "Scores && " << numframes_ << std::endl;
             //processScoresPtr_self->scores.resize(numframes_);
             //processScoresPtr_self->numFrames = numframes_;
             processScoresPtr_self->nidaq_task_= nidaq_task_;

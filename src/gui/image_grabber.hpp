@@ -80,6 +80,7 @@ namespace bias
             //void reinitializeImageGrab(unsigned long& frameCount,
             //    bool& isFirst, bool& nidaqTrigged, double& dtEstimate, unsigned long& startupcount);
             void resetNidaqTrigger(bool turnOn);
+            void resetParams();
 
             //cmdline params
             string input_video_dir;
@@ -127,10 +128,11 @@ namespace bias
             void nidaqtriggered(bool istriggered);
             void setImagegrabParams();
             void signalGpuDeinit();
+            void passfstFrametsRef(uint64_t fstframetsRef);
         
         private slots:
             void setTriggered(bool istriggered);
-            void resetParams();
+            //void resetParams();
 
         private:
             bool ready_;
@@ -207,6 +209,8 @@ namespace bias
             QPointer<CameraWindow> getCameraWindow();
             QPointer<CameraWindow> getPartnerCameraWindowPtr();
             void flushCameraBuffer();
+            void connectWidgets();
+            void syncImageGrabThreads();
             
     };
 

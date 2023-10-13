@@ -552,6 +552,12 @@ namespace bias
                     this,
                     SLOT(frameJaabaMatchError(unsigned int, QString))
                 );
+
+                connect(imageGrabberPtr_,
+                    SIGNAL(passfstFrametsRef(uint64_t)),
+                    currentPluginPtr,
+                    SLOT(setfstFrametsRef(uint64_t))
+                );
             }
 
             //Initialize gpu memory
@@ -665,12 +671,25 @@ namespace bias
                     currentPluginPtr->gpuInit();
                 }
             }
-        }
+        }*/
 
         threadPoolPtr_ -> start(imageGrabberPtr_);
         threadPoolPtr_ -> start(imageDispatcherPtr_);
-        if(isPluginEnabled())
-            threadPoolPtr_-> start(pluginHandlerPtr_);*/
+        
+        if (isLoggingEnabled()) {
+            threadPoolPtr_->start(imageLoggerPtr_);
+        }
+         
+        if(isPluginEnabled()){
+            threadPoolPtr_-> start(pluginHandlerPtr_);
+
+            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+            if (!currentPluginPtr.isNull() &&
+                currentPluginPtr->getName() == "jaabaPlugin")
+            {
+                currentPluginPtr->reset();
+            }
+        }
 
         // Set Capture start and stop time
         captureStartDateTime_ = QDateTime::currentDateTime();
@@ -981,13 +1000,13 @@ namespace bias
         //clear data from all queues 
         clearQueues();
 
-        std::cout << "Number of cameras " << cameraWindowPtrList_->size() << std::endl;
-        numberOfCameras_ = cameraWindowPtrList_->size();
-        numImageGrabStarted_ = &numberOfCameras_;
+        //std::cout << "Number of cameras " << cameraWindowPtrList_->size() << std::endl;
+        //numberOfCameras_ = cameraWindowPtrList_->size();
+        //numImageGrabStarted_ = &numberOfCameras_;
 
         //start threads all cameras
-        if(!imageGrabberPtr_->imagegrab_started)
-            startThreadsAllCamerasTrigMode();
+        //if(!imageGrabberPtr_->imagegrab_started)
+        //    startThreadsAllCamerasTrigMode();
 
         if (isLoggingEnabled())
             resetImageLoggerParams();
@@ -1001,6 +1020,14 @@ namespace bias
             resetImageDispatchParams();
 
         }
+
+        if (nidaq_task != nullptr && !nidaq_task->start_tasks && !nidaq_task->istrig)
+        {
+            nidaq_task->startTasks();
+            nidaq_task->start_trigger_signal();
+            setStartNIDAQTriggerFlag();
+        }
+
         startTriggerButtonPtr_->setText(QString("Stop"));
         std::cout << "Start Trigger Button pressed Exited " << std::endl;
         rtnStatus.success = true;
@@ -1013,14 +1040,6 @@ namespace bias
     {
         RtnStatus rtnStatus;
 
-        //QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
-        //if (currentPluginPtr != nullptr)
-        //{
-        //    if (currentPluginPtr->getName() == "jaabaPlugin") {
-        //        currentPluginPtr->gpuDeinit();
-        //    }
-        //}
-
         //stop threads 
         //stopThreadsAllCamerasTrigMode();
 
@@ -1028,15 +1047,18 @@ namespace bias
         //if(!cmdlineparams_.isVideo)
         //    stopAllCamerasTrigMode();
         
-        //if (nidaq_task != nullptr && nidaq_task->istrig)
-        //{
-        //    nidaq_task->stopTasks();
-        //    nidaq_task->stop_trigger_signal();
-        //    setStopNIDAQTriggerFlag();
-        //}
+        if (nidaq_task != nullptr && nidaq_task->istrig)
+        {
+            // set stopTrigger flag in imagegrab for all cameras
+            setStopNIDAQTriggerFlag();
+            nidaq_task->stop_trigger_signal();
+            nidaq_task->stopTasks();
+        
+        }
 
-        // set stopTrigger flag in imagegrab for all cameras
-        setStopNIDAQTriggerFlag();
+        // deinitialize all gpus
+        gpuDeInitializeAllJaaabaPlugins();
+
         setWriteScoreFlag();
 
         startTriggerButtonPtr_->setText(QString("Start"));
@@ -8168,6 +8190,29 @@ namespace bias
         }
     }
 
+    //might want to merge this with resetPluginParams later
+    void CameraWindow::gpuDeInitializeAllJaaabaPlugins()
+    {
+        QPointer<BiasPlugin> currentPluginPtr;
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            // Initialize the gpu memory
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                if (isPluginEnabled())
+                {
+                    currentPluginPtr = cameraWindowPtr->getCurrentPlugin();
+                    if (currentPluginPtr != nullptr)
+                    {
+                        if (currentPluginPtr->getName() == "jaabaPlugin") {
+                            currentPluginPtr->gpuDeinit();
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Utility functions
     // ----------------------------------------------------------------------------------
 
@@ -8665,7 +8710,8 @@ namespace bias
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
                 imagegrabptr = cameraWindowPtr->getImageGrabberPtr();
-                imagegrabptr->startTrigger = true;
+                imagegrabptr->resetParams();
+                //imagegrabptr->startTrigger = true;
                 //imagegrabptr->resetNidaqTrigger(false);
                 //emit imagegrabptr->nidaqtriggered(imagegrabptr->nidaqTriggered);
 
@@ -8743,6 +8789,21 @@ namespace bias
         //std::cout << "DEBUG:: nidaq stop nidaq trigger flag exited" << std::endl;
     }
 
+    void CameraWindow::setStartNIDAQTriggerFlag()
+    {
+        QPointer<ImageGrabber>imagegrabptr;
+
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                imagegrabptr = cameraWindowPtr->getImageGrabberPtr();
+                imagegrabptr->startTrigger = true;
+            }
+        }
+        //std::cout << "DEBUG:: nidaq start nidaq trigger flag exited" << std::endl;
+    }
+
     void CameraWindow::clearQueues()
     {
         if ((cameraWindowPtrList_->size()) > 1)
@@ -8782,6 +8843,7 @@ namespace bias
         }
 
     }
+
 
 } // namespace bias
 

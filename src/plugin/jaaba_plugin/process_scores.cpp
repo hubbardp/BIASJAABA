@@ -52,7 +52,7 @@ namespace bias {
         skipSide = 0;
         side_read_time_ = 0;
         front_read_time_ = 0;
-        fstfrmStampRef = 0;
+        fstfrmtsRef_ = 0;
         //isHOGHOFInitialised = false;
 
         output_score_dir = cmdlineparams.output_dir;
@@ -140,7 +140,7 @@ namespace bias {
         uint64_t time_now = 0;
         double vis_ts = 0.0;
         time_now = gettime->getPCtime();
-        vis_ts = (time_now - fstfrmStampRef)*(1.0e-6);
+        vis_ts = (time_now - fstfrmtsRef_)*(1.0e-6);
 
         visplots->livePlotTimeVec_.append(vis_ts);
         visplots->livePlotSignalVec_Lift.append(double(scr_vec[0]));
@@ -314,6 +314,7 @@ namespace bias {
             {
                 skipFront = false;
                 skipSide = false;
+                fstframets = fstfrmtsRef_;
 
                 //if new trial get score file name
                 if(isnewscrfile_)
@@ -331,14 +332,43 @@ namespace bias {
                     write_score_final(scores_filename, numFrames, scores);
                     writeScoreFlag_ = false;
                     clearQueues();
-                    scoreCount = 0;
+                    //scoreCount = 0;
+                    fstframets = 0;
 
                     std::cout << "frames triggered ...." << frame_triggered << std::endl;
                 }
 
                 if (selfScoreQueuePtr_->empty() && partnerScoreQueuePtr_->empty()) 
                 {
-                    continue;
+                    if (fstframets != 0) {
+                        if (isVideo)
+                        {
+                            time_now = gettime->getPCtime();
+                            expLat = calculateExpectedlatency(fstframets, perFrameLat,
+                                scoreCount, 1, framerate);
+                        }
+                        else {
+                            nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                            time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
+                            expLat = calculateExpectedlatency(fstframets, perFrameLat,
+                                scoreCount, fast_clock_period, framerate);
+                        }
+
+                        if (time_now > expLat)
+                        {
+                            skipFront = true;
+                            skipSide = true;
+                            if (scoreCount == 0)
+                                std::cout << "time now " << time_now << "expLat " << expLat << std::endl;
+                        }
+                        else {
+                            continue;
+                        }
+                    }
+                    else {
+
+                        continue;
+                    }
                 } 
                 else if (!selfScoreQueuePtr_->empty() && !partnerScoreQueuePtr_->empty()) 
                 {
@@ -547,7 +577,26 @@ namespace bias {
 
                 }
 
-                if (skipFront)
+                if (skipFront && skipSide) 
+                {
+                    skipFront = false;
+                    skipSide = false;
+
+                    predScoreFinal.score = vector<float>(classifier->num_behs,0);
+                    predScoreFinal.frameCount = scoreCount;
+                    predScoreFinal.view = -1;
+                    predScoreFinal.score_viewA_ts = 0;
+                    predScoreFinal.score_viewB_ts = 0;
+                    predScoreFinal.score_ts = 0;
+
+                    scores.push_back(predScoreFinal);
+                    if (scoreCount == 0)
+                        std::cout << "skipped in both " << std::endl;
+
+                    scoreCount++;
+
+                }
+                else if (skipFront)
                 {
                     if (!skipSide)
                     {
@@ -665,7 +714,7 @@ namespace bias {
                             scoreCount++;
                         }       
                     }
-                }  
+                }else{}
             }
 
             //std::cout << scoreCount << std::endl;
@@ -732,6 +781,14 @@ namespace bias {
             scores[scr_id].fstfrmtStampRef_ = 0;
         }*/
         scores.clear();
+    }
+
+    //private slots
+    void ProcessScores::setfstFrametsRef(uint64_t fstframetsRef)
+    {
+        fstfrmtsRef_ = fstframetsRef;
+        std::cout << "fst frame ts ref " << fstfrmtsRef_ << 
+           "in processcores " << std::endl;
     }
 
 

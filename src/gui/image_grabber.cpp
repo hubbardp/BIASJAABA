@@ -104,9 +104,8 @@ namespace bias {
         testConfigEnabled_ = testConfigEnabled;
         testConfig_ = testConfig;
         trial_num = trial_info;
-        fstfrmtStampRef_ = 0.0;
+        fstfrmtStampRef_ = 0;
         numImagegrabStarted_ = numImagegrabStarted;
-        std::cout << "image grab---" << *numImagegrabStarted << " " << cameraNumber_ << std::endl;
 
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         cameraWindowPtrList_ = cameraWindowPtr->getCameraWindowPtrList();
@@ -133,7 +132,6 @@ namespace bias {
         gettime_ = gettime;
 
         if (isVideo) {
-            std::cout << "Initializing video" << std::endl;
             initializeVid();
         }
 
@@ -305,24 +303,7 @@ namespace bias {
         //ThreadAffinityService::assignThreadAffinity(true, cameraNumber_);
 
         trig = cameraPtr_->getTriggerType();
-
-        //set nidaq trigger for partner camera
-        partnerImageGrabberPtr = partnerCameraWindowPtr->getImageGrabberPtr();
-        QPointer<CameraWindow>cameraWindowPtr = getCameraWindow();
-
-        connect(
-            this,
-            SIGNAL(nidaqtriggered(bool)),
-            partnerImageGrabberPtr,
-            SLOT(setTriggered(bool))
-        );
-        connect(
-            this,
-            SIGNAL(setImagegrabParams()),
-            partnerImageGrabberPtr,
-            SLOT(resetParams())
-
-        );
+        //connectWidgets();
 
         // Start image capture
         cameraPtr_->acquireLock();
@@ -381,29 +362,9 @@ namespace bias {
         //    }
         //}
         //// -------------------------------------------------------------------------------
-        std::cout << "Imagegrab started " << std::endl;
 
-        acquireLock();
-        std::cout << "image grab--value " << *numImagegrabStarted_
-            << " " << cameraNumber_ << " " << imagegrab_started << std::endl;
-        (*numImagegrabStarted_)--;
-        std::cout << "image grab---run" << *numImagegrabStarted_
-            << " " << cameraNumber_ << std::endl;
-
-        if (*numImagegrabStarted_ != 0) {
-            std::cout << "image grab---wait" << *numImagegrabStarted_
-                << " " << cameraNumber_ << std::endl;
-            waitForCond();  
-        }
-        else if (*numImagegrabStarted_ == 0) {
-            std::cout << "image grab---wake all " << *numImagegrabStarted_
-                << " " << cameraNumber_ << std::endl;
-            signalCondMet();
-            partnerImageGrabberPtr->signalCondMet();
-            startTrigger = true;
-            partnerImageGrabberPtr->startTrigger = true;
-        }
-        releaseLock();
+        //std::cout << "Imagegrab started " << std::endl;
+        //syncImageGrabThreads();
 
         // Grab images from camera until the done signal is given
         while (!done)
@@ -417,19 +378,23 @@ namespace bias {
             if (startTrigger)
             {
 
-                resetNidaqTrigger(true);
+                //resetNidaqTrigger(true);
+                if (frameCount != 0 && !nidaq_task_->istrig)
+                {
+                    QThread::yieldCurrentThread();
+                    continue;
+                }
                 startTrigger = false;
 
             }else if(stopTrigger)
             {
-                resetNidaqTrigger(false);
+                //resetNidaqTrigger(false);
                 stopTrigger = false;
                 nidaqTriggered = false;
-                frameCount = 0;
+                //frameCount = 0;
                 if(!isVideo)
                     flushCameraBuffer();
-                //cameraWindowPtr->stopTrigger();
-                emit(signalGpuDeinit());
+                //emit(signalGpuDeinit());
                 std::cout << "CameraNumber " << cameraNumber_ << "Stop Trigger " << stopTrigger << std::endl;
 
             }else{}
@@ -541,7 +506,8 @@ namespace bias {
                 }*/
 
                 // if nidaq is not triggered yet do not capture frames
-                if (frameCount == 0 && !nidaq_task_->istrig)
+                //if (frameCount == 0 && !nidaq_task_->istrig)
+                if(!nidaq_task_->istrig)
                 {
                     QThread::yieldCurrentThread();
                     continue;
@@ -549,7 +515,6 @@ namespace bias {
 
                    
                 //grab images from camera 
-                //start_process = gettime_->getPCtime();
                 cameraPtr_->acquireLock();
                 try
                 {
@@ -568,7 +533,6 @@ namespace bias {
                     error = true;
                 }
                 cameraPtr_->releaseLock();
-                //end_process = gettime_->getPCtime();
 
             }
             
@@ -706,13 +670,19 @@ namespace bias {
                         if (frameCount == 0) {
                             
                             fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount%nframes_]);
-                            
+                            emit(passfstFrametsRef(fstfrmtStampRef_));
                         }
                         nidaq_task_->getNidaqTimeNow(read_ondemand_);
 
                     }
                     else {
                         //fstfrmtStampRef_ = static_cast<uint64_t>(gettime_->getPCtime());
+                   
+                    }
+                }
+                else if(isVideo) {
+                    if (frameCount == 0) {
+                        emit(passfstFrametsRef(fstfrmtStampRef_));
                     }
                 }
 
@@ -1314,47 +1284,6 @@ namespace bias {
         trial_num = trialnum;
     }
 
-    /*void ImageGrabber::resetNidaqTrigger(bool turnOn)
-    {
-        std::cout << "Nidaq has to be turned " << turnOn << " " << cameraNumber_ <<  std::endl;
-        //std::cout << "Nidaq trigger value entering the reset fnc " << nidaqTriggered << cameraNumber_ << std::endl;
-        //std::cout << "Nidaq trigger value entering the reset fnc " << partnerImageGrabberPtr->nidaqTriggered << std::endl;
-        if (nidaqTriggered != turnOn) {
-            acquireLock();
-            if (turnOn)
-            {
-                resetParams();
-            }
-            nidaqTriggered = turnOn;
-            if (partnerImageGrabberPtr->nidaqTriggered != turnOn)
-            {
-                std::cout << "Nidaq wait " << cameraNumber_ << std::endl;
-                waitForCond();
-            }
-            else if (partnerImageGrabberPtr->nidaqTriggered == turnOn)
-            {
-                std::cout << "Nidaq wake " << cameraNumber_ << std::endl;
-                //signalCondMet();
-                if (turnOn && !nidaq_task_->start_tasks && !nidaq_task_->istrig) {
-                    //std::cout << "Nidaq is triggered " << cameraNumber_ << std::endl;
-                    nidaq_task_->startTasks();
-                    nidaq_task_->start_trigger_signal();
-                }
-
-                if (!turnOn)
-                {
-                    nidaq_task_->stopTasks();
-                    nidaq_task_->stop_trigger_signal();
-                }
-
-                partnerImageGrabberPtr->signalCondMet();
-                //std::cout << "Nidaq is turned " << nidaqTriggered << " " << cameraNumber_ << std::endl;
-                //std::cout << "Nidaq is turned " << partnerImageGrabberPtr->nidaqTriggered << " " << cameraNumber_ << std::endl;
-            }
-            releaseLock();
-        }
-        std::cout << "Nidaq Reset exited " << cameraNumber_ << std::endl;
-    }*/
 
     void ImageGrabber::resetNidaqTrigger(bool turnOn)
     {
@@ -1435,7 +1364,7 @@ namespace bias {
 
         timeStampDbl = 0.0;
         timeStampDblLast = 0.0;
-        fstfrmtStampRef_ = 0.0;
+        fstfrmtStampRef_ = 0;
 
         isReset = true;
         nidaqTriggered = false;
@@ -1497,6 +1426,58 @@ namespace bias {
         std::cout << "Number of frames skipped " << (frameCount_after - frameCount_before)+1 << std::endl;
 
     }
+
+    // obsoloete code, used when nidaq was being triggered by the imagegrab threads
+    void ImageGrabber::connectWidgets()
+    {
+        //set nidaq trigger for partner camera
+        partnerImageGrabberPtr = partnerCameraWindowPtr->getImageGrabberPtr();
+        QPointer<CameraWindow>cameraWindowPtr = getCameraWindow();
+
+        connect(
+            this,
+            SIGNAL(nidaqtriggered(bool)),
+            partnerImageGrabberPtr,
+            SLOT(setTriggered(bool))
+        );
+        connect(
+            this,
+            SIGNAL(setImagegrabParams()),
+            partnerImageGrabberPtr,
+            SLOT(resetParams())
+
+        );
+    }
+
+    //obsolete code - used when trying to sync imagegrab threads on start
+    void ImageGrabber::syncImageGrabThreads()
+    {
+        acquireLock();
+        //std::cout << "image grab--value " << *numImagegrabStarted_
+        //    << " " << cameraNumber_ << " " << imagegrab_started << std::endl;
+        (*numImagegrabStarted_)--;
+        //std::cout << "image grab---run" << *numImagegrabStarted_
+        //    << " " << cameraNumber_ << std::endl;
+
+        if (*numImagegrabStarted_ != 0) {
+        
+            //    std::cout << "image grab---wait" << *numImagegrabStarted_
+            //        << " " << cameraNumber_ << std::endl;
+            waitForCond();
+        }
+        else if (*numImagegrabStarted_ == 0) {
+
+            //    std::cout << "image grab---wake all " << *numImagegrabStarted_
+            //        << " " << cameraNumber_ << std::endl;
+            
+            signalCondMet();
+            partnerImageGrabberPtr->signalCondMet();
+            startTrigger = true;
+            partnerImageGrabberPtr->startTrigger = true;
+        }
+        releaseLock(); 
+    }
+
    
 } // namespace bias
 

@@ -432,11 +432,13 @@ namespace bias
             void resetImageGrabParams();
             void clearQueues();
             void setStopNIDAQTriggerFlag();
+            void setStartNIDAQTriggerFlag();
             void resetPluginParams();
             void resetImageDispatchParams();
             void gpuInitializeAllJaabaPlugins();
             void resetImageLoggerParams();
             void setWriteScoreFlag();
+            void gpuDeInitializeAllJaaabaPlugins();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();

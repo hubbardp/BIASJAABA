@@ -284,6 +284,7 @@ namespace bias
             void passScoreDone(bool score_cal);
             void doNotProcess(unsigned int frameCount);
             void framecountMatchError(unsigned int, QString);
+            void passfstFrametsRef(uint64_t fstframetsRef);
 
         private slots:
 
@@ -298,6 +299,7 @@ namespace bias
             void scoreCalculated(bool score_cal);
             void setSkipFrameProcess(unsigned int frameCount);
             void setgpuInitializeFlag();
+            void setfstFrametsRef(uint64_t fstframetsRef);
             //void reloadButtonPressed();
             //void detectClicked();
             //void saveClicked();
