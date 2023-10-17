@@ -1008,8 +1008,10 @@ namespace bias
         //if(!imageGrabberPtr_->imagegrab_started)
         //    startThreadsAllCamerasTrigMode();
 
-        if (isLoggingEnabled())
+        if (isLoggingEnabled()) 
+        {
             resetImageLoggerParams();
+        }
 
         if (isPluginEnabled())
             resetPluginParams();
@@ -8768,7 +8770,9 @@ namespace bias
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
                 imageLoggerPtr = cameraWindowPtr->getImageLoggerPtr();
-                imageLoggerPtr->resetImageLoggerParams();
+                QString autoNamingString = cameraWindowPtr->getAutoNamingString();
+                QString videoFileFullPath = cameraWindowPtr->getVideoFileFullPath(autoNamingString);
+                imageLoggerPtr->resetImageLoggerParams(videoFileFullPath);
                     
             }
         }

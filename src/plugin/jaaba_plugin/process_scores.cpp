@@ -340,6 +340,7 @@ namespace bias {
 
                 if (selfScoreQueuePtr_->empty() && partnerScoreQueuePtr_->empty()) 
                 {
+                    // check if scores from all views arrive late
                     if (fstframets != 0) {
                         if (isVideo)
                         {
@@ -358,8 +359,7 @@ namespace bias {
                         {
                             skipFront = true;
                             skipSide = true;
-                            if (scoreCount == 0)
-                                std::cout << "time now " << time_now << "expLat " << expLat << std::endl;
+
                         }
                         else {
                             continue;
@@ -473,14 +473,6 @@ namespace bias {
                             << std::endl;
                         }*/
 
-                        //scores[scoreCount].score = classifier->finalscore.score;
-                        //scores[scoreCount].frameCount = predScore.frameCount;
-                        //scores[scoreCount].view = 3;
-
-                        //scores[scoreCount].score_viewA_ts = predScore.score_viewA_ts;
-                        //scores[scoreCount].score_viewB_ts = predScorePartner.score_viewB_ts;
-                            // - max(predScore.score_ts, predScorePartner.score_ts);
-
                         if(visualize)
                         {
                             visualizeScores(classifier->finalscore.score);
@@ -590,8 +582,6 @@ namespace bias {
                     predScoreFinal.score_ts = 0;
 
                     scores.push_back(predScoreFinal);
-                    if (scoreCount == 0)
-                        std::cout << "skipped in both " << std::endl;
 
                     scoreCount++;
 

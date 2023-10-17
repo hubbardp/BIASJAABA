@@ -59,7 +59,7 @@ namespace bias
             void stop();
 
             unsigned int getLogQueueSize();
-            void resetImageLoggerParams();
+            void resetImageLoggerParams(QString videoFileFullPath);
             
 
             // Debugging --------------------------

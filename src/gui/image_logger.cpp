@@ -282,13 +282,13 @@ namespace bias
     
     }  // void ImageLogger::run()
 
-    void ImageLogger::resetImageLoggerParams()
+    void ImageLogger::resetImageLoggerParams(QString videoFileFullPath)
     {
         stopped_ = false;
         frameCount_ = 0;
 
         videoWriterPtr_->resetVideoWriterParams();
-
+        videoWriterPtr_->setFileName(videoFileFullPath);
     }
 
 
