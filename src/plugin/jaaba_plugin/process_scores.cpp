@@ -205,7 +205,7 @@ namespace bias {
         {
             if (classifierPredScore.score[classifierNum] > classifierThres) {
 
-                classifier->behavior_output_signal[classifierNum] = '1';        
+                classifier->behavior_output_signal[(numBehs-1)-classifierNum] = '1';        
             }
         }
 
@@ -221,6 +221,7 @@ namespace bias {
 
             //convert output from int to char to send over the serial port
             char output_char_signal = (char)(output_int_val + '0');
+            //std::cout << output_char_signal << std::endl;
             portOutput.trigger(output_char_signal);
             frame_triggered += 1;
 
@@ -834,15 +835,12 @@ namespace bias {
 
         for (unsigned int frm_id = 0; frm_id < numFrames; frm_id++)
         {
-            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_viewA_ts 
-                << "," << pred_score[frm_id].score_viewB_ts << "," 
-                << setprecision(6) << pred_score[frm_id].score[0]
-				<< "," << setprecision(6) << pred_score[frm_id].score[1] 
-                << "," << setprecision(6) << pred_score[frm_id].score[2]
-				<< "," << setprecision(6) << pred_score[frm_id].score[3] 
-                << "," << setprecision(6) << pred_score[frm_id].score[4]
-				<< "," << setprecision(6) << pred_score[frm_id].score[5]
-                << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
+            x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_viewA_ts
+                << "," << pred_score[frm_id].score_viewB_ts;
+                for (unsigned int beh_id = 0; beh_id < classifier->num_behs; beh_id++) {
+                    x_out << "," << setprecision(6) << pred_score[frm_id].score[beh_id];
+                }
+                x_out << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
                 "\n";
         }
         x_out.close();
