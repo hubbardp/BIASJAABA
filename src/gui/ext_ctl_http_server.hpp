@@ -45,6 +45,8 @@ namespace bias
             QVariantMap handleGetWindowGeometry();
             QVariantMap handlePluginCmd(QString jsonPluginCmd);
             QVariantMap handleClose();
+			QVariantMap handleStartTriggerRequest();
+			QVariantMap handleStopTriggerRequest();
     };
 
 }

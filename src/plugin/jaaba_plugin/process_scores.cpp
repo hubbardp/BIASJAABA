@@ -6,6 +6,7 @@
 //#define visualize 0
 
 //string output_score_dir = "Y:/hantman_data/jab_experiments/STA14/STA14/20230503/STA14_20230503_142341/";
+bool firstOccur = false;
 
 namespace bias {
 
@@ -205,7 +206,11 @@ namespace bias {
         {
             if (classifierPredScore.score[classifierNum] > classifierThres) {
 
-                classifier->behavior_output_signal[(numBehs-1)-classifierNum] = '1';        
+                classifier->behavior_output_signal[(numBehs-1)-classifierNum] = '1';   
+				if (classifierNum == 0 && !firstOccur) {
+					std::cout << " first Lift frame is " << frameCount << std::endl;
+					firstOccur = true;
+				}
             }
         }
 
@@ -217,11 +222,12 @@ namespace bias {
         //convert binary string to int
         int output_int_val = stoi(output_binary_signal, 0, 2);
         
-        if (output_int_val > 0) {
+        if (output_int_val >= 0) {
 
             //convert output from int to char to send over the serial port
             char output_char_signal = (char)(output_int_val + '0');
-            //std::cout << output_char_signal << std::endl;
+		    if(output_char_signal == '1')
+                std::cout << output_char_signal << std::endl;
             portOutput.trigger(output_char_signal);
             frame_triggered += 1;
 
@@ -951,7 +957,7 @@ namespace bias {
             std::cout << "Connected\n";
 
             // Get list of allowed output pins
-            bool ok;
+            /*bool ok;
             QVector<int> allowedOutputPin = pulseDevice_.getAllowedOutputPin(&ok);
             if (ok)
             {
@@ -978,7 +984,7 @@ namespace bias {
             }
             else {
                 std::cout << "Could not set pulse length, hopefully this will be ok!!\n";
-            }
+            }*/
 
         }
         else
