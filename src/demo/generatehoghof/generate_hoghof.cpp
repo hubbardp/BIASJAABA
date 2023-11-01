@@ -106,6 +106,7 @@ int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
     const int nviews = 2;
     int numFrames;//frames to process
+	int numFrames_frt,numFrames_sde;
     bias::CmdLineParams cmdlineparams;
     bias::parser(argc, argv, cmdlineparams);
     cudaError err;
@@ -160,6 +161,11 @@ int main(int argc, char* argv[]) {
     numFrames = vid_sde.getNumFrames(cap_obj_sde);
     int width = vid_sde.getImageWidth(cap_obj_sde);
     int height = vid_sde.getImageHeight(cap_obj_sde);
+
+	numFrames_frt = vid_frt.getNumFrames(cap_obj_frt);
+	numFrames_sde = vid_sde.getNumFrames(cap_obj_sde);
+	std::cout << "side video has " << numFrames_sde << std::endl;
+	std::cout << "frt video has " << numFrames_frt << std::endl;
     std::cout << "Video has " << numFrames << " frames" << std::endl;
     std::cout << "Video height" << height << std::endl;
     std::cout << "Video width" << width << std::endl;
@@ -211,7 +217,7 @@ int main(int argc, char* argv[]) {
     featf_hog_out = new float[numFrames * feat_dim_front];
     feats_hof_out = new float[numFrames * feat_dim_side];
     featf_hof_out = new float[numFrames * feat_dim_front];
-    printf("Feature dims side and front - %d-%d", feat_dim_side, feat_dim_front);
+    printf("Feature dims side and front - %d-%d\n", feat_dim_side, feat_dim_front);
 
     if (classify_scores)
     {
@@ -251,11 +257,11 @@ int main(int argc, char* argv[]) {
     jaaba_process_time.resize(numFrames);
     bias::GetTime* gettime_ = new bias::GetTime();
 
-    while (cur_run < nRuns)
-    {
+    //while (cur_run < nRuns)
+    //{
         imageCnt = 0;
-        if(debug)
-            jaaba_process_time_file = input_dir_path + "jaaba_process_time_" + to_string(cur_run) + ".csv";
+        //if(debug)
+        //    jaaba_process_time_file = input_dir_path + "jaaba_process_time_" + to_string(cur_run) + ".csv";
         while (imageCnt < numFrames) {
 
             start_time = gettime_->getPCtime();
@@ -266,10 +272,10 @@ int main(int argc, char* argv[]) {
                 cv::Mat greySide;
                 cv::Mat greyFront;
 
-                curImg_side = vid_frames_sde[imageCnt%numFrames];
+                curImg_side = vid_frames_sde[imageCnt];
                 vid_sde.preprocess_vidFrame(curImg_side);
                 feat_side->img.buf = curImg_side.ptr<float>(0);
-                curImg_frt = vid_frames_frt[imageCnt%numFrames];
+                curImg_frt = vid_frames_frt[imageCnt];
                 vid_frt.preprocess_vidFrame(curImg_frt);
                 feat_front->img.buf = curImg_frt.ptr<float>(0);
 
@@ -278,10 +284,10 @@ int main(int argc, char* argv[]) {
 
                 if (saveFeatures) {
                    
-                    bias::saveFeatures(output_dir_path + "hoghof_side_biasjaaba_offline.csv",
+                    bias::saveFeatures(output_dir_path + "hoghof_side_biasjaaba.csv",
                         feat_side->hog_out, feat_side->hof_out,
                         feat_dim_side, feat_dim_side);
-                    bias::saveFeatures(output_dir_path + "hoghof_front_biasjaaba_offline.csv",
+                    bias::saveFeatures(output_dir_path + "hoghof_front_biasjaaba.csv",
                         feat_front->hog_out, feat_front->hof_out,
                         feat_dim_front, feat_dim_front);
                 }
@@ -290,16 +296,21 @@ int main(int argc, char* argv[]) {
 
                 if (saveFeatures) {
                     
-                    bias::saveFeatures(output_dir_path + "hoghof_avg_side_biasjaaba_offline.csv",
+                    bias::saveFeatures(output_dir_path + "hoghof_avg_side_biasjaaba.csv",
                         feat_side->hog_out_avg, feat_side->hof_out_avg,
                         feat_dim_side, feat_dim_side);
-                    bias::saveFeatures(output_dir_path + "hoghof_avg_front_biasjaaba_offline.csv",
+                    bias::saveFeatures(output_dir_path + "hoghof_avg_front_biasjaaba.csv",
                         feat_front->hog_out_avg, feat_front->hof_out_avg,
                         feat_dim_front, feat_dim_front);
+					if (imageCnt == numFrames - 1)
+						std::cout << "Writing the last frame " << std::endl;
                 }
-                end_time = gettime_->getPCtime();
-                if(debug)
-                    jaaba_process_time[imageCnt] = (end_time - start_time);
+                ;
+				if (debug) {
+					end_time = gettime_->getPCtime();
+					jaaba_process_time[imageCnt] = (end_time - start_time);
+				}
+				
 
                 if (classify_scores)
                 {
@@ -320,6 +331,7 @@ int main(int argc, char* argv[]) {
                     if (imageCnt == 0)
                         std::cout << "Lift Score first frame " << classifier_sde->finalscore.score[0] << std::endl;
                 }
+				//std::cout << imageCnt << std::endl;
                 imageCnt++;
             }
         } // finished reading video from movies 
@@ -329,14 +341,21 @@ int main(int argc, char* argv[]) {
             std::cout << "Time elapsed to process video frames " << (end_time - start_time)*0.001 << std::endl;
         }
 
-        string classifier_scr_file;
-        if(!movie_name_suffix.empty())
-            classifier_scr_file = output_dir_path + "classifier_trial" + movie_name_suffix.back() + ".csv";
-        else
-            classifier_scr_file = output_dir_path + "classifier_score.csv";
-        write_score_final(classifier_scr_file, numFrames,scores);
-        cur_run++;
-    }
+		if (classify_scores) {
+			string classifier_scr_file;
+	        if (!movie_name_suffix.empty())
+			    classifier_scr_file = output_dir_path + "classifier_trial" + movie_name_suffix.back() + ".csv";
+			else
+				classifier_scr_file = output_dir_path + "classifier_score.csv";
+			write_score_final(classifier_scr_file, numFrames, scores);
+		}
+        //cur_run++;
+    //}
+   
+    //fopen(output_dir_path + '');
+	//wait for 5 secs before exiting to make sure finsihed writing
+    Sleep(5000);
+
 
     //destroy hog hof ctx on the gpu
     HOFTeardown(feat_front->hof_ctx);
@@ -346,7 +365,7 @@ int main(int argc, char* argv[]) {
     HOFTeardown(feat_side->hof_ctx);
     HOGTeardown(feat_side->hog_ctx);
 
-    cudaDeviceReset();
+    //cudaDeviceReset();
    
     // delete hog/hof objects on the cpu
     delete feat_front;

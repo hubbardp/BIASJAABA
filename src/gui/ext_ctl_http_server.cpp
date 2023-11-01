@@ -115,7 +115,17 @@ namespace bias
         else if (name == QString("plugin-cmd"))
         {
             cmdMap = handlePluginCmd(value);
-        }
+		}
+		else if (name == QString("start-trigger"))
+		{
+			//std::cout << "name" << name.toStdString() << std::endl;
+			cmdMap = handleStartTriggerRequest();
+		}
+		else if (name == QString("stop-trigger"))
+		{
+			//std::cout << "name" << name.toStdString() << std::endl;
+			cmdMap = handleStopTriggerRequest();
+		}
         else 
         {
             cmdMap.insert("success", false);
@@ -397,4 +407,34 @@ namespace bias
         }
         return cmdMap;
     }
+
+
+	QVariantMap  ExtCtlHttpServer::handleStartTriggerRequest()
+	{
+		QVariantMap cmdMap;
+		unsigned int cameraNumber_ = cameraWindowPtr_->getCameraNumber();
+		// needs to be called once once not per camera view
+		if (cameraNumber_ == 0) {
+			RtnStatus status = cameraWindowPtr_->startTrigger(false);
+			cmdMap.insert("success", status.success);
+			cmdMap.insert("message", status.message);
+			cmdMap.insert("value", "");
+		}
+		return cmdMap;
+	}
+
+	QVariantMap  ExtCtlHttpServer::handleStopTriggerRequest()
+	{
+		QVariantMap cmdMap;
+		unsigned int cameraNumber_ = cameraWindowPtr_->getCameraNumber();
+		// needs to be called once once not per camera view
+		if (cameraNumber_ == 0) {
+			RtnStatus status = cameraWindowPtr_->stopTrigger(false);
+			cmdMap.insert("success", status.success);
+			cmdMap.insert("message", status.message);
+			cmdMap.insert("value", "");
+		}
+		return cmdMap;
+	}
+
 }
