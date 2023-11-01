@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#output_dir='Y:\hantman_data\jab_experiments\STA14\STA14\20230503\'
+#output_dir='Y:\patilr\realtime_jaaba_experiments\led_blink_10172023\'
 exp_list_file=$1
 echo "Experiment list file $exp_list_file"
 #i=1
@@ -32,7 +32,7 @@ while read -r line; do
        if [ -f $feat_front ]; then
 	   rm $feat_front
        fi
-       C:/Users/27rut/BIAS/build/Release/generate_hoghof.exe -o $exp_name
+       C:/Users/27rut/BIAS/build/Release/generate_hoghof.exe -o $exp_name -s 1
     fi
    
     ## generate movie_comb.avi
