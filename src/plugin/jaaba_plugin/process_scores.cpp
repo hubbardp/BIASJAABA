@@ -246,7 +246,7 @@ namespace bias {
 
         versionNumber++;
         verNum = (QString("_v%1").arg(versionNumber, 3, 10, QChar('0'))).toStdString();
-        scrfilename = output_score_dir + "classifier" + verNum + ".csv";
+        scrfilename = output_score_dir + "scores" + verNum + ".csv";
         std::cout << "Scr file name " << scrfilename << std::endl;
         return scrfilename;
 

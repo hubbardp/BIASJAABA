@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR) 
-project(bais)
+project(bias)
 
 if (WIN32)
     set(CMAKE_SYSTEM_VERSION 10 CACHE STRING INTERNAL FORCE)
