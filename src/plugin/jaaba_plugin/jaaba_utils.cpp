@@ -17,6 +17,7 @@ namespace bias {
     const string JaabaConfig::DEFAULT_CROP_FILE = "";
     const string JaabaConfig::DEFAULT_CLASSIFIER_FILE = "json_files/multiclassifier.mat";
     const string JaabaConfig::DEFAULT_BEH_NAMES = "Lift,Handopen,Grab,Supinate,Chew,Atmouth";
+    const string JaabaConfig::DEFAULT_JAABA_CONFIG_FILE = "json_files/jaaba_config.json";
     const string JaabaConfig::DEFAULT_CONFIG_FILE_DIR = "";
     const string JaabaConfig::DEFAULT_CLASSIFIER_CONCATENATE_ORDER = "";
     const int JaabaConfig::DEFAULT_WINDOW_SIZE = 1;
@@ -61,6 +62,7 @@ namespace bias {
         configMap.insert("hof_file", "");
         configMap.insert("crop_file_list", cropListMap);
         configMap.insert("classifier_filename", "");
+        configMap.insert("jaaba_config_file", "");
         configMap.insert("config_file_dir", "");
         configMap.insert("classifier_concatenation_order", "");
         configMap.insert("window_size", 1);
@@ -74,19 +76,47 @@ namespace bias {
         return configMap;
     }
 
-    RtnStatus JaabaConfig::fromMap(QVariantMap configMap)
-    {
-        RtnStatus rtnStatus;
-        QVariantMap oldConfigMap = toMap();
+    void JaabaConfig::print(std::ostream& out) {
+        out << "jaaba_config_file: " << jaaba_config_file << std::endl;
+        out << "config_file_dir: " << config_file_dir << std::endl;
+        out << "hog_file: " << hog_file << std::endl;
+        out << "hof_file: " << hof_file << std::endl;
+        out << "classifier_filename: " << classifier_filename << std::endl;
+        out << "window_size: " << window_size << std::endl;
+        out << "camera_serial_id:\n";
+        for (const auto& pair : camera_serial_id) {
+            std::cout << pair.first << ": " << pair.second << std::endl;
+        }
+        out << "crop_file_list:\n";
+        for (const auto& pair : crop_file_list) {
+            std::cout << pair.first << ": " << pair.second << std::endl;
+        }
+        out << "num_behs: " << num_behs << std::endl;
+        out << "beh_names: " << beh_names << std::endl;
+        out << "classifier_thresh: " << classifier_thresh << std::endl;
+        out << "output_trigger: " << output_trigger << std::endl;
+        out << "baudRate: " << baudRate << std::endl;
+        out << "perFrameLat: " << perFrameLat << std::endl;
+        out << "classifier_concatenation_order: " << classifier_concatenation_order << std::endl;
+        out << "cuda_device: " << cuda_device << std::endl;
+    }
 
-        // read jaaba config file dir
-        //read hog file from config
-        if (configMap.contains("config_file_dir"))
+    RtnStatus JaabaConfig::loadJAABAConfigFile() {
+
+        RtnStatus rtnStatus;
+        QString errMsgTitle("Load Parameter Error");
+        std::cout << "Loading JAABA config file " << jaaba_config_file << std::endl;
+
+        QJsonObject obj = loadParams(jaaba_config_file);
+        QJsonObject jsonobj;
+        QJsonValue value;
+        // read config file dir
+        if (obj.contains("config_file_dir"))
         {
-            if (configMap["config_file_dir"].canConvert<QString>())
-            {
-                config_file_dir = configMap["config_file_dir"].toString().toStdString();
-                std::cout << "Config file Dir " << config_file_dir << std::endl;
+            value = obj.value("config_file_dir");
+            if (value.isString()){
+                config_file_dir = value.toString().toStdString();
+                std::cout << "JAABA config -> config_file_dir " << config_file_dir << std::endl;
             }
             else
             {
@@ -96,11 +126,12 @@ namespace bias {
         }
 
         //read hog file from config
-        if (configMap.contains("hog_file"))
+        if (obj.contains("hog_file"))
         {
-            if (configMap["hog_file"].canConvert<QString>())
+            value = obj.value("hog_file");
+            if (value.isString())
             {
-                hog_file = configMap["hog_file"].toString().toStdString();
+                hog_file = value.toString().toStdString();
             }
             else
             {
@@ -110,11 +141,12 @@ namespace bias {
         }
 
         //read hof file from config
-        if (configMap.contains("hog_file"))
+        if (obj.contains("hof_file"))
         {
-            if (configMap["hof_file"].canConvert<QString>())
+            value = obj.value("hof_file");
+            if (value.isString())
             {
-                hof_file = configMap["hof_file"].toString().toStdString();
+                hof_file = obj["hof_file"].toString().toStdString();
             }
             else
             {
@@ -124,11 +156,12 @@ namespace bias {
         }
 
         //read classifier name from config
-        if (configMap.contains("classifier_filename"))
+        if (obj.contains("classifier_filename"))
         {
-            if (configMap["hog_file"].canConvert<QString>())
+            value = obj.value("classifier_filename");
+            if (value.isString())
             {
-                classifier_filename = configMap["classifier_filename"].toString().toStdString();
+                classifier_filename = obj["classifier_filename"].toString().toStdString();
             }
             else
             {
@@ -137,14 +170,16 @@ namespace bias {
             }
         }
 
-
         //read window size from config
-        if (configMap.contains("window_size"))
+        if (obj.contains("window_size"))
         {
-            if (configMap["window_size"].canConvert<QString>())
+            value = obj.value("window_size");
+            if (value.isString())
             {
-                window_size = configMap["window_size"].toInt();
-     
+                window_size = value.toString().toInt();
+            }
+            else if (value.isDouble()) {
+                window_size = value.toInt();
             }
             else
             {
@@ -152,30 +187,181 @@ namespace bias {
                 rtnStatus.appendMessage("unable to convert window size to int");
             }
         }
-        
-        //read camera views guids 
-        if (configMap.contains("view"))
-        {
-            QVariantMap viewMap;
-            viewMap = configMap["view"].toMap();
 
-            RtnStatus rtnStatusView = setViewFromMap(viewMap);
-            if (!rtnStatusView.success)
-            {
-                setViewFromMap(oldConfigMap["view"].toMap());
+        //read camera views guids 
+        if (obj.contains("view"))
+        {
+            value = obj.value("view");
+            if (value.isObject()) {
+                RtnStatus rtnStatusView = setViewFromMap(value.toObject().toVariantMap());
+                if(!rtnStatusView.success){
+                    rtnStatus.success = false;
+                    rtnStatus.appendMessage(rtnStatusView.message);
+                }
             }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to parse view");
+            }
+
         }
 
         //read crop list from Map
-        if (configMap.contains("crop_file_list"))
+        if (obj.contains("crop_file_list"))
         {
-            QVariantMap cropListMap;
-            cropListMap = configMap["crop_file_list"].toMap();
+            value = obj.value("crop_file_list");
+            if (value.isObject()) {
+                RtnStatus rtnStatusCropList = setCropListFromMap(value.toObject().toVariantMap());
+                if (!rtnStatusCropList.success) {
+                    rtnStatus.success = false;
+                    rtnStatus.appendMessage(rtnStatusCropList.message);
+                }
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to parse crop_file_list");
+            }
+        }
 
-            RtnStatus rtnStatusView = setCropListFromMap(cropListMap);
-            if (!rtnStatusView.success)
+        //read number of behaviors 
+        //made this obsolete -- number of behaviors in jaaba plugin is set by size of behavior names
+        if (obj.contains("num_behaviors"))
+        {
+
+            value = obj.value("num_behaviors");
+            if (value.isString())
             {
-                setViewFromMap(oldConfigMap["crop_file_list"].toMap());
+                num_behs = value.toString().toInt();
+            }
+            else if (value.isDouble()) {
+                num_behs = value.toInt();
+            }
+            else
+            {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert num_behaviors to int");
+            }
+        }
+
+        //read behavior names 
+        if (obj.contains("behavior_names"))
+        {
+            value = obj.value("behavior_names");
+            if (value.isString())
+            {
+                beh_names = obj["behavior_names"].toString().toStdString();
+
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert behavior names to string");
+            }
+        }
+
+        //read output Trigger
+        if (obj.contains("classifier_threshold"))
+        {
+            value = obj.value("classifier_threshold");
+            if (value.isString())
+            {
+                classifier_thresh = value.toString().toFloat();
+            }
+            else if (value.isDouble()) {
+                classifier_thresh = (float)value.toDouble();
+            }
+            else
+            {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert classifier_thresh to float");
+            }
+        }
+
+        //read outputTrigger boolean value
+        if (obj.contains("setOutputTrigger"))
+        {
+            value = obj.value("setOutputTrigger");
+            if (value.isBool())
+            {
+                output_trigger = value.toBool();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert output trigger to bool");
+            }
+        }
+
+        // read baudrate int value
+        if (obj.contains("triggerDeviceBaudRate"))
+        {
+            value = obj.value("triggerDeviceBaudRate");
+            if (value.isString())
+            {
+                baudRate = value.toString().toInt();
+            }
+            else if (value.isDouble()) {
+                baudRate = value.toInt();
+            }
+            else
+            {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert triggerDeviceBaudRate to int");
+            }
+        }
+
+        // read latency threshold per frame
+        if (obj.contains("latency_threshold_perframe"))
+        {
+            value = obj.value("latency_threshold_perframe");
+            if (value.isString())
+            {
+                perFrameLat = value.toString().toInt();
+            }
+            else if (value.isDouble()) {
+                perFrameLat = value.toInt();
+            }
+            else
+            {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert latency_threshold_perframe to int");
+            }
+        }
+
+        if (obj.contains("classifier_concatenation_order"))
+        {
+            value = obj.value("classifier_concatenation_order");
+            if (value.isString())
+            {
+                classifier_concatenation_order = value.toString().toStdString();
+
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert classifier_concatenation_order to string");
+            }
+        }
+
+        return rtnStatus;
+
+    }
+
+    RtnStatus JaabaConfig::fromMap(QVariantMap configMap)
+    {
+        RtnStatus rtnStatus;
+        QVariantMap oldConfigMap = toMap();
+
+        // read JAABA config file
+        if (configMap.contains("jaaba_config_file"))
+        {
+            if (configMap["jaaba_config_file"].canConvert<QString>())
+            {
+                jaaba_config_file = configMap["jaaba_config_file"].toString().toStdString();
+                std::cout << "JAABA Config File "  << jaaba_config_file << std::endl;
+                rtnStatus = loadJAABAConfigFile();
+            }
+            else
+            {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert JAABA config file to string");
             }
         }
 
@@ -192,98 +378,6 @@ namespace bias {
             }
         }
 
-        //read number of behaviors 
-        if (configMap.contains("num_behaviors"))
-        {
-            if (configMap["num_behaviors"].canConvert<QString>())
-            {
-                num_behs = configMap["num_behaviors"].toInt();
-            }
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert num beahviors to int");
-            }
-        }
-
-        //read behavior names 
-        if (configMap.contains("behavior_names"))
-        {
-            if (configMap["behavior_names"].canConvert<QString>())
-            {
-                beh_names = configMap["behavior_names"].toString().toStdString();
-          
-            }
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert behavior names to string");
-            }
-        }
-
-        //read output Trigger
-        if (configMap.contains("classifier_threshold"))
-        {
-            if (configMap["classifier_threshold"].canConvert<QString>())
-            {
-                classsifer_thres = configMap["classifier_threshold"].toFloat();
-            }
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert classifier thres to float");
-            }
-        }
-
-        //read outputTrigger boolean value
-        if (configMap.contains("setOutputTrigger"))
-        {
-            if (configMap["setOutputTrigger"].canConvert<QString>())
-            {
-                output_trigger = configMap["setOutputTrigger"].toBool();
-                std::cout << "set output trigger ********** " << output_trigger << std::endl;
-            }
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert output trigger to bool");
-            }
-        }
-
-        // read baudrate int value
-        if (configMap.contains("triggerDeviceBaudRate"))
-        {
-            if (configMap["triggerDeviceBaudRate"].canConvert<QString>())
-            {
-                baudRate = configMap["triggerDeviceBaudRate"].toInt();
-            }
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert baudRate to Int");
-            }
-        }
-
-        // read latency threshold per frame
-        if (configMap.contains("latency_threshold_perframe"))
-        {
-            if (configMap["latency_threshold_perframe"].canConvert<QString>())
-            {
-                perFrameLat = configMap["latency_threshold_perframe"].toInt();
-            }
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert preframe latency to int");
-            }
-        }
-
-        if (configMap.contains("classifier_concatenation_order"))
-        {
-            if (configMap["classifier_concatenation_order"].canConvert<QString>())
-            {
-                classifier_concatenation_order = configMap["classifier_concatenation_order"].toString().toStdString();
-
-            }
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert classifier_concatenation_order to string");
-            }
-        }
       
         return rtnStatus;
     }
@@ -309,7 +403,7 @@ namespace bias {
 
             value = it_start.value();
             key = it_start.key();
-            //std::cout << "Key " << key.toString().toStdString() << "Value "
+            //std::cout << "Key " << key.toString().toStdString() << ", Value "
             //    << value.toString().toStdString() << std::endl;
 
             camera_serial_id.insert(std::make_pair<const string, unsigned int>
@@ -361,88 +455,98 @@ namespace bias {
     }
 
     //void readPluginConfig(JaabaConfig& jaaba_config, string param_file)
-    void JaabaConfig::readPluginConfig(string param_file)
-    {
-        //string param_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/plugin_config_files/jaaba_config_load.json";
-        QJsonObject obj = loadParams(param_file);
-        QJsonValue value;
-        QString tmp_file;
-        string filename ;
+    // I don't see that this is used anywhere anymore
+    //void JaabaConfig::readPluginConfig(string param_file)
+    //{
+    //    //string param_file = "C:/Users/27rut/BIAS/BIASJAABA/src/plugin/jaaba_plugin/plugin_config_files/jaaba_config_load.json";
+    //    QJsonObject obj = loadParams(param_file);
+    //    QJsonValue value;
+    //    QString tmp_file;
+    //    string filename ;
 
-        foreach(const QString& key, obj.keys())
-        {
+    //    foreach(const QString& key, obj.keys())
+    //    {
 
-            value = obj.value(key);
-            if (value.isString() && key == "path_dir") {
+    //        value = obj.value(key);
+    //        if (value.isString() && key == "path_dir") {
 
-                tmp_file = value.toString();
-                filename = tmp_file.toStdString();
-                const char old_val = '/';
-                const char new_val = '\\';
-                std::replace(filename.begin(), filename.end(), old_val, new_val);
-                config_file_dir = filename;
-            }
-            else if (value.isString() && (key == "viewA" || key == "viewB"))
-            {
+    //            tmp_file = value.toString();
+    //            filename = tmp_file.toStdString();
+    //            const char old_val = '/';
+    //            const char new_val = '\\';
+    //            std::replace(filename.begin(), filename.end(), old_val, new_val);
+    //            config_file_dir = filename;
+    //        }
+    //        else if (value.isString() && key == "jaaba_config_file") {
 
-                camera_serial_id.insert(std::make_pair<const string,unsigned int>
-                         ( key.toLocal8Bit().constData(),value.toString().toInt() ));
-                crop_file_list.insert(std::make_pair <unsigned int, string>
-                         (value.toString().toInt(), " "));
-            }
-            else if (value.isString() && (key == "viewA_Crop_file" || key == "viewB_Crop_file")) {
-                
-                unsigned int cam_val;
-                const string cam_view = key.toStdString().substr(0, 5);
-                cam_val = camera_serial_id[cam_view];
+    //            tmp_file = value.toString();
+    //            filename = tmp_file.toStdString();
+    //            const char old_val = '/';
+    //            const char new_val = '\\';
+    //            std::replace(filename.begin(), filename.end(), old_val, new_val);
+    //            jaaba_config_file = filename;
+    //        }
+    //        else if (value.isString() && (key == "viewA" || key == "viewB"))
+    //        {
 
-                tmp_file = value.toString();
-                filename = tmp_file.toStdString();
-                const char old_val = '/';
-                const char new_val = '\\';
-                std::replace(filename.begin(), filename.end(), old_val, new_val);
+    //            camera_serial_id.insert(std::make_pair<const string,unsigned int>
+    //                     ( key.toLocal8Bit().constData(),value.toString().toInt() ));
+    //            crop_file_list.insert(std::make_pair <unsigned int, string>
+    //                     (value.toString().toInt(), " "));
+    //        }
+    //        else if (value.isString() && (key == "viewA_Crop_file" || key == "viewB_Crop_file")) {
+    //            
+    //            unsigned int cam_val;
+    //            const string cam_view = key.toStdString().substr(0, 5);
+    //            cam_val = camera_serial_id[cam_view];
 
-                crop_file_list[cam_val] = filename;
-             
-            }
-            else if (value.isString() && (key == "HOG_file")) {
-                
-                tmp_file = value.toString();
-                filename = tmp_file.toStdString();
-                const char old_val = '/';
-                const char new_val = '\\';
-                std::replace(filename.begin(), filename.end(), old_val, new_val);
-                hog_file = filename;
+    //            tmp_file = value.toString();
+    //            filename = tmp_file.toStdString();
+    //            const char old_val = '/';
+    //            const char new_val = '\\';
+    //            std::replace(filename.begin(), filename.end(), old_val, new_val);
 
-            }
-            else if (value.isString() && (key == "HOF_file")) {
+    //            crop_file_list[cam_val] = filename;
+    //         
+    //        }
+    //        else if (value.isString() && (key == "HOG_file")) {
+    //            
+    //            tmp_file = value.toString();
+    //            filename = tmp_file.toStdString();
+    //            const char old_val = '/';
+    //            const char new_val = '\\';
+    //            std::replace(filename.begin(), filename.end(), old_val, new_val);
+    //            hog_file = filename;
 
-                tmp_file = value.toString();
-                filename = tmp_file.toStdString();
-                const char old_val = '/';
-                const char new_val = '\\';
-                std::replace(filename.begin(), filename.end(), old_val, new_val);
-                hof_file = filename;
+    //        }
+    //        else if (value.isString() && (key == "HOF_file")) {
 
-            }
-            else if (value.isString() && (key == "classifier_filename")) {
-                
-                tmp_file = value.toString();
-                filename = tmp_file.toStdString();
-                const char old_val = '/';
-                const char new_val = '\\';
-                std::replace(filename.begin(), filename.end(), old_val, new_val);
-                classifier_filename = filename;
-            }
-            else if (value.isString() && (key == "window_size")) {
-                window_size = value.toInt();
-            }
+    //            tmp_file = value.toString();
+    //            filename = tmp_file.toStdString();
+    //            const char old_val = '/';
+    //            const char new_val = '\\';
+    //            std::replace(filename.begin(), filename.end(), old_val, new_val);
+    //            hof_file = filename;
 
-        }
+    //        }
+    //        else if (value.isString() && (key == "classifier_filename")) {
+    //            
+    //            tmp_file = value.toString();
+    //            filename = tmp_file.toStdString();
+    //            const char old_val = '/';
+    //            const char new_val = '\\';
+    //            std::replace(filename.begin(), filename.end(), old_val, new_val);
+    //            classifier_filename = filename;
+    //        }
+    //        else if (value.isString() && (key == "window_size")) {
+    //            window_size = value.toInt();
+    //        }
 
-        std::cout << "Window Size" << window_size << std::endl;
-        std::cout << filename << std::endl;
-    }
+    //    }
+
+    //    std::cout << "Window Size" << window_size << std::endl;
+    //    std::cout << filename << std::endl;
+    //}
 
     void JaabaConfig::convertStringtoVector(string& convertString, vector<string>& vectorString)
     {

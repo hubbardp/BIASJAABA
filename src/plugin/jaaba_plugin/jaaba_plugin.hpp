@@ -181,13 +181,14 @@ namespace bias
             string trial_num_;
 
             JaabaConfig jab_conf;
+            string jaaba_config_file;
             string config_file_dir;
             unsigned int camera_serial_id;
             
             unordered_map<string, unsigned int> camera_list;
             unordered_map<unsigned int, string> jab_crop_list;
 
-            int processedFrameCount;
+            unsigned long processedFrameCount;
             QPointer<HOGHOF> HOGHOF_self;
             QPointer<HOGHOF> HOGHOF_partner;
 

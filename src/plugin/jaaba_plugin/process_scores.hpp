@@ -46,7 +46,7 @@ namespace bias
         bool outputPinComboBoxReady_ = false;
         QString portName_; // hard code in com3
         int outputPinIndex_ = 0; // hard code output pin
-        float pulseDuration_ = 0.2; // hard code pulse duration
+        float pulseDuration_ = 0.2f; // hard code pulse duration
 
         RtnStatus connectTriggerDev(QSerialPortInfo portInfo);
         void refreshPortList();

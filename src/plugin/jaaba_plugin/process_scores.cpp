@@ -335,7 +335,7 @@ namespace bias {
 
                     std::cout << "Score file name " << scores_filename << std::endl;
 
-                    numFrames = scores.size();
+                    numFrames = (int)scores.size();
                     write_score_final(scores_filename, numFrames, scores);
                     writeScoreFlag_ = false;
                     clearQueues();
@@ -759,7 +759,7 @@ namespace bias {
 
         }
         else {
-            std:cout << "Partner queue score NULL" << std::endl;
+            std::cout << "Partner queue score NULL" << std::endl;
         }
     }
 
@@ -843,7 +843,7 @@ namespace bias {
         {
             x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_viewA_ts
                 << "," << pred_score[frm_id].score_viewB_ts;
-                for (unsigned int beh_id = 0; beh_id < classifier->num_behs; beh_id++) {
+                for (int beh_id = 0; beh_id < classifier->num_behs; beh_id++) {
                     x_out << "," << setprecision(6) << pred_score[frm_id].score[beh_id];
                 }
                 x_out << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<

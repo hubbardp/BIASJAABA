@@ -16,7 +16,7 @@
 #include <QJsonArray>
 #include <QDialog>
 #include <QMessageBox>
-
+#include <iostream>
 
 using namespace std;
 
@@ -43,6 +43,7 @@ namespace bias {
             static const string DEFAULT_HOF_FILE;
             static const string DEFAULT_CROP_FILE;
             static const string DEFAULT_CLASSIFIER_FILE;
+            static const string DEFAULT_JAABA_CONFIG_FILE;
             static const string DEFAULT_CONFIG_FILE_DIR;
             static const string DEFAULT_BEH_NAMES;
             static const string DEFAULT_CLASSIFIER_CONCATENATE_ORDER;
@@ -55,6 +56,7 @@ namespace bias {
             static const int DEFAULT_PERFRAME_LATENCY;
 
             //Jaaba parameters
+            string jaaba_config_file = "";
             string config_file_dir = "";
             string view = "";
             string hog_file = "";
@@ -66,7 +68,7 @@ namespace bias {
             int window_size;
             int cuda_device;
             int num_behs;
-            float classsifer_thres;
+            float classifier_thresh;
             bool output_trigger;
             int baudRate;
             int perFrameLat;
@@ -76,7 +78,9 @@ namespace bias {
             JaabaConfig();
 
             //void readPluginConfig(JaabaConfig& jaaba_config, string param_file);
-            void readPluginConfig(string param_file);
+            //void readPluginConfig(string param_file);
+            void print(std::ostream& out = std::cout);
+            RtnStatus loadJAABAConfigFile();
             QVariantMap toMap();
             RtnStatus fromMap(QVariantMap configMap);
             RtnStatus setViewFromMap(QVariantMap configMap);

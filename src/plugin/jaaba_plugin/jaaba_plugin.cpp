@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <functional>
 #include <Windows.h>
+#include <regex>
 
 
 //#define DEBUG 1 
@@ -574,7 +575,7 @@ namespace bias {
                         saveFeatures(output_feat_directory + "hoghof_" + prefix + "_biasjaaba.csv",
                             HOGHOF_self->hog_out_skip,
                             HOGHOF_self->hof_out_skip,
-                            hog_num_elements, hof_num_elements);
+                            (int)hog_num_elements, (int)hof_num_elements);
                     }
 
                     HOGHOF_self->averageWindowFeatures(window_size, processedFrameCount, 1);
@@ -583,7 +584,7 @@ namespace bias {
                         saveFeatures(output_feat_directory + "hoghof_avg_" + prefix + "_biasjaaba.csv",
                             HOGHOF_self->hog_out_avg,
                             HOGHOF_self->hof_out_avg,
-                            hog_num_elements, hof_num_elements);
+                            (int)hog_num_elements, (int)hof_num_elements);
                     }
 
                     processedFrameCount++;
@@ -627,7 +628,7 @@ namespace bias {
                                 saveFeatures(output_feat_directory + "hoghof_" + prefix + "_biasjaaba.csv", 
                                     HOGHOF_self->hog_out,
                                     HOGHOF_self->hof_out,
-                                    hog_num_elements, hof_num_elements);
+                                    (int)hog_num_elements, (int)hof_num_elements);
                             }
 
                             //average window features
@@ -638,7 +639,7 @@ namespace bias {
                                 saveFeatures(output_feat_directory + "hoghof_avg_" + prefix + "_biasjaaba.csv",
                                     HOGHOF_self->hog_out_avg,
                                     HOGHOF_self->hof_out_avg,
-                                    hog_num_elements, hof_num_elements);
+                                    (int)hog_num_elements, (int)hof_num_elements);
                       
                             }
                   
@@ -1420,11 +1421,11 @@ namespace bias {
             HOGHOF_self->CropParam_file = config_file_dir + crop_file;
             HOGHOF_self->isHOGHOFInitialised = false;
             HOGHOF_self->initialize_HOGHOFParams();
-            printf("processScores allocated in %s\n" , view_);
+            std::cout << "processScores allocated in " << view_ << std::endl;
                          
         }else {
 
-            printf("processScores not allocated in %s\n", view_);
+            std::cout << "processScores not allocated in " << view_ << std::endl;
         }
 
     }
@@ -1445,12 +1446,12 @@ namespace bias {
                           
         }*/
 
-        float classifier_thres = jab_conf.classsifer_thres;
+        float classifier_thresh = jab_conf.classifier_thresh;
         bool output_trigger = jab_conf.output_trigger;
         int baudRate = jab_conf.baudRate;
         int perFrameLat = jab_conf.perFrameLat;
 
-        std::cout <<  "Classifier Threshold " << classifier_thres  
+        std::cout <<  "Classifier Threshold " << classifier_thresh  
                   <<  "output Trigger " << output_trigger  
                   <<  "BaudRate " << baudRate
                   << "Perframe latency " << perFrameLat 
@@ -1465,7 +1466,8 @@ namespace bias {
             getline(behnamestream, cur_beh, ',');
             beh_names.push_back(cur_beh);
         }
-        num_behs = jab_conf.num_behs;
+        num_behs = (int)beh_names.size();
+        //num_behs = jab_conf.num_behs;
         std::cout << "num behs " << num_behs << std::endl;
 
         // extract classifier order
@@ -1486,7 +1488,7 @@ namespace bias {
                                                                = classifier_concatenation_order;
             processScoresPtr_self->classifier->allocate_model();
             processScoresPtr_self->classifier->loadclassifier_model();
-            processScoresPtr_self->classifierThres = classifier_thres;
+            processScoresPtr_self->classifierThres = classifier_thresh;
             processScoresPtr_self->outputTrigger = output_trigger;
             processScoresPtr_self->baudRate = baudRate;
             processScoresPtr_self->perFrameLat = perFrameLat;
@@ -2085,14 +2087,14 @@ namespace bias {
         }
     }
 
-
     void JaabaPlugin::loadConfig()
     {
         std::cout << "Jaaba load Config reached\n" << std::endl;
         unordered_map<string,unsigned int>::iterator camera_it;
         unordered_map<unsigned int, string>::iterator crop_file_it;
 
-        //jab_conf.readPluginConfig(conf_filename.toStdString());      
+        //jab_conf.readPluginConfig(conf_filename.toStdString());     
+        jaaba_config_file = jab_conf.jaaba_config_file;
         config_file_dir = jab_conf.config_file_dir;
         hog_file = jab_conf.hog_file;
         hof_file = jab_conf.hof_file;
@@ -2158,8 +2160,9 @@ namespace bias {
     {
 
         RtnStatus rtnStatus = jab_conf.fromMap(configMap);
-        if (rtnStatus.success) {
+        std::cout << "Loaded configuration:\n";        if (rtnStatus.success) {
             std::cout << "Load Jaaba config Plugin" << std::endl;
+            jab_conf.print();
             loadConfig();
         }
         return rtnStatus;
@@ -2169,7 +2172,7 @@ namespace bias {
     void JaabaPlugin::average_windowFeatures(vector<float>& hog_feat, vector<float>& hof_feat, 
                                              vector<float>& hog_feat_avg, vector<float>& hof_feat_avg, int window_size)
     {
-        int feat_size = hog_feat.size();
+        int feat_size = (int)hog_feat.size();
         transform(hog_feat.begin(), hog_feat.end(), hog_feat.begin(), [window_size](float &c) {return (c / window_size); });
         transform(hof_feat.begin(), hof_feat.end(), hof_feat.begin(), [window_size](float &c) {return (c / window_size); });
         
@@ -2185,7 +2188,7 @@ namespace bias {
     void JaabaPlugin::subtractLastwindowfeature(vector<float>& hog_past, vector<float>& hof_past,
                                                 vector<float>& hog_feat_avg, vector<float>& hof_feat_avg)
     {
-        int feat_size = hog_past.size();
+        int feat_size = (int)hog_past.size();
         for (int i = 0; i < feat_size; i++) {
 
             hog_feat_avg[i] = hog_feat_avg[i] - hog_past[i];
