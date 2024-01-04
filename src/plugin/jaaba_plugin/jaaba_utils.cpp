@@ -116,7 +116,6 @@ namespace bias {
             value = obj.value("config_file_dir");
             if (value.isString()){
                 config_file_dir = value.toString().toStdString();
-                std::cout << "JAABA config -> config_file_dir " << config_file_dir << std::endl;
             }
             else
             {
@@ -125,7 +124,7 @@ namespace bias {
             }
         }
 
-        //read hog file from config
+        //obsolete -- now looking for hog parameters within this file
         if (obj.contains("hog_file"))
         {
             value = obj.value("hog_file");
@@ -206,7 +205,7 @@ namespace bias {
 
         }
 
-        //read crop list from Map
+        //read crop list
         if (obj.contains("crop_file_list"))
         {
             value = obj.value("crop_file_list");
@@ -559,6 +558,13 @@ namespace bias {
         }
     }
 
+    void printKeys(QJsonObject obj) {
+        for (const QString& key : obj.keys()) {
+            std::cout << key.toStdString() << std::endl;
+        }
+        std::cout << "(end of list)" << std::endl;
+    }
+
     QJsonObject loadParams(const string& param_file)
     {
 
@@ -595,18 +601,8 @@ namespace bias {
 
         QJsonDocument doc = QJsonDocument::fromJson(paramJson);
         obj = doc.object();
-
-        /*QJsonValue value;
-        printf("param file %s\n", param_file.toLocal8Bit().constData());
-        foreach(const QString& key, obj.keys())
-        {
-
-            value = obj.value(key);
-            std::cout << "inside****" << std::endl;
-            if (value.isString() && key == "path_dir")
-                plugin_file = value.toString();
-        }
-        printf("plugin file %s", plugin_file.toLocal8Bit().constData());*/
+        std::cout << "loadParams(" << param_file << ") contains:\n";
+        printKeys(obj);
         return obj;
     }
 

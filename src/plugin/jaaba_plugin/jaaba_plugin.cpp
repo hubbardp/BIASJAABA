@@ -433,7 +433,7 @@ namespace bias {
         cv::Mat pluginImage;
         uInt32 read_buffer = 0, read_ondemand = 0;
         cv::Mat greyImage;
-        float scaling_factor = 1.0 / 255.0;
+        float scaling_factor = 1.0f / 255.0f;
         bool isskip;
         QString errorMsg(" ");
 
@@ -1416,8 +1416,11 @@ namespace bias {
             releaseLock();*/
 
             HOGHOF_self = hoghofside;
-            HOGHOF_self->HOGParam_file = config_file_dir + hog_file;
-            HOGHOF_self->HOFParam_file = config_file_dir + hof_file;
+            // all hog/hof parameters are now just in the jaaba config file
+            //HOGHOF_self->HOGParam_file = config_file_dir + hog_file;
+            //HOGHOF_self->HOFParam_file = config_file_dir + hof_file;
+            HOGHOF_self->HOGParam_file = jaaba_config_file;
+            HOGHOF_self->HOFParam_file = jaaba_config_file;
             HOGHOF_self->CropParam_file = config_file_dir + crop_file;
             HOGHOF_self->isHOGHOFInitialised = false;
             HOGHOF_self->initialize_HOGHOFParams();
@@ -2102,6 +2105,7 @@ namespace bias {
         camera_list = jab_conf.camera_serial_id;
         jab_crop_list = jab_conf.crop_file_list;
         window_size = jab_conf.window_size;
+
         cuda_device = jab_conf.cuda_device;
 
         std::cout << "cuda device set in " << view_ << " " << cuda_device << std::endl;
@@ -2160,7 +2164,8 @@ namespace bias {
     {
 
         RtnStatus rtnStatus = jab_conf.fromMap(configMap);
-        std::cout << "Loaded configuration:\n";        if (rtnStatus.success) {
+        std::cout << "Loaded configuration:\n";        
+        if (rtnStatus.success) {
             std::cout << "Load Jaaba config Plugin" << std::endl;
             jab_conf.print();
             loadConfig();

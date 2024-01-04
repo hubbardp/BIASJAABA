@@ -1715,7 +1715,7 @@ namespace bias
             logging_ = false;
             actionLoggingEnabledPtr_->setChecked(false);
         }
-        std:cout << " logging " << logging_ << std::endl;
+        std::cout << " logging " << logging_ << std::endl;
         // Get "isPlugin" value
         // -------------------
         if (!testConfig->plugin_prefix.empty())
@@ -5444,7 +5444,7 @@ namespace bias
          //commemted out temporarily till i find ways to set the width and height without error
 
         // Format7 settings
-        /*QVariantMap format7SettingsMap = cameraMap["format7Settings"].toMap();
+        QVariantMap format7SettingsMap = cameraMap["format7Settings"].toMap();
         if (cameraPropMap.isEmpty())
         {
             QString errMsgText("Camera: format7 settings are not present");
@@ -5460,7 +5460,7 @@ namespace bias
         if (!rtnStatus.success)
         {
             return rtnStatus;
-        }*/
+        }
 
         // Trigger Type
         QString triggerTypeString = cameraMap["triggerType"].toString();

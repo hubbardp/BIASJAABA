@@ -88,6 +88,7 @@ namespace bias {
             void convertStringtoVector(string& convertString, vector<string>& vectorString);
     };
 
+    void printKeys(QJsonObject obj);
     QJsonObject loadParams(const string& param_file);
     void saveFeatures(string filename,vector<float>& hog_feat, vector<float>& hof_feat,
                      int hog_num_elements, int hof_num_elements);

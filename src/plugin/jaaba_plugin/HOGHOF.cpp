@@ -31,9 +31,23 @@ namespace bias
     void HOGHOF::loadHOGParams() 
     { 
 
+        std::cout << "Trying to load HOG parameters from " << HOGParam_file << std::endl;
+
         QJsonObject obj = loadParams(HOGParam_file);
-        copytoHOGParams(obj);
-        isHOGPathSet = true;
+
+        if (obj.contains("hog"))
+        {
+            std::cout << "Found hog within parameters" << std::endl;
+            QJsonValue value = obj.value("hog");
+            if (value.isObject()) {
+                copytoHOGParams(value.toObject());
+                isHOGPathSet = true;
+            }
+        }
+        else {
+            copytoHOGParams(obj);
+            isHOGPathSet = true;
+        }
 
     }
 
@@ -42,9 +56,19 @@ namespace bias
     {
 
         QJsonObject obj = loadParams(HOFParam_file);
-        copytoHOFParams(obj);
-        isHOFPathSet = true;
-
+        if (obj.contains("hof"))
+        {
+            std::cout << "Found hof within parameters" << std::endl;
+            QJsonValue value = obj.value("hof");
+            if (value.isObject()) {
+                copytoHOFParams(value.toObject());
+                isHOFPathSet = true;
+            }
+        }
+        else {
+            copytoHOFParams(obj);
+            isHOFPathSet = true;
+        }
     }
 
 

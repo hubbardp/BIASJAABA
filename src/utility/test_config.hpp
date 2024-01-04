@@ -14,7 +14,7 @@ struct TestConfig {
     std::vector<string>cam_suffix;
     int dir_len;
     std::vector<string>dir_list;
-    int numFrames;
+    unsigned long numFrames;
     int no_of_trials;
     int framerate;
     float latency_threshold;
