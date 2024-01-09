@@ -159,7 +159,7 @@ namespace bias {
         trial_num_ = trialnum;
         testConfigEnabled_ = 1;
 
-        scores_filename = output_score_dir + "classifier_trial" + trial_num_.back() + ".csv";
+        scores_filename = output_score_dir + "/scores_trial" + trial_num_.back() + ".csv";
 
     }
 
@@ -195,47 +195,43 @@ namespace bias {
     /// Private methods
     void ProcessScores::triggerOnClassifierOutput(PredData& classifierPredScore, int frameCount)
     {
-
+        char output_char_signal = 0;
         int numBehs = classifier->num_behs;
 
-        //reset the output every frame
-        std::fill(classifier->behavior_output_signal.begin(),
-            classifier->behavior_output_signal.end(), '0');
+        //to test if byte sent over serial port is encoded
+        // and decoded correctly
+        int debugSerial = 1;
+        char debugOutput = 15;
+        int debugFrameOutput = 200;
+        int onFrames = 50;
 
-        for (auto classifierNum = 0; classifierNum < numBehs; classifierNum++)
+        if (debugSerial)
         {
-            if (classifierPredScore.score[classifierNum] > classifierThres) {
+            if ((frameCount % debugFrameOutput) > 0 && (frameCount % debugFrameOutput) < onFrames) {
 
-                classifier->behavior_output_signal[(numBehs-1)-classifierNum] = '1';   
-				if (classifierNum == 0 && !firstOccur) {
-					std::cout << " first Lift frame is " << frameCount << std::endl;
-					firstOccur = true;
-				}
+                output_char_signal = convertIntToBinary(debugOutput);
+                //std::cout << "ascii value of output char signal " << (int)output_char_signal
+                //    << " FrameCount " << frameCount << std::endl;
             }
-        }
-
-        // binary string output signal
-        string output_binary_signal(classifier->behavior_output_signal.begin(), 
-                                    classifier->behavior_output_signal.end());
-
-        
-        //convert binary string to int
-        int output_int_val = stoi(output_binary_signal, 0, 2);
-        
-        if (output_int_val >= 0) {
-
-            //convert output from int to char to send over the serial port
-            char output_char_signal = (char)(output_int_val + '0');
-		    if(output_char_signal == '1')
-                std::cout << output_char_signal << std::endl;
             portOutput.trigger(output_char_signal);
-            frame_triggered += 1;
+         
+        }else {
 
-            //std::cout << "binary signal " <<   output_binary_signal 
-            //    << "char signal " << output_char_signal 
-            //    << "int signal " << output_int_val << "FrameCount " << frameCount << std::endl;
+
+            for (auto classifierNum = 0; classifierNum < numBehs; classifierNum++)
+            {
+                if (classifierPredScore.score[classifierNum] > classifierThres) {
+
+                    output_char_signal |= (1 << classifierNum);
+
+                }
+            }
+
+            portOutput.trigger(output_char_signal);
+
+            //std::cout << "ascii value of output char signal  " << (int)output_char_signal
+            //<< " FrameCount " << frameCount << std::endl;
         }
-
     }
 
 
@@ -246,7 +242,7 @@ namespace bias {
 
         versionNumber++;
         verNum = (QString("_v%1").arg(versionNumber, 3, 10, QChar('0'))).toStdString();
-        scrfilename = output_score_dir + "scores" + verNum + ".csv";
+        scrfilename = output_score_dir + "/scores" + verNum + ".csv";
         std::cout << "Scr file name " << scrfilename << std::endl;
         return scrfilename;
 
@@ -864,6 +860,24 @@ namespace bias {
         }
         x_out.close();
 
+    }
+
+    char ProcessScores::convertIntToBinary(char& inVal)
+    {
+        char out_signal = 0;
+        int rem=0, bitCount=0;
+        int signalingBits = 4;
+
+        // encoding only first four least significant bits (rightmost)
+        while (inVal != 0 && bitCount < signalingBits)
+        {
+            rem = inVal % 2;
+            inVal = inVal / 2;
+            if(rem)
+                out_signal |= (1 << bitCount);
+            bitCount++;
+        }
+        return out_signal;
     }
 
  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -156,6 +156,7 @@ namespace bias
            void write_frameNum(std::string filename, vector<int>& frame_vec, int numSkips);
            void writeAllFeatures(string filename, vector<float>& feat_out,
                int feat_size);
+           char convertIntToBinary(char& inVal);
 
         private :
 

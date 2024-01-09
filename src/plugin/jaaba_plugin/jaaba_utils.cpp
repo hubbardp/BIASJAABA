@@ -342,7 +342,7 @@ namespace bias {
         return rtnStatus;
 
     }
-
+    
     RtnStatus JaabaConfig::fromMap(QVariantMap configMap)
     {
         RtnStatus rtnStatus;

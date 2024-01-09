@@ -156,7 +156,8 @@ namespace bias
     bool PulseDevice::startPulse(char output_signal)
     {
         QByteArray cmd;
-        cmd.append(QString("[%1,]\n").arg(output_signal));
+        //cmd.append(QString("[%1,]\n").arg(output_signal));
+        cmd.append(output_signal);
         return writeCmdFlush(cmd);
     }
 

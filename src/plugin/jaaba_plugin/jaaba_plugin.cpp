@@ -1495,9 +1495,9 @@ namespace bias {
             processScoresPtr_self->outputTrigger = output_trigger;
             processScoresPtr_self->baudRate = baudRate;
             processScoresPtr_self->perFrameLat = perFrameLat;
-    
-        }
 
+        }
+        
     }
 
     
@@ -2098,7 +2098,7 @@ namespace bias {
 
         //jab_conf.readPluginConfig(conf_filename.toStdString());     
         jaaba_config_file = jab_conf.jaaba_config_file;
-        config_file_dir = jab_conf.config_file_dir;
+        config_file_dir = jab_conf.config_file_dir + "/";
         hog_file = jab_conf.hog_file;
         hof_file = jab_conf.hof_file;
         classifier_filename = jab_conf.classifier_filename;
