@@ -12,6 +12,8 @@ namespace bias {
     struct CmdLineParams {
 
         string output_dir = "";
+        string jaaba_config_path = ""; //added to specify jaaba config path for offline classifier
+                                       // where option to add plugin config from bias config is absent.
         string movie_name_suffix = "";
         bool isVideo = false;
         bool saveFeat = false;

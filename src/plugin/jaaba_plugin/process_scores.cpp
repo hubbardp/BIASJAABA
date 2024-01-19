@@ -200,8 +200,8 @@ namespace bias {
 
         //to test if byte sent over serial port is encoded
         // and decoded correctly
-        int debugSerial = 1;
-        char debugOutput = 15;
+        int debugSerial = 0;
+        char debugOutput = 3;
         int debugFrameOutput = 200;
         int onFrames = 50;
 
@@ -210,8 +210,7 @@ namespace bias {
             if ((frameCount % debugFrameOutput) > 0 && (frameCount % debugFrameOutput) < onFrames) {
 
                 output_char_signal = convertIntToBinary(debugOutput);
-                //std::cout << "ascii value of output char signal " << (int)output_char_signal
-                //    << " FrameCount " << frameCount << std::endl;
+
             }
             portOutput.trigger(output_char_signal);
          
@@ -229,9 +228,10 @@ namespace bias {
 
             portOutput.trigger(output_char_signal);
 
-            //std::cout << "ascii value of output char signal  " << (int)output_char_signal
-            //<< " FrameCount " << frameCount << std::endl;
         }
+
+        //std::cout << "ascii value of output char signal " << (int)output_char_signal
+        //    << " FrameCount " << frameCount << std::endl;
     }
 
 
@@ -338,7 +338,6 @@ namespace bias {
                     //scoreCount = 0;
                     fstframets = 0;
 
-                    std::cout << "frames triggered ...." << frame_triggered << std::endl;
                 }
 
                 if (selfScoreQueuePtr_->empty() && partnerScoreQueuePtr_->empty()) 

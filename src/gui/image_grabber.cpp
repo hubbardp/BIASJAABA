@@ -178,11 +178,11 @@ namespace bias {
         QString filename;
         if (cameraNumber_ == 0)
         {
-            filename = QString::fromStdString(input_video_dir) + "movie_sde.avi";
+            filename = QString::fromStdString(input_video_dir) + "/movie_sde.avi";
             std::cout << " movie filename*** " << filename.toStdString() << std::endl;
         }
         else if (cameraNumber_ == 1) {
-            filename = QString::fromStdString(input_video_dir) + "movie_frt.avi";
+            filename = QString::fromStdString(input_video_dir) + "/movie_frt.avi";
             std::cout << " movie filename **" << filename.toStdString() << std::endl;
         }
 

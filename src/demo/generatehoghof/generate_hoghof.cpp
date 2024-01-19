@@ -23,7 +23,7 @@ namespace bias {
 
         // place ':' in the beginning of the string so that program can 
         //tell between '?' and ':' 
-        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:k:w:n:d:a:")) != -1)
+        while ((opt = getopt(argc, argv, ":o:i:s:c:l:v:k:w:n:d:a:j:")) != -1)
         {
             switch (opt)
             {
@@ -60,6 +60,9 @@ namespace bias {
             case 'a':
                 cmdlineparams.movie_name_suffix = optarg;
                 break;
+            case 'j':
+                cmdlineparams.jaaba_config_path = optarg;
+                break;
             case ':':
                 printf("Required argument %c", opt);
                 break;
@@ -79,6 +82,7 @@ namespace bias {
     void write_score_final(std::string file, unsigned int numFrames,
         vector<PredData>& pred_score)
     {
+        int num_behs = pred_score[0].score.size();
         std::ofstream x_out;
         x_out.open(file.c_str(), std::ios_base::app);
         std::cout << "once" << std::endl;
@@ -87,14 +91,11 @@ namespace bias {
         for (unsigned int frm_id = 0; frm_id < numFrames; frm_id++)
         {
             x_out << pred_score[frm_id].score_ts << "," << pred_score[frm_id].score_viewA_ts
-                << "," << pred_score[frm_id].score_viewB_ts << ","
-                << setprecision(6) << pred_score[frm_id].score[0]
-                << "," << setprecision(6) << pred_score[frm_id].score[1]
-                << "," << setprecision(6) << pred_score[frm_id].score[2]
-                << "," << setprecision(6) << pred_score[frm_id].score[3]
-                << "," << setprecision(6) << pred_score[frm_id].score[4]
-                << "," << setprecision(6) << pred_score[frm_id].score[5]
-                << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
+                << "," << pred_score[frm_id].score_viewB_ts;
+                for (int beh_id = 0; beh_id < num_behs; beh_id++) {
+                    x_out << "," << setprecision(6) << pred_score[frm_id].score[beh_id];
+                }
+                x_out << "," << pred_score[frm_id].frameCount << "," << pred_score[frm_id].view <<
                 "\n";
         }
         x_out.close();
@@ -104,32 +105,86 @@ namespace bias {
 int main(int argc, char* argv[]) {
 
     QApplication app(argc, argv);
+
     const int nviews = 2;
     int numFrames;//frames to process
 	int numFrames_frt,numFrames_sde;
+
     bias::CmdLineParams cmdlineparams;
     bias::parser(argc, argv, cmdlineparams);
+    bias::JaabaConfig jab_conf;
     cudaError err;
 
-    string input_dir_path = cmdlineparams.output_dir;  //"C:/Users/27rut/BIAS/mouse_videos_0502/";
-    string output_dir_path = cmdlineparams.output_dir;  //"C:/Users/27rut/BIAS/mouse_videos_0502/";
-    string HOGParam_file_sde = input_dir_path + "json_files/HOGParam.json";
-    string HOFParam_file_sde = input_dir_path + "json_files/HOFparam.json";
-    string CropParam_file_sde = input_dir_path + "json_files/Cropsde_param.json";
+    string input_dir_path = cmdlineparams.output_dir;
+    string output_dir_path = cmdlineparams.output_dir; 
+    string jaaba_config_path = cmdlineparams.jaaba_config_path; // path to jaaba config json file
+    jab_conf.jaaba_config_file = jaaba_config_path + "/jaaba_config.json";
+    std::cout << "Jaaba Config Dir" << jab_conf.jaaba_config_file << std::endl;
+    
+    //load jaaba config params
+    jab_conf.loadJAABAConfigFile();
+    string config_file_dir = jab_conf.config_file_dir; // path to the jaaba config files
+    string classifier_filename = config_file_dir +  "/" + jab_conf.classifier_filename;
+    int window_size = jab_conf.window_size;
+    vector<string>classifier_concatenation_order;
+    string classifier_order = jab_conf.classifier_concatenation_order;
+    jab_conf.convertStringtoVector(classifier_order, classifier_concatenation_order);
+    std::cout <<  "view order 0" << classifier_concatenation_order[0] << std::endl;
+    std::cout << "view order 1 " << classifier_concatenation_order[1] << std::endl;
 
-    string HOGParam_file_frt = input_dir_path + "json_files/HOGparam.json";
-    string HOFParam_file_frt = input_dir_path + "json_files/HOFparam.json";
-    string CropParam_file_frt = input_dir_path + "json_files/Cropfrt_param.json";
+    unordered_map<string, unsigned int>::iterator camera_it;
+    unordered_map<unsigned int, string>::iterator crop_list_it;
+    unordered_map<string, unsigned int> camera_serial_id_list = jab_conf.camera_serial_id;
+    unordered_map<unsigned int, string> jab_crop_list = jab_conf.crop_file_list;
 
-    string classifier_filename = input_dir_path + "json_files/multiclassifier.mat";
+    string HOGParam_file_sde = config_file_dir + "/" + jab_conf.hog_file;
+    string HOFParam_file_sde = config_file_dir +  "/" + jab_conf.hof_file;
+    string HOGParam_file_frt = config_file_dir + "/" + jab_conf.hog_file;
+    string HOFParam_file_frt = config_file_dir + "/" + jab_conf.hof_file;
+    string crop_viewA, crop_viewB;
+    
+    camera_it = camera_serial_id_list.begin();
+      
 
-    int window_size = cmdlineparams.window_size;
+    while (camera_it != camera_serial_id_list.end())
+    {
+        crop_list_it = jab_crop_list.begin();
+        while (crop_list_it != jab_crop_list.end()) {
+
+            if (camera_it->second == crop_list_it->first)
+            {
+                if (camera_it->first == "viewA")
+                {
+                    crop_viewA = crop_list_it->second;
+                }
+                else if (camera_it->first == "viewB") {
+
+                    crop_viewB = crop_list_it->second;
+                }
+            }
+            crop_list_it++;
+        }
+
+        camera_it++;
+    }
+    string CropParam_file_sde = config_file_dir +  "/" + crop_viewA;
+    string CropParam_file_frt = config_file_dir + "/" + crop_viewB;
+
+    string behavior_names_str = jab_conf.beh_names;
+    vector<string>beh_names_vec;
+    jab_conf.convertStringtoVector(behavior_names_str, beh_names_vec);
+    int num_behs = beh_names_vec.size();
+    jab_conf.print();
+
+    std::cout << "HOG file viewA" << HOGParam_file_sde << "\n"
+        << "HOF file viewA" << HOFParam_file_sde << "\n"
+        << "Crop file ViewA " << CropParam_file_sde << std::endl;
+
+    // set jaaba modes to run the classifier
     int saveFeatures = cmdlineparams.saveFeat;
     int debug = cmdlineparams.debug;
     int classify_scores = cmdlineparams.classify_scores;
-
-    vector<string>beh_names = { "Lift", "Handopen","Grab","Supinate","Chew","Atmouth" }; // hardcode need to change
-    int num_behs = beh_names.size();
+    
     bias::PredData sde_scr;
     bias::PredData frt_scr;
     vector<bias::PredData> scores;
@@ -150,8 +205,8 @@ int main(int argc, char* argv[]) {
 
     // Video Capture 
     string movie_name_suffix = cmdlineparams.movie_name_suffix;
-    QString vidFile[nviews] = { "movie_sde" + QString::fromStdString(movie_name_suffix) + ".avi" ,
-                                "movie_frt" + QString::fromStdString(movie_name_suffix) + ".avi" };
+    QString vidFile[nviews] = { "/movie_sde" + QString::fromStdString(movie_name_suffix) + ".avi" ,
+                                "/movie_frt" + QString::fromStdString(movie_name_suffix) + ".avi" };
     std::cout << "Movie filename" << input_dir_path << vidFile[0].toStdString() << 
         std::endl;
     bias::videoBackend vid_sde(QString::fromStdString(input_dir_path) + vidFile[0]);
@@ -169,7 +224,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Video has " << numFrames << " frames" << std::endl;
     std::cout << "Video height" << height << std::endl;
     std::cout << "Video width" << width << std::endl;
-    std::cout << "window size" << window_size << std::endl;
 
     //HOG HOF Params
     bias::HOGHOF* feat_side = new bias::HOGHOF();
@@ -204,10 +258,6 @@ int main(int argc, char* argv[]) {
     vid_sde.readVidFrames(cap_obj_sde, vid_frames_sde);
     vid_frt.readVidFrames(cap_obj_frt, vid_frames_frt);
 
-    // test debug 
-    //int cuda_device_1 = 1;
-    //int cuda_device_2 = 0;
-
     feat_side->initHOGHOF(height, width);
     feat_front->initHOGHOF(height, width);
 
@@ -221,12 +271,14 @@ int main(int argc, char* argv[]) {
 
     if (classify_scores)
     {
-        classifier_sde->beh_names = beh_names;
+        classifier_sde->beh_names = beh_names_vec;
         classifier_sde->num_behs = num_behs;
-        classifier_frt->beh_names = beh_names;
+        classifier_frt->beh_names = beh_names_vec;
         classifier_frt->num_behs = num_behs;
         classifier_sde->classifier_file = classifier_filename;
         classifier_frt->classifier_file = classifier_filename;
+        classifier_sde->classifier_concatenation_order = classifier_concatenation_order;
+        classifier_frt->classifier_concatenation_order = classifier_concatenation_order;
 
         classifier_sde->allocate_model();
         classifier_frt->allocate_model();
@@ -257,16 +309,19 @@ int main(int argc, char* argv[]) {
     jaaba_process_time.resize(numFrames);
     bias::GetTime* gettime_ = new bias::GetTime();
 
-    //while (cur_run < nRuns)
-    //{
+    while (cur_run < nRuns)
+    {
         imageCnt = 0;
-        //if(debug)
-        //    jaaba_process_time_file = input_dir_path + "jaaba_process_time_" + to_string(cur_run) + ".csv";
+        
+        if(debug)
+            jaaba_process_time_file = input_dir_path + "jaaba_process_time_" + to_string(cur_run) + ".csv";
+        
         while (imageCnt < numFrames) {
 
             start_time = gettime_->getPCtime();
 
             if (!vidFile->isEmpty()) {
+
                 cv::Mat curImg_side;
                 cv::Mat curImg_frt;
                 cv::Mat greySide;
@@ -284,10 +339,10 @@ int main(int argc, char* argv[]) {
 
                 if (saveFeatures) {
                    
-                    bias::saveFeatures(output_dir_path + "hoghof_side_biasjaaba.csv",
+                    bias::saveFeatures(output_dir_path + "/hoghof_side_biasjaaba.csv",
                         feat_side->hog_out, feat_side->hof_out,
                         feat_dim_side, feat_dim_side);
-                    bias::saveFeatures(output_dir_path + "hoghof_front_biasjaaba.csv",
+                    bias::saveFeatures(output_dir_path + "/hoghof_front_biasjaaba.csv",
                         feat_front->hog_out, feat_front->hof_out,
                         feat_dim_front, feat_dim_front);
                 }
@@ -296,10 +351,10 @@ int main(int argc, char* argv[]) {
 
                 if (saveFeatures) {
                     
-                    bias::saveFeatures(output_dir_path + "hoghof_avg_side_biasjaaba.csv",
+                    bias::saveFeatures(output_dir_path + "/hoghof_avg_side_biasjaaba.csv",
                         feat_side->hog_out_avg, feat_side->hof_out_avg,
                         feat_dim_side, feat_dim_side);
-                    bias::saveFeatures(output_dir_path + "hoghof_avg_front_biasjaaba.csv",
+                    bias::saveFeatures(output_dir_path + "/hoghof_avg_front_biasjaaba.csv",
                         feat_front->hog_out_avg, feat_front->hof_out_avg,
                         feat_dim_front, feat_dim_front);
 					if (imageCnt == numFrames - 1)
@@ -344,23 +399,21 @@ int main(int argc, char* argv[]) {
 		if (classify_scores) {
 			string classifier_scr_file;
 	        if (!movie_name_suffix.empty())
-			    classifier_scr_file = output_dir_path + "classifier_trial" + movie_name_suffix.back() + ".csv";
+			    classifier_scr_file = output_dir_path + "/scores_offline_trial" + movie_name_suffix.back() + ".csv";
 			else
-				classifier_scr_file = output_dir_path + "classifier_score.csv";
+				classifier_scr_file = output_dir_path + "/scores_offline.csv";
 			write_score_final(classifier_scr_file, numFrames, scores);
 		}
-        //cur_run++;
-    //}
+        cur_run++;
+    }
    
     //fopen(output_dir_path + '');
 	//wait for 5 secs before exiting to make sure finsihed writing
     Sleep(5000);
 
-
     //destroy hog hof ctx on the gpu
     HOFTeardown(feat_front->hof_ctx);
     HOGTeardown(feat_front->hog_ctx);
-
 
     HOFTeardown(feat_side->hof_ctx);
     HOGTeardown(feat_side->hog_ctx);

@@ -86,6 +86,7 @@ namespace bias {
             RtnStatus setViewFromMap(QVariantMap configMap);
             RtnStatus setCropListFromMap(QVariantMap configMap);
             void convertStringtoVector(string& convertString, vector<string>& vectorString);
+            
     };
 
     void printKeys(QJsonObject obj);

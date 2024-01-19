@@ -572,7 +572,7 @@ namespace bias {
 
                     if (saveFeat) {
 
-                        saveFeatures(output_feat_directory + "hoghof_" + prefix + "_biasjaaba.csv",
+                        saveFeatures(output_feat_directory + "/hoghof_" + prefix + "_biasjaaba.csv",
                             HOGHOF_self->hog_out_skip,
                             HOGHOF_self->hof_out_skip,
                             (int)hog_num_elements, (int)hof_num_elements);
@@ -581,7 +581,7 @@ namespace bias {
                     HOGHOF_self->averageWindowFeatures(window_size, processedFrameCount, 1);
 
                     if (saveFeat) {
-                        saveFeatures(output_feat_directory + "hoghof_avg_" + prefix + "_biasjaaba.csv",
+                        saveFeatures(output_feat_directory + "/hoghof_avg_" + prefix + "_biasjaaba.csv",
                             HOGHOF_self->hog_out_avg,
                             HOGHOF_self->hof_out_avg,
                             (int)hog_num_elements, (int)hof_num_elements);
@@ -625,7 +625,7 @@ namespace bias {
 
                             if (saveFeat) {
                                     
-                                saveFeatures(output_feat_directory + "hoghof_" + prefix + "_biasjaaba.csv", 
+                                saveFeatures(output_feat_directory + "/hoghof_" + prefix + "_biasjaaba.csv", 
                                     HOGHOF_self->hog_out,
                                     HOGHOF_self->hof_out,
                                     (int)hog_num_elements, (int)hof_num_elements);
@@ -636,7 +636,7 @@ namespace bias {
                                 
                             if(saveFeat){
 
-                                saveFeatures(output_feat_directory + "hoghof_avg_" + prefix + "_biasjaaba.csv",
+                                saveFeatures(output_feat_directory + "/hoghof_avg_" + prefix + "_biasjaaba.csv",
                                     HOGHOF_self->hog_out_avg,
                                     HOGHOF_self->hof_out_avg,
                                     (int)hog_num_elements, (int)hof_num_elements);
@@ -1461,14 +1461,16 @@ namespace bias {
                   << std::endl;
         
         //extract behavior names
-        string behavior_names = jab_conf.beh_names;
-        stringstream behnamestream(behavior_names);
+        string behavior_names_str = jab_conf.beh_names;
+        jab_conf.convertStringtoVector(behavior_names_str, beh_names);
+        /*stringstream behnamestream(behavior_names);
         string cur_beh;
         while (!behnamestream.eof())
         {
             getline(behnamestream, cur_beh, ',');
             beh_names.push_back(cur_beh);
-        }
+        }*/
+
         num_behs = (int)beh_names.size();
         //num_behs = jab_conf.num_behs;
         std::cout << "num behs " << num_behs << std::endl;

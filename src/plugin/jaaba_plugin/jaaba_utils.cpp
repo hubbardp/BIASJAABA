@@ -416,6 +416,8 @@ namespace bias {
         return rtnStatus;
     }
 
+
+    //map camera views to camera guid numbers
     RtnStatus JaabaConfig::setCropListFromMap(QVariantMap configMap)
     {
         RtnStatus rtnStatus;
