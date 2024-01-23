@@ -11,13 +11,15 @@
 #include <opencv2/opencv.hpp>
 #include <fstream>
 
+#define DEBUG 0
+
 namespace bias
 {
     const unsigned int MAX_LOG_QUEUE_SIZE = 1000;
 
     ImageLogger::ImageLogger(QObject *parent) : QObject(parent) 
     {
-        initialize(0,NULL,NULL,false,"", NULL, NULL, NULL);
+        initialize(0,NULL,NULL,false,"", NULL, NULL);
     }
 
     ImageLogger::ImageLogger (
@@ -27,13 +29,12 @@ namespace bias
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
-            std::shared_ptr<Lockable<GetTime>> gettime,
-            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+            std::shared_ptr<Lockable<TimerClass>> timerClass,
             QObject *parent
             ) : QObject(parent)
     {
         initialize(cameraNumber, videoWriterPtr, logImageQueuePtr, 
-                   testConfigEnabled, trial_info, testConfig, gettime, nidaq_task);
+                   testConfigEnabled, trial_info, testConfig, timerClass);
     }
 
     void ImageLogger::initialize( 
@@ -43,8 +44,7 @@ namespace bias
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
-            std::shared_ptr<Lockable<GetTime>> gettime,
-            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
+            std::shared_ptr<Lockable<TimerClass>> timerClass
             ) 
     {
         frameCount_ = 0;
@@ -62,12 +62,14 @@ namespace bias
             ready_ = false;
         }
 
-        gettime_ = gettime;
-        nidaq_task_ = nidaq_task;
+        //gettime_ = gettime;
+        //nidaq_task_ = nidaq_task;
+        timerClass_ = timerClass_;
         testConfigEnabled_ = testConfigEnabled;
         testConfig_ = testConfig;
         trial_num_ = trial_info;
 
+#if DEBUG
         if (testConfigEnabled) {
 
             if (!testConfig_->f2f_prefix.empty()) {
@@ -86,7 +88,9 @@ namespace bias
                 time_stamps1.resize(testConfig_->numFrames);
             }
         }
+#endif
     }
+
 
     void ImageLogger::stop()
     {
@@ -180,7 +184,7 @@ namespace bias
                 //pc2 = gettime_->getPCtime();
                 
             }
-
+#if DEBUG
             if (testConfigEnabled_) {
 
                 if (nidaq_task_ != nullptr) {
@@ -260,6 +264,7 @@ namespace bias
                 }
 
             }
+#endif
                   
             acquireLock();
             done = stopped_;

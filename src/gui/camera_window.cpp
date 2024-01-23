@@ -26,6 +26,7 @@
 #include "ext_ctl_http_server.hpp"
 #include "plugin_handler.hpp"
 #include "NIDAQUtils.hpp"
+#include "timerClass.hpp"
 
 #include <cstdlib>
 #include <cmath>
@@ -414,8 +415,7 @@ namespace bias
             loadTestConfigEnabled,
             trial_num,
             testConfig,
-            gettime_,
-            nidaq_task,
+            timerClass_,
             this
         );
         imageDispatcherPtr_->setAutoDelete(false);
@@ -489,8 +489,7 @@ namespace bias
                     loadTestConfigEnabled,
                     trial_num,
                     testConfig,
-                    gettime_,
-                    nidaq_task,
+                    timerClass_,
                     this
                     );
             imageLoggerPtr_ -> setAutoDelete(false);
@@ -2783,6 +2782,8 @@ namespace bias
             
             cameraPtr_ -> setTriggerExternal();
             cameraPtr_ -> releaseLock();
+
+            // allocate nidaq pointer
             nidaq_task = nullptr;
             QPointer<QAction> actionPtr = qobject_cast<QAction *>(sender());
             triggerExternalType_ = actionToTriggerExternalMap_[actionPtr];           
@@ -3356,9 +3357,12 @@ namespace bias
         //std::cout << " Printing cmd line aprams from camera window" << std::endl;
         //print(cmdlineparams_);
 
+
         // Temporary - plugin development
         // -------------------------------------------------------------------------------        
+        //timer objects
         gettime_ = make_shared<Lockable<GetTime>>();
+        timerClass_ = make_shared<Lockable<TimerClass>>();
 
         pluginHandlerPtr_  = new PluginHandler(this);
         //pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
@@ -5502,6 +5506,10 @@ namespace bias
                 actionCameraTriggerInternalPtr_ -> setChecked(true);
                 actionCameraTriggerExternalNIDAQPtr_ -> setChecked(false);
                 actionCameraTriggerExternalElsePtr_  -> setChecked(false);
+
+                // set timerClass flag
+                timerClass_->timerNIDAQFlag = false;
+
                 break;
 
             case TRIGGER_EXTERNAL:
@@ -5531,6 +5539,9 @@ namespace bias
                     actionCameraTriggerExternalNIDAQPtr_->triggered();
                     updateCameraTriggerMenu();
 
+                    //set timerClass nidaq flag
+                    timerClass_->timerNIDAQFlag = true;
+
                     //setup nidaq config from map
                     if (nidaq_task != nullptr && cameraNumber_ == 0)
                     {
@@ -5547,7 +5558,11 @@ namespace bias
                     
                 }
                 else if (triggerExternalType == TRIGGER_ELSE) {
+
                     actionCameraTriggerExternalElsePtr_->setChecked(true);
+
+                    //set timerClass nidaq flag
+                    timerClass_->timerNIDAQFlag = false;
                 }
 
                 break;
@@ -5565,6 +5580,14 @@ namespace bias
                 }
 
         } // swtich(triggerType)
+
+        //allocate timers
+        rtnStatus = timerClass_->allocateTimers(cameraNumber_, triggerExternalTypeConfigMap);
+        if (!rtnStatus.success) 
+        {
+            QMessageBox::critical(this, rtnStatus.message, rtnStatus.message);
+        }
+
 
         rtnStatus.success = true;
         rtnStatus.message = QString("");

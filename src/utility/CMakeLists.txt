@@ -27,6 +27,7 @@ if(with_qt_gui)
         tictoc.h
         NIDAQUtils.hpp
         test_config.hpp
+		timerClass.hpp
         )
     
     set(
@@ -43,6 +44,7 @@ if(with_qt_gui)
         tictoc.c
         NIDAQUtils.cpp
         test_config.cpp
+		timerClass.cpp
        )
  
     if(WIN32)

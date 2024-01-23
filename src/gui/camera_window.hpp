@@ -21,6 +21,7 @@
 #include "rtn_status.hpp"
 #include "bias_plugin.hpp"
 
+#include "timerClass.hpp"
 #include "win_time.hpp"
 #include "NIDAQUtils.hpp"
 #include "test_config.hpp"
@@ -381,10 +382,13 @@ namespace bias
             bool loadTestConfigEnabled;
             unsigned int partnerCameraNumber_;
             unsigned int numTestFrames;
-            std::shared_ptr<Lockable<GetTime>> gettime_;
-            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task;
             std::shared_ptr<TestConfig>testConfig;
             void setTrialNum();
+
+            //timer pointers
+            std::shared_ptr<Lockable<GetTime>> gettime_;
+            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task;
+            std::shared_ptr<Lockable<TimerClass>> timerClass_;
 
             QPointer<QThreadPool> threadPoolPtr_;
             QPointer<ImageGrabber> imageGrabberPtr_;

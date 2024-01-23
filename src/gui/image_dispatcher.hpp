@@ -9,12 +9,13 @@
 #include "fps_estimator.hpp"
 #include "lockable.hpp"
 #include "camera_fwd.hpp"
-#include "NIDAQUtils.hpp"
 
 
 // DEVEL 
+#include "NIDAQUtils.hpp"
 #include "win_time.hpp"
 #include "test_config.hpp"
+#include "timerClass.hpp"
 
 namespace bias
 {
@@ -39,8 +40,7 @@ namespace bias
                     bool testConfigEnabled,
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
-                    std::shared_ptr<Lockable<GetTime>> gettime,
-                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                    std::shared_ptr<Lockable<TimerClass>> timerClass,
                     QObject *parent = 0
                     );
 
@@ -55,8 +55,7 @@ namespace bias
                     bool testConfigEnabled,
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
-                    std::shared_ptr<Lockable<GetTime>> gettime,
-                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
+                    std::shared_ptr<Lockable<TimerClass>> timerClass
                     );
 
             // Use lock when calling these methods
@@ -80,7 +79,11 @@ namespace bias
             bool process_frame_time;
             uInt32 read_buffer = 0, read_ondemand = 0;
 
+            std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
+            std::shared_ptr<Lockable<TimerClass>>timerClass_;
+            std::shared_ptr<TestConfig>testConfig_;
+            
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;
             std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr_;
@@ -97,8 +100,7 @@ namespace bias
 
             void run();
 
-            std::shared_ptr<TestConfig>testConfig_;
-            std::shared_ptr<Lockable<GetTime>> gettime_;
+            //test variables
             std::vector<unsigned int>queue_size;
             std::vector<std::vector<uInt32>> ts_nidaq;
             std::vector<float>ts_nidaqThres;

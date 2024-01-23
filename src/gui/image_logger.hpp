@@ -10,7 +10,9 @@
 
 #include "win_time.hpp"
 #include "NIDAQUtils.hpp"
+#include "timerClass.hpp"
 #include "test_config.hpp"
+
 
 // Debugging -------------------
 //#include <opencv2/core/core.hpp>
@@ -40,8 +42,7 @@ namespace bias
                     bool testConfigEnabled,
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
-                    std::shared_ptr<Lockable<GetTime>> gettime,
-                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                    std::shared_ptr<Lockable<TimerClass>> timerClass,
                     QObject *parent=0
                     );
 
@@ -52,8 +53,7 @@ namespace bias
                     bool testConfigEnabled,
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
-                    std::shared_ptr<Lockable<GetTime>> gettime,
-                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
+                    std::shared_ptr<Lockable<TimerClass>> timerClass
                     );
 
             void stop();
@@ -91,6 +91,7 @@ namespace bias
 
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
+            std::shared_ptr <Lockable<TimerClass>> timerClass_;
             std::shared_ptr<TestConfig>testConfig_;
     };
 

@@ -20,22 +20,21 @@ namespace bias
 
     ImageDispatcher::ImageDispatcher(QObject *parent) : QObject(parent)
     {
-        initialize(false,false,0,NULL,NULL,NULL,NULL,false,"",NULL,NULL,NULL);
+        initialize(false,false,0,NULL,NULL,NULL,NULL,false,"",NULL,NULL);
     }
 
-    ImageDispatcher::ImageDispatcher( 
-            bool logging,
-            bool pluginEnabled,
-            unsigned int cameraNumber,
-            std::shared_ptr<Lockable<Camera>> cameraPtr,
-            std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr, 
-            std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr, 
-            std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
-            bool testConfigEnabled,
-            string trial_info,
-            std::shared_ptr<TestConfig> testConfig,
-            std::shared_ptr<Lockable<GetTime>> gettime,
-            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+    ImageDispatcher::ImageDispatcher(
+        bool logging,
+        bool pluginEnabled,
+        unsigned int cameraNumber,
+        std::shared_ptr<Lockable<Camera>> cameraPtr,
+        std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr,
+        std::shared_ptr<LockableQueue<StampedImage>> logImageQueuePtr,
+        std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
+        bool testConfigEnabled,
+        string trial_info,
+        std::shared_ptr<TestConfig> testConfig,
+        std::shared_ptr<Lockable<TimerClass>> timerClass,
             QObject *parent
             ) : QObject(parent)
     {
@@ -50,8 +49,7 @@ namespace bias
                 testConfigEnabled,
                 trial_info,
                 testConfig,
-                gettime,
-                nidaq_task
+                timerClass
                 );
     }
 
@@ -66,8 +64,7 @@ namespace bias
             bool testConfigEnabled,
             string trial_info,
             std::shared_ptr<TestConfig> testConfig,
-            std::shared_ptr<Lockable<GetTime>> gettime,
-            std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task
+            std::shared_ptr<Lockable<TimerClass>> timerClass
             ) 
     {
         newImageQueuePtr_ = newImageQueuePtr;
@@ -98,11 +95,12 @@ namespace bias
         currentTimeStamp_ = 0.0;
 
         //DEVEL
-        gettime_ = gettime;
+        //gettime_ = gettime;
+        //nidaq_task_ = nidaq_task;
+        timerClass_ = timerClass;
         testConfigEnabled_ = testConfigEnabled;
         testConfig_ = testConfig;
         trial_num = trial_info;
-        nidaq_task_ = nidaq_task;
         process_frame_time = 1;
 
 #if DEBUG
