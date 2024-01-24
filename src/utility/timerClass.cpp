@@ -1,4 +1,5 @@
 #include "timerClass.hpp"
+#include <iostream>
 
 namespace bias {
 
@@ -30,6 +31,7 @@ namespace bias {
             }
             else 
             {
+
                 nidaqTimerptr = nullptr;
             }
         }

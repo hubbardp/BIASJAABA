@@ -61,9 +61,17 @@ namespace bias
                 wait_to_process_.wakeOne();
             }
 
+            void waitIfNull()
+            {
+                if (this == nullptr) {
+                    wait_to_proceed_.wait(&mutex_);
+                }
+            }
+
         protected:
             QMutex mutex_;
             QWaitCondition wait_to_process_;
+            QWaitCondition wait_to_proceed_;
             
     };
 

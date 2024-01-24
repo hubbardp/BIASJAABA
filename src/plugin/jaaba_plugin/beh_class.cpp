@@ -9,12 +9,13 @@
 #include <unordered_map>
 
 #define DEBUG 0
+#define serialAddClassifier 0 
 
 namespace bias {
 
     //DEBUG variables test
-    static int test_frameCount=0;
-    static int test_classifier_index=0;
+    static int test_frameCount=3999;
+    static int test_classifier_index=9;
 
 
     beh_class::beh_class()  {}
@@ -65,6 +66,7 @@ namespace bias {
             finalscore.score.resize(num_behs,0);
             predScoreSide.score.resize(num_behs, 0);
             predScoreFront.score.resize(num_behs, 0);
+            featIndexMap.resize(num_behs);
 
             for(unsigned int nbeh =0;nbeh < num_behs;nbeh++)
             {
@@ -77,6 +79,7 @@ namespace bias {
                         H5::Group multbeh = file.openGroup(beh_names[nbeh]);
                         H5::DataSet dataset = multbeh.openDataSet(this->model_params[0]);
                         H5::DataSpace dataspace = dataset.getSpace();
+                        // dims gets allocated in this function call
                         ndims = dataspace.getSimpleExtentDims(dims_out,NULL);
                         this->model[nbeh].cls_alpha.resize(dims_out[0]);
                         this->model[nbeh].cls_dim.resize(dims_out[0]);
@@ -89,6 +92,7 @@ namespace bias {
                         this->flag[nbeh].resize(dims_out[0]);
 
                         beh_present[nbeh] = 1;
+                        featIndexMap[nbeh].resize(dims_out[0], vector<int>(2, 0));
  
                     } catch (H5::Exception error) {
                 
@@ -127,8 +131,12 @@ namespace bias {
         RtnStatus rtnstatus; 
         std::string class_file = this->classifier_file;
         //size_t num_behs = beh_present.size();
-        for(int ncls = 0;ncls < num_behs;ncls++)
+        for(int ncls = 0;ncls < num_behs; ncls++)
         {
+#if 0
+            std::ofstream x_out;
+            x_out.open("./test_model_params" + to_string(ncls) + ".csv", std::ios_base::app);
+#endif
             if (beh_present[ncls])
             {
 
@@ -143,10 +151,25 @@ namespace bias {
                     QMessageBox::critical(this, errMsgTitle, errMsgText);
                 }
             }
+#if 0 
+            int nparams = model_params.size();
+            int nparamdims = model[0].cls_alpha.size();
+            for (int param_dim = 0; param_dim < nparamdims; param_dim++)
+            {
+
+                x_out << model[ncls].cls_alpha[param_dim] << setprecision(6) << ","
+                      << model[ncls].cls_dim[param_dim]   << setprecision(6) << ","
+                      << model[ncls].cls_dir[param_dim]   << setprecision(6) << ","
+                      << model[ncls].cls_error[param_dim] << setprecision(6) << ","
+                      << model[ncls].cls_tr[param_dim] << setprecision(6);
+                x_out << "\n";
+            }
+            x_out.close();
+#endif
         }
 
-        // allocate and assign classifier output signals
-        behavior_output_signal.resize(num_behs,'0');
+        // allocate and assign classifier output signals - obselete
+        //behavior_output_signal.resize(num_behs,'0');
 
     }
 
@@ -165,6 +188,7 @@ namespace bias {
                                            &data_out.cls_tr.data()[0] };
         int rank, ndims;
         hsize_t dims_out[2];
+
         try 
         {
 
@@ -179,12 +203,10 @@ namespace bias {
 				ndims = dataspace.getSimpleExtentDims(dims_out,NULL);
 				H5::DataSpace memspace(rank,dims_out);
 				dataset.read(model_data[paramid], H5::PredType::IEEE_F32LE, memspace, dataspace);
-				file.close();
+                file.close();
 				rtnstatus.success = true;
             } 
         }
-        
-
         // catch failure caused by the H5File operations
         catch( H5::Exception error )
         {
@@ -195,6 +217,7 @@ namespace bias {
             rtnstatus.success = false;
             return rtnstatus;
         }
+
         return rtnstatus;
 
     }
@@ -587,8 +610,8 @@ namespace bias {
 #endif
 	}*/
 
-    void beh_class::getviewandfeature(HOGShape *shape_viewA, HOGShape *shape_viewB, 
-                                      string view)
+    void beh_class::getviewandfeature(HOGShape *shape_viewA, HOGShape *shape_viewB,
+        string view)
     {
         int num_views = classifier_concatenation_order.size();
         //shape of hist side
@@ -601,15 +624,15 @@ namespace bias {
         unsigned int viewB_y = shape_viewB->y;
         unsigned int viewB_bin = shape_viewB->bin;
 
-        unsigned int feat_dim_viewA; 
+        unsigned int feat_dim_viewA;
         unsigned int feat_dim_viewB;
         string classifier_first_view;
         string classifier_second_view;
-        vector<unsigned int>feat_dims_order = vector<unsigned int>(num_views,0);
+        vector<unsigned int>feat_dims_order = vector<unsigned int>(num_views, 0);
         //std::cout << "viewA x" << viewA_x << std::endl;
         //std::cout << "viewB x" << viewB_x << std::endl;
 
-        for(int cls_ord_id = 0; cls_ord_id < num_views; cls_ord_id++)
+        for (int cls_ord_id = 0; cls_ord_id < num_views; cls_ord_id++)
         {
             if (classifier_concatenation_order[cls_ord_id] == "viewA") {
                 feat_dim_viewA = shape_viewA->x * shape_viewA->y * shape_viewA->bin;
@@ -626,9 +649,9 @@ namespace bias {
         size_t num_behs = beh_present.size();
         int cls_dim = 0;
         int cuda_feat_dim = 0;
-        int flag=0;
+        int flag = 0;
 
-
+#if !serialAddClassifier
         for (int beh_id = 0; beh_id < num_behs; beh_id++)
         {
             if (beh_present[beh_id]) {
@@ -642,12 +665,14 @@ namespace bias {
                     if (cls_dim > 0 && cls_dim <= feat_dims_order[0] && (view == classifier_concatenation_order[0])) {
                         translation_index_map_hof[beh_id].insert(make_pair(cls_id, cuda_feat_dim ));
                         flag = 1;
+
                     }
                     else if (cls_dim > feat_dims_order[0] && cls_dim <= (feat_dims_order[0] + feat_dims_order[1])
                              && (view == classifier_concatenation_order[1])) {
                         cuda_feat_dim -= feat_dims_order[0];
                         translation_index_map_hof[beh_id].insert(make_pair(cls_id, cuda_feat_dim));
                         flag = 2;
+
                     }
                     else if (cls_dim > (feat_dims_order[0] + feat_dims_order[1])
                              && cls_dim <= ((2 * feat_dims_order[0]) + feat_dims_order[1])
@@ -655,6 +680,7 @@ namespace bias {
                         cuda_feat_dim -= (feat_dims_order[0] + feat_dims_order[1]);
                         translation_index_map_hog[beh_id].insert(make_pair(cls_id, cuda_feat_dim));
                         flag = 3;
+
                     }
                     else if(cls_dim > ((2 * feat_dims_order[0]) + feat_dims_order[1]) &&
                              (view == classifier_concatenation_order[1])){
@@ -662,11 +688,12 @@ namespace bias {
                         cuda_feat_dim -= ((2 * feat_dims_order[0]) + feat_dims_order[1]);
                         translation_index_map_hog[beh_id].insert(make_pair(cls_id, cuda_feat_dim));
                         flag = 4;
+
                     }
                     else {
                         //nothing to do
                     }
-                    
+
                     //this->translated_index[beh_id][cls_id] = cuda_feat_dim;
 #if DEBUG
                     this->flag[beh_id][cls_id] = flag; // this data struct only for debugging purposes
@@ -674,8 +701,74 @@ namespace bias {
                 }
             }
         }
+#endif
 
-#if DEBUG
+#if serialAddClassifier
+        // hof = feat 2 and hog = feat 1
+        for (int beh_id = 0; beh_id < 1; beh_id++)
+        {
+            if (beh_present[beh_id]) {
+
+                for (int cls_id = 0; cls_id < numWkCls; cls_id++)
+                {
+                    cls_dim = this->model[beh_id].cls_dim[cls_id];
+                    cuda_feat_dim = cls_dim - 1;
+                    flag = 0;
+
+                    if (cls_dim > 0 && cls_dim <= feat_dims_order[0] && (view == classifier_concatenation_order[0]))
+                    {
+                        featIndexMap[beh_id][cls_id][0] = 2;
+                        featIndexMap[beh_id][cls_id][1] = cuda_feat_dim;
+                        if (cls_id == 1)
+                            std::cout << "view " << view << " hof" << std::endl;
+                        flag = 1;
+                    }
+                    else if (cls_dim > feat_dims_order[0] && cls_dim <= (feat_dims_order[0] + feat_dims_order[1])
+                        && (view == classifier_concatenation_order[1])) {
+
+                        cuda_feat_dim -= feat_dims_order[0];
+                        featIndexMap[beh_id][cls_id][0] = 2;
+                        featIndexMap[beh_id][cls_id][1] = cuda_feat_dim;
+                        if (cls_id == 1)
+                            std::cout << "view " << view << " hof" << std::endl;
+                        flag = 2;
+
+                    }
+                    else if (cls_dim > (feat_dims_order[0] + feat_dims_order[1])
+                        && cls_dim <= ((2 * feat_dims_order[0]) + feat_dims_order[1])
+                        && (view == classifier_concatenation_order[0])) {
+
+                        cuda_feat_dim -= (feat_dims_order[0] + feat_dims_order[1]);
+                        featIndexMap[beh_id][cls_id][0] = 1;
+                        featIndexMap[beh_id][cls_id][1] = cuda_feat_dim;
+                        if (cls_id == 1)
+                            std::cout << "view " << view << " hog" << std::endl;
+                        flag = 3;
+
+                    }
+                    else if (cls_dim > ((2 * feat_dims_order[0]) + feat_dims_order[1]) &&
+                        (view == classifier_concatenation_order[1])) {
+
+                        cuda_feat_dim -= ((2 * feat_dims_order[0]) + feat_dims_order[1]);
+                        featIndexMap[beh_id][cls_id][0] = 1;
+                        featIndexMap[beh_id][cls_id][1] = cuda_feat_dim;
+                        if (cls_id == 1)
+                            std::cout << "view " << view << " hog" << std::endl;
+                        flag = 4;
+
+                    }
+                    else {
+
+                        featIndexMap[beh_id][cls_id][0] = 0;
+                        featIndexMap[beh_id][cls_id][1] = 0;
+                    }
+
+                }
+            }
+        }
+#endif
+
+#if 0
         if (view == "viewA")
         {
             std::ofstream x_out_hog_viewA;
@@ -764,14 +857,19 @@ namespace bias {
     }
 
     // boost score from a single stump of the model 
-    void beh_class::boost_compute(float &scr, std::vector<float> &features, int ind,
+    void beh_class::boost_compute(float &scr, const std::vector<float> &features, int ind,
 			   int dir, float tr, float alpha, int framecount, int cls_idx)
     {
+#if 0
+        if (framecount == test_frameCount && cls_idx == test_classifier_index)
+            printf("dir: %d, dim: %d\n ",
+                dir, ind);
+#endif
       
-		float addscores = 0.0;
+		float addscores = 0.0f;
 		if(dir > 0) {
 
-			if(features[ind] > tr) {
+			if(isgreater((double)features[ind],(double)tr)) {
 
 				addscores = 1;
 
@@ -779,38 +877,41 @@ namespace bias {
 
 				addscores = -1;
 			}
-#if DEBUG
-            //if (framecount == test_frameCount && cls_idx == test_classifier_index)
-            //    printf("%.7f: feat val, %7f: addscore val, %.7f: tr,  %.7f scr before", features[ind], addscores, tr,scr);
+#if 0
+            if (framecount == test_frameCount && cls_idx == test_classifier_index)
+                printf("feat index: %d,feat val: %e, addscore val: %e, tr:%e, scr before:%e\n",
+                    ind,features[ind], addscores, tr, scr);
 #endif
             addscores = addscores * alpha;
             scr = scr + addscores;
 
-#if DEBUG
-            //if (framecount == test_frameCount && cls_idx == test_classifier_index)
-            //    printf("%.7f scr after, %.7f", scr, alpha);
+#if 0
+            if (framecount == test_frameCount && cls_idx == test_classifier_index)
+                printf("scr after: %7f, alpha: %.7f\n", scr, alpha);
 #endif
 
-		} else {
+        }
+        else {
 
-			if(features[ind] <= tr) {
+            if (!isgreater((double)features[ind],(double)tr)){
 
-				addscores = 1;
-
-			} else {
+                addscores = 1;
+            
+            }else {
 
 				addscores = -1;
 			}
-#if DEBUG
-            //if (framecount == test_frameCount && cls_idx == test_classifier_index)
-            //    printf("%.7f: feat val, %.7f: addscore val, %.7f: tr,  %.7f scr before", features[ind], addscores, tr, scr);
+#if 0
+            if (framecount == test_frameCount && cls_idx == test_classifier_index)
+                printf("feat index: %d, feat val :%7f, addscore val:%7f ,  tr:%7f, scr before:%7f\n", 
+                    ind, features[ind], addscores, tr, scr);
 #endif			
             addscores = addscores * alpha;
 			scr = scr + addscores;
 
-#if DEBUG
-            //if (framecount == test_frameCount && cls_idx == test_classifier_index)
-            //    printf("%.7f scr after, %.7f",  scr, alpha);
+#if 0
+            if (framecount == test_frameCount && cls_idx == test_classifier_index)
+                printf("scr after:%7f, alpha:%.7f\n",  scr, alpha);
 #endif
 		}
 
@@ -818,8 +919,8 @@ namespace bias {
 
 
     // frameCount and view are passed to this function as arguments only for testing purposes
-    void beh_class::boost_classify(std::vector<float> &scr, std::vector<float> &hog_features,
-        std::vector<float> &hof_features, struct HOGShape *shape_viewA,
+    void beh_class::boost_classify(std::vector<float> &scr,const std::vector<float> &hog_features,
+        const std::vector<float> &hof_features, struct HOGShape *shape_viewA,
         struct HOFShape *shape_viewB,
         std::vector<boost_classifier> &model, int frameCount, string view)
     {
@@ -838,7 +939,7 @@ namespace bias {
         unordered_map<int, int>::iterator hof_it_end;
         unordered_map<int, int>::iterator hog_it_end;
 
-#if DEBUG
+#if 0
         bool haveprinted_hof = false;
         bool haveprinted_hog = false;
         std::ofstream x_out;
@@ -848,6 +949,7 @@ namespace bias {
             x_out.open(file.c_str(), std::ios_base::app);
 #endif
 
+#if !serialAddClassifier
         for (int beh_id = 0; beh_id < num_behs; beh_id++)
         {
             if (beh_present[beh_id])
@@ -877,10 +979,10 @@ namespace bias {
 
                     boost_compute(scr[beh_id], hof_features, index_hof, dir, tr, alpha, frameCount, cls_id);
 
-#if DEBUG
+#if 0
                     if (!haveprinted_hof && frameCount == test_frameCount) {
 
-                        x_out << cls_id << "," << scr[beh_id] << "\n";
+                        x_out << cls_id << "," << scr[beh_id] << "," << hof_features[index_hof] <<"\n";
                     }
 #endif
                 }
@@ -898,24 +1000,84 @@ namespace bias {
 
                     boost_compute(scr[beh_id], hog_features, index_hog, dir, tr, alpha, frameCount, cls_id);
 
-#if DEBUG
+#if 0
                     if (!haveprinted_hog && frameCount == test_frameCount) {
 
-                        x_out << cls_id << "," << scr[beh_id] << "\n";
+                        x_out << cls_id << "," << scr[beh_id] << "," << hog_features[index_hog] <<  "\n";
                     }
 #endif
                 }
 
-#if DEBUG
+#if 0
                 haveprinted_hof = true;
                 haveprinted_hog = true;
 #endif
             }
         }
+#endif
 
-#if DEBUG
+#if serialAddClassifier
+        for (int beh_id = 0; beh_id < 1; beh_id++)
+        {
+            if (beh_present[beh_id])
+            {
+                for (int cls_id = 0; cls_id < numWkCls; cls_id++)
+                {
+                    if (featIndexMap[beh_id][cls_id][0] == 2)
+                    {
+                        dim = model[beh_id].cls_dim[cls_id];
+                        dir = model[beh_id].cls_dir[cls_id];
+                        alpha = model[beh_id].cls_alpha[cls_id];
+                        tr = model[beh_id].cls_tr[cls_id];
+                        index_hof = featIndexMap[beh_id][cls_id][1];
+
+                        boost_compute(scr[beh_id], hof_features, index_hof, dir, tr, alpha, frameCount, cls_id);
+#if 1                    
+                        if (frameCount == test_frameCount) {
+
+                            x_out << cls_id << "," << dir << "," << alpha << "," << dim << "," 
+                                << "," << tr << "," 
+                                << scr[beh_id] << "," << hof_features[index_hof] << "\n";
+                        }
+#endif
+                    }
+                    else if (featIndexMap[beh_id][cls_id][0] == 1) {
+
+                        dim = model[beh_id].cls_dim[cls_id];
+                        dir = model[beh_id].cls_dir[cls_id];
+                        alpha = model[beh_id].cls_alpha[cls_id];
+                        tr = model[beh_id].cls_tr[cls_id];
+                        index_hog = featIndexMap[beh_id][cls_id][1];
+
+                        boost_compute(scr[beh_id], hog_features, index_hog, dir, tr, alpha, frameCount, cls_id);
+#if 1
+                        if (frameCount == test_frameCount) {
+
+                            x_out << cls_id << "," << dir << "," << alpha << "," << dim << ","
+                                << "," << tr << ","
+                                << scr[beh_id] << "," << hog_features[index_hog] << "\n";
+                        }
+#endif
+                    }
+                    else { 
+                       
+#if 1
+                        if (frameCount == test_frameCount) {
+
+                            x_out << cls_id << "," << 0 << "," << 0 << "," << 0 << ","
+                                << "," << 0 << "," << scr[beh_id] << "," << 0 << "\n";
+                        }
+#endif 
+                    }
+
+                }
+            }
+        }
+
+#if 0
         if (frameCount == test_frameCount)
             x_out.close();
+#endif
 #endif
 
     }
@@ -1194,6 +1356,12 @@ namespace bias {
 
         return H5Lexists( id, path.c_str(), H5P_DEFAULT ) > 0;
 
+    }
+
+    bool beh_class::compare_float(float& val1, float& val2, float epsilon) 
+    {
+        return (fabs(val1 - val2) <= epsilon); //* qMax(qAbs(val1), qAbs(val2))); adaptive epsilon
+  
     }
 
 

@@ -68,7 +68,7 @@ namespace bias {
             std::vector<boost_classifier> &model, int frameCount);
 	    //void boost_compute(float &scr, std::vector<float> &features, int ind,
 		//	       int num_feat, int feat_len, int dir, float tr, float alpha, int framecount, int cls_idx);
-        void boost_compute(float &scr, std::vector<float> &features, int ind,
+        void boost_compute(float &scr, const std::vector<float> &features, int ind,
                            int dir, float tr, float alpha, int framecount, int cls_idx);
         bool pathExists(hid_t id, const std::string& path);
         void addScores(std::vector<float>& scr_side,
@@ -78,14 +78,15 @@ namespace bias {
 		void write_translated_indexes(string filenam, vector<int>& index_vector, int feat_dim);
 		void getviewandfeature(HOGShape *shape_side, HOGShape *shape_front,
                                string view);
-        void boost_classify(std::vector<float> &scr, std::vector<float> &hog_features,
-            std::vector<float> &hof_features, struct HOGShape *shape_viewA,
+        void boost_classify(std::vector<float> &scr, const std::vector<float> &hog_features,
+            const std::vector<float> &hof_features, struct HOGShape *shape_viewA,
             struct HOFShape *shape_viewB,
             std::vector<boost_classifier> &model, int frameCount, string view);
-
+        bool compare_float(float& val1, float& val2, float epsilon = 0.00000001f);
         //test 
         //vector<PredData> predscore_side = vector<PredData>(nframes);
         //vector<PredData> predscore_front = vector<PredData>(nframes);
+        vector<vector<vector<int>>> featIndexMap;
 
     };
 

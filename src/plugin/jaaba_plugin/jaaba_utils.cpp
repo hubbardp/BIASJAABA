@@ -604,7 +604,7 @@ namespace bias {
         QJsonDocument doc = QJsonDocument::fromJson(paramJson);
         obj = doc.object();
         std::cout << "loadParams(" << param_file << ") contains:\n";
-        printKeys(obj);
+        //printKeys(obj);
         return obj;
     }
 

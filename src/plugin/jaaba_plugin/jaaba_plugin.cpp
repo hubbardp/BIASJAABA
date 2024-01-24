@@ -1895,7 +1895,9 @@ namespace bias {
                                     std::shared_ptr<TestConfig> testConfig) 
     {
         std::cout << "nidaq setup for plugin " << std::endl;
-        nidaq_task_ = nidaq_task;
+        if (nidaq_task != nullptr) {
+            nidaq_task_ = nidaq_task;
+        }
         testConfig_ = testConfig;
         testConfigEnabled_ = testConfigEnabled;
         trial_num_ = trial_info;
@@ -1904,7 +1906,8 @@ namespace bias {
         //    ts_nidaq.resize(numframes_, std::vector<uInt32>(2, 0));
 
         // test vectors allocated for scores
-        if (processScoresPtr_self != nullptr && isReceiver())
+        if (processScoresPtr_self != nullptr && isReceiver() 
+            && nidaq_task_ != nullptr)
         {
             //processScoresPtr_self->scores.resize(numframes_);
             //processScoresPtr_self->numFrames = numframes_;
@@ -2169,7 +2172,7 @@ namespace bias {
         std::cout << "Loaded configuration:\n";        
         if (rtnStatus.success) {
             std::cout << "Load Jaaba config Plugin" << std::endl;
-            jab_conf.print();
+            //jab_conf.print();
             loadConfig();
         }
         return rtnStatus;
