@@ -312,6 +312,9 @@ namespace bias
             unsigned int format7PercentSpeed_;
             int colorMapNumber_;
 
+            TriggerType trigEnumVal;
+            TriggerExternalType trigExternalEnumVal;
+
             QDir defaultVideoFileDir_;
             QDir currentVideoFileDir_;
             QString currentVideoFileName_;
@@ -429,6 +432,7 @@ namespace bias
             void setupCaptureDurationTimer();
             void updateWindowTitle();
             QPointer<BiasPlugin> getCurrentPlugin(); 
+
             void startAllCamerasTrigMode();
             void stopAllCamerasTrigMode();
             void startThreadsAllCamerasTrigMode();
@@ -443,6 +447,7 @@ namespace bias
             void resetImageLoggerParams();
             void setWriteScoreFlag();
             void gpuDeInitializeAllJaaabaPlugins();
+            void setupNIDAQAllViews();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();
