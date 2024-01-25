@@ -190,7 +190,12 @@ namespace bias {
             EnumNode_spin triggerOverlapNode = nodeMapCamera_.getNodeByName<EnumNode_spin>("TriggerOverlap");
             if (triggerOverlapNode.isAvailable() && triggerOverlapNode.isWritable())
             { 
-                triggerOverlapNode.setEntryBySymbolic("Off");
+
+                triggerOverlapNode.setEntryBySymbolic("ReadOut"); // changed the defualt from "off" to "ReadOut"
+                                                                  // for Jin and Carmen. Not ideal to change the default
+                                                                  // to do for future is to make this a configurable option
+                                                                  // in the gui
+                triggerOverlapNode.print();
             }
 
             triggerType_ = getTriggerType();
