@@ -21,6 +21,7 @@ unsigned long prevTime_ms = 0UL;
 unsigned long led_on_interval = 400UL; // time in ms
 int isProgrammingledsOn = 1;
 int isSequence = 1;
+int global_pin_id_forsequence = 0;
 int current_pin_id = 3;
 
 //number of signalling pins
@@ -59,24 +60,24 @@ void ledPattern() {
   }
 }
 
-void singleLedOnAndOff() {
+void singleLedPattern() {
 
-  ledOnAndOff(DIGITAL1, HIGH);
-  wait();
-  ledOnAndOff(DIGITAL1, LOW);
-  wait();
-  ledOnAndOff(DIGITAL2, HIGH);
-  wait();
-  ledOnAndOff(DIGITAL2, LOW);
-  wait();
-  ledOnAndOff(DIGITAL3, HIGH);
-  wait();
-  ledOnAndOff(DIGITAL3, LOW);
-  wait();
-  ledOnAndOff(DIGITAL4, HIGH);
-  wait();
-  ledOnAndOff(DIGITAL4, LOW);
-  wait();
+  if(global_pin_id_forsequence == numSignaling_leds)
+  {
+    global_pin_id_forsequence = 0;  // reset led pin id
+  }
+  
+  if (ledState == LOW) {
+    ledState = HIGH;
+    digitalWrite(input_led_state[global_pin_id_forsequence], ledState);
+    
+  } else {
+
+    ledState = LOW;
+    digitalWrite(input_led_state[global_pin_id_forsequence], ledState);
+    global_pin_id_forsequence++; //increment led pin id to next led 
+  }
+  
 }
 
 void changingLedOnAndOff()
@@ -113,8 +114,8 @@ void allLedsOn() {
   digitalWrite(DIGITAL8, HIGH);
 }
 
-void singleLedPattern() {
-
+void singleLedOnAndOff() {
+  
   if (ledState == LOW) {
     ledState = HIGH;
   } else {
@@ -164,11 +165,10 @@ void setup() {
 
   if(isProgrammingledsOn){
     if(isSequence)
-      //ledTimer.begin(singleLedOnAndOff, 400000); // turn on sequence every 0.40 secs - train  
-      ledTimer.begin(singleLedOnAndOff, 3200000);
+      ledTimer.begin(singleLedPattern, 400000);
     else
       //ledTimer.begin(changingLedOnAndOff,4000000);
-      ledTimer.begin(singleLedPattern, 400000);
+      ledTimer.begin(singleLedOnAndOff, 400000);
       //allLedsOn();
   }
 
