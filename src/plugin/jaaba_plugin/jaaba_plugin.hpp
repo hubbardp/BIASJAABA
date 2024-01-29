@@ -70,7 +70,7 @@ namespace bias
             virtual void stopThread();
             cv::Mat getCurrentImage();
             int getLaserTrigger();
-            virtual void setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
+            virtual void setupTimerForPlugin(std::shared_ptr <Lockable<TimerClass>> timerClass,
                                     bool testConfigEnabled, string trial_info,
                                     std::shared_ptr<TestConfig> testConfig);
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,

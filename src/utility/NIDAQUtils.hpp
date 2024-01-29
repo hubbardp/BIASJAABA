@@ -5,6 +5,7 @@
 #include <vector>
 #include "lockable.hpp"
 #include "rtn_status.hpp"
+//#include "timerClass.hpp"
 #include <string>
 
 #include<QVariantMap>
@@ -68,7 +69,7 @@ namespace bias
         QVariantMap toMap();
     };*/
    
-    class NIDAQUtils: public Lockable<Empty>
+    class NIDAQUtils:  public Lockable<Empty> 
     {
    
       public:
@@ -108,18 +109,20 @@ namespace bias
         TaskHandle taskHandle_grab_in = 0;
         TaskHandle taskHandle_start_signal = 0;
 
+        RtnStatus configureTimer(unsigned int cameraNumber, QVariantMap& configMap);
+        bool isTriggered();
+        bool isTaskStarted();
+        void startTimerTasks();
+        void startTimerTrigger();
+        void stopTimerTrigger();
+        void stopTimerTasks();
+        void clearTimerTasks();
+
         NIDAQUtils();   
         void initialize();
-        RtnStatus setNIDAQConfigFromMap(QVariantMap& nidaqconfigMap);
         void configureNIDAQ();
-        void startTasks();
-        void stopTasks();
-        void start_trigger_signal();
-        void stop_trigger_signal();
-        void Cleanup();
         void getCamtrig(unsigned int frameCount, unsigned int buffer_size);
         void getNidaqTimeNow(uInt32& read_ondemand);
-        bool getisTrue();
         ~NIDAQUtils();
 
     /*signals:

@@ -8,46 +8,36 @@ namespace bias {
        
         
     }
+
+
+    void TimerClass::getTimeNow()
+    {
+
+    }
     
-    RtnStatus TimerClass::allocateTimers(unsigned int cameraNumber,QVariantMap& configMap)
+
+    /*RtnStatus TimerClass::configureTimer(unsigned int cameraNumber,QVariantMap& configMap)
     {
         RtnStatus rtnStatus;
-
-        if (timerNIDAQFlag)
-        {
-            if (cameraNumber == 0) {
-
-                nidaqTimerptr = make_shared<Lockable<NIDAQUtils>>();
-                if(nidaqTimerptr!= nullptr && !configMap.isEmpty())
-                {
-                    rtnStatus = nidaqTimerptr->setNIDAQConfigFromMap(configMap);
-                    if (!rtnStatus.success) {
-
-                        rtnStatus.message = QString("NIDAQ Config error");
-                        return rtnStatus;
-
-                    }
-                }
-            }
-            else 
-            {
-
-                nidaqTimerptr = nullptr;
-            }
-        }
-        else 
-        {
-            pcTimerptr = make_shared<Lockable<GetTime>>();
-        }
 
         rtnStatus.success = true;
         rtnStatus.message = QString("");
         return rtnStatus;
     }
 
-    void TimerClass::getTimeNow()
-    {
+    bool TimerClass::isTriggered() { return true; }
 
-    }
+    bool TimerClass::isTaskStarted() { return true; }
+
+    void TimerClass::startTimerTasks() {}
+
+    void TimerClass::startTimerTrigger() {}
+
+    void TimerClass::stopTimerTasks() {}
+
+    void TimerClass::stopTimerTrigger() {}
+
+    void TimerClass::clearTimerTasks() {}
+*/
 
 }

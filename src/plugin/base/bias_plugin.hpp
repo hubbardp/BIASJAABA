@@ -78,7 +78,7 @@ namespace bias
             virtual void setImageQueue(std::shared_ptr<LockableQueue<StampedImage>> pluginImageQueuePtr,
                                        std::shared_ptr<LockableQueue<unsigned int>> skippedFramesPluginPtr);
 
-            virtual void setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+            virtual void setupTimerForPlugin(std::shared_ptr<Lockable<TimerClass>> timerClass,
                 bool testConfigEnabled, string trial_info,
                 std::shared_ptr<TestConfig> testConfig);
             virtual void gpuInit();

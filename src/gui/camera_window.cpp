@@ -27,6 +27,7 @@
 #include "plugin_handler.hpp"
 #include "NIDAQUtils.hpp"
 #include "timerClass.hpp"
+#include "win_time.hpp"
 
 #include <cstdlib>
 #include <cmath>
@@ -403,7 +404,7 @@ namespace bias
             }
             nidaq_task->releaseLock();*/
 #else
-            // making sure nidaq pointer is nit null before proceeding forward
+            // making sure nidaq pointer is not null before proceeding forward
             timerClass_->nidaqTimerptr->acquireLock();
             timerClass_->nidaqTimerptr->waitIfNull();
             if (timerClass_->nidaqTimerptr == nullptr)
@@ -421,8 +422,7 @@ namespace bias
 
         }
         else {
-            std::cout << "Instead coming here " << trigEnumVal << " " << trigExternalEnumVal 
-                <<  std::endl;
+
         }
         
 
@@ -434,9 +434,7 @@ namespace bias
             loadTestConfigEnabled,
             trial_num,
             testConfig,
-            gettime_,
-            timerClass_->nidaqTimerptr,
-            //nidaq_task,
+            timerClass_,
             cmdlineparams_,
             numImageGrabStarted_,
             this
@@ -578,11 +576,12 @@ namespace bias
                 currentPluginPtr->getName() == "jaabaPlugin") {
 
 #if debugNIDAQ
-                currentPluginPtr->setupNIDAQ(nidaq_task, loadTestConfigEnabled,
+                timerClass_->nidaqTimerptr = nidaq_task;
+                currentPluginPtr->setupTimerForPlugin(timerClass_, loadTestConfigEnabled,
                    trial_num, testConfig);
 #else
 
-                currentPluginPtr->setupNIDAQ(timerClass_->nidaqTimerptr,
+                currentPluginPtr->setupTimerForPlugin(timerClass_,
                     loadTestConfigEnabled, trial_num, testConfig);
 #endif
               
@@ -1008,12 +1007,12 @@ namespace bias
 #if debugNIDAQ
         if (nidaq_task != nullptr)
         {
-            nidaq_task->Cleanup();
+            nidaq_task->clearTimerTasks();
         }
 #else
         if (timerClass_->nidaqTimerptr != nullptr)
         {
-            timerClass_->nidaqTimerptr->Cleanup();
+            timerClass_->nidaqTimerptr->clearTimerTasks();
         }
 #endif
 
@@ -1079,10 +1078,12 @@ namespace bias
 
         }
 
-        if (nidaq_task != nullptr && !nidaq_task->start_tasks && !nidaq_task->istrig)
+        if (nidaq_task != nullptr && 
+            !nidaq_task->isTaskStarted() 
+            && !nidaq_task->isTriggered())
         {
-            nidaq_task->startTasks();
-            nidaq_task->start_trigger_signal();
+            nidaq_task->startTimerTasks();
+            nidaq_task->startTimerTrigger();
             setStartNIDAQTriggerFlag();
         }
 #else
@@ -1094,11 +1095,11 @@ namespace bias
         }
 
         if (timerClass_->nidaqTimerptr != nullptr && 
-            !timerClass_->nidaqTimerptr->start_tasks && 
-            !timerClass_->nidaqTimerptr->istrig)
+            !timerClass_->nidaqTimerptr->isTaskStarted() && 
+            !timerClass_->nidaqTimerptr->isTriggered())
         {
-            timerClass_->nidaqTimerptr->startTasks();
-            timerClass_->nidaqTimerptr->start_trigger_signal();
+            timerClass_->nidaqTimerptr->startTimerTasks();
+            timerClass_->nidaqTimerptr->startTimerTrigger();
             setStartNIDAQTriggerFlag();
         }
 #endif
@@ -1123,21 +1124,21 @@ namespace bias
         //    stopAllCamerasTrigMode();
 
 #if debugNIDAQ 
-        if (nidaq_task != nullptr && nidaq_task->istrig)
+        if (nidaq_task != nullptr && nidaq_task->isTriggered())
         {
             // set stopTrigger flag in imagegrab for all cameras
             setStopNIDAQTriggerFlag();
-            nidaq_task->stop_trigger_signal();
-            nidaq_task->stopTasks();
+            nidaq_task->stopTimerTrigger();
+            nidaq_task->stopTimerTasks();
         
         }
 #else
-        if (timerClass_->nidaqTimerptr != nullptr && timerClass_->nidaqTimerptr->istrig)
+        if (timerClass_->nidaqTimerptr != nullptr && timerClass_->nidaqTimerptr->isTriggered())
         {
             // set stopTrigger flag in imagegrab for all cameras
             setStopNIDAQTriggerFlag();
-            timerClass_->nidaqTimerptr->stop_trigger_signal();
-            timerClass_->nidaqTimerptr->stopTasks();
+            timerClass_->nidaqTimerptr->stopTimerTrigger();
+            timerClass_->nidaqTimerptr->stopTimerTasks();
 
         }
 
@@ -2472,7 +2473,7 @@ namespace bias
         }
 #else
         if (timerClass_->nidaqTimerptr != nullptr) {
-            (!(timerClass_->nidaqTimerptr->istrig) && capturing_) ? startTrigger() : stopTrigger();
+            (!(timerClass_->nidaqTimerptr->isTriggered()) && capturing_) ? startTrigger() : stopTrigger();
         }
 #endif
         
@@ -5606,8 +5607,11 @@ namespace bias
                 actionCameraTriggerExternalNIDAQPtr_ -> setChecked(false);
                 actionCameraTriggerExternalElsePtr_  -> setChecked(false);
 
+                timerClass_->pcTimerptr = make_shared<Lockable<GetTime>>();
+
                 // set timerClass flag
                 timerClass_->timerNIDAQFlag = false;
+                timerClass_->cameraMode = false;
 
                 break;
 
@@ -5640,12 +5644,13 @@ namespace bias
 
                     //set timerClass nidaq flag
                     timerClass_->timerNIDAQFlag = true;
+                    timerClass_->cameraMode = true;
 #if debugNIDAQ
                     //setup nidaq config from map
                     if (nidaq_task != nullptr && cameraNumber_ == 0)
                     {
                         if (!triggerExternalTypeMap.isEmpty()) {
-                            rtnStatus = nidaq_task->setNIDAQConfigFromMap(triggerExternalTypeConfigMap);
+                            rtnStatus = nidaq_task->configureTimer(cameraNumber_,triggerExternalTypeConfigMap);
                             if (!rtnStatus.success) {
 
                                 QString msgTitle("NIDAQ Config error");
@@ -5656,23 +5661,32 @@ namespace bias
                     }
 
 #else
-                    //allocate timers
-                    rtnStatus = timerClass_->allocateTimers(cameraNumber_, triggerExternalTypeConfigMap);
-                    if (!rtnStatus.success)
-                    {
-                        QMessageBox::critical(this, rtnStatus.message, rtnStatus.message);
+                    if (cameraNumber_ == 0) {
+                        
+                        timerClass_->nidaqTimerptr = make_shared<Lockable<NIDAQUtils>>();
+
+                        std::cout << "NIDAQ allocated in cameranumber " << cameraNumber_ << std::endl;
+
+                        //allocate timers
+                        rtnStatus = timerClass_->nidaqTimerptr->configureTimer(cameraNumber_, triggerExternalTypeConfigMap);
+                        if (!rtnStatus.success)
+                        {
+                            QMessageBox::critical(this, rtnStatus.message, rtnStatus.message);
+                        }
                     }
                    
-#endif
-
-                    
+#endif           
                 }
                 else if (triggerExternalType == TRIGGER_ELSE) {
 
                     actionCameraTriggerExternalElsePtr_->setChecked(true);
 
+                    timerClass_->pcTimerptr = make_shared<Lockable<GetTime>>();
+
                     //set timerClass nidaq flag
                     timerClass_->timerNIDAQFlag = false;
+                    timerClass_->cameraMode = true;
+
                 }
 
                 break;
@@ -8717,14 +8731,14 @@ namespace bias
 
             // start the nidaq tasks
             //nidaq_task->startTasks();
-            nidaq_task->start_trigger_signal();
+            nidaq_task->startTimerTrigger();
         }
 #else
         if (timerClass_->nidaqTimerptr != nullptr && cameraNumber_ == 0) {
 
             // start the nidaq tasks
             //nidaq_task->startTasks();
-            timerClass_->nidaqTimerptr->start_trigger_signal();
+            timerClass_->nidaqTimerptr->startTimerTrigger();
         }
 #endif
     }

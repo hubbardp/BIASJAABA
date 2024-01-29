@@ -233,7 +233,7 @@ int main(int argc, char* argv[]) {
         nidaq_task = new NIDAQUtils();
         if (nidaq_task != nullptr) {
 
-            nidaq_task->startTasks();
+            nidaq_task->startTimerTasks();
         }
     }
     else {
@@ -303,7 +303,7 @@ int main(int argc, char* argv[]) {
             if (!isTriggered && nidaq_task != nullptr) {
 
                 printf("Started NIDAQ Trigger Signal");
-                nidaq_task->start_trigger_signal();
+                nidaq_task->startTimerTrigger();
                 isTriggered = true;
             }
 
@@ -607,7 +607,7 @@ int main(int argc, char* argv[]) {
         }
 
         if (isNIDAQ) {
-            nidaq_task->Cleanup();
+            nidaq_task->clearTimerTasks();
         }
         else {
             delete gettime;

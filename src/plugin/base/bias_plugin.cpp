@@ -216,7 +216,7 @@ namespace bias
     }
 
     // Jaaba specific virtual methods
-    void BiasPlugin::setupNIDAQ(std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+    void BiasPlugin::setupTimerForPlugin(std::shared_ptr<Lockable<TimerClass>> timerClass,
                                 bool testConfigEnabled, string trial_info,
                                 std::shared_ptr<TestConfig> testConfig){}
 

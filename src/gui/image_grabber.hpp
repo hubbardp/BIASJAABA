@@ -46,8 +46,7 @@ namespace bias
                     bool testConfigEnabled,
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
-                    std::shared_ptr<Lockable<GetTime>> gettime,
-                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                    std::shared_ptr<TimerClass> timerClass,
                     CmdLineParams& cmdlineparams,
                     unsigned int* numImagegrabStarted,
                     QObject *parent=0
@@ -61,8 +60,7 @@ namespace bias
                     bool testConfigEnabled,
                     string trial_info,
                     std::shared_ptr<TestConfig> testConfig,
-                    std::shared_ptr<Lockable<GetTime>> gettime,
-                    std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task,
+                    std::shared_ptr<TimerClass> timerClass,
                     unsigned int* numImagegrabStarted
                     );
 
@@ -170,6 +168,7 @@ namespace bias
             std::shared_ptr<Lockable<GetTime>> gettime_;
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;
+            std::shared_ptr<TimerClass>timerClass_;
             
             //test
             std::vector<float> ts_nidaqThres; //nidaq thres

@@ -6,6 +6,7 @@
 #include <ctime> //defines localtime 
 #include <chrono>
 #include "stamped_image.hpp"
+//#include "timerClass.hpp"
 
 #include <fstream>
 //#include <iomanip>
@@ -26,6 +27,8 @@ using namespace std;
 namespace bias 
 {
 
+     class TimerClass;
+     
      class GetTime
      {
 

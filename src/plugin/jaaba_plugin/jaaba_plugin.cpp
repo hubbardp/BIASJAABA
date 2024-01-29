@@ -1890,14 +1890,17 @@ namespace bias {
     }
 
 
-    void JaabaPlugin::setupNIDAQ(std::shared_ptr <Lockable<NIDAQUtils>> nidaq_task,
+    void JaabaPlugin::setupTimerForPlugin(std::shared_ptr <Lockable<TimerClass>> timerClass,
                                     bool testConfigEnabled, string trial_info,
                                     std::shared_ptr<TestConfig> testConfig) 
     {
-        std::cout << "nidaq setup for plugin " << std::endl;
-        if (nidaq_task != nullptr) {
-            nidaq_task_ = nidaq_task;
+
+        
+        if (timerClass->nidaqTimerptr != nullptr) {
+            std::cout << "nidaq setup for plugin " << std::endl;
+            nidaq_task_ = timerClass->nidaqTimerptr;
         }
+
         testConfig_ = testConfig;
         testConfigEnabled_ = testConfigEnabled;
         trial_num_ = trial_info;
