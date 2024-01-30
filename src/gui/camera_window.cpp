@@ -365,13 +365,10 @@ namespace bias
         unsigned int versionNumber = 0;
 
        
-        //set nidaq pointer for cam 1
-        if (cameraNumber_ == 1)
+        //set nidaq pointer for all camera windows- pass pointer from camera 0
+        if (cameraNumber_ != 0 )
         {
-            setScoreQueue(); //pass the shared score queue ptrs to all the camera windows 
-
-            QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();
-            
+            QPointer<CameraWindow> partnerCameraWindowPtr = getPartnerCameraWindowPtr();           
             if (partnerCameraWindowPtr->nidaq_task != nullptr) {
                 numImageGrabStarted_ = partnerCameraWindowPtr->numImageGrabStarted_; //obsolete parameter passed
 #if debugNIDAQ                                                                              // to imagegrab thread 
@@ -560,6 +557,10 @@ namespace bias
                 currentPluginPtr -> setFileAutoNamingString(autoNamingString);
                 currentPluginPtr -> setFileVersionNumber(versionNumber);
             }
+
+            if (currentPluginPtr->getName() == "jaabaPlugin") {
+                setScoreQueue(); //pass the shared score queue ptrs to all the camera windows 
+            }
             
             // clear score queues
             skippedFramesPluginPtr_->clear();
@@ -606,55 +607,9 @@ namespace bias
                 );
             }
 
-            //Initialize gpu memory
-            /*if (currentPluginPtr != nullptr)
-            {
-                if (currentPluginPtr->getName() == "jaabaPlugin" && !isPluginStarted) {
-                    currentPluginPtr->gpuInit();
-                }
-                else {
-                    std::cout << "Gpu already initialzed" << std::endl;
-                }
-            }
-            else {
-                std::cout << "Gpu not initialzed" << std::endl;
-            }*/
-
         } 
         actionPluginsEnabledPtr_->setEnabled(false);
         
-        // Set image Grabber and image dispatcher
-        // ------------------------------------------------------------------------------
-        /*imageGrabberPtr_ = new ImageGrabber(
-                cameraNumber_, 
-                cameraPtr_, 
-                newImageQueuePtr_,
-                threadPoolPtr_,
-                loadTestConfigEnabled,
-                trial_num,
-                testConfig,
-                gettime_,
-                nidaq_task,
-                this
-                );
-        imageGrabberPtr_ -> setAutoDelete(false);
-
-        imageDispatcherPtr_ = new ImageDispatcher(
-                logging_, 
-                isPluginEnabled(),
-                cameraNumber_,
-                cameraPtr_,
-                newImageQueuePtr_,
-                logImageQueuePtr_,
-                pluginImageQueuePtr_,
-                loadTestConfigEnabled,
-                trial_num,
-                testConfig,
-                gettime_,
-                nidaq_task,
-                this
-                );
-        imageDispatcherPtr_ -> setAutoDelete(false);*/
 
         connect(
                 imageGrabberPtr_, 
@@ -1049,7 +1004,9 @@ namespace bias
         RtnStatus rtnStatus;
 
         // initialize gpu memory
-        gpuInitializeAllJaabaPlugins();
+        if (isPluginEnabled()) {
+            gpuInitializeAllJaabaPlugins();
+        }
 
         //clear data from all queues 
         clearQueues();
@@ -1087,21 +1044,21 @@ namespace bias
             setImagegrabTriggerFlag();
         }
 #else
-        if (timerClass_->nidaqTimerptr != nullptr) {
+        resetImageGrabParams();
+        resetImageDispatchParams();
 
-            resetImageGrabParams();
-            resetImageDispatchParams();
+        if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) {
+            if (timerClass_->nidaqTimerptr != nullptr &&
+                !timerClass_->nidaqTimerptr->isTaskStarted() &&
+                !timerClass_->nidaqTimerptr->isTriggered())
+            {
+                timerClass_->nidaqTimerptr->startTimerTasks();
+                timerClass_->nidaqTimerptr->startTimerTrigger();
 
+            }
         }
-
-        if (timerClass_->nidaqTimerptr != nullptr && 
-            !timerClass_->nidaqTimerptr->isTaskStarted() && 
-            !timerClass_->nidaqTimerptr->isTriggered())
-        {
-            timerClass_->nidaqTimerptr->startTimerTasks();
-            timerClass_->nidaqTimerptr->startTimerTrigger();
-            setImagegrabTriggerFlag();
-        }
+        // set startTrigger flag in imagegrab for all cameras
+        setImagegrabTriggerFlag();
 #endif
 
         startTriggerButtonPtr_->setText(QString("Stop"));
@@ -1133,20 +1090,29 @@ namespace bias
         
         }
 #else
-        if (timerClass_->nidaqTimerptr != nullptr && timerClass_->nidaqTimerptr->isTriggered())
-        {
-            // set stopTrigger flag in imagegrab for all cameras
-            stopImagegrabTriggerFlag();
-            timerClass_->nidaqTimerptr->stopTimerTrigger();
-            timerClass_->nidaqTimerptr->stopTimerTasks();
+        // set stopTrigger flag in imagegrab for all cameras
+        stopImagegrabTriggerFlag();
+        if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) {
+            if (timerClass_->nidaqTimerptr != nullptr
+                && timerClass_->nidaqTimerptr->isTriggered())
+            {
 
+                timerClass_->nidaqTimerptr->stopTimerTrigger();
+                timerClass_->nidaqTimerptr->stopTimerTasks();
+
+            }
         }
 
 #endif
         // deinitialize all gpus
-        gpuDeInitializeAllJaaabaPlugins();
-
-        setWriteScoreFlag();
+        if (isPluginEnabled()) {
+            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+            if (currentPluginPtr != nullptr && currentPluginPtr->getName() == "jaabaPlugin")
+            {
+                gpuDeInitializeAllJaaabaPlugins();
+                setWriteScoreFlag();
+            }
+        }
 
         startTriggerButtonPtr_->setText(QString("Start"));
         
@@ -2472,9 +2438,9 @@ namespace bias
             (!(nidaq_task->istrig) && capturing_) ? startTrigger() : stopTrigger();
         }
 #else
-        if (timerClass_->nidaqTimerptr != nullptr) {
-            (!(timerClass_->nidaqTimerptr->isTriggered()) && capturing_) ? startTrigger() : stopTrigger();
-        }
+        
+        (capturing_) ? startTrigger() : stopTrigger();
+     
 #endif
         
     }
@@ -8322,16 +8288,14 @@ namespace bias
     //might want to merge this with resetPluginParams later
     void CameraWindow::setWriteScoreFlag()
     {
-        if (isPluginEnabled())
+
+        QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
+        if (currentPluginPtr != nullptr)
         {
-            QPointer<BiasPlugin> currentPluginPtr = getCurrentPlugin();
-            if (currentPluginPtr != nullptr)
-            {
-                if (currentPluginPtr->getName() == "jaabaPlugin") {
-                    currentPluginPtr->setWriteScoreFlag();
-                }
-            }
+            currentPluginPtr->setWriteScoreFlag();
+              
         }
+        
     }
 
     //might want to merge this with resetPluginParams later
@@ -8343,15 +8307,10 @@ namespace bias
             // Initialize the gpu memory
             for (auto cameraWindowPtr : *cameraWindowPtrList_)
             {
-                if (isPluginEnabled())
+                currentPluginPtr = cameraWindowPtr->getCurrentPlugin();
+                if (currentPluginPtr != nullptr)
                 {
-                    currentPluginPtr = cameraWindowPtr->getCurrentPlugin();
-                    if (currentPluginPtr != nullptr)
-                    {
-                        if (currentPluginPtr->getName() == "jaabaPlugin") {
-                            currentPluginPtr->gpuDeinit();
-                        }
-                    }
+                    currentPluginPtr->gpuDeinit();
                 }
             }
         }

@@ -439,8 +439,8 @@ namespace bias
             void stopThreadsAllCamerasTrigMode();
             void resetImageGrabParams();
             void clearQueues();
-            void setStopNIDAQTriggerFlag();
-            void setStartNIDAQTriggerFlag();
+            void stopImagegrabTriggerFlag();
+            void setImagegrabTriggerFlag();
             void resetPluginParams();
             void resetImageDispatchParams();
             void gpuInitializeAllJaabaPlugins();
