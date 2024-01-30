@@ -2438,8 +2438,16 @@ namespace bias
             (!(nidaq_task->istrig) && capturing_) ? startTrigger() : stopTrigger();
         }
 #else
-        
-        (capturing_) ? startTrigger() : stopTrigger();
+        if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) {
+            if (timerClass_->nidaqTimerptr != nullptr) {
+
+                (!timerClass_->nidaqTimerptr->isTriggered()
+                    && capturing_) ? startTrigger() : stopTrigger();
+            }
+        }
+        else {
+            capturing_ ? startTrigger() : stopTrigger();
+        }
      
 #endif
         
