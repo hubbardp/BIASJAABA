@@ -10,8 +10,32 @@ namespace bias {
     }
 
 
-    void TimerClass::getTimeNow()
+    uint64_t TimerClass::getTimeNow()
     {
+        uint64_t time_now = 0;
+        uInt32 readOndemand = 0;
+
+        if (timerNIDAQFlag && cameraMode) 
+        {
+            if (nidaqTimerptr != nullptr) {
+                nidaqTimerptr->getNidaqTimeNow(readOndemand);
+                time_now = static_cast<uint64_t>(readOndemand);
+            }
+            else {
+                std::cout << "** nidaq timer is  NULL ** " << std::endl;
+            }
+        }
+        else {
+            if (pcTimerptr != nullptr)
+            {
+                time_now = pcTimerptr->getPCtime();
+            }
+            else {
+                std::cout << "** pc timer  is  NULL **" << std::endl;
+            }
+        }
+
+        return time_now;
 
     }
     

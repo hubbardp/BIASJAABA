@@ -35,7 +35,7 @@ namespace bias {
             virtual void stopTimerTasks();
             virtual void clearTimerTasks();*/
 
-            void getTimeNow();
+            uint64_t getTimeNow();
 
     };
 }

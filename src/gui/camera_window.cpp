@@ -1084,7 +1084,7 @@ namespace bias
         {
             nidaq_task->startTimerTasks();
             nidaq_task->startTimerTrigger();
-            setStartNIDAQTriggerFlag();
+            setImagegrabTriggerFlag();
         }
 #else
         if (timerClass_->nidaqTimerptr != nullptr) {
@@ -1100,7 +1100,7 @@ namespace bias
         {
             timerClass_->nidaqTimerptr->startTimerTasks();
             timerClass_->nidaqTimerptr->startTimerTrigger();
-            setStartNIDAQTriggerFlag();
+            setImagegrabTriggerFlag();
         }
 #endif
 
@@ -1136,7 +1136,7 @@ namespace bias
         if (timerClass_->nidaqTimerptr != nullptr && timerClass_->nidaqTimerptr->isTriggered())
         {
             // set stopTrigger flag in imagegrab for all cameras
-            setStopNIDAQTriggerFlag();
+            stopImagegrabTriggerFlag();
             timerClass_->nidaqTimerptr->stopTimerTrigger();
             timerClass_->nidaqTimerptr->stopTimerTasks();
 
@@ -5674,6 +5674,8 @@ namespace bias
                             QMessageBox::critical(this, rtnStatus.message, rtnStatus.message);
                         }
                     }
+
+                    timerClass_->pcTimerptr = make_shared<Lockable<GetTime>>();
                    
 #endif           
                 }
@@ -8925,7 +8927,7 @@ namespace bias
         }
     }
 
-    void CameraWindow::setStopNIDAQTriggerFlag()
+    void CameraWindow::stopImagegrabTriggerFlag()
     {
         QPointer<ImageGrabber>imagegrabptr;
 
@@ -8940,7 +8942,7 @@ namespace bias
         //std::cout << "DEBUG:: nidaq stop nidaq trigger flag exited" << std::endl;
     }
 
-    void CameraWindow::setStartNIDAQTriggerFlag()
+    void CameraWindow::setImagegrabTriggerFlag()
     {
         QPointer<ImageGrabber>imagegrabptr;
 

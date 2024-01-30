@@ -658,7 +658,7 @@ namespace bias {
                             if (nidaq_task_ != nullptr) {
 
                                 nidaq_task_->getNidaqTimeNow(read_ondemand);
-                                time_now = static_cast<uint64_t>(read_ondemand);
+                                time_now = static_cast<uint64_t>(read_ondemand) * fast_clock_period_;
                             }
                             else {
                                 
@@ -753,8 +753,8 @@ namespace bias {
 
                 if (!testConfig_->nidaq_prefix.empty()) {
 
-                    ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_%DEFAULT_TIMING_BUFFER_SIZE];
-                    ts_nidaq[frameCount_][1] = read_ondemand;
+                    ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_%DEFAULT_TIMING_BUFFER_SIZE] * fast_clock_period_;
+                    ts_nidaq[frameCount_][1] = read_ondemand * fast_clock_period_;
                     imageTimeStamp[frameCount_] = timeStamp_;
                     
                 }
@@ -1899,6 +1899,8 @@ namespace bias {
         if (timerClass->nidaqTimerptr != nullptr) {
             std::cout << "nidaq setup for plugin " << std::endl;
             nidaq_task_ = timerClass->nidaqTimerptr;
+            fast_clock_period_ = static_cast<uint64>(1.0 / 
+                                float(nidaq_task_->fast_counter_rate) * 1000000); // uint usecs
         }
 
         testConfig_ = testConfig;

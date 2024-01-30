@@ -169,6 +169,7 @@ namespace bias
             size_t hog_num_elements;
             size_t hof_num_elements;
             string view_;
+            uint64_t fast_clock_period_;
 
             unsigned long numMessageSent_;
             unsigned long numMessageReceived_;

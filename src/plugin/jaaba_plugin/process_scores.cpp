@@ -453,8 +453,8 @@ namespace bias {
                         }
                         else {
                             nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                            //time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
-                            predScoreFinal.score_ts = read_ondemand_;
+                            time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
+                            predScoreFinal.score_ts = time_now;
                             //scores[scoreCount].score_ts = read_ondemand_;
                             //expLat = calculateExpectedlatency(fstframets, perFrameLat,
                             //    scoreCount, fast_clock_period, framerate);
@@ -619,7 +619,8 @@ namespace bias {
                             }
                             else {
                                 nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                                predScoreFinal.score_ts = read_ondemand_;
+                                time_now = static_cast<uint64_t>(read_ondemand_) * fast_clock_period;
+                                predScoreFinal.score_ts = time_now;
                                 //scores[scoreCount].score_ts = read_ondemand_;
                             }
 
@@ -680,7 +681,8 @@ namespace bias {
                             else {
 
                                 nidaq_task_->getNidaqTimeNow(read_ondemand_);
-                                predScoreFinal.score_ts = read_ondemand_;
+                                time_now = static_cast<uint64_t>(read_ondemand_) * fast_clock_period;
+                                predScoreFinal.score_ts = time_now;
                                 //scores[scoreCount].score_ts = read_ondemand_;
                             }
 

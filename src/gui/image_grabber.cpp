@@ -124,6 +124,7 @@ namespace bias {
         if (timerClass->cameraMode) {
 
             nidaq_task_ = timerClass->nidaqTimerptr;
+            gettime_ = timerClass_->pcTimerptr;
             // needs to be allocated here outside the testConfig.Intend to record nidaq
             // camera trigger timestamps for other threads even if imagegrab is 
             // turned off in testConfig suite
@@ -151,7 +152,7 @@ namespace bias {
 
                 if (!testConfig_->nidaq_prefix.empty()) {
 
-                    ts_nidaq.resize(testConfig_->numFrames, std::vector<uInt32>(2, 0));
+                    ts_nidaq.resize(testConfig_->numFrames, std::vector<int64_t>(2, 0));
                     ts_nidaqThres.resize(testConfig_->numFrames);
                     imageTimeStamp.resize(testConfig_->numFrames);
                     cam_ts.resize(testConfig_->numFrames);
@@ -377,37 +378,43 @@ namespace bias {
             done = stopped_;
             releaseLock();
 
-            if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) {
-
-                // sync nidaq trigger start/stop without thread restart
-                if (startTrigger)
-                {
-
-                    if (frameCount != 0 && !nidaq_task_->istrig)
+    
+            // sync nidaq trigger start/stop without thread restart
+            if (startTrigger)
+            {
+                if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) {
+                    if (frameCount != 0 && !nidaq_task_->isTriggered())
                     {
                         QThread::yieldCurrentThread();
                         continue;
                     }
-                    startTrigger = false;
-
                 }
-                else if (stopTrigger)
-                {
+                else {
+                    if(frameCount != 0 ){
+                        QThread::yieldCurrentThread();
+                        continue;
+                    }
+                }
+                startTrigger = false;
 
-                    stopTrigger = false;
+            }
+            else if (stopTrigger)
+            {
+                if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) {
                     nidaqTriggered = false;
-                    //frameCount = 0;
-
-                    // remove any leftover frames from the spinnaker buffer
-                    if (!isVideo)
-                        flushCameraBuffer();
-
-                    //emit(signalGpuDeinit());
-                    std::cout << "CameraNumber " << cameraNumber_ << "Stop Trigger " << stopTrigger << std::endl;
-
                 }
-                else {}
-            }else{}
+                stopTrigger = false;
+                    
+                // remove any leftover frames from the spinnaker buffer
+                if (!isVideo)
+                    flushCameraBuffer();
+
+                //emit(signalGpuDeinit());
+                std::cout << "CameraNumber " << cameraNumber_ << "Stop Trigger " << stopTrigger << std::endl;
+
+            }
+            else {}
+
 
             // in debug mode done writing
             if (isDebug)
@@ -419,7 +426,6 @@ namespace bias {
                 }
             }
 
-            start_process = gettime_->getPCtime();
 
             if (isVideo) {
                 delay_framethres = 0;
@@ -443,6 +449,7 @@ namespace bias {
                         avgwait_time = 0;
 
                         //get first frame ts
+                        start_process = gettime_->getPCtime();
                         fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
                         prev_curTime = expTime_vid;
                     }
@@ -506,23 +513,24 @@ namespace bias {
             }
             else {
           
-                // if number of frames to capture have been reached 
-                // set stop trigger and frameCount reset
-                //if (frameCount == nframes_) {
-                //    stopTrigger = true;
-                //    frameCount = 0;
-                //    QThread::yieldCurrentThread();
-                //    continue;
-                //}
-
                 // if nidaq is not triggered do not capture frames
-                if(!nidaq_task_->isTriggered())
-                {
-                    QThread::yieldCurrentThread();
-                    continue;
+                if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) {
+                    start_process = gettime_->getPCtime();
+                    if (!nidaq_task_->isTriggered())
+                    {
+                        QThread::yieldCurrentThread();
+                        continue;
+                    }
                 }
-
-                   
+                else if(gettime_ != nullptr){
+                    
+                    start_process = gettime_->getPCtime();
+                    //get first frame timestamp reference for non nidaq timer mode
+                    if (frameCount == 0) {
+                        fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
+                    }
+                }
+                                 
                 //grab images from camera 
                 cameraPtr_->acquireLock();
                 try
@@ -678,26 +686,26 @@ namespace bias {
                 // ---------------------------------------------------------------------
                 // Test Configuration
                 //------------------------------------------------------------------------
+                //get first timestamp reference
                 if (!isVideo) {
-                    
-                    if (nidaq_task_ != nullptr && nidaq_task_->isTriggered()){
-                        if (frameCount == 0) {
-                            
-                            fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount%nframes_]);
-                            emit(passfstFrametsRef(fstfrmtStampRef_));
-                        }
-                        nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                    if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) {
 
+                        if (nidaq_task_ != nullptr && nidaq_task_->isTriggered()) {
+                            if (frameCount == 0) {
+
+                                fstfrmtStampRef_ = static_cast<uint64_t>(nidaq_task_->cam_trigger[frameCount%nframes_]);
+
+                            }
+                            //nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                            time_now = timerClass_->getTimeNow();
+
+                        }
                     }
-                    else {
-                        //fstfrmtStampRef_ = static_cast<uint64_t>(gettime_->getPCtime());
-                   
-                    }
+                    else {}
                 }
-                else if(isVideo) {
-                    if (frameCount == 0) {
-                        emit(passfstFrametsRef(fstfrmtStampRef_));
-                    }
+
+                if (frameCount == 0) {
+                    emit(passfstFrametsRef(fstfrmtStampRef_));
                 }
 
                 //match frameCount from camera and current frameCount from BIAS
@@ -724,61 +732,31 @@ namespace bias {
                     }
                 }*/
 
+                //calculate average wait time incase of latency in grabbing frame
                 if (isVideo) {
-                    //expTime_vid = fstfrmtStampRef_ + (frameCaptureTime * (frameCount+1));
+                    
                     curTime_vid = max(fstfrmtStampRef_ + (frameCaptureTime*(frameCount + 1) + delay_framethres), prev_curTime);
                     prev_curTime = curTime_vid;
                     avgwait_time = curTime_vid - expTime_vid;
-                    //std::cout << "Avg wait time" << avgwait_time << std::endl;
+                    
                 } 
                 else {
-                    avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime; // time in us
-                    expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * fast_clock_period) + avg_frameLatSinceFirstFrame; //time in us
-                    curTime = (static_cast<uint64_t>(read_ondemand_) * fast_clock_period); //time in us
-                    avgwait_time = curTime - expTime;
-                }
-                
-      
-                /*if (isSkip) {
-                    // Set image data timestamp, framecount and frame interval estimate
-                    if (abs(avgwait_time) <= wait_thres)              
-                    {
-                        stampImg.timeStamp = timeStampDbl;
-                        stampImg.timeStampInit = timeStampInit;
-                        stampImg.timeStampVal = timeStamp;
-                        stampImg.frameCount = frameCount;
-                        stampImg.dtEstimate = dtEstimate;
-                        stampImg.fstfrmtStampRef = fstfrmtStampRef_;
+                    if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) {
 
-                        newImageQueuePtr_->acquireLock();
-                        newImageQueuePtr_->push(stampImg);
-                        newImageQueuePtr_->signalNotEmpty();
-                        newImageQueuePtr_->releaseLock();
-                        //std::cout << "FrameCount" << frameCount << std::endl;
+                        avg_frameLatSinceFirstFrame = (frameCaptureTime * frameCount) + frameGrabAvgTime; // time in us
+                        expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * fast_clock_period) + avg_frameLatSinceFirstFrame; //time in us
+                        //curTime = (static_cast<uint64_t>(read_ondemand_) * fast_clock_period); //time in us
+                        curTime = time_now * fast_clock_period; //time in us
+                        avgwait_time = curTime - expTime;
                     }
                     else {
-                      
-                        if (isDebug && testConfigEnabled_ && nidaq_task_ != nullptr)
-                            ts_nidaqThres[frameCount] = 1.0;
-                        std::cout << "skipped in imagegrab " << frameCount 
-                            << " cameraNumber " << cameraNumber_ 
-                            << " Avg wait time " << abs(avgwait_time) << std::endl;
+
+                        expTime = static_cast<uint64_t>(fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1)));
+                        curTime = timerClass_->getTimeNow();
+                        avgwait_time = curTime - expTime;
                     }
                 }
-                else {
-                    stampImg.timeStamp = timeStampDbl;
-                    stampImg.timeStampInit = timeStampInit;
-                    stampImg.timeStampVal = timeStamp;
-                    stampImg.frameCount = frameCount;
-                    stampImg.dtEstimate = dtEstimate;
-                    stampImg.fstfrmtStampRef = fstfrmtStampRef_;
-
-                    newImageQueuePtr_->acquireLock();
-                    newImageQueuePtr_->push(stampImg);
-                    newImageQueuePtr_->signalNotEmpty();
-                    newImageQueuePtr_->releaseLock();
-                    //std::cout << "Not skipped " << frameCount << std::endl;
-                }*/
+                
 
                 if (isSkip) {
                     if (abs(avgwait_time) <= wait_thres)
@@ -822,9 +800,10 @@ namespace bias {
                             {
 
                                 nidaq_task_->acquireLock();
-                                ts_nidaq[frameCount - 1][0] = nidaq_task_->cam_trigger[(frameCount - 1)%nframes_];
+                                ts_nidaq[frameCount - 1][0] = static_cast<int64_t>(nidaq_task_->cam_trigger[(frameCount - 1)
+                                    %nframes_] * fast_clock_period);
                                 nidaq_task_->releaseLock();
-                                ts_nidaq[frameCount - 1][1] = read_ondemand_;
+                                ts_nidaq[frameCount - 1][1] = static_cast<int64_t>(time_now * fast_clock_period);
                                 imageTimeStamp[frameCount - 1] = timeStampDbl;
                                 cam_ts[frameCount - 1] = timeStamp.seconds*UINT64_C(1000000) 
                                                          + static_cast<uint64_t>(timeStamp.microSeconds);
@@ -923,7 +902,7 @@ namespace bias {
                                 + "_" + "camframeId_" + "cam"
                                 + std::to_string(cameraNumber_) + "_" + trial_num + ".csv";
 
-                                gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, ts_nidaq);
+                                gettime_->write_time_2d<int64_t>(filename, testConfig_->numFrames, ts_nidaq);
                                 gettime_->write_time_1d<float>(filename1, testConfig_->numFrames, ts_nidaqThres);
                                 gettime_->write_time_1d<double>(filename2, testConfig_->numFrames, imageTimeStamp);
                                 gettime_->write_time_1d<uint64_t>(filename3, testConfig_->numFrames, cam_ts);

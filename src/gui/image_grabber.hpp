@@ -173,7 +173,7 @@ namespace bias
             //test
             std::vector<float> ts_nidaqThres; //nidaq thres
             std::vector<int64_t> ts_pc; // pc timings
-            std::vector<std::vector<uInt32>>ts_nidaq; // nidaq timings
+            std::vector<std::vector<int64_t>>ts_nidaq; // nidaq timings
             std::vector<unsigned int> queue_size; // queue size
             std::vector<int64_t>ts_process;
             std::vector<int64_t>ts_end;
