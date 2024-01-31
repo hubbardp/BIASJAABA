@@ -30,7 +30,6 @@ namespace bias {
     // Public Methods
     JaabaPlugin::JaabaPlugin(string camera_id, 
                              QPointer<QThreadPool> threadPoolPtr, 
-                             std::shared_ptr<Lockable<GetTime>> gettime,
                              CmdLineParams& cmdlineparams,
                              QWidget *parent) : BiasPlugin(parent)
     {
@@ -38,8 +37,8 @@ namespace bias {
         //nviews_ = numberOfCameras;
         camera_serial_id = stoi(camera_id);
         threadPoolPtr_ = threadPoolPtr;
-        gettime_ = gettime;
         nidaq_task_ = nullptr;
+        gettime_ = nullptr;
 
         //initialize cmdline arguments
         cmdlineparams_ = cmdlineparams;
@@ -316,18 +315,6 @@ namespace bias {
         {
             if (nDevices_ >= 2)
             {
-                /*if (view_ == "viewA"){
-                    cudaSetDevice(0);
-                    HOFTeardown(HOGHOF_self->hof_ctx);
-                    HOGTeardown(HOGHOF_self->hog_ctx);
-                    cudaDeviceReset();
-
-                }else if (view_ == "viewB") {
-                    cudaSetDevice(1);
-                    HOFTeardown(HOGHOF_self->hof_ctx);
-                    HOGTeardown(HOGHOF_self->hog_ctx);
-                    cudaDeviceReset();
-                }*/
 
                 cudaSetDevice(cuda_device);
                 HOFTeardown(HOGHOF_self->hof_ctx);
@@ -446,13 +433,13 @@ namespace bias {
         string filename;
         uint64_t expTime = 0, curTime = 0;
         uint64_t curTime_vid=0, expTime_vid=0;
-        uint64_t frameGrabAvgTime, max_jaaba_compute_time, avg_frameLatSinceFirstFrame=0;
-        int64_t wait_thres, avgwait_time;
+        uint64_t max_jaaba_compute_time=2000; //not sure where to add this parameter
         double vis_ts = 0.0;
         string prefix;
       
         frameCount_ = 0; // Incoming frame framecount
 
+        //prefix strings for hantman lab experiments - change in future or add to config
         if (view_ == "viewA")
         {
             prefix = "side";
@@ -464,20 +451,6 @@ namespace bias {
 
         if (nDevices_ >= 2)
             cudaSetDevice(cuda_device);
-
-        if (isVideo) {
-            frameGrabAvgTime = 2500;
-            max_jaaba_compute_time = 2000;
-            wait_thres = 2000;
-            avgwait_time = 0;
-        }
-        else {
-
-            frameGrabAvgTime = 2500;
-            wait_thres = static_cast<int64_t>(1500);
-            max_jaaba_compute_time = 2000;
-            avgwait_time = 0;
-        }
 
 
         if (pluginImageQueuePtr_ != nullptr)
@@ -513,47 +486,22 @@ namespace bias {
             start_process = gettime_->getPCtime();
 
             // skip frame if process time on gpu is higher than thres
-            /*if (frameCount_ == 0)
-                start_prev = start_process;
-
-            if (cameraNumber_ == 0) {
-                if (jaabaSkipFrame(start_process, start_prev,
-                    processScoresPtr_self->processedFrameCount, max_jaaba_compute_time))
-                    return;
-            }
-            else if (cameraNumber_ == 1){
-                if (jaabaSkipFrame(start_process, start_prev,
-                    processScoresPtr_self->processedFrameCount, max_jaaba_compute_time))
-                    return;
-            }*/
-
+            //if (frameCount_ == 0)
+            //    start_prev = start_process;
+            
+            //if (jaabaSkipFrame(start_process, start_prev,
+            //        processScoresPtr_self->processedFrameCount, max_jaaba_compute_time))
+            //        return;
+            
+           
             if (fstfrmtStampRef_ != 0)
             {
-                // estimate curr time and exp time 
-                /*if (isVideo) {
-                    time_now = gettime_->getPCtime();
-                    expTime_vid = fstfrmtStampRef_ + (frameGrabAvgTime * (frameCount_ + 1)) + max_jaaba_compute_time;
-                    curTime_vid = static_cast<uint64_t>(time_now);
-                    avgwait_time = curTime_vid - expTime_vid;
 
-                    // this is for visualizer code to run accurately
-                    if (isReceiver() && processScoresPtr_self != nullptr &&
-                        processScoresPtr_self->processedFrameCount == 0)
-                        processScoresPtr_self->fstfrmStampRef = fstfrmtStampRef_;
-                }
-                else {
-                   
-                    avg_frameLatSinceFirstFrame = (((frameGrabAvgTime) * (frameCount_ + 1))
-                                                    + max_jaaba_compute_time ); // nidaq ts frame of reference
-
-                    expTime = (static_cast<uint64_t>(fstfrmtStampRef_) * 20) + avg_frameLatSinceFirstFrame;
-
-                    //expTime = nidaq_task_->cam_trigger[frameCount_]*0.02;
-                    curTime = (static_cast<uint64_t>(read_ondemand) * 20);
-
-                    avgwait_time = curTime - expTime;
-                }*/
-
+                // this is for visualizer code to run accurately
+                //if (isReceiver() && processScoresPtr_self != nullptr &&
+                //    processScoresPtr_self->processedFrameCount == 0)
+                //    processScoresPtr_self->fstfrmStampRef = fstfrmtStampRef_;
+                
 
                 //match to see if incoming frame frameCount matches the currently being processed 
                 //frameCount, otherwise consider it skipped frame
@@ -613,8 +561,8 @@ namespace bias {
                     if (processScoresPtr_self != nullptr)
                     {
 
-                        if (frameCount_ == 0)
-                            std::cout << view_ << " image received" << std::endl;
+                        //if (frameCount_ == 0)
+                        //    std::cout << view_ << " image received" << std::endl;
 
                         if (compute_jaaba) {                 
 
@@ -655,14 +603,17 @@ namespace bias {
 
                         if(!isVideo) 
                         {
-                            if (nidaq_task_ != nullptr) {
+                            if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode) 
+                            {    
 
                                 nidaq_task_->getNidaqTimeNow(read_ondemand);
                                 time_now = static_cast<uint64_t>(read_ondemand) * fast_clock_period_;
+                                //time_now = timerClass_->getTimeNow() * fast_clock_period_;
+
                             }
-                            else {
-                                
-                                time_now = gettime_->getPCtime();
+                            else 
+                            {
+                                time_now = timerClass_->getTimeNow();
                             }
                         }
                         else if(isVideo)
@@ -693,52 +644,6 @@ namespace bias {
                             partnerScoreQueuePtr_->releaseLock();
                         }
 
-                        // obsolete code
-                        /*if (processScoresPtr_self->classifier->isClassifierPathSet && isSender())
-                        {
-
-                            processScoresPtr_self->classifier->boost_classify_front(processScoresPtr_self->classifier->predScoreFront.score,
-                                HOGHOF_self->hog_out_avg, HOGHOF_self->hof_out_avg,
-                                &HOGHOF_self->hog_shape, &HOGHOF_self->hof_shape,
-                                processScoresPtr_self->classifier->model,
-                                processedFrameCount);
-                            //std::cout << "Scr in Jaaba " << processScoresPtr_self->classifier->predScoreFront.score[0] << std::endl;
-
-                            time_now = gettime_->getPCtime();
-                            processScoresPtr_self->classifier->predScoreFront.frameCount = processedFrameCount;
-                            processScoresPtr_self->classifier->predScoreFront.score_viewB_ts = time_now;
-                            processScoresPtr_self->classifier->predScoreFront.view = 2;
-
-                            //std::cout << "Pushing to Front queue" << std::endl;
-                            frontScoreQueuePtr_->acquireLock();
-                            frontScoreQueuePtr_->push(processScoresPtr_self->classifier->predScoreFront);
-                            frontScoreQueuePtr_->releaseLock();
-
-                        }
-
-
-                        if (processScoresPtr_self->classifier->isClassifierPathSet && isReceiver())
-                        {
-
-                            processScoresPtr_self->classifier->boost_classify_side(processScoresPtr_self->classifier->predScoreSide.score,
-                                HOGHOF_self->hog_out_avg, HOGHOF_self->hof_out_avg,
-                                &HOGHOF_self->hog_shape, &HOGHOF_self->hof_shape,
-                                processScoresPtr_self->classifier->model,
-                                processedFrameCount);
-                            std::cout << "Scr in Jaaba " << processScoresPtr_self->classifier->predScoreSide.score[0] << std::endl;
-
-                            time_now = gettime_->getPCtime();
-                            processScoresPtr_self->classifier->predScoreSide.frameCount = processedFrameCount;
-                            processScoresPtr_self->classifier->predScoreSide.score_viewA_ts = time_now;
-                            processScoresPtr_self->classifier->predScoreSide.view = 1;
-                            processScoresPtr_self->isProcessed_side = 1;
-
-                            //processScoresPtr_self->write_score(output_feat_directory + "classifier_side.csv", processScoresPtr_self->classifier->predScoreSide);
-                            sideScoreQueuePtr_->acquireLock();
-                            sideScoreQueuePtr_->push(processScoresPtr_self->classifier->predScoreSide);
-                            sideScoreQueuePtr_->releaseLock();
-
-                        }*/
                         //std::cout << "Processed Frame " << processedFrameCount << std::endl;
                         processedFrameCount++;
                     }
@@ -751,7 +656,7 @@ namespace bias {
             if (testConfigEnabled_ && frameCount_ < testConfig_->numFrames)
             {
 
-                if (!testConfig_->nidaq_prefix.empty()) {
+                if (!testConfig_->nidaq_prefix.empty() && timerClass_->timerNIDAQFlag) {
 
                     ts_nidaq[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_%DEFAULT_TIMING_BUFFER_SIZE] * fast_clock_period_;
                     ts_nidaq[frameCount_][1] = read_ondemand * fast_clock_period_;
@@ -1304,7 +1209,7 @@ namespace bias {
         process_frame_time = 1;
         gpuInitialized = false;
         
-        processScoresPtr_self = new ProcessScores(this, mesPass, gettime_ , cmdlineparams);
+        processScoresPtr_self = new ProcessScores(this, mesPass, cmdlineparams);
         //processScoresPtr_partner = new ProcessScores(this, mesPass, gettime_, cmdlineparams);
 
         // need to manually call delete to delete the above objects
@@ -1349,48 +1254,48 @@ namespace bias {
 
     void JaabaPlugin::connectWidgets()
     { 
-
-        /*connect(
-            sideRadioButtonPtr_,
-            SIGNAL(stateChanged(int)),
-            this,
-            SLOT(SideViewCheckBoxChanged(int))
-        );
+        // all these were connected to button for the plugin ui- no longer use plugin gui
+        //connect(
+        //    sideRadioButtonPtr_,
+        //    SIGNAL(stateChanged(int)),
+        //    this,
+        //    SLOT(SideViewCheckBoxChanged(int))
+        //);
  
-        connect(
-            frontRadioButtonPtr_,
-            SIGNAL(stateChanged(int)),
-            this,
-            SLOT(FrontViewCheckBoxChanged(int))
-        );
+        //connect(
+        //    frontRadioButtonPtr_,
+        //    SIGNAL(stateChanged(int)),
+        //    this,
+        //    SLOT(FrontViewCheckBoxChanged(int))
+        //);
  
-        connect(
-            tabWidgetPtr,
-            SIGNAL(currentChanged(currentIndex())),
-            this,
-            SLOT(setCurrentIndex(currentIndex()))
-        );*/
+        //connect(
+        //    tabWidgetPtr,
+        //    SIGNAL(currentChanged(currentIndex())),
+        //    this,
+        //    SLOT(setCurrentIndex(currentIndex()))
+        //);
 
-        /*connect(
-            reloadPushButtonPtr_,
-            SIGNAL(clicked()),
-            this,
-            SLOT(reloadButtonPressed())
-        );
+        //connect(
+        //    reloadPushButtonPtr_,
+        //    SIGNAL(clicked()),
+        //    this,
+        //    SLOT(reloadButtonPressed())
+        //);
 
-        connect(
-            trigEnabledCheckBoxPtr,
-            SIGNAL(stateChanged(int)),
-            this,
-            SLOT(trigEnabledCheckBoxStateChanged(int))
-        );
+        //connect(
+        //    trigEnabledCheckBoxPtr,
+        //    SIGNAL(stateChanged(int)),
+        //    this,
+        //    SLOT(trigEnabledCheckBoxStateChanged(int))
+        //);
 
-        connect(
-            trigResetPushButtonPtr,
-            SIGNAL(clicked()),
-            this,
-            SLOT(trigResetPushButtonClicked())
-        );*/
+        //connect(
+        //    trigResetPushButtonPtr,
+        //    SIGNAL(clicked()),
+        //    this,
+        //    SLOT(trigResetPushButtonClicked())
+        //);
 
     }
 
@@ -1463,13 +1368,6 @@ namespace bias {
         //extract behavior names
         string behavior_names_str = jab_conf.beh_names;
         jab_conf.convertStringtoVector(behavior_names_str, beh_names);
-        /*stringstream behnamestream(behavior_names);
-        string cur_beh;
-        while (!behnamestream.eof())
-        {
-            getline(behnamestream, cur_beh, ',');
-            beh_names.push_back(cur_beh);
-        }*/
 
         num_behs = (int)beh_names.size();
         //num_behs = jab_conf.num_behs;
@@ -1894,30 +1792,39 @@ namespace bias {
                                     bool testConfigEnabled, string trial_info,
                                     std::shared_ptr<TestConfig> testConfig) 
     {
+        //asign timerClass ptr
+        timerClass_ = timerClass;
 
-        
-        if (timerClass->nidaqTimerptr != nullptr) {
+        if (timerClass->nidaqTimerptr != nullptr) 
+        {
             std::cout << "nidaq setup for plugin " << std::endl;
             nidaq_task_ = timerClass->nidaqTimerptr;
             fast_clock_period_ = static_cast<uint64>(1.0 / 
                                 float(nidaq_task_->fast_counter_rate) * 1000000); // uint usecs
         }
 
+        if (timerClass->pcTimerptr != nullptr) 
+        {
+            gettime_ = timerClass->pcTimerptr;
+        }
+
         testConfig_ = testConfig;
         testConfigEnabled_ = testConfigEnabled;
         trial_num_ = trial_info;
 
-        //if(nidaq_task != nullptr)
-        //    ts_nidaq.resize(numframes_, std::vector<uInt32>(2, 0));
-
         // test vectors allocated for scores
-        if (processScoresPtr_self != nullptr && isReceiver() 
-            && nidaq_task_ != nullptr)
+        if (processScoresPtr_self != nullptr && isReceiver())
         {
-            //processScoresPtr_self->scores.resize(numframes_);
-            //processScoresPtr_self->numFrames = numframes_;
-            processScoresPtr_self->nidaq_task_= nidaq_task_;
-			//translated_indexes.resize(numframes_, std::vector<float>());
+            if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode)
+            {
+                processScoresPtr_self->timerClass = timerClass;
+                processScoresPtr_self->nidaq_task = nidaq_task_;
+                processScoresPtr_self->gettime = gettime_;
+            }
+            else {
+                processScoresPtr_self->timerClass = timerClass;
+                processScoresPtr_self->gettime = gettime_;
+            }
         }
         else if (isSender()) {}
         else{
@@ -2077,7 +1984,7 @@ namespace bias {
 
         if (processScoresPtr_self != nullptr)
         {
-            processScoresPtr_self->initialize(mesPass, gettime_, cmdlineparams_);
+            processScoresPtr_self->initialize(mesPass, cmdlineparams_);
             /*processScoresPtr_self->HOGHOF_self->resetHOGHOFVec();
             processScoresPtr_self->HOGHOF_self->hog_out_past.clear();
             processScoresPtr_self->HOGHOF_self->hof_out_past.clear();*/

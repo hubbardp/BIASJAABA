@@ -32,7 +32,6 @@ namespace bias
             static const QString PLUGIN_DISPLAY_NAME;
 
             SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, 
-                std::shared_ptr<Lockable<GetTime>> gettime,
                 bool testConfigEnabled,
                 string trial_info,
                 std::shared_ptr<TestConfig> testConfig,

@@ -21,19 +21,16 @@ namespace bias
     // Public Methods
     // ------------------------------------------------------------------------
     SignalSlotDemoPlugin::SignalSlotDemoPlugin(ImageLabel *imageLabelPtr, 
-                     std::shared_ptr<Lockable<GetTime>> gettime,
                      bool testConfigEnabled,
                      string trial_info,
                      std::shared_ptr<TestConfig> testConfig,
                      QWidget *parentPtr) : BiasPlugin(parentPtr)
     {
         imageLabelPtr_ = imageLabelPtr;
-        gettime_ = gettime;
         nidaq_task_ = nullptr;
         testConfigEnabled_ = testConfigEnabled;
         testConfig_ = testConfig;
         trial_num_ = trial_info;
-        gettime_ = gettime;
 
         setupUi(this);
         connectWidgets();
@@ -114,101 +111,101 @@ namespace bias
             //frame is emiited. Safe to comment??
             //updateMessageLabels();
             
-            if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()
-                && testConfig_->plugin_prefix == "signal_slot")
-            {
-                
-                if (nidaq_task_ != nullptr) {
+            //if (testConfigEnabled_ && !testConfig_->imagegrab_prefix.empty()
+            //    && testConfig_->plugin_prefix == "signal_slot")
+            //{
+            //    
+            //    if (nidaq_task_ != nullptr) {
 
-                    /*if (cameraNumber_ == 0
-                        && frameCount_ <= unsigned long(testConfig_->numFrames)) {
+            //        /*if (cameraNumber_ == 0
+            //            && frameCount_ <= unsigned long(testConfig_->numFrames)) {
 
-                        nidaq_task_->acquireLock();
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
-                        nidaq_task_->releaseLock();
+            //            nidaq_task_->acquireLock();
+            //            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_trigger_in, 10.0, &read_buffer, NULL));
+            //            nidaq_task_->releaseLock();
 
-                    }*/
+            //        }*/
 
-                    if (frameCount_ <= testConfig_->numFrames) {
+            //        if (frameCount_ <= testConfig_->numFrames) {
 
-                        nidaq_task_->acquireLock();
-                        DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
-                        nidaq_task_->releaseLock();
+            //            nidaq_task_->acquireLock();
+            //            DAQmxErrChk(DAQmxReadCounterScalarU32(nidaq_task_->taskHandle_grab_in, 10.0, &read_ondemand, NULL));
+            //            nidaq_task_->releaseLock();
 
-                    }
+            //        }
 
-                }
+            //    }
 
-                if (!testConfig_->nidaq_prefix.empty()) {
+            //    if (!testConfig_->nidaq_prefix.empty()) {
 
-                    if (cameraNumber_ == 0)
-                        time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
-                    else
-                        time_stamps3[frameCount_][0] = 0;
+            //        if (cameraNumber_ == 0)
+            //            time_stamps3[frameCount_][0] = nidaq_task_->cam_trigger[frameCount_];
+            //        else
+            //            time_stamps3[frameCount_][0] = 0;
 
-                    time_stamps3[frameCount_][1] = read_ondemand;
-                }
+            //        time_stamps3[frameCount_][1] = read_ondemand;
+            //    }
 
-                if (!testConfig_->f2f_prefix.empty()) {
+            //    if (!testConfig_->f2f_prefix.empty()) {
 
-                    pc_time = gettime_->getPCtime();
+            //        pc_time = gettime_->getPCtime();
 
-                    if (frameCount_ <= testConfig_->numFrames)
-                        time_stamps2[frameCount_] = pc_time;
-                }
+            //        if (frameCount_ <= testConfig_->numFrames)
+            //            time_stamps2[frameCount_] = pc_time;
+            //    }
 
-                if (!testConfig_->queue_prefix.empty()) {
+            //    if (!testConfig_->queue_prefix.empty()) {
 
-                    if (frameCount_ <= testConfig_->numFrames)
-                        queue_size[frameCount_] = pluginImageQueuePtr_->size();
+            //        if (frameCount_ <= testConfig_->numFrames)
+            //            queue_size[frameCount_] = pluginImageQueuePtr_->size();
 
-                }
+            //    }
 
-                if (frameCount_ == testConfig_->numFrames-1
-                    && !testConfig_->f2f_prefix.empty())
-                {
-                    
-                    std::string filename = testConfig_->dir_list[0] + "/"
-                        + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
-                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                        + testConfig_->plugin_prefix
-                        + "_" + testConfig_->f2f_prefix + "cam"
-                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
-                    std::cout << filename << std::endl;
-                    gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
+            //    if (frameCount_ == testConfig_->numFrames-1
+            //        && !testConfig_->f2f_prefix.empty())
+            //    {
+            //        
+            //        std::string filename = testConfig_->dir_list[0] + "/"
+            //            + testConfig_->f2f_prefix + "/" + testConfig_->cam_dir
+            //            + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+            //            + testConfig_->plugin_prefix
+            //            + "_" + testConfig_->f2f_prefix + "cam"
+            //            + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+            //        std::cout << filename << std::endl;
+            //        gettime_->write_time_1d<int64_t>(filename, testConfig_->numFrames, time_stamps2);
 
-                }
+            //    }
 
-                if (frameCount_ == testConfig_->numFrames-1
-                    && !testConfig_->nidaq_prefix.empty())
-                {
+            //    if (frameCount_ == testConfig_->numFrames-1
+            //        && !testConfig_->nidaq_prefix.empty())
+            //    {
 
-                    std::string filename = testConfig_->dir_list[0] + "/"
-                        + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
-                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                        + testConfig_->plugin_prefix
-                        + "_" + testConfig_->nidaq_prefix + "cam"
-                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+            //        std::string filename = testConfig_->dir_list[0] + "/"
+            //            + testConfig_->nidaq_prefix + "/" + testConfig_->cam_dir
+            //            + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+            //            + testConfig_->plugin_prefix
+            //            + "_" + testConfig_->nidaq_prefix + "cam"
+            //            + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
 
-                    gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
+            //        gettime_->write_time_2d<uInt32>(filename, testConfig_->numFrames, time_stamps3);
 
-                }
+            //    }
 
-                if (frameCount_ == testConfig_->numFrames-1
-                    && !testConfig_->queue_prefix.empty()) {
+            //    if (frameCount_ == testConfig_->numFrames-1
+            //        && !testConfig_->queue_prefix.empty()) {
 
-                    string filename = testConfig_->dir_list[0] + "/"
-                        + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
-                        + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
-                        + testConfig_->plugin_prefix
-                        + "_" + testConfig_->queue_prefix + "cam"
-                        + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
+            //        string filename = testConfig_->dir_list[0] + "/"
+            //            + testConfig_->queue_prefix + "/" + testConfig_->cam_dir
+            //            + "/" + testConfig_->git_commit + "_" + testConfig_->date + "/"
+            //            + testConfig_->plugin_prefix
+            //            + "_" + testConfig_->queue_prefix + "cam"
+            //            + std::to_string(cameraNumber_) + "_" + trial_num_ + ".csv";
 
-                    gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
+            //        gettime_->write_time_1d<unsigned int>(filename, testConfig_->numFrames, queue_size);
 
-                }
+            //    }
 
-            }
+            //}
                       
             pluginImageQueuePtr_->pop();
 

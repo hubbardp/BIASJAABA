@@ -20,7 +20,7 @@ namespace bias {
 
     beh_class::beh_class()  {}
 
-    beh_class::beh_class(QWidget *parent): QDialog(parent) {}
+    beh_class::beh_class(QWidget *parent) : QDialog(parent) {}
   
 
     void beh_class::allocate_model() 
@@ -1082,253 +1082,253 @@ namespace bias {
 
     }
 
-    void beh_class::boost_classify_side(std::vector<float> &scr, std::vector<float> &hogs_features,
-			  std::vector<float> &hofs_features, struct HOGShape *shape_side,
-			  struct HOFShape *shape_front,
-			  std::vector<boost_classifier> &model, int frameCount) 
-    {
-		//std::cout << "Entered boost classify side " << std::endl;
-		//shape of hist side
-		unsigned int side_x = shape_side->x;
-		unsigned int side_y = shape_side->y;
-		unsigned int side_bin = shape_side->bin;
-
-		//shape of hist front 
-		unsigned int front_x = shape_front->x;
-		unsigned int front_y = shape_front->y;
-		unsigned int front_bin = shape_front->bin;
-
-		//index variables
-		//unsigned int rollout_index, rem;
-		//unsigned int ind_k, ind_j, ind_i;
-		unsigned int num_feat, index;
-		int dir, dim;
-		float alpha, tr;
-
-		bool haveprinted_hof = false;
-		bool haveprinted_hog = false;
-		float scr_before;
-
-		//rem = 0;
-		//int flag = 0;
-
-		size_t numWkCls = model[0].cls_alpha.size();
-        //size_t num_behs = beh_present.size();
-        std::fill(scr.begin(), scr.end(), 0.0);
-
-#if DEBUG
-        std::ofstream x_out;
-        string file = "test_side_original.csv";
-        
-        if(frameCount == test_frameCount)
-            x_out.open(file.c_str(), std::ios_base::app);
-#endif
-		num_feat = side_x * side_y * side_bin;
-        //std::cout << "numWkCls " << numWkCls << "num_behs " << num_behs << std::endl;
-
-        for(int ncls = 0;ncls < num_behs;ncls++)
-        {
-  
-            if(beh_present[ncls])
-            {
-                
-				// translate index from matlab to C indexing
-				for(int midx = 0; midx < numWkCls; midx ++) {
-
-					dim = model[ncls].cls_dim[midx];
-					dir = model[ncls].cls_dir[midx];
-					alpha = model[ncls].cls_alpha[midx];
-					tr = model[ncls].cls_tr[midx];
-					scr_before = scr[ncls];
-
-					//std::cout << "ncls = " << ncls << " midx = " << midx << std::endl;
-					//std::cout<<"flag " << this->flag[ncls][midx] << std::endl;
-
-					if(this->flag[ncls][midx] == 1) {  // book keeping to check which feature to choose
-
-						index = this->translated_index[ncls][midx];
-                        boost_compute(scr[ncls], hofs_features, index, dir, tr, alpha, frameCount, midx);
-                           
-
-#if DEBUG
-						if (!haveprinted_hof && frameCount == test_frameCount) {
-							/*std::cout << "side hof weak classifier = " << midx
-								<< ", feat number = " << dim
-						   	<< ", translated index = " << index
-								<< ", feat value = " << hofs_features[index]
-								<< ", thresh = " << tr
-								<< ", dir = " << dir
-								<< ", alpha = " << alpha
-								<< ", scr before = " << scr_before
-								<< ", scr after = " << scr[ncls]
-								<< std::endl;
-					          haveprinted_hof = true;*/
-                            x_out << midx << "," << scr[ncls] << "\n";
-						}
-#endif
-
-					} else if(this->flag[ncls][midx] == 3) {
-
-						index = this->translated_index[ncls][midx];
-						num_feat = side_x * side_y * side_bin;
-                        boost_compute(scr[ncls], hogs_features, index, dir, tr, alpha, frameCount, midx);
-
-#if DEBUG
-						if (!haveprinted_hog && frameCount == test_frameCount) {
-							/*std::cout << "side hog weak classifier = " << midx
-						   		<< ", feat number = " << dim
-								<< ", translated index = " << index
-								<< ", feat value = " << hogs_features[index]
-								<< ", thresh = " << tr
-								<< ", dir = " << dir
-								<< ", alpha = " << alpha
-								<< ", scr before = " << scr_before
-								<< ", scr after = " << scr[ncls]
-								<< std::endl;
-							    haveprinted_hog = true;*/
-                            x_out << midx << "," << scr[ncls] << "\n";
-						}
-#endif
-					} 
-
-				}
-#if DEBUG
-                haveprinted_hog = true;
-                haveprinted_hof = true;
-#endif
-			}
-
-        }
-#if DEBUG
-        if(frameCount == test_frameCount)
-            x_out.close();
-#endif
-    }
-
-    void beh_class::boost_classify_front(std::vector<float> &scr, std::vector<float>& hogf_features,
-        std::vector<float>& hoff_features, struct HOGShape *shape_side,
-        struct HOFShape *shape_front,
-        std::vector<boost_classifier> &model, int frameCount)
-    {
-		//std::cout << "Entered boost classify front " << std::endl;
-        //shape of hist side
-        unsigned int side_x = shape_side->x;
-        unsigned int side_y = shape_side->y;
-        unsigned int side_bin = shape_side->bin;
-
-        //shape of hist front 
-        unsigned int front_x = shape_front->x;
-        unsigned int front_y = shape_front->y;
-        unsigned int front_bin = shape_front->bin;
-
-        //index variables
-        //unsigned int rollout_index, rem;
-        //unsigned int ind_k, ind_j, ind_i;
-        unsigned int num_feat, index;
-        int dir, dim;
-        float alpha, tr;
-
-		bool haveprinted_hof = false;
-		bool haveprinted_hog = false;
-		float scr_before;
-
-        //rem = 0;
-        //int flag = 0;
-
-        size_t numWkCls = model[0].cls_alpha.size();
-        //size_t num_behs = beh_present.size();
-        std::fill(scr.begin(), scr.end(), 0.0);
-        
-#if DEBUG
-        std::ofstream x_out;
-        string file = "test_front_original.csv";
-
-        if(frameCount == test_frameCount)
-            x_out.open(file.c_str(), std::ios_base::app);
-#endif
-
-		num_feat = front_x * front_y * front_bin;
-
-		//std::cout << "num_behs = " << num_behs << std::endl;
-
-        for (int ncls = 0; ncls < num_behs; ncls++)
-        {
-             
-            if (beh_present[ncls])
-            {
-
-                // translate index from matlab to C indexing
-                for (int midx = 0; midx < numWkCls; midx++) {
-
-                    dim = model[ncls].cls_dim[midx];
-                    dir = model[ncls].cls_dir[midx];
-                    alpha = model[ncls].cls_alpha[midx];
-                    tr = model[ncls].cls_tr[midx];
-					scr_before = scr[ncls];
-
-                    if (this->flag[ncls][midx] == 2) {  // book keeping to check which feature to choose
-
-                        index = this->translated_index[ncls][midx];
-                        boost_compute(scr[ncls], hoff_features, index, dir, tr, alpha, frameCount, midx);
-                            
-#if DEBUG                        
-						if (!haveprinted_hof && frameCount == test_frameCount) {
-							/*std::cout << "front hof weak classifier = " << midx
-								<< ", feat number = " << dim
-								<< ", translated index = " << index
-								<< ", feat value = " << hoff_features[index]
-								<< ", thresh = " << tr
-								<< ", dir = " << dir
-							    << ", alpha = " << alpha
-								<< ", scr before = " << scr_before
-								<< ", scr after = " << scr[ncls]
-								<< std::endl;*/
-							//haveprinted_hof = true;
-                            x_out << midx << "," << scr[ncls] << "\n";
-						}
-#endif                        
-
-                    }
-                    else if (this->flag[ncls][midx] == 4) {
-
-                        index = this->translated_index[ncls][midx];
-                        boost_compute(scr[ncls], hogf_features, index, dir, tr, alpha, frameCount, midx);
-		
-#if DEBUG
-
-                        if (!haveprinted_hog && frameCount == test_frameCount) {
-						        /*std::cout << "front hog weak classifier = " << midx
-								<< ", feat number = " << dim
-								<<", translated index = "<<index
-								<< ", feat value = " << hogf_features[index]
-								<< ", thresh = " << tr
-								<< ", dir = " << dir
-								<< ", alpha = " << alpha
-								<< ", scr before = " << scr_before
-								<< ", scr after = " << scr[ncls]
-								<< std::endl;*/
-							//haveprinted_hog = true;
-                            x_out << midx << "," << scr[ncls] << "\n";
-						}
-#endif // DEBUG
-                    }
-
-                }
-#if DEBUG
-                haveprinted_hog = true;
-                haveprinted_hof = true;
-#endif
-
-            }
-
-        }
-
-#if DEBUG
-        if(frameCount == test_frameCount)
-            x_out.close();
-#endif
-
-    }
+//    void beh_class::boost_classify_side(std::vector<float> &scr, std::vector<float> &hogs_features,
+//			  std::vector<float> &hofs_features, struct HOGShape *shape_side,
+//			  struct HOFShape *shape_front,
+//			  std::vector<boost_classifier> &model, int frameCount) 
+//    {
+//		//std::cout << "Entered boost classify side " << std::endl;
+//		//shape of hist side
+//		unsigned int side_x = shape_side->x;
+//		unsigned int side_y = shape_side->y;
+//		unsigned int side_bin = shape_side->bin;
+//
+//		//shape of hist front 
+//		unsigned int front_x = shape_front->x;
+//		unsigned int front_y = shape_front->y;
+//		unsigned int front_bin = shape_front->bin;
+//
+//		//index variables
+//		//unsigned int rollout_index, rem;
+//		//unsigned int ind_k, ind_j, ind_i;
+//		unsigned int num_feat, index;
+//		int dir, dim;
+//		float alpha, tr;
+//
+//		bool haveprinted_hof = false;
+//		bool haveprinted_hog = false;
+//		float scr_before;
+//
+//		//rem = 0;
+//		//int flag = 0;
+//
+//		size_t numWkCls = model[0].cls_alpha.size();
+//        //size_t num_behs = beh_present.size();
+//        std::fill(scr.begin(), scr.end(), 0.0);
+//
+//#if DEBUG
+//        std::ofstream x_out;
+//        string file = "test_side_original.csv";
+//        
+//        if(frameCount == test_frameCount)
+//            x_out.open(file.c_str(), std::ios_base::app);
+//#endif
+//		num_feat = side_x * side_y * side_bin;
+//        //std::cout << "numWkCls " << numWkCls << "num_behs " << num_behs << std::endl;
+//
+//        for(int ncls = 0;ncls < num_behs;ncls++)
+//        {
+//  
+//            if(beh_present[ncls])
+//            {
+//                
+//				// translate index from matlab to C indexing
+//				for(int midx = 0; midx < numWkCls; midx ++) {
+//
+//					dim = model[ncls].cls_dim[midx];
+//					dir = model[ncls].cls_dir[midx];
+//					alpha = model[ncls].cls_alpha[midx];
+//					tr = model[ncls].cls_tr[midx];
+//					scr_before = scr[ncls];
+//
+//					//std::cout << "ncls = " << ncls << " midx = " << midx << std::endl;
+//					//std::cout<<"flag " << this->flag[ncls][midx] << std::endl;
+//
+//					if(this->flag[ncls][midx] == 1) {  // book keeping to check which feature to choose
+//
+//						index = this->translated_index[ncls][midx];
+//                        boost_compute(scr[ncls], hofs_features, index, dir, tr, alpha, frameCount, midx);
+//                           
+//
+//#if DEBUG
+//						if (!haveprinted_hof && frameCount == test_frameCount) {
+//							/*std::cout << "side hof weak classifier = " << midx
+//								<< ", feat number = " << dim
+//						   	<< ", translated index = " << index
+//								<< ", feat value = " << hofs_features[index]
+//								<< ", thresh = " << tr
+//								<< ", dir = " << dir
+//								<< ", alpha = " << alpha
+//								<< ", scr before = " << scr_before
+//								<< ", scr after = " << scr[ncls]
+//								<< std::endl;
+//					          haveprinted_hof = true;*/
+//                            x_out << midx << "," << scr[ncls] << "\n";
+//						}
+//#endif
+//
+//					} else if(this->flag[ncls][midx] == 3) {
+//
+//						index = this->translated_index[ncls][midx];
+//						num_feat = side_x * side_y * side_bin;
+//                        boost_compute(scr[ncls], hogs_features, index, dir, tr, alpha, frameCount, midx);
+//
+//#if DEBUG
+//						if (!haveprinted_hog && frameCount == test_frameCount) {
+//							/*std::cout << "side hog weak classifier = " << midx
+//						   		<< ", feat number = " << dim
+//								<< ", translated index = " << index
+//								<< ", feat value = " << hogs_features[index]
+//								<< ", thresh = " << tr
+//								<< ", dir = " << dir
+//								<< ", alpha = " << alpha
+//								<< ", scr before = " << scr_before
+//								<< ", scr after = " << scr[ncls]
+//								<< std::endl;
+//							    haveprinted_hog = true;*/
+//                            x_out << midx << "," << scr[ncls] << "\n";
+//						}
+//#endif
+//					} 
+//
+//				}
+//#if DEBUG
+//                haveprinted_hog = true;
+//                haveprinted_hof = true;
+//#endif
+//			}
+//
+//        }
+//#if DEBUG
+//        if(frameCount == test_frameCount)
+//            x_out.close();
+//#endif
+//    }
+//
+//    void beh_class::boost_classify_front(std::vector<float> &scr, std::vector<float>& hogf_features,
+//        std::vector<float>& hoff_features, struct HOGShape *shape_side,
+//        struct HOFShape *shape_front,
+//        std::vector<boost_classifier> &model, int frameCount)
+//    {
+//		//std::cout << "Entered boost classify front " << std::endl;
+//        //shape of hist side
+//        unsigned int side_x = shape_side->x;
+//        unsigned int side_y = shape_side->y;
+//        unsigned int side_bin = shape_side->bin;
+//
+//        //shape of hist front 
+//        unsigned int front_x = shape_front->x;
+//        unsigned int front_y = shape_front->y;
+//        unsigned int front_bin = shape_front->bin;
+//
+//        //index variables
+//        //unsigned int rollout_index, rem;
+//        //unsigned int ind_k, ind_j, ind_i;
+//        unsigned int num_feat, index;
+//        int dir, dim;
+//        float alpha, tr;
+//
+//		bool haveprinted_hof = false;
+//		bool haveprinted_hog = false;
+//		float scr_before;
+//
+//        //rem = 0;
+//        //int flag = 0;
+//
+//        size_t numWkCls = model[0].cls_alpha.size();
+//        //size_t num_behs = beh_present.size();
+//        std::fill(scr.begin(), scr.end(), 0.0);
+//        
+//#if DEBUG
+//        std::ofstream x_out;
+//        string file = "test_front_original.csv";
+//
+//        if(frameCount == test_frameCount)
+//            x_out.open(file.c_str(), std::ios_base::app);
+//#endif
+//
+//		num_feat = front_x * front_y * front_bin;
+//
+//		//std::cout << "num_behs = " << num_behs << std::endl;
+//
+//        for (int ncls = 0; ncls < num_behs; ncls++)
+//        {
+//             
+//            if (beh_present[ncls])
+//            {
+//
+//                // translate index from matlab to C indexing
+//                for (int midx = 0; midx < numWkCls; midx++) {
+//
+//                    dim = model[ncls].cls_dim[midx];
+//                    dir = model[ncls].cls_dir[midx];
+//                    alpha = model[ncls].cls_alpha[midx];
+//                    tr = model[ncls].cls_tr[midx];
+//					scr_before = scr[ncls];
+//
+//                    if (this->flag[ncls][midx] == 2) {  // book keeping to check which feature to choose
+//
+//                        index = this->translated_index[ncls][midx];
+//                        boost_compute(scr[ncls], hoff_features, index, dir, tr, alpha, frameCount, midx);
+//                            
+//#if DEBUG                        
+//						if (!haveprinted_hof && frameCount == test_frameCount) {
+//							/*std::cout << "front hof weak classifier = " << midx
+//								<< ", feat number = " << dim
+//								<< ", translated index = " << index
+//								<< ", feat value = " << hoff_features[index]
+//								<< ", thresh = " << tr
+//								<< ", dir = " << dir
+//							    << ", alpha = " << alpha
+//								<< ", scr before = " << scr_before
+//								<< ", scr after = " << scr[ncls]
+//								<< std::endl;*/
+//							//haveprinted_hof = true;
+//                            x_out << midx << "," << scr[ncls] << "\n";
+//						}
+//#endif                        
+//
+//                    }
+//                    else if (this->flag[ncls][midx] == 4) {
+//
+//                        index = this->translated_index[ncls][midx];
+//                        boost_compute(scr[ncls], hogf_features, index, dir, tr, alpha, frameCount, midx);
+//		
+//#if DEBUG
+//
+//                        if (!haveprinted_hog && frameCount == test_frameCount) {
+//						        /*std::cout << "front hog weak classifier = " << midx
+//								<< ", feat number = " << dim
+//								<<", translated index = "<<index
+//								<< ", feat value = " << hogf_features[index]
+//								<< ", thresh = " << tr
+//								<< ", dir = " << dir
+//								<< ", alpha = " << alpha
+//								<< ", scr before = " << scr_before
+//								<< ", scr after = " << scr[ncls]
+//								<< std::endl;*/
+//							//haveprinted_hog = true;
+//                            x_out << midx << "," << scr[ncls] << "\n";
+//						}
+//#endif // DEBUG
+//                    }
+//
+//                }
+//#if DEBUG
+//                haveprinted_hog = true;
+//                haveprinted_hof = true;
+//#endif
+//
+//            }
+//
+//        }
+//
+//#if DEBUG
+//        if(frameCount == test_frameCount)
+//            x_out.close();
+//#endif
+//
+//    }
 
     void beh_class::addScores(std::vector<float>& scr_side, 
                               std::vector<float>& scr_front)

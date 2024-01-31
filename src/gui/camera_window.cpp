@@ -1821,7 +1821,7 @@ namespace bias
         if (!testConfig->f2f_prefix.empty()) {
             
             frametoframeLatencyVal = true;
-            emit(valueChangedFrametoFrame(frametoframeLatencyVal));
+            //emit(valueChangedFrametoFrame(frametoframeLatencyVal));
             
         } else {
 
@@ -3429,17 +3429,17 @@ namespace bias
         // Temporary - plugin development
         // -------------------------------------------------------------------------------        
         //timer objects
-        gettime_ = make_shared<Lockable<GetTime>>();
+        //gettime_ = make_shared<Lockable<GetTime>>();
         timerClass_ = make_shared<Lockable<TimerClass>>();
 
         pluginHandlerPtr_  = new PluginHandler(this);
         //pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
         //pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
-        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_, gettime_,
+        pluginMap_[SignalSlotDemoPlugin::PLUGIN_NAME] = new SignalSlotDemoPlugin(pluginImageLabelPtr_,
                                                                                  loadTestConfigEnabled, trial_num,
                                                                                  testConfig,this);
         pluginMap_[JaabaPlugin::PLUGIN_NAME] = new JaabaPlugin(guid.toString(), 
-                                                               threadPoolPtr_, gettime_,cmdlineparams,
+                                                               threadPoolPtr_,cmdlineparams,
                                                                this);
         
         //pluginMap_[JaabaPlugin::PLUGIN_NAME] -> show();  
@@ -3825,11 +3825,11 @@ namespace bias
                 SLOT(actionTestLoadConfigTriggered())
                );
 
-        connect(this,
+        /*connect(this,
                 SIGNAL(valueChangedFrametoFrame(bool)),
                 this,
                 SLOT(enableFrametoFrame())
-              );
+              );*/
 
     }
 
@@ -8229,7 +8229,7 @@ namespace bias
         }
         bool frametoframeLatencyVal = configMap["frametoframe_latency"].toBool();
         if (frametoframeLatencyVal) {
-            emit valueChangedFrametoFrame(frametoframeLatencyVal);
+            //emit valueChangedFrametoFrame(frametoframeLatencyVal);
         }
 
         // Get "nidaq latency" value

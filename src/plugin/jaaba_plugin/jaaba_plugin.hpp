@@ -54,7 +54,6 @@ namespace bias
 
             JaabaPlugin(string camera_id, 
                 QPointer<QThreadPool> threadPoolPtr,
-                std::shared_ptr<Lockable<GetTime>> gettime,
                 CmdLineParams& cmdlineparams,
                 QWidget *parent=0);
 
@@ -126,6 +125,7 @@ namespace bias
             QPointer<QThreadPool> threadPoolPtr_;
 
             CmdLineParams cmdlineparams_;
+            std::shared_ptr<Lockable<TimerClass>> timerClass_;
             std::shared_ptr<Lockable<GetTime>> gettime_;   
             std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
             std::shared_ptr<TestConfig>testConfig_;

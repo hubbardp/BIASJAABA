@@ -107,16 +107,16 @@ namespace bias
            PredData predScoreFinal;
            std::shared_ptr<LockableQueue<PredData>> selfScoreQueuePtr_;
            std::shared_ptr<LockableQueue<PredData>> partnerScoreQueuePtr_;
-           std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task_;
+           std::shared_ptr<Lockable<NIDAQUtils>> nidaq_task;
+           std::shared_ptr<Lockable<GetTime>> gettime;
+           std::shared_ptr<Lockable<TimerClass>> timerClass;
 
            std::vector<int64_t> frame_read_stamps; // frame read pass timings
            std::vector<int64_t> partner_frame_read_stamps; // partner read pass timings
-           std::shared_ptr<Lockable<GetTime>> gettime;
+           
            ProcessScores(QObject *parent, bool mesPass,
-                         std::shared_ptr<Lockable<GetTime>> getTime,
                          CmdLineParams& cmdlineparams);
            void initialize(bool mesPass,
-               std::shared_ptr<Lockable<GetTime>> getTime,
                CmdLineParams& cmdlineparams);
           
            void stop();

@@ -58,14 +58,14 @@ namespace bias {
         RtnStatus readh5(std::string filename, std::vector<std::string> &model_params, boost_classifier &data_out,int beh_id);
 
         void translate_mat2C(HOGShape *shape_side, HOGShape *shape_front);
-        void boost_classify_side(std::vector<float> &scr, std::vector<float> &hogs_features,
-            std::vector<float> &hofs_features, struct HOGShape *shape_side,
-            struct HOFShape *shape_front,
-            std::vector<boost_classifier> &model, int frameCount);
-        void boost_classify_front(std::vector<float> &scr, std::vector<float> &hogf_features,
-            std::vector<float> &hoff_features, struct HOGShape *shape_side,
-            struct HOFShape *shape_front,
-            std::vector<boost_classifier> &model, int frameCount);
+        //void boost_classify_side(std::vector<float> &scr, std::vector<float> &hogs_features,
+        //    std::vector<float> &hofs_features, struct HOGShape *shape_side,
+        //    struct HOFShape *shape_front,
+        //    std::vector<boost_classifier> &model, int frameCount);
+        //void boost_classify_front(std::vector<float> &scr, std::vector<float> &hogf_features,
+        //    std::vector<float> &hoff_features, struct HOGShape *shape_side,
+        //    struct HOFShape *shape_front,
+        //    std::vector<boost_classifier> &model, int frameCount);
 	    //void boost_compute(float &scr, std::vector<float> &features, int ind,
 		//	       int num_feat, int feat_len, int dir, float tr, float alpha, int framecount, int cls_idx);
         void boost_compute(float &scr, const std::vector<float> &features, int ind,

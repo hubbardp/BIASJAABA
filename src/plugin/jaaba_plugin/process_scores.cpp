@@ -12,11 +12,10 @@ namespace bias {
 
     // public 
     ProcessScores::ProcessScores(QObject *parent, bool mesPass,
-                                 std::shared_ptr<Lockable<GetTime>> getTime,
                                  CmdLineParams& cmdlineparams) : QObject(parent)
     {
 
-        initialize(mesPass, getTime, cmdlineparams);
+        initialize(mesPass, cmdlineparams);
         
         // this is defined separately here because it is initialised when constructor
         // is called but some variables need to be reinitialized when multiple trials of the plugin
@@ -30,8 +29,7 @@ namespace bias {
         versionNumber = 0;
     }
 
-    void ProcessScores::initialize(bool mesPass, std::shared_ptr<Lockable<GetTime>> getTime,
-        CmdLineParams& cmdlineparams)
+    void ProcessScores::initialize(bool mesPass, CmdLineParams& cmdlineparams)
     {
 
         //stopped_ = true;
@@ -48,7 +46,6 @@ namespace bias {
         frameCount_ = 0;
         partner_frameCount_ = -1;
         scoreCount = 0;
-        gettime = getTime;
         skipFront = 0;
         skipSide = 0;
         side_read_time_ = 0;
@@ -268,10 +265,10 @@ namespace bias {
 
         //period of fast clock that used in nidaq to sample counter values
         uint64_t fast_clock_period;
-        if (!isVideo && nidaq_task_ != nullptr)
+        if (!isVideo && nidaq_task != nullptr)
         {
             fast_clock_period = static_cast<uint64_t>((1.0 /
-                (float)nidaq_task_->fast_counter_rate) * 1000000);
+                (float)nidaq_task->fast_counter_rate) * 1000000);
         }
 
         // Set thread priority to idle - only run when no other thread are running
@@ -351,7 +348,7 @@ namespace bias {
                                 scoreCount, 1, framerate);
                         }
                         else {
-                            nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                            nidaq_task->getNidaqTimeNow(read_ondemand_);
                             time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
                             expLat = calculateExpectedlatency(fstframets, perFrameLat,
                                 scoreCount, fast_clock_period, framerate);
@@ -452,7 +449,7 @@ namespace bias {
                             //    scoreCount, 1, framerate);
                         }
                         else {
-                            nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                            nidaq_task->getNidaqTimeNow(read_ondemand_);
                             time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
                             predScoreFinal.score_ts = time_now;
                             //scores[scoreCount].score_ts = read_ondemand_;
@@ -508,7 +505,7 @@ namespace bias {
                             scoreCount, 1, framerate);
                     }
                     else {
-                        nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                        nidaq_task->getNidaqTimeNow(read_ondemand_);
                         time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
                         expLat = calculateExpectedlatency(fstframets, perFrameLat,
                             scoreCount, fast_clock_period, framerate);
@@ -552,7 +549,7 @@ namespace bias {
                             scoreCount, 1, framerate);
                     }
                     else {
-                        nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                        nidaq_task->getNidaqTimeNow(read_ondemand_);
                         time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
                         expLat = calculateExpectedlatency(fstframets, perFrameLat,
                             scoreCount, fast_clock_period, framerate);
@@ -618,7 +615,7 @@ namespace bias {
                                 //scores[scoreCount].score_ts = time_now;
                             }
                             else {
-                                nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                                nidaq_task->getNidaqTimeNow(read_ondemand_);
                                 time_now = static_cast<uint64_t>(read_ondemand_) * fast_clock_period;
                                 predScoreFinal.score_ts = time_now;
                                 //scores[scoreCount].score_ts = read_ondemand_;
@@ -680,7 +677,7 @@ namespace bias {
                             }
                             else {
 
-                                nidaq_task_->getNidaqTimeNow(read_ondemand_);
+                                nidaq_task->getNidaqTimeNow(read_ondemand_);
                                 time_now = static_cast<uint64_t>(read_ondemand_) * fast_clock_period;
                                 predScoreFinal.score_ts = time_now;
                                 //scores[scoreCount].score_ts = read_ondemand_;
