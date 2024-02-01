@@ -23,6 +23,7 @@
 #include <memory>
 
 #include "win_time.hpp"
+#include "timerClass.hpp"
 #include "parser.hpp"
 
 

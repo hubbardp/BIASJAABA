@@ -1817,7 +1817,7 @@ namespace bias {
         {
             if (timerClass_->timerNIDAQFlag && timerClass_->cameraMode)
             {
-                processScoresPtr_self->timerClass = timerClass;
+                processScoresPtr_self->timerClass = timerClass_;
                 processScoresPtr_self->nidaq_task = nidaq_task_;
                 processScoresPtr_self->gettime = gettime_;
             }

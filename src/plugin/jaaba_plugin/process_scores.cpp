@@ -265,10 +265,14 @@ namespace bias {
 
         //period of fast clock that used in nidaq to sample counter values
         uint64_t fast_clock_period;
-        if (!isVideo && nidaq_task != nullptr)
+        if (!isVideo)
         {
-            fast_clock_period = static_cast<uint64_t>((1.0 /
-                (float)nidaq_task->fast_counter_rate) * 1000000);
+            if (timerClass->timerNIDAQFlag && timerClass->cameraMode 
+                && nidaq_task != nullptr)
+            {
+                fast_clock_period = static_cast<uint64_t>((1.0 /
+                    (float)nidaq_task->fast_counter_rate) * 1000000);
+            }
         }
 
         // Set thread priority to idle - only run when no other thread are running
@@ -348,10 +352,19 @@ namespace bias {
                                 scoreCount, 1, framerate);
                         }
                         else {
-                            nidaq_task->getNidaqTimeNow(read_ondemand_);
-                            time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
-                            expLat = calculateExpectedlatency(fstframets, perFrameLat,
-                                scoreCount, fast_clock_period, framerate);
+
+                            time_now = timerClass->getTimeNow();
+                            if (timerClass->timerNIDAQFlag && timerClass->cameraMode) {
+                                
+                                time_now = time_now * fast_clock_period;
+                                expLat = calculateExpectedlatency(fstframets, perFrameLat,
+                                    scoreCount, fast_clock_period, framerate);
+                            }
+                            else {
+                                
+                                expLat = calculateExpectedlatency(fstframets, perFrameLat,
+                                    scoreCount, 1, framerate);
+                            }
                         }
 
                         if (time_now > expLat)
@@ -442,20 +455,27 @@ namespace bias {
                         }
 
                         if (isVideo) {
+
                             time_now = gettime->getPCtime();
-                            predScoreFinal.score_ts = time_now;
+                            
                             //scores[scoreCount].score_ts = time_now;
                             //expLat = calculateExpectedlatency(fstframets, perFrameLat,
                             //    scoreCount, 1, framerate);
                         }
                         else {
-                            nidaq_task->getNidaqTimeNow(read_ondemand_);
-                            time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
-                            predScoreFinal.score_ts = time_now;
+
+                            time_now = timerClass->getTimeNow();
+                            if (timerClass->timerNIDAQFlag && timerClass->cameraMode)
+                            {
+                                
+                                time_now = time_now * fast_clock_period;
+                            }
+                            
                             //scores[scoreCount].score_ts = read_ondemand_;
                             //expLat = calculateExpectedlatency(fstframets, perFrameLat,
                             //    scoreCount, fast_clock_period, framerate);
                         }
+                        predScoreFinal.score_ts = time_now;
 
                         predScoreFinal.score = classifier->finalscore.score;
                         predScoreFinal.frameCount = predScore.frameCount;
@@ -505,10 +525,19 @@ namespace bias {
                             scoreCount, 1, framerate);
                     }
                     else {
-                        nidaq_task->getNidaqTimeNow(read_ondemand_);
-                        time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
-                        expLat = calculateExpectedlatency(fstframets, perFrameLat,
-                            scoreCount, fast_clock_period, framerate);
+                        time_now = timerClass->getTimeNow();
+                        if (timerClass->timerNIDAQFlag && timerClass->cameraMode) 
+                        {
+                            
+                            time_now = time_now * fast_clock_period;
+                            expLat = calculateExpectedlatency(fstframets, perFrameLat,
+                                scoreCount, fast_clock_period, framerate);
+                        }
+                        else {
+                            
+                            expLat = calculateExpectedlatency(fstframets, perFrameLat,
+                                scoreCount, 1, framerate);
+                        }
                     }     
 
                     if (time_now > expLat)
@@ -549,10 +578,19 @@ namespace bias {
                             scoreCount, 1, framerate);
                     }
                     else {
-                        nidaq_task->getNidaqTimeNow(read_ondemand_);
-                        time_now = static_cast<uint64_t>(read_ondemand_ * fast_clock_period);
-                        expLat = calculateExpectedlatency(fstframets, perFrameLat,
-                            scoreCount, fast_clock_period, framerate);
+
+                        time_now = timerClass->getTimeNow();
+                        if (timerClass->timerNIDAQFlag && timerClass->cameraMode) {
+                            
+                            time_now = time_now * fast_clock_period;
+                            expLat = calculateExpectedlatency(fstframets, perFrameLat,
+                                scoreCount, fast_clock_period, framerate);
+                        }
+                        else {
+
+                            expLat = calculateExpectedlatency(fstframets, perFrameLat,
+                                scoreCount, 1, framerate);
+                        }
                     }
            
                     if (time_now > expLat)
@@ -609,17 +647,21 @@ namespace bias {
                                 }
                             }
 
-                            if (isVideo) {
-                                time_now = gettime->getPCtime();
-                                predScoreFinal.score_ts = time_now;
-                                //scores[scoreCount].score_ts = time_now;
+                            if (isVideo) 
+                            {
+                                time_now = gettime->getPCtime();    
                             }
                             else {
-                                nidaq_task->getNidaqTimeNow(read_ondemand_);
-                                time_now = static_cast<uint64_t>(read_ondemand_) * fast_clock_period;
-                                predScoreFinal.score_ts = time_now;
-                                //scores[scoreCount].score_ts = read_ondemand_;
+
+                                time_now = timerClass->getTimeNow();
+                                if (timerClass->timerNIDAQFlag && timerClass->cameraMode)
+                                { 
+                                    time_now = time_now * fast_clock_period;                                    
+                                }
+
                             }
+                            predScoreFinal.score_ts = time_now;
+                            
 
                             predScoreFinal.score = predScore.score;
                             predScoreFinal.frameCount = predScore.frameCount;
@@ -670,18 +712,20 @@ namespace bias {
                                 }
                             }
 
-                            if (isVideo) {
-                                time_now = gettime->getPCtime();
-                                predScoreFinal.score_ts = time_now;
-                                //scores[scoreCount].score_ts = time_now;
+                            if (isVideo) 
+                            {
+                                time_now = gettime->getPCtime();            
                             }
                             else {
-
-                                nidaq_task->getNidaqTimeNow(read_ondemand_);
-                                time_now = static_cast<uint64_t>(read_ondemand_) * fast_clock_period;
-                                predScoreFinal.score_ts = time_now;
+                                time_now = timerClass->getTimeNow();
+                                if (timerClass->timerNIDAQFlag && timerClass->cameraMode)
+                                {
+                                    time_now = time_now * fast_clock_period;
+                                }
+                                
                                 //scores[scoreCount].score_ts = read_ondemand_;
                             }
+                            predScoreFinal.score_ts = time_now;
 
                             predScoreFinal.score = predScorePartner.score;
                             predScoreFinal.frameCount = predScorePartner.frameCount;
