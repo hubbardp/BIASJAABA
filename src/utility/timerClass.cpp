@@ -5,7 +5,10 @@ namespace bias {
 
     TimerClass::TimerClass()
     {
-       
+        isExternalTrig = false;
+        isExternalTrigPtr = &isExternalTrig;
+        timerNIDAQFlag = false;
+        cameraMode = false;
         
     }
 
@@ -38,7 +41,19 @@ namespace bias {
         return time_now;
 
     }
-    
+
+    void TimerClass::setExternalTriggerFlag()
+    {
+        if (isExternalTrig) 
+        {
+            isExternalTrig = false;
+        }
+        else 
+        {
+            isExternalTrig = true;
+        }
+    }
+
 
     /*RtnStatus TimerClass::configureTimer(unsigned int cameraNumber,QVariantMap& configMap)
     {

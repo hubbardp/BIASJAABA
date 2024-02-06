@@ -18,10 +18,12 @@ namespace bias {
 
             TimerClass();
 
-            bool timerNIDAQFlag = false; // false implies pc time
+            bool timerNIDAQFlag; // false implies pc time
                                          // true implies use nidaq for timing
-            bool cameraMode = false; // false implies internal trigger mode for camera
+            bool cameraMode; // false implies internal trigger mode for camera
                                      // true implies external trigger mode for camera
+            bool isExternalTrig; // is trigger on or off
+            bool* isExternalTrigPtr; 
 
             std::shared_ptr<Lockable<NIDAQUtils>>nidaqTimerptr;
             std::shared_ptr<Lockable<GetTime>>pcTimerptr;
@@ -36,6 +38,7 @@ namespace bias {
             virtual void clearTimerTasks();*/
 
             uint64_t getTimeNow();
+            void setExternalTriggerFlag();
 
     };
 }

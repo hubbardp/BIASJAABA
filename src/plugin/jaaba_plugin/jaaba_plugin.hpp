@@ -251,7 +251,7 @@ namespace bias
             void write_score_final(std::string file, unsigned int numFrames,
                 vector<PredData>& pred_score);
             bool jaabaSkipFrame(uint64_t& ts_cur, uint64_t& ts_prev,
-                int& frameCount, uint64_t wait_thres);
+                unsigned long& frameCount, uint64_t wait_thres);
             void waitForEmptyHOGHOFAvgQueue(LockableQueue<vector<float>>& avg_que);
 
             //void writeAllFeatures(string filename, vector<float>& feat_out,

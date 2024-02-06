@@ -390,7 +390,7 @@ namespace bias {
                     }
                 }
                 else {
-                    if(frameCount != 0 ){
+                    if(frameCount != 0 && (!*(timerClass_->isExternalTrigPtr))){
                         QThread::yieldCurrentThread();
                         continue;
                     }
@@ -523,12 +523,14 @@ namespace bias {
                     }
                 }
                 else if(gettime_ != nullptr){
-                    
-                    start_process = gettime_->getPCtime();
-                    //get first frame timestamp reference for non nidaq timer mode
-                    if (frameCount == 0) {
-                        fstfrmtStampRef_ = static_cast<uint64_t>(start_process);
+
+                    if (!(*timerClass_->isExternalTrigPtr)) {
+                        QThread::yieldCurrentThread();
+                        continue;
                     }
+
+                    start_process = gettime_->getPCtime();
+                    
                 }
                                  
                 //grab images from camera 
@@ -561,6 +563,15 @@ namespace bias {
                 }
                 QThread::yieldCurrentThread();
                 continue;
+            }
+
+            if (gettime_ != nullptr && !timerClass_->timerNIDAQFlag && 
+                timerClass_->cameraMode)
+            {
+                //get first frame timestamp reference for non nidaq timer mode
+                if (frameCount == 0) {
+                    fstfrmtStampRef_ = static_cast<uint64_t>(gettime_->getPCtime());
+                }
             }
 
             // Push image into new image queue
@@ -751,7 +762,7 @@ namespace bias {
                     }
                     else {
 
-                        expTime = static_cast<uint64_t>(fstfrmtStampRef_ + (frameCaptureTime * (frameCount + 1)));
+                        expTime = static_cast<uint64_t>(fstfrmtStampRef_ + (frameCaptureTime * (frameCount)));
                         curTime = timerClass_->getTimeNow();
                         avgwait_time = curTime - expTime;
                     }
@@ -766,7 +777,7 @@ namespace bias {
                     else {
                         stampImg.isSpike = true;
                         
-                        if (isDebug && testConfigEnabled_ && nidaq_task_ != nullptr)
+                        if (isDebug && testConfigEnabled_)
                             ts_nidaqThres[frameCount] = 1.0;
 
                         //std::cout << "skipped to plugin " << frameCount

@@ -433,7 +433,7 @@ namespace bias {
         string filename;
         uint64_t expTime = 0, curTime = 0;
         uint64_t curTime_vid=0, expTime_vid=0;
-        uint64_t max_jaaba_compute_time=2000; //not sure where to add this parameter
+        uint64_t max_jaaba_compute_time=4000; //not sure where to add this parameter
         double vis_ts = 0.0;
         string prefix;
       
@@ -485,14 +485,9 @@ namespace bias {
 
             start_process = gettime_->getPCtime();
 
-            // skip frame if process time on gpu is higher than thres
-            //if (frameCount_ == 0)
-            //    start_prev = start_process;
-            
-            //if (jaabaSkipFrame(start_process, start_prev,
-            //        processScoresPtr_self->processedFrameCount, max_jaaba_compute_time))
-            //        return;
-            
+            if (frameCount_ == 0)
+                start_prev = start_process;
+                        
            
             if (fstfrmtStampRef_ != 0)
             {
@@ -535,6 +530,7 @@ namespace bias {
                             (int)hog_num_elements, (int)hof_num_elements);
                     }
 
+                    start_prev = start_process;
                     processedFrameCount++;
                 }
                 
@@ -546,6 +542,21 @@ namespace bias {
                     emit framecountMatchError(0, errorMsg);
                 }
 
+                // skip frame if process time on gpu is higher than thres
+                /*if (jaabaSkipFrame(start_process, start_prev,
+                    processedFrameCount, max_jaaba_compute_time))
+                {
+                    if(isDebug && testConfigEnabled_)
+                    {
+                        end_process = gettime_->getPCtime();
+                        ts_nidaqThres[processedFrameCount-1] = 1;
+                        ts_gpuprocess_time[processedFrameCount-1] = (end_process - start_process);
+                        ts_jaaba_start[processedFrameCount-1] = start_process;
+                        ts_jaaba_end[processedFrameCount-1] = end_process;
+                        
+                    }
+                    return;
+                }*/
 
                 if (pluginImage.rows != 0 && pluginImage.cols != 0)
                 {
@@ -2131,7 +2142,7 @@ namespace bias {
 
 
     bool JaabaPlugin::jaabaSkipFrame(uint64_t& ts_cur, uint64_t& ts_prev,
-        int& frameCount, uint64_t wait_thres)
+        unsigned long& frameCount, uint64_t wait_thres)
     {
         if (frameCount == 1) {
             std::cout << "prev ts before " << ts_prev <<

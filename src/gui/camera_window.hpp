@@ -448,6 +448,7 @@ namespace bias
             void setWriteScoreFlag();
             void gpuDeInitializeAllJaaabaPlugins();
             void setupNIDAQAllViews();
+            void setupTimerClassFlagsAllViews();
             
             // Menu and statusbar setup methods
             void setupCameraMenu();

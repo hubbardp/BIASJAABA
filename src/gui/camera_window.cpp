@@ -66,6 +66,8 @@
 //#define isVidInput 1
 
 #define debugNIDAQ 0
+//debugNIDAQ is a macro for comparing old nidaq code before it was a part of timerClass for debuggin
+
 
 namespace bias
 {
@@ -406,7 +408,7 @@ namespace bias
             timerClass_->nidaqTimerptr->waitIfNull();
             if (timerClass_->nidaqTimerptr == nullptr)
             {
-                std::cout << "NIDAQ is NULL *** " << std::endl;
+                //std::cout << "NIDAQ is NULL *** " << std::endl;
                 rtnStatus.success = false;
                 rtnStatus.message = QString("NIDAQ is null");
                 timerClass_->nidaqTimerptr->releaseLock();
@@ -419,7 +421,7 @@ namespace bias
 
         }
         else {
-
+            setupTimerClassFlagsAllViews();
         }
         
 
@@ -1002,7 +1004,7 @@ namespace bias
     {
         
         RtnStatus rtnStatus;
-
+        std::cout << "StartTrigger Entered " << std::endl;
         // initialize gpu memory
         if (isPluginEnabled()) {
             gpuInitializeAllJaabaPlugins();
@@ -1072,7 +1074,7 @@ namespace bias
     RtnStatus CameraWindow::stopTrigger(bool showErrorDlg)
     {
         RtnStatus rtnStatus;
-
+        std::cout << "StopTrigger Entered " << std::endl;
         //stop threads 
         //stopThreadsAllCamerasTrigMode();
 
@@ -2446,7 +2448,8 @@ namespace bias
             }
         }
         else {
-            capturing_ ? startTrigger() : stopTrigger();
+            timerClass_->setExternalTriggerFlag();
+            (*(timerClass_->isExternalTrigPtr)) ? startTrigger() : stopTrigger();
         }
      
 #endif
@@ -2841,6 +2844,7 @@ namespace bias
     
     void CameraWindow::actionCameraTriggerExternalTriggered()
     {
+
         RtnStatus rtnStatus;
 
         if (cameraPtr_ -> tryLock(CAMERA_LOCK_TRY_DT))
@@ -2866,10 +2870,11 @@ namespace bias
                 nidaq_task = nullptr;
             }
 #endif
-            if(triggerExternalType_ == TRIGGER_NIDAQ && cameraNumber_ == 0) {
+            //set the start button in the BIAS gui 
+            if(cameraNumber_ == 0) {
 
                 startTriggerButtonPtr_->setEnabled(true);
-                              
+                
             }
                         
         }
@@ -5656,6 +5661,8 @@ namespace bias
                 else if (triggerExternalType == TRIGGER_ELSE) {
 
                     actionCameraTriggerExternalElsePtr_->setChecked(true);
+                    actionCameraTriggerExternalElsePtr_->setEnabled(true);
+                    actionCameraTriggerExternalElsePtr_->triggered();
 
                     timerClass_->pcTimerptr = make_shared<Lockable<GetTime>>();
 
@@ -9006,6 +9013,39 @@ namespace bias
 
         }
         
+    }
+
+
+    void CameraWindow::setupTimerClassFlagsAllViews()
+    {
+
+        bool* isExternalTrigPtr = nullptr;
+
+        if ((cameraWindowPtrList_->size()) > 1)
+        {
+            for (auto cameraWindowPtr : *cameraWindowPtrList_)
+            {
+                if (cameraWindowPtr->cameraNumber_ == 0) {
+
+
+                    if (cameraWindowPtr->timerClass_->isExternalTrigPtr != nullptr) {
+
+                        isExternalTrigPtr = cameraWindowPtr->timerClass_->isExternalTrigPtr;
+                    }
+
+                    else {
+
+                        QMessageBox::critical(this, QString("timerClass flag"),
+                            QString("ExternalTrig flag is NULL "));
+
+                    }
+                }
+            }
+
+            timerClass_->isExternalTrigPtr = isExternalTrigPtr;
+
+        }
+
     }
 
 

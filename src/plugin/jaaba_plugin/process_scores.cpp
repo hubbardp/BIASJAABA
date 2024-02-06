@@ -359,6 +359,7 @@ namespace bias {
                                 time_now = time_now * fast_clock_period;
                                 expLat = calculateExpectedlatency(fstframets, perFrameLat,
                                     scoreCount, fast_clock_period, framerate);
+                                
                             }
                             else {
                                 
@@ -379,7 +380,7 @@ namespace bias {
                     }
                     else {
 
-                        continue;
+                        continue;               
                     }
                 } 
                 else if (!selfScoreQueuePtr_->empty() && !partnerScoreQueuePtr_->empty()) 
@@ -394,11 +395,12 @@ namespace bias {
                     selfScoreQueuePtr_->releaseLock();
 
 
-                    // to keep up with frame where both views are skipped 
+                    // to keep up with frame where both views are skipped
                     if (scoreCount < predScore.frameCount)
                     {
                         //if (predScore.frameCount > predScorePartner.frameCount)
                         //    partnerScoreQueuePtr_->pop();
+                        //std::cout << "ScoreCount " << scoreCount << std::endl;
                         scoreCount++;
                         continue;
                     }
@@ -408,6 +410,7 @@ namespace bias {
                     {
                         //if (predScorePartner.frameCount > predScore.frameCount)
                         //    selfScoreQueuePtr_->pop();
+                        //std::cout << "ScoreCount " << scoreCount << std::endl;
                         scoreCount++;
                         continue;
                     }
@@ -514,8 +517,10 @@ namespace bias {
                     //}
                     fstframets = predScorePartner.fstfrmtStampRef_;
 
-                    if (predScorePartner.frameCount > scoreCount)
+                    //check if partner is ahead of current scoreCount
+                    if (predScorePartner.frameCount > scoreCount) {
                         scoreCount++;
+                    }
 
                     score_ts = predScorePartner.score_viewB_ts;
                     if (isVideo)
@@ -567,6 +572,7 @@ namespace bias {
 
                     fstframets = predScore.fstfrmtStampRef_;
 
+                    //check if partner is ahead of current scoreCount
                     if (predScore.frameCount > scoreCount)
                         scoreCount++;
 
