@@ -121,7 +121,7 @@ namespace bias {
         errorCountEnabled_ = true;
 
         // if external mode and external trigger source is nidaq
-        if (timerClass->cameraMode) {
+        if (timerClass->timerNIDAQFlag && timerClass->cameraMode) {
 
             nidaq_task_ = timerClass->nidaqTimerptr;
             gettime_ = timerClass_->pcTimerptr;
