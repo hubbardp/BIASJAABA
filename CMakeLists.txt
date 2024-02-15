@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR) 
-project(bais)
+project(bias)
 
 if (WIN32)
+    set(CMAKE_SYSTEM_VERSION 10 CACHE STRING INTERNAL FORCE)
+    # KB 20240215 - updated to follow BIASJAABA
     set (CMAKE_SYSTEM_VERSION 10 CACHE TYPE INTERNAL FORCE)
 endif()
 
@@ -17,8 +19,11 @@ option(with_qt_gui  "include image acquisition GUI"   ON)
 option(with_fc2     "include the FlyCapture2 backend" OFF)
 option(with_dc1394  "include the libdc1394 backend"   OFF)
 option(with_spin    "include the spin backend"   ON)
-option(with_demos   "include demos" OFF)
-option(with_tests   "include tests" OFF)
+option(with_demos   "include demos" ON)
+option(with_tests   "include tests" ON)
+# KB 20240215 - follows options for BIASJAABA - include tests and demos
+#option(with_demos   "include demos" OFF)
+#option(with_tests   "include tests" OFF)
 
 message(STATUS "Option: with_fc2     = ${with_fc2}")
 message(STATUS "Option: with_dc1394  = ${with_dc1394}")
@@ -34,12 +39,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Mod
 
 # Opencv library
 # -----------------------------------------------------------------------------
+
 find_package( OpenCV 4 REQUIRED )
 
 if(${OpenCV_FOUND})
     message(STATUS "OpenCV found")
 else()
-    message(STATUS "OpenCv not found")
+    message(STATUS "OpenCV not found")
 endif()
 
 
@@ -67,6 +73,8 @@ if(with_qt_gui)
     find_package(Qt5Widgets REQUIRED)
     find_package(Qt5Gui REQUIRED) 
     find_package(Qt5Network REQUIRED)
+    # KB 20240215 - added
+    find_package(Qt5SerialPort REQUIRED)
 
 endif()
 
@@ -85,16 +93,39 @@ endif()
 #set(CMAKE_CXX_FLAGS "-std=gnu++0x -mwindows -O3")
 #set(CMAKE_CXX_FLAGS "-std=c++11 ")
 
-#CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 6.1)
-#list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
-set(CMAKE_CUDA_ARCH 3.5 5 6 7.5) 
-set(CMAKE_CUDA_CODE 3.5 5 6 7.5)
+# KB 20240215 - cuda flags follow BIASJAABA
+if(UNIX)
+    CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 6.1)
+    list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+endif()
+
+if(WIN32)
+   set(CMAKE_CUDA_ARCH 3.5 5 6 7.5) 
+   set(CMAKE_CUDA_CODE 3.5 5 6 7.5)
+endif()
 
 message(STATUS "${CMAKE_CUDA_ARCH}")
 
-set(CUDA_NVCC_FLAGS_DEBUG          -Xcompiler -fPIC;-std=c++11;-g;-G CACHE STRING "" FORCE)
-set(CUDA_NVCC_FLAGS_RELEASE        -Xcompiler -fPIC;-u-std=c++11;--use_fast_math;-g;-lineinfo CACHE STRING "" FORCE)
-set(CUDA_NVCC_FLAGS_MINSIZEREL     -Xcompiler -fPIC;--std=c++11;-use_fast_math CACHE STRING "" FORCE)
+if(UNIX)
+    set(CUDA_NVCC_FLAGS_DEBUG    -Xcompiler -fPIC;-std=c++11;-g;-G CACHE STRING "" FORCE)
+    set(CUDA_NVCC_FLAGS_RELEASE  -Xcompiler -fPIC;-std=c++11;--use_fast_math;-g;-lineinfo CACHE STRING "" FORCE)
+    set(CUDA_NVCC_FLAGS_MINSIZEREL   -Xcompiler -fPIC;-std=c++11;--use_fast_math CACHE STRING "" FORCE)	
+endif()
+	
+if(WIN32)
+    set(CUDA_NVCC_FLAGS_DEBUG      -g;-G CACHE STRING "" FORCE)
+    set(CUDA_NVCC_FLAGS_RELEASE    --use_fast_math;-g;-GA;-lineinfo CACHE STRING "" FORCE)
+    set(CUDA_NVCC_FLAGS_MINSIZEREL --use_fast_math CACHE STRING "" FORCE)
+endif()
+
+# #CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 6.1)
+# #list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+#set(CMAKE_CUDA_ARCH 3.5 5 6 7.5) 
+#set(CMAKE_CUDA_CODE 3.5 5 6 7.5)
+
+#set(CUDA_NVCC_FLAGS_DEBUG          -Xcompiler -fPIC;-std=c++11;-g;-G CACHE STRING "" FORCE)
+#set(CUDA_NVCC_FLAGS_RELEASE        -Xcompiler -fPIC;-u-std=c++11;--use_fast_math;-g;-lineinfo CACHE STRING "" FORCE)
+#set(CUDA_NVCC_FLAGS_MINSIZEREL     -Xcompiler -fPIC;--std=c++11;-use_fast_math CACHE STRING "" FORCE)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_C_STANDARD   99)
@@ -103,7 +134,7 @@ set(CMAKE_BUILD_TYPE RELEASE)
 
 # Definitions 
 # -----------------------------------------------------------------------------
- add_definitions(-DDebug)
+add_definitions(-DDebug)
 
 if(with_fc2)
     add_definitions(-DWITH_FC2)
@@ -130,18 +161,18 @@ include_directories("./src/plugin/stampede")
 include_directories("./src/plugin/grab_detector")
 include_directories("./src/3rd_party/qcustomplot")
 
-
-if(UNIX)
-    set(HEFFALUMP_SRC_DIR /groups/branson/home/patilr/rutuja_heffalump/heffalump)
-    include_directories(${HEFFALUMP_SRC_DIR}/src/gpu)
-                        #${HEFFALUMP_SRC_DIR}/src)
-endif()
-
-if(WIN32)
-    set(HEFFALUMP_SRC_DIR C:/Users/patilr/rutuja_heffalump/heffalump)
-    include_directories(${HEFFALUMP_SRC_DIR}/src/gpu)
-                        #${HEFFALUMP_SRC_DIR}/src)
-endif()
+# KB 20240215 - don't compile heffalump
+#if(UNIX)
+#    set(HEFFALUMP_SRC_DIR /groups/branson/home/patilr/rutuja_heffalump/heffalump)
+#    include_directories(${HEFFALUMP_SRC_DIR}/src/gpu)
+#                        #${HEFFALUMP_SRC_DIR}/src)
+#endif()
+#
+#if(WIN32)
+#    set(HEFFALUMP_SRC_DIR C:/Users/patilr/rutuja_heffalump/heffalump)
+#    include_directories(${HEFFALUMP_SRC_DIR}/src/gpu)
+#                        #${HEFFALUMP_SRC_DIR}/src)
+#endif()
 
 if(with_demos) 
     include_directories(${CUDA_INCLUDE_DIRS} 
@@ -165,7 +196,6 @@ if(with_dc1394)
     #link_directories("/home/wbd/local/lib")
 endif()
 
-
 # External link libraries
 # -----------------------------------------------------------------------------
 set(bias_ext_link_LIBS ${OpenCV_LIBS})
@@ -188,6 +218,12 @@ if(with_dc1394)
     endif()
 endif()
 set(bias_ext_link_LIBS ${bias_ext_link_LIBS})
+
+# KB 20240215 - added to follow BIASJAABA
+if(with_demos)
+    set(bias_ext_link_LIBS ${bias_ext_link_LIBS} ${HDF5_CXX_LIBRARIES})
+endif()
+
 message(STATUS "${bias_ext_link_LIBS}")
 
 
