@@ -614,6 +614,11 @@ namespace bias {
 
         settings.pixelFormat = getPixelFormat();
 
+        // KB 20240215: debugging -- look at ALL properties of the nodeMapCamera
+        //std::vector<std::string> names = nodeMapCamera_.nodeNames();
+        //for (std::string &s : names)
+        //    std::cout << s << std::endl;
+
         //std::cout << __PRETTY_FUNCTION__ << std::endl;
         //settings.print();
 
@@ -631,6 +636,16 @@ namespace bias {
 
         if (format7Info.supported)
         {
+
+            IntegerNode_spin offsetXNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("OffsetX");
+            IntegerNode_spin offsetYNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("OffsetY");
+
+            // KB 20240215: temporarily set offsetX and offsetY to 0 so that we can get the max values
+            int64_t offsetX = offsetXNode.value();
+            int64_t offsetY = offsetYNode.value();
+            offsetXNode.setValue(0);
+            offsetYNode.setValue(0);
+
             IntegerNode_spin widthNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("Width");
             format7Info.maxWidth = (unsigned int)(widthNode.maxValue());
             format7Info.imageHStepSize = (unsigned int)(widthNode.increment());
@@ -639,10 +654,11 @@ namespace bias {
             format7Info.maxHeight = (unsigned int)(heightNode.maxValue());
             format7Info.imageVStepSize = (unsigned int)(heightNode.increment());
 
-            IntegerNode_spin offsetXNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("OffsetX");
-            format7Info.offsetHStepSize = (unsigned int)(offsetXNode.increment());
+            // KB 20240215: return offsetX and offsetY to their real values
+            offsetXNode.setValue(offsetX);
+            offsetYNode.setValue(offsetY);
 
-            IntegerNode_spin offsetYNode = nodeMapCamera_.getNodeByName<IntegerNode_spin>("OffsetY");
+            format7Info.offsetHStepSize = (unsigned int)(offsetXNode.increment());
             format7Info.offsetVStepSize = (unsigned int)(offsetYNode.increment());
 
         }
