@@ -56,6 +56,7 @@
 // ------------------------------------
 #include "stampede_plugin.hpp"
 #include "grab_detector_plugin.hpp"
+#include "flytrack_plugin.hpp"
 // -------------------------------------
 
 namespace bias
@@ -2580,6 +2581,7 @@ namespace bias
         pluginHandlerPtr_  = new PluginHandler(this);
         pluginMap_[StampedePlugin::PLUGIN_NAME] = new StampedePlugin(this);
         pluginMap_[GrabDetectorPlugin::PLUGIN_NAME] = new GrabDetectorPlugin(pluginImageLabelPtr_,this);
+        pluginMap_[FlyTrackPlugin::PLUGIN_NAME] = new FlyTrackPlugin(this);
         // -------------------------------------------------------------------------------
 
         setupStatusLabel();

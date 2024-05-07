@@ -739,6 +739,14 @@
     <string>Grab Detector</string>
    </property>
   </action>
+  <action name="actionFlyTrack">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>FlyTrack</string>
+   </property>
+  </action>
   <action name="actionLoggingFormatJPGPtr_">
    <property name="checkable">
     <bool>true</bool>

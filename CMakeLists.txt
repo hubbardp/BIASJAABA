@@ -162,6 +162,7 @@ include_directories("./src/gui")
 include_directories("./src/plugin/base")
 include_directories("./src/plugin/stampede")
 include_directories("./src/plugin/grab_detector")
+include_directories("./src/plugin/flytrack")
 include_directories("./src/3rd_party/qcustomplot")
 
 # KB 20240215 - don't compile heffalump
@@ -265,6 +266,7 @@ add_subdirectory("src/utility")
 add_subdirectory("src/plugin/base")
 add_subdirectory("src/plugin/stampede")
 add_subdirectory("src/plugin/grab_detector")
+add_subdirectory("src/plugin/flytrack")
 add_subdirectory("src/3rd_party/qcustomplot")
 
 if(with_qt_gui)

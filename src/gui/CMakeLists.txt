@@ -110,6 +110,7 @@ target_link_libraries(
     bias_utility
     stampede_plugin
     grab_detector_plugin
+    flytrack_plugin
     )
 
 qt5_use_modules(test_gui Core Gui Widgets Network PrintSupport SerialPort)
