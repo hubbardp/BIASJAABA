@@ -78,13 +78,15 @@ if(with_qt_gui)
 
 endif()
 
-set(HDF5_USE_STATIC_LIBRARIES ON)
-find_package(HDF5 COMPONENTS CXX)
-if(${HDF5_FOUND})
-    message(STATUS "HDF5 Found")
-else()
-    message(STATUS "HDF5 Not Found")
-endif()
+# KB 20240507 - removing dependencies on HDF5
+
+#set(HDF5_USE_STATIC_LIBRARIES ON)
+#find_package(HDF5 COMPONENTS CXX)
+#if(${HDF5_FOUND})
+#    message(STATUS "HDF5 Found")
+#else()
+#    message(STATUS "HDF5 Not Found")
+#endif()
 
 # Compiler flags
 # -----------------------------------------------------------------------------
@@ -94,29 +96,30 @@ endif()
 #set(CMAKE_CXX_FLAGS "-std=c++11 ")
 
 # KB 20240215 - cuda flags follow BIASJAABA
-if(UNIX)
-    CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 6.1)
-    list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
-endif()
+# KB 20240507 - remove CUDA
+#if(UNIX)
+#    CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 6.1)
+#    list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
+#endif()
 
-if(WIN32)
-   set(CMAKE_CUDA_ARCH 3.5 5 6 7.5) 
-   set(CMAKE_CUDA_CODE 3.5 5 6 7.5)
-endif()
+#if(WIN32)
+#   set(CMAKE_CUDA_ARCH 3.5 5 6 7.5) 
+#   set(CMAKE_CUDA_CODE 3.5 5 6 7.5)
+#endif()
 
-message(STATUS "${CMAKE_CUDA_ARCH}")
+#message(STATUS "${CMAKE_CUDA_ARCH}")
 
-if(UNIX)
-    set(CUDA_NVCC_FLAGS_DEBUG    -Xcompiler -fPIC;-std=c++11;-g;-G CACHE STRING "" FORCE)
-    set(CUDA_NVCC_FLAGS_RELEASE  -Xcompiler -fPIC;-std=c++11;--use_fast_math;-g;-lineinfo CACHE STRING "" FORCE)
-    set(CUDA_NVCC_FLAGS_MINSIZEREL   -Xcompiler -fPIC;-std=c++11;--use_fast_math CACHE STRING "" FORCE)	
-endif()
+#if(UNIX)
+#    set(CUDA_NVCC_FLAGS_DEBUG    -Xcompiler -fPIC;-std=c++11;-g;-G CACHE STRING "" FORCE)
+#    set(CUDA_NVCC_FLAGS_RELEASE  -Xcompiler -fPIC;-std=c++11;--use_fast_math;-g;-lineinfo CACHE STRING "" FORCE)
+#    set(CUDA_NVCC_FLAGS_MINSIZEREL   -Xcompiler -fPIC;-std=c++11;--use_fast_math CACHE STRING "" FORCE)	
+#endif()
 	
-if(WIN32)
-    set(CUDA_NVCC_FLAGS_DEBUG      -g;-G CACHE STRING "" FORCE)
-    set(CUDA_NVCC_FLAGS_RELEASE    --use_fast_math;-g;-GA;-lineinfo CACHE STRING "" FORCE)
-    set(CUDA_NVCC_FLAGS_MINSIZEREL --use_fast_math CACHE STRING "" FORCE)
-endif()
+#if(WIN32)
+#    set(CUDA_NVCC_FLAGS_DEBUG      -g;-G CACHE STRING "" FORCE)
+#    set(CUDA_NVCC_FLAGS_RELEASE    --use_fast_math;-g;-GA;-lineinfo CACHE STRING "" FORCE)
+#    set(CUDA_NVCC_FLAGS_MINSIZEREL --use_fast_math CACHE STRING "" FORCE)
+#endif()
 
 # #CUDA_SELECT_NVCC_ARCH_FLAGS(ARCH_FLAGS 6.1)
 # #list(APPEND CUDA_NVCC_FLAGS ${ARCH_FLAGS})
@@ -174,10 +177,16 @@ include_directories("./src/3rd_party/qcustomplot")
 #                        #${HEFFALUMP_SRC_DIR}/src)
 #endif()
 
-if(with_demos) 
-    include_directories(${CUDA_INCLUDE_DIRS} 
-                        ${HDF5_INCLUDE_DIRS})
-endif()
+# KB 20240507 removing HDF5 dependency
+#if(with_demos) 
+#    include_directories(${CUDA_INCLUDE_DIRS} 
+#                        ${HDF5_INCLUDE_DIRS})
+#endif()
+# KB 20240507 - remove CUDA
+#if(with_demos) 
+#    include_directories(${CUDA_INCLUDE_DIRS})
+#endif()
+
 
 if(with_fc2)
     include_directories(${FlyCapture2_INCLUDE_DIRS})
@@ -220,8 +229,12 @@ endif()
 set(bias_ext_link_LIBS ${bias_ext_link_LIBS})
 
 # KB 20240215 - added to follow BIASJAABA
+# KB 20240507 removing HDF5 dependency
+#if(with_demos)
+#    set(bias_ext_link_LIBS ${bias_ext_link_LIBS} ${HDF5_CXX_LIBRARIES})
+#endif()
 if(with_demos)
-    set(bias_ext_link_LIBS ${bias_ext_link_LIBS} ${HDF5_CXX_LIBRARIES})
+    set(bias_ext_link_LIBS ${bias_ext_link_LIBS})
 endif()
 
 message(STATUS "${bias_ext_link_LIBS}")
