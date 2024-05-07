@@ -188,7 +188,7 @@ namespace bias
     bool CompressedFrameCmp_jpg::operator() (
             const CompressedFrame_jpg &cmpFrame0,
             const CompressedFrame_jpg &cmpFrame1
-            )
+            ) const
     {
         bool haveImage0 = cmpFrame0.haveStampedImage();
         bool haveImage1 = cmpFrame1.haveStampedImage();

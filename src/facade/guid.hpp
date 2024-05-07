@@ -76,7 +76,7 @@ namespace bias {
     {
         // Comparision object for Guid objects
         public:
-            bool operator() (const Guid &guid0, const Guid &guid1);
+            bool operator() (const Guid &guid0, const Guid &guid1) const;
     };
 
     class GuidPtrCmp : public std::binary_function<GuidPtr, GuidPtr, bool>

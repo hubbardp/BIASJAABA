@@ -141,7 +141,7 @@ namespace bias {
     
     // Guid comparison operator
     // ------------------------------------------------------------------------
-    bool GuidCmp::operator() (const Guid &guid0, const Guid &guid1)
+    bool GuidCmp::operator() (const Guid &guid0, const Guid &guid1) const
     {
         if (guid0 == guid1) {
             return false;
