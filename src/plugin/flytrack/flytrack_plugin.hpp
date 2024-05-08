@@ -77,6 +77,19 @@ namespace bias
             QFile logFile_;
             QTextStream logStream_;
 
+            // parameters
+            int fgThresh_; // foreground threshold
+            int nFramesBgEst_; // number of frames used for background estimation
+
+            // color table for connected component plotting
+            std::vector<cv::Vec3b> colorTable_;
+
+			// processing of current frame
+            cv::Mat isFg_; // foreground mask
+            cv::Mat ccLabels_; // connected component labels
+            int nCCs_; // number of connected components found for current frame
+            int maxNCCs_; // maximum number of connected components plotted with different colors
+
             void setRequireTimer(bool value);
             void openLogFile();
             void closeLogFile();

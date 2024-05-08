@@ -21,6 +21,7 @@ option(with_dc1394  "include the libdc1394 backend"   OFF)
 option(with_spin    "include the spin backend"   ON)
 option(with_demos   "include demos" ON)
 option(with_tests   "include tests" ON)
+option(with_video_backend     "include video backend" ON)
 # KB 20240215 - follows options for BIASJAABA - include tests and demos
 #option(with_demos   "include demos" OFF)
 #option(with_tests   "include tests" OFF)
@@ -30,6 +31,7 @@ message(STATUS "Option: with_dc1394  = ${with_dc1394}")
 message(STATUS "Option: with_qt_gui  = ${with_qt_gui}")
 message(STATUS "Option: with_demos   = ${with_demos}")
 message(STATUS "Option: with_tests   = ${with_tests}") 
+message(STATUS "Option: with_video_backend     = ${with_video_backend}")
 
 if( NOT( with_fc2 OR with_dc1394 OR with_spin) )
     message(FATAL_ERROR "their must be at least one camera backend")
@@ -206,6 +208,10 @@ if(with_dc1394)
     #link_directories("/home/wbd/local/lib")
 endif()
 
+if(with_video_backend)
+    include_directories("./src/backend/video")
+endif()
+
 # External link libraries
 # -----------------------------------------------------------------------------
 set(bias_ext_link_LIBS ${OpenCV_LIBS})
@@ -259,6 +265,10 @@ endif()
 
 if(with_spin)
     add_subdirectory("src/backend/spin")
+endif()
+
+if(with_video_backend)
+    add_subdirectory("src/backend/video")
 endif()
 
 add_subdirectory("src/facade")

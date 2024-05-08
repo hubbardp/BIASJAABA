@@ -9,6 +9,7 @@
 #include "basic_types.hpp"
 #include "camera_fwd.hpp"
 #include "lockable.hpp"
+#include "video_utils.hpp"
 
 namespace bias
 {
@@ -35,6 +36,8 @@ namespace bias
                     std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr 
                     );
 
+            void initializeVidBackend();
+
             void stop();
             void enableErrorCount();
             void disableErrorCount();
@@ -56,6 +59,11 @@ namespace bias
             bool errorCountEnabled_;
             unsigned int numStartUpSkip_;
             unsigned int cameraNumber_;
+
+            // for reading from video instead of camera
+            bool isVideo_;
+            QString vidFileName_;
+            videoBackend* vidObj_;
 
             std::shared_ptr<Lockable<Camera>> cameraPtr_;
             std::shared_ptr<LockableQueue<StampedImage>> newImageQueuePtr_;

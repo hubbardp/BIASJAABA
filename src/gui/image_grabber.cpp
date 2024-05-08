@@ -8,6 +8,7 @@
 #include <QThread>
 #include <QFileInfo>
 #include <opencv2/core/core.hpp>
+#include "video_utils.hpp"
 
 // TEMPOERARY
 // ----------------------------------------
@@ -57,7 +58,21 @@ namespace bias {
             ready_ = false;
         }
         errorCountEnabled_ = true;
+
+        // read from video instead
+        isVideo_ = false;
+        vidFileName_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1.avi");
+
     }
+
+    void ImageGrabber::initializeVidBackend()
+    {
+        printf("Reading from video file %s\n", vidFileName_.toStdString().c_str());
+        vidObj_ = new videoBackend(vidFileName_);
+        int vid_numFrames = vidObj_->getNumFrames();
+        printf("Video has %d frames\n", vid_numFrames);
+        vidObj_->checkCapOpen();
+	}
 
     void ImageGrabber::stop()
     {
@@ -108,25 +123,31 @@ namespace bias {
         ThreadAffinityService::assignThreadAffinity(true,cameraNumber_);
 
         // Start image capture
-        cameraPtr_ -> acquireLock();
-        try
-        {
-            cameraPtr_ -> startCapture();
+        if (isVideo_) {
+            initializeVidBackend();
         }
-        catch (RuntimeError &runtimeError)
-        {
-            error = true;
-            errorId = runtimeError.id();
-            errorMsg = QString::fromStdString(runtimeError.what());
-        }
-        cameraPtr_ -> releaseLock();
+        else {
+            cameraPtr_->acquireLock();
+            try
+            {
+                cameraPtr_->startCapture();
+            }
+            catch (RuntimeError& runtimeError)
+            {
+                error = true;
+                errorId = runtimeError.id();
+                errorMsg = QString::fromStdString(runtimeError.what());
+            }
+            cameraPtr_->releaseLock();
 
-        if (error)
-        {
-            emit startCaptureError(errorId, errorMsg);
-            errorEmitted = true;
-            return;
-        } 
+            if (error)
+            {
+                emit startCaptureError(errorId, errorMsg);
+                errorEmitted = true;
+                return;
+            }
+        }
+
 
         acquireLock();
         stopped_ = false;
@@ -163,21 +184,39 @@ namespace bias {
             releaseLock();
 
             // Grab an image
-            cameraPtr_ -> acquireLock();
-            try
-            {
-                stampImg.image = cameraPtr_ -> grabImage();
-                timeStamp = cameraPtr_ -> getImageTimeStamp();
-                error = false;
+            if (isVideo_) {
+                try
+                {
+                    stampImg.image = vidObj_->grabImage();
+                    if (stampImg.image.empty()) {
+                        done = true;
+                    }
+                    timeStamp = vidObj_->getImageTimeStamp();
+                }
+                catch (RuntimeError& runtimeError)
+				{
+					std::cout << "Video frame grab error: id = ";
+					std::cout << runtimeError.id() << ", what = ";
+					std::cout << runtimeError.what() << std::endl;
+					error = true;
+				}
             }
-            catch (RuntimeError &runtimeError)
-            {
-                std::cout << "Frame grab error: id = ";
-                std::cout << runtimeError.id() << ", what = "; 
-                std::cout << runtimeError.what() << std::endl;
-                error = true;
+            else {
+                cameraPtr_->acquireLock();
+                try
+                {
+                    stampImg.image = cameraPtr_->grabImage();
+                    timeStamp = cameraPtr_->getImageTimeStamp();
+                }
+                catch (RuntimeError& runtimeError)
+                {
+                    std::cout << "Frame grab error: id = ";
+                    std::cout << runtimeError.id() << ", what = ";
+                    std::cout << runtimeError.what() << std::endl;
+                    error = true;
+                }
+                cameraPtr_->releaseLock();
             }
-            cameraPtr_ -> releaseLock();
 
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty()) 
@@ -292,19 +331,23 @@ namespace bias {
 
         // Stop image capture
         error = false;
-        cameraPtr_ -> acquireLock();
-        try
-        {
-            cameraPtr_ -> stopCapture();
+        if (isVideo_) {
+            vidObj_->releaseCapObject();
         }
-        catch (RuntimeError &runtimeError)
-        {
-            error = true;
-            errorId = runtimeError.id();
-            errorMsg = QString::fromStdString(runtimeError.what());
+        else {
+            cameraPtr_->acquireLock();
+            try
+            {
+                cameraPtr_->stopCapture();
+            }
+            catch (RuntimeError& runtimeError)
+            {
+                error = true;
+                errorId = runtimeError.id();
+                errorMsg = QString::fromStdString(runtimeError.what());
+            }
+            cameraPtr_->releaseLock();
         }
-        cameraPtr_ -> releaseLock();
-
         if ((error) && (!errorEmitted))
         { 
             emit stopCaptureError(errorId, errorMsg);

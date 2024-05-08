@@ -122,7 +122,7 @@ namespace bias
                     if (!skipReported_)
                     {
                         unsigned int errorId = ERROR_FRAMES_TODO_MAX_QUEUE_SIZE;
-                        QString errorMsg("jpg compressor frames finished set has exceeded the maximum allowed size");
+                        QString errorMsg("ufmf compressor frames finished set has exceeded the maximum allowed size");
                         emit imageLoggingError(errorId, errorMsg);
                         skipReported_ = true;
                     }
