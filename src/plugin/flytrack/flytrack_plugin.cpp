@@ -46,6 +46,7 @@ namespace bias
         roiCenterY_ = 480.2917;
         roiRadius_ = 428.3618;
 
+        bgImageComputed_ = false;
         active_ = false;
         isFirst_ = true;
 
@@ -237,15 +238,6 @@ namespace bias
                 cv::bitwise_not(isFg_, isFg_);
 				break;
 		}
-        if (flyVsBgMode_ == FLY_DARKER_THAN_BG)
-        {
-            isFg_ = currentImage_ < bgLowerBoundImage_;
-		}
-        else
-        {
-			cv::inRange(currentImage_, bgUpperBoundImage_, bgLowerBoundImage_, isFg_);
-		}
-        cv::inRange(currentImage_, bgLowerBoundImage_, bgUpperBoundImage_, isFg_);
         cv::absdiff(bgMedianImage_, currentImage_, dBkgd_);
 
         if (isFirst_){
