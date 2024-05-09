@@ -29,6 +29,11 @@ namespace bias
             static const QString PLUGIN_DISPLAY_NAME;
             static const QString LOG_FILE_EXTENSION;
             static const QString LOG_FILE_POSTFIX;
+            static const unsigned int DEFAULT_NUM_BINS;
+            static const unsigned int DEFAULT_BIN_SIZE;
+            static const unsigned int FLY_DARKER_THAN_BG;
+            static const unsigned int FLY_BRIGHTER_THAN_BG;
+            static const unsigned int FLY_ANY_DIFFERENCE_BG;
 
             FlyTrackPlugin(QWidget *parent=0);
             bool pluginsEnabled();
@@ -56,6 +61,8 @@ namespace bias
             virtual QString getLogFileName(bool includeAutoNaming);
             virtual QString getLogFileFullPath(bool includeAutoNaming);
 
+            void computeBackgroundMedian();
+
         signals:
 
             void setCaptureDurationRequest(unsigned long);
@@ -78,8 +85,17 @@ namespace bias
             QTextStream logStream_;
 
             // parameters
-            int fgThresh_; // foreground threshold
-            int nFramesBgEst_; // number of frames used for background estimation
+            int backgroundThreshold_; // foreground threshold
+            int nFramesBgEst_; // number of frames used for background estimation, set to 0 to use all frames
+            int lastFrameSample_; // last frame sampled for background estimation, set to 0 to use last frame of video
+            int flyVsBgMode_; // whether the fly is darker than the background
+
+            QString bgVideoFilePath_; // video to estimate background from
+            QString bgImageFilePath_; // saved background median estimate
+            cv::Mat bgMedianImage_; // median background image
+            cv::Mat bgLowerBoundImage_; // lower bound image for background
+            cv::Mat bgUpperBoundImage_; // upper bound image for background
+			bool bgImageComputed_; // flag indicating if background image has been computed
 
             // color table for connected component plotting
             std::vector<cv::Vec3b> colorTable_;

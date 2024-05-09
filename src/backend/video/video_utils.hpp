@@ -32,6 +32,7 @@ namespace bias {
         void preprocess_vidFrame(cv::Mat& cur_Img);
         void releaseCapObject();
         void checkCapOpen();
+        bool setFrame(int f);
 
     private:
 

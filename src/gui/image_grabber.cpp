@@ -60,7 +60,7 @@ namespace bias {
         errorCountEnabled_ = true;
 
         // read from video instead
-        isVideo_ = false;
+        isVideo_ = true;
         vidFileName_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1.avi");
 
     }

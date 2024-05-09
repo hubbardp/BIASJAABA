@@ -9,6 +9,7 @@ namespace bias {
 
     videoBackend::videoBackend() {
         isOpen_ = false;
+        dt_ = 1.0 / 30.0;
     }
 
     videoBackend::videoBackend(QString file) {
@@ -91,6 +92,12 @@ namespace bias {
 
         return cap_.get(cv::CAP_PROP_POS_FRAMES);
     }
+
+    bool videoBackend::setFrame(int f) {
+
+		return cap_.set(cv::CAP_PROP_POS_FRAMES, f);
+
+	}
 
     TimeStamp videoBackend::getImageTimeStamp() {
 
