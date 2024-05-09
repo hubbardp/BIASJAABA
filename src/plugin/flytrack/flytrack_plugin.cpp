@@ -38,9 +38,16 @@ namespace bias
         nFramesBgEst_ = 100;
         bgVideoFilePath_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1.avi");
         bgImageFilePath_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1_bg.png");
-        lastFrameSample_ = 20000;
+        tmpOutDir_ = QString("C:\\Code\\BIAS\\testdata\\tmp");
+        lastFrameSample_ = -1;
+
+        // parameters for region of interest
+        roiCenterX_ = 468.6963;
+        roiCenterY_ = 480.2917;
+        roiRadius_ = 428.3618;
 
         active_ = false;
+        isFirst_ = true;
 
         // initialize the color table
         //fprintf(stderr, "Initializing color table\n");
@@ -53,60 +60,47 @@ namespace bias
         setRequireTimer(false);
     }
 
-    void FlyTrackPlugin::computeBackgroundMedian() {
+    void FlyTrackPlugin::setBackgroundModel() {
 
         cv::Mat bgMedianImage;
         // check if bgImageFilePath_ exists
         if (QFile::exists(bgImageFilePath_)) {
+            loadBackgroundModel(bgMedianImage, bgImageFilePath_);
             printf("Reading background image from %s\n",bgImageFilePath_.toStdString().c_str());
         	bgMedianImage = cv::imread(bgImageFilePath_.toStdString(), cv::IMREAD_GRAYSCALE);
             printf("Done\n");
             fflush(stdout);
 		}
         else {
-            videoBackend vidObj = videoBackend(bgVideoFilePath_);
-            int nFrames = vidObj.getNumFrames();
-
-            StampedImage newStampedImg;
-            newStampedImg.image = vidObj.grabImage();
-
-            BackgroundData_ufmf backgroundData;
-            backgroundData = BackgroundData_ufmf(newStampedImg, DEFAULT_NUM_BINS, DEFAULT_BIN_SIZE);
-            backgroundData.addImage(newStampedImg);
-
-            // which frames to sample
-            int nFramesBgEst = nFramesBgEst_;
-            int lastFrameSample = lastFrameSample_;
-            if (nFrames < nFramesBgEst_ || nFramesBgEst_ <= 0) nFramesBgEst = nFrames;
-            if (nFrames < lastFrameSample_ || lastFrameSample_ <= 0) lastFrameSample = nFrames;
-            int nFramesSkip = lastFrameSample / nFramesBgEst;
-
-            // add evenly spaced frames to the background model
-            printf("Reading frames for background estimation\n");
-            for (int f = nFramesSkip; f < lastFrameSample; f += nFramesSkip) {
-                printf("Reading frame %d\n", f);
-                fflush(stdout);
-                vidObj.setFrame(f);
-                newStampedImg.image = vidObj.grabImage();
-                backgroundData.addImage(newStampedImg);
-            }
-            printf("Finished reading.\n");
-            // compute the median image
-            printf("Computing median image\n");
-            fflush(stdout);
-            bgMedianImage = backgroundData.getMedianImage();
-            printf("Done\n");
-            fflush(stdout);
-            // save the median image
-            printf("Saving median image to %s\n",bgImageFilePath_.toStdString().c_str());
-            cv::imwrite(bgImageFilePath_.toStdString(), bgMedianImage);
-            printf("Done\n");
-            fflush(stdout);
-            backgroundData.clear();
+            computeBackgroundMedian(bgMedianImage);
         }
+
+        // store background model
+        storeBackgroundModel(bgMedianImage);
         acquireLock();
         bgMedianImage_ = bgMedianImage.clone();
 		bgImageComputed_ = true;
+        cv::add(bgMedianImage, backgroundThreshold_, bgUpperBoundImage_);
+        cv::subtract(bgMedianImage, backgroundThreshold_, bgLowerBoundImage_);
+        releaseLock();
+
+        printf("Finished computing background model\n");
+        fflush(stdout);
+
+    }
+
+    void FlyTrackPlugin::loadBackgroundModel(cv::Mat& bgMedianImage, QString bgImageFilePath) {
+        printf("Reading background image from %s\n", bgImageFilePath_.toStdString().c_str());
+        bgMedianImage = cv::imread(bgImageFilePath_.toStdString(), cv::IMREAD_GRAYSCALE);
+        printf("Done\n");
+        fflush(stdout);
+    }
+
+    void FlyTrackPlugin::storeBackgroundModel(cv::Mat& bgMedianImage) {
+
+        acquireLock();
+        bgMedianImage_ = bgMedianImage.clone();
+        bgImageComputed_ = true;
         if (flyVsBgMode_ == FLY_DARKER_THAN_BG) {
             bgUpperBoundImage_ = bgMedianImage.clone();
         }
@@ -114,16 +108,56 @@ namespace bias
             cv::add(bgMedianImage, backgroundThreshold_, bgUpperBoundImage_);
         }
         if (flyVsBgMode_ == FLY_BRIGHTER_THAN_BG) {
-			bgLowerBoundImage_ = bgMedianImage.clone();
-		}
+            bgLowerBoundImage_ = bgMedianImage.clone();
+        }
         else {
             cv::subtract(bgMedianImage, backgroundThreshold_, bgLowerBoundImage_);
         }
         releaseLock();
 
-        printf("Finished computing background model\n");
-        fflush(stdout);
+    }
 
+    void FlyTrackPlugin::computeBackgroundMedian(cv::Mat& bgMedianImage) {
+        videoBackend vidObj = videoBackend(bgVideoFilePath_);
+        int nFrames = vidObj.getNumFrames();
+
+        StampedImage newStampedImg;
+        newStampedImg.image = vidObj.grabImage();
+
+        BackgroundData_ufmf backgroundData;
+        backgroundData = BackgroundData_ufmf(newStampedImg, DEFAULT_NUM_BINS, DEFAULT_BIN_SIZE);
+        backgroundData.addImage(newStampedImg);
+
+        // which frames to sample
+        int nFramesBgEst = nFramesBgEst_;
+        int lastFrameSample = lastFrameSample_;
+        if (nFrames < nFramesBgEst_ || nFramesBgEst_ <= 0) nFramesBgEst = nFrames;
+        if (nFrames < lastFrameSample_ || lastFrameSample_ <= 0) lastFrameSample = nFrames;
+        int nFramesSkip = lastFrameSample / nFramesBgEst;
+
+        // add evenly spaced frames to the background model
+        printf("Reading frames for background estimation\n");
+        fflush(stdout);
+        for (int f = nFramesSkip; f < lastFrameSample; f += nFramesSkip) {
+            printf("Reading frame %d\n", f);
+            fflush(stdout);
+            vidObj.setFrame(f);
+            newStampedImg.image = vidObj.grabImage();
+            backgroundData.addImage(newStampedImg);
+        }
+        printf("Finished reading.\n");
+        // compute the median image
+        printf("Computing median image\n");
+        fflush(stdout);
+        bgMedianImage = backgroundData.getMedianImage();
+        printf("Done\n");
+        fflush(stdout);
+        // save the median image
+        printf("Saving median image to %s\n", bgImageFilePath_.toStdString().c_str());
+        cv::imwrite(bgImageFilePath_.toStdString(), bgMedianImage);
+        printf("Done\n");
+        fflush(stdout);
+        backgroundData.clear();
     }
 
     void FlyTrackPlugin::reset()
@@ -147,7 +181,7 @@ namespace bias
         active_ = value;
         // compute background model
         if (value && !bgImageComputed_) {
-            computeBackgroundMedian();
+            setBackgroundModel();
         }
     }
 
@@ -171,13 +205,67 @@ namespace bias
         currentImage_ = latestFrame.image;
         timeStamp_ = latestFrame.timeStamp;
         frameCount_ = latestFrame.frameCount;
+        // empty frame
         if ((currentImage_.rows == 0) || (currentImage_.cols == 0))
         {
 			releaseLock();
 			return;
 		}
+        // mismatched sizes
+        if ((bgMedianImage_.rows != currentImage_.rows) || (bgMedianImage_.cols != currentImage_.cols)
+            || bgMedianImage_.type() != currentImage_.type())
+        {
+            fprintf(stderr, "Background model and current image are not the same size\n");
+            fprintf(stderr, "Background model: %d x %d, type %d\n", 
+                bgMedianImage_.rows, bgMedianImage_.cols, bgMedianImage_.type());
+            fprintf(stderr, "Current image: %d x %d, type %d\n",
+                currentImage_.rows, currentImage_.cols, currentImage_.type());
+			releaseLock();
+			return;
+		}
+
         // Get background/foreground membership, 255=background, 0=foreground
+        switch(flyVsBgMode_){
+			case FLY_DARKER_THAN_BG:
+				isFg_ = currentImage_ < bgLowerBoundImage_;
+				break;
+			case FLY_BRIGHTER_THAN_BG:
+				isFg_ = currentImage_ > bgUpperBoundImage_;
+				break;
+			case FLY_ANY_DIFFERENCE_BG:
+				cv::inRange(currentImage_, bgLowerBoundImage_, bgUpperBoundImage_, isFg_);
+                cv::bitwise_not(isFg_, isFg_);
+				break;
+		}
+        if (flyVsBgMode_ == FLY_DARKER_THAN_BG)
+        {
+            isFg_ = currentImage_ < bgLowerBoundImage_;
+		}
+        else
+        {
+			cv::inRange(currentImage_, bgUpperBoundImage_, bgLowerBoundImage_, isFg_);
+		}
         cv::inRange(currentImage_, bgLowerBoundImage_, bgUpperBoundImage_, isFg_);
+        cv::absdiff(bgMedianImage_, currentImage_, dBkgd_);
+
+        if (isFirst_){
+			isFirst_ = false;
+            //output dBkgd to file
+            QString tmpOutFile = tmpOutDir_ + QString("/dBkgd.png");
+            cv::imwrite(tmpOutFile.toStdString(), dBkgd_);
+            //output isFg to file
+            tmpOutFile = tmpOutDir_ + QString("/isFg.png");
+            cv::imwrite(tmpOutFile.toStdString(), isFg_);
+            //output lower bound to file
+            tmpOutFile = tmpOutDir_ + QString("/bgLowerBound.png");
+            cv::imwrite(tmpOutFile.toStdString(), bgLowerBoundImage_);
+            //output upper bound to file
+            tmpOutFile = tmpOutDir_ + QString("/bgUpperBound.png");
+            cv::imwrite(tmpOutFile.toStdString(), bgUpperBoundImage_);
+			releaseLock();
+			return;
+		}
+
         //cv::threshold(currentImage_, isFg_, backgroundThreshold_, 255, cv::THRESH_BINARY_INV);
         // find connected components in isFg_
         //cv::Mat stats;
@@ -194,6 +282,8 @@ namespace bias
     cv::Mat FlyTrackPlugin::getCurrentImage()
     {
         cv::Mat currentImageCopy;
+        enum DisplayMode {FGTHRESH,DBKGD};
+        DisplayMode displayMode = FGTHRESH;
         bool showfgbg = true;
         acquireLock();
         //cv::Mat currentImageCopy = currentImage_.clone();
@@ -206,20 +296,9 @@ namespace bias
         // Map component labels to hue val, 0 - 179 is the hue range in OpenCV
         // allocate a matrix the same size as label_hue that is all 255
 
-        if (showfgbg) {
-            currentImageCopy = isFg_.clone();
-        }
-        else {
-            //currentImageCopy.create(currentImage_.size(), CV_8UC3);
-            //for (int r = 0; r < currentImageCopy.rows; ++r) {
-            //    for (int c = 0; c < currentImageCopy.cols; ++c) {
-            //        int label = ccLabels_.at<int>(r, c);
-            //        if (label < maxNCCs_) {
-            //            cv::Vec3b& pixel = currentImageCopy.at<cv::Vec3b>(r, c);
-            //            pixel = colorTable_[label];
-            //        }
-            //    }
-            //}
+        switch(displayMode){
+            case FGTHRESH: currentImageCopy = isFg_.clone(); break;
+            case DBKGD: currentImageCopy = dBkgd_.clone(); break;
         }
         releaseLock();
         return currentImageCopy;
