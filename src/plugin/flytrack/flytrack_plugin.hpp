@@ -19,6 +19,17 @@ namespace bias
 
     class CameraWindow;
 
+    enum ROIType { CIRCLE, NONE};
+
+    struct EllipseParams
+    {
+		double x;
+		double y;
+		double a;
+		double b;
+		double theta;
+	};
+
     class FlyTrackPlugin : public BiasPlugin
     {
         Q_OBJECT
@@ -65,6 +76,11 @@ namespace bias
             void computeBackgroundMedian(cv::Mat& bgMedianImage);
             void storeBackgroundModel(cv::Mat& bgMedianImage);
             void loadBackgroundModel(cv::Mat& bgMedianImage,QString bgImageFilePath);
+            cv::Mat circleROI(double centerX, double centerY, double centerRadius);
+            void backgroundSubtraction(cv::Mat& currentImage, cv::Mat& isFg);
+            int largestConnectedComponent(cv::Mat& isFg);
+            void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse);
+            void setROI();
 
         signals:
 
@@ -92,9 +108,11 @@ namespace bias
             int nFramesBgEst_; // number of frames used for background estimation, set to 0 to use all frames
             int lastFrameSample_; // last frame sampled for background estimation, set to 0 to use last frame of video
             int flyVsBgMode_; // whether the fly is darker than the background
+            ROIType roiType_; // type of ROI
             double roiCenterX_ = 468.6963; // x-coordinate of ROI center
             double roiCenterY_ = 480.2917; // y-coordinate of ROI center
             double roiRadius_ = 428.3618; // radius of ROI
+            bool DEBUG_; // flag for debugging
 
             bool isFirst_; // flag indicating if this is the first frame
             QString bgVideoFilePath_; // video to estimate background from
@@ -112,15 +130,11 @@ namespace bias
 			// processing of current frame
             cv::Mat isFg_; // foreground mask
             cv::Mat dBkgd_; // absolute difference from background
-            cv::Mat ccLabels_; // connected component labels
-            int nCCs_; // number of connected components found for current frame
-            int maxNCCs_; // maximum number of connected components plotted with different colors
+            EllipseParams flyEllipse_; // fly ellipse parameters
 
             void setRequireTimer(bool value);
             void openLogFile();
             void closeLogFile();
-
-
 
     };
 

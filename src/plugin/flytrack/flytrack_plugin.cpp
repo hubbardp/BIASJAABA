@@ -6,6 +6,8 @@
 #include <iostream>
 #include "background_data_ufmf.hpp"
 #include "video_utils.hpp"
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 namespace bias
 {
@@ -31,7 +33,6 @@ namespace bias
 
         // parameters for background subtraction
         backgroundThreshold_ = 75;
-        maxNCCs_ = 10;
         flyVsBgMode_ = FLY_DARKER_THAN_BG;
 
         // parameters for background estimation
@@ -40,8 +41,10 @@ namespace bias
         bgImageFilePath_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1_bg.png");
         tmpOutDir_ = QString("C:\\Code\\BIAS\\testdata\\tmp");
         lastFrameSample_ = -1;
+        DEBUG_ = true;
 
         // parameters for region of interest
+        roiType_ = CIRCLE;
         roiCenterX_ = 468.6963;
         roiCenterY_ = 480.2917;
         roiRadius_ = 428.3618;
@@ -50,16 +53,23 @@ namespace bias
         active_ = false;
         isFirst_ = true;
 
-        // initialize the color table
-        //fprintf(stderr, "Initializing color table\n");
-        //colorTable_.reserve(maxNCCs_);
-        //colorTable_[0] = cv::Vec3b(0, 0, 0); // background
-        //for (int label = 1; label < maxNCCs_; ++label)
-        //{
-        //    colorTable_[label] = cv::Vec3b((label * 180 / maxNCCs_) % 180, 255, 255);
-        //}
         setRequireTimer(false);
     }
+
+    cv::Mat FlyTrackPlugin::circleROI(double centerX, double centerY, double centerRadius){
+        cv::Mat mask = cv::Mat::zeros(bgMedianImage_.size(), CV_8U);
+  		cv::circle(mask, cv::Point(centerX, centerY), centerRadius, cv::Scalar(255), -1);
+   		return mask;
+    }
+
+    void FlyTrackPlugin::setROI() {
+        // roi mask
+        switch (roiType_) {
+        case CIRCLE:
+            inROI_ = circleROI(roiCenterX_, roiCenterY_, roiRadius_);
+            break;
+        }
+	}
 
     void FlyTrackPlugin::setBackgroundModel() {
 
@@ -67,26 +77,35 @@ namespace bias
         // check if bgImageFilePath_ exists
         if (QFile::exists(bgImageFilePath_)) {
             loadBackgroundModel(bgMedianImage, bgImageFilePath_);
-            printf("Reading background image from %s\n",bgImageFilePath_.toStdString().c_str());
-        	bgMedianImage = cv::imread(bgImageFilePath_.toStdString(), cv::IMREAD_GRAYSCALE);
-            printf("Done\n");
-            fflush(stdout);
 		}
         else {
             computeBackgroundMedian(bgMedianImage);
         }
 
         // store background model
-        storeBackgroundModel(bgMedianImage);
         acquireLock();
-        bgMedianImage_ = bgMedianImage.clone();
-		bgImageComputed_ = true;
-        cv::add(bgMedianImage, backgroundThreshold_, bgUpperBoundImage_);
-        cv::subtract(bgMedianImage, backgroundThreshold_, bgLowerBoundImage_);
+        storeBackgroundModel(bgMedianImage);
+
+        // roi mask
+        setROI();
+
+        bgImageComputed_ = true;
         releaseLock();
 
+        //output lower bound to file
+        if (DEBUG_) {
+            QString tmpOutFile;
+            tmpOutFile = tmpOutDir_ + QString("/bgLowerBound.png");
+            cv::imwrite(tmpOutFile.toStdString(), bgLowerBoundImage_);
+            //output upper bound to file
+            tmpOutFile = tmpOutDir_ + QString("/bgUpperBound.png");
+            cv::imwrite(tmpOutFile.toStdString(), bgUpperBoundImage_);
+            //output ROI to file
+            tmpOutFile = tmpOutDir_ + QString("/inROI.png");
+            cv::imwrite(tmpOutFile.toStdString(), inROI_);
+        }
+
         printf("Finished computing background model\n");
-        fflush(stdout);
 
     }
 
@@ -99,23 +118,9 @@ namespace bias
 
     void FlyTrackPlugin::storeBackgroundModel(cv::Mat& bgMedianImage) {
 
-        acquireLock();
         bgMedianImage_ = bgMedianImage.clone();
-        bgImageComputed_ = true;
-        if (flyVsBgMode_ == FLY_DARKER_THAN_BG) {
-            bgUpperBoundImage_ = bgMedianImage.clone();
-        }
-        else {
-            cv::add(bgMedianImage, backgroundThreshold_, bgUpperBoundImage_);
-        }
-        if (flyVsBgMode_ == FLY_BRIGHTER_THAN_BG) {
-            bgLowerBoundImage_ = bgMedianImage.clone();
-        }
-        else {
-            cv::subtract(bgMedianImage, backgroundThreshold_, bgLowerBoundImage_);
-        }
-        releaseLock();
-
+        cv::add(bgMedianImage, backgroundThreshold_, bgUpperBoundImage_);
+        cv::subtract(bgMedianImage, backgroundThreshold_, bgLowerBoundImage_);
     }
 
     void FlyTrackPlugin::computeBackgroundMedian(cv::Mat& bgMedianImage) {
@@ -198,6 +203,69 @@ namespace bias
         return requireTimer_;
     }
 
+    void FlyTrackPlugin::backgroundSubtraction(cv::Mat& currentImage,cv::Mat& isFg) {
+        // Get background/foreground membership, 255=background, 0=foreground
+        switch (flyVsBgMode_) {
+        case FLY_DARKER_THAN_BG:
+            isFg = currentImage < bgLowerBoundImage_;
+            break;
+        case FLY_BRIGHTER_THAN_BG:
+            isFg = currentImage > bgUpperBoundImage_;
+            break;
+        case FLY_ANY_DIFFERENCE_BG:
+            cv::inRange(currentImage, bgLowerBoundImage_, bgUpperBoundImage_, isFg);
+            cv::bitwise_not(isFg, isFg);
+            break;
+        }
+        if (roiType_ != NONE) {
+            cv::bitwise_and(isFg, inROI_, isFg);
+        }
+    }
+
+    // find largest connected components in isFg
+    int FlyTrackPlugin::largestConnectedComponent(cv::Mat& isFg) {
+        cv::Mat ccLabels;
+        int nCCs = cv::connectedComponents(isFg, ccLabels);
+        // find largest connected component
+        int maxArea = 0;
+        int cc = 0;
+        int currArea;
+        for (int i = 1; i < nCCs; i++) {
+            currArea = cv::countNonZero(ccLabels == i);
+            if (currArea > maxArea) {
+                maxArea = currArea;
+                cc = i;
+            }
+        }
+        isFg = ccLabels == cc;
+        return maxArea;
+    }
+
+    void FlyTrackPlugin::fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse) {
+
+        // eigen decomposition of covariance matrix
+        // this probably isn't the fastest way to do this, but
+        // it seems to work
+        cv::Mat fgPixels;
+        cv::findNonZero(isFg, fgPixels);
+        cv::Mat fgPixelsD = cv::Mat::zeros(fgPixels.rows, 2, CV_64F);
+        for (int i = 0; i < fgPixels.rows; i++) {
+			fgPixelsD.at<double>(i, 0) = fgPixels.at<cv::Point>(i).x;
+			fgPixelsD.at<double>(i, 1) = fgPixels.at<cv::Point>(i).y;
+		}
+        cv::PCA pca_analysis(fgPixelsD, cv::Mat(), cv::PCA::DATA_AS_ROW);
+        flyEllipse.x = pca_analysis.mean.at<double>(0, 0);
+        flyEllipse.y = pca_analysis.mean.at<double>(0, 1);
+        // orientation of ellipse (modulo pi)
+        flyEllipse.theta = std::atan2(pca_analysis.eigenvectors.at<double>(0, 1), 
+            pca_analysis.eigenvectors.at<double>(0, 0));
+        // semi major, minor axis lengths
+        double lambda1 = pca_analysis.eigenvalues.at<double>(0);
+        double lambda2 = pca_analysis.eigenvalues.at<double>(1);
+        flyEllipse.a = std::sqrt(lambda1)*2.0;
+        flyEllipse.b = std::sqrt(lambda2)*2.0;
+    }
+
     void FlyTrackPlugin::processFrames(QList<StampedImage> frameList) 
     { 
         acquireLock();
@@ -217,56 +285,25 @@ namespace bias
             || bgMedianImage_.type() != currentImage_.type())
         {
             fprintf(stderr, "Background model and current image are not the same size\n");
-            fprintf(stderr, "Background model: %d x %d, type %d\n", 
-                bgMedianImage_.rows, bgMedianImage_.cols, bgMedianImage_.type());
-            fprintf(stderr, "Current image: %d x %d, type %d\n",
-                currentImage_.rows, currentImage_.cols, currentImage_.type());
 			releaseLock();
 			return;
 		}
 
         // Get background/foreground membership, 255=background, 0=foreground
-        switch(flyVsBgMode_){
-			case FLY_DARKER_THAN_BG:
-				isFg_ = currentImage_ < bgLowerBoundImage_;
-				break;
-			case FLY_BRIGHTER_THAN_BG:
-				isFg_ = currentImage_ > bgUpperBoundImage_;
-				break;
-			case FLY_ANY_DIFFERENCE_BG:
-				cv::inRange(currentImage_, bgLowerBoundImage_, bgUpperBoundImage_, isFg_);
-                cv::bitwise_not(isFg_, isFg_);
-				break;
-		}
-        cv::absdiff(bgMedianImage_, currentImage_, dBkgd_);
+        backgroundSubtraction(currentImage_, isFg_);
 
         if (isFirst_){
 			isFirst_ = false;
-            //output dBkgd to file
-            QString tmpOutFile = tmpOutDir_ + QString("/dBkgd.png");
-            cv::imwrite(tmpOutFile.toStdString(), dBkgd_);
-            //output isFg to file
+            QString tmpOutFile;
             tmpOutFile = tmpOutDir_ + QString("/isFg.png");
             cv::imwrite(tmpOutFile.toStdString(), isFg_);
-            //output lower bound to file
-            tmpOutFile = tmpOutDir_ + QString("/bgLowerBound.png");
-            cv::imwrite(tmpOutFile.toStdString(), bgLowerBoundImage_);
-            //output upper bound to file
-            tmpOutFile = tmpOutDir_ + QString("/bgUpperBound.png");
-            cv::imwrite(tmpOutFile.toStdString(), bgUpperBoundImage_);
-			releaseLock();
-			return;
 		}
 
-        //cv::threshold(currentImage_, isFg_, backgroundThreshold_, 255, cv::THRESH_BINARY_INV);
         // find connected components in isFg_
-        //cv::Mat stats;
-        //cv::Mat centroids;
-        //nCCs_ = cv::connectedComponentsWithStats(isFg_, ccLabels_, stats, centroids);
-        // count number of foreground pixels
-        //int fgCount = cv::countNonZero(isFg_);
-        //printf("Timestamp: %f, nCCs: %d\n", timeStamp_,nCCs_);
+        int ccArea = largestConnectedComponent(isFg_);
 
+        // compute mean and covariance of pixels in foreground
+        fitEllipse(isFg_, flyEllipse_);
         releaseLock();
     } 
 
@@ -274,24 +311,14 @@ namespace bias
     cv::Mat FlyTrackPlugin::getCurrentImage()
     {
         cv::Mat currentImageCopy;
-        enum DisplayMode {FGTHRESH,DBKGD};
-        DisplayMode displayMode = FGTHRESH;
-        bool showfgbg = true;
         acquireLock();
-        //cv::Mat currentImageCopy = currentImage_.clone();
-        // make an image that is white where ccLabels_ == 1 and black elsewhere
-        //cv::Mat currentImageCopy = ccLabels_ == 1;
-        // fg/bg thresholded image
-        //currentImageCopy = isFg_.clone();
-        //cv::normalize(ccLabels_, currentImageCopy, 0, 255, cv::NORM_MINMAX, CV_8U);
-
-        // Map component labels to hue val, 0 - 179 is the hue range in OpenCV
-        // allocate a matrix the same size as label_hue that is all 255
-
-        switch(displayMode){
-            case FGTHRESH: currentImageCopy = isFg_.clone(); break;
-            case DBKGD: currentImageCopy = dBkgd_.clone(); break;
-        }
+        currentImageCopy = isFg_.clone(); 
+        cv::cvtColor(currentImageCopy, currentImageCopy, cv::COLOR_GRAY2BGR);
+        // plot fit ellipse
+        cv::ellipse(currentImageCopy, cv::Point(flyEllipse_.x, flyEllipse_.y), 
+            		cv::Size(flyEllipse_.a, flyEllipse_.b), 
+                    flyEllipse_.theta * 180.0 / M_PI, 
+                    0, 360, cv::Scalar(0, 0, 255), 2);
         releaseLock();
         return currentImageCopy;
     }
