@@ -20,15 +20,22 @@ namespace bias
     class CameraWindow;
 
     enum ROIType { CIRCLE, NONE};
-
+    
     struct EllipseParams
     {
-		double x;
-		double y;
-		double a;
-		double b;
-		double theta;
-	};
+        double x;
+        double y;
+        double a;
+        double b;
+        double theta;
+    };
+
+    // helper functions
+    void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage);
+    void computeBackgroundMedian(QString bgVideoFilePath, int nFramesBgEst, 
+        int lastFrameSample,cv::Mat& bgMedianImage);
+    int largestConnectedComponent(cv::Mat& isFg);
+    void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse);
 
     class FlyTrackPlugin : public BiasPlugin
     {
@@ -50,8 +57,6 @@ namespace bias
             bool pluginsEnabled();
             void setPluginsEnabled(bool value);
 
-            bool requireTimer();
-            bool isActive();
             QPointer<CameraWindow> getCameraWindow();
 
             virtual void reset();
@@ -73,13 +78,9 @@ namespace bias
             virtual QString getLogFileFullPath(bool includeAutoNaming);
 
             void setBackgroundModel();
-            void computeBackgroundMedian(cv::Mat& bgMedianImage);
             void storeBackgroundModel(cv::Mat& bgMedianImage);
-            void loadBackgroundModel(cv::Mat& bgMedianImage,QString bgImageFilePath);
             cv::Mat circleROI(double centerX, double centerY, double centerRadius);
-            void backgroundSubtraction(cv::Mat& currentImage, cv::Mat& isFg);
-            int largestConnectedComponent(cv::Mat& isFg);
-            void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse);
+            void backgroundSubtraction();
             void setROI();
 
         signals:
@@ -113,24 +114,28 @@ namespace bias
             double roiCenterY_ = 480.2917; // y-coordinate of ROI center
             double roiRadius_ = 428.3618; // radius of ROI
             bool DEBUG_; // flag for debugging
+            int historyBufferLength_; // number of frames to buffer velocity, orientation
 
-            bool isFirst_; // flag indicating if this is the first frame
+            // background model
             QString bgVideoFilePath_; // video to estimate background from
             QString bgImageFilePath_; // saved background median estimate
             QString tmpOutDir_; // temporary output directory
             cv::Mat bgMedianImage_; // median background image
             cv::Mat bgLowerBoundImage_; // lower bound image for background
             cv::Mat bgUpperBoundImage_; // upper bound image for background
-            cv::Mat inROI_; // mask for ROI
 			bool bgImageComputed_; // flag indicating if background image has been computed
 
-            // color table for connected component plotting
-            std::vector<cv::Vec3b> colorTable_;
-
 			// processing of current frame
+            bool isFirst_; // flag indicating if this is the first frame
             cv::Mat isFg_; // foreground mask
-            cv::Mat dBkgd_; // absolute difference from background
+            cv::Mat inROI_; // mask for ROI
             EllipseParams flyEllipse_; // fly ellipse parameters
+
+            // tracking history
+            std::vector<EllipseParams> flyEllipseHistory_; // tracked ellipses
+            std::deque<double> velocityHistory_; // tracked velocities
+            cv::Point2d meanFlyVelocity_; // mean velocity of fly
+            double meanFlyOrientation_; // mean orientation of fly
 
             void setRequireTimer(bool value);
             void openLogFile();
