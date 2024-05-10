@@ -6,13 +6,15 @@ if (POLICY CMP0020)
 endif()
 
 set(
-    flytrack_plugin_HEADERS 
+    flytrack_plugin_HEADERS
+    flytrack_config.hpp
     flytrack_plugin.hpp
     ../../gui/camera_window.hpp
     )
 
 set(
-    flytrack_plugin_SOURCES 
+    flytrack_plugin_SOURCES
+    flytrack_config.cpp
     flytrack_plugin.cpp
     )
 

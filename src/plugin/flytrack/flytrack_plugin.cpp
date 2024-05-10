@@ -18,8 +18,8 @@ namespace bias
     const QString FlyTrackPlugin::LOG_FILE_POSTFIX = QString("flytrack");
     const int FlyTrackPlugin::LOGGING_PRECISION = 6;
 
-    const unsigned int FlyTrackPlugin::DEFAULT_NUM_BINS = 256;
-    const unsigned int FlyTrackPlugin::DEFAULT_BIN_SIZE = 1;
+    const unsigned int FlyTrackPlugin::BG_HIST_NUM_BINS = 256;
+    const unsigned int FlyTrackPlugin::BG_HIST_BIN_SIZE = 1;
     const double FlyTrackPlugin::MIN_VEL_MATCH_DOTPROD = 0.25;
 
     // helper functions
@@ -55,8 +55,8 @@ namespace bias
 
         BackgroundData_ufmf backgroundData;
         backgroundData = BackgroundData_ufmf(newStampedImg, 
-            FlyTrackPlugin::DEFAULT_NUM_BINS, 
-            FlyTrackPlugin::DEFAULT_BIN_SIZE);
+            FlyTrackPlugin::BG_HIST_NUM_BINS, 
+            FlyTrackPlugin::BG_HIST_BIN_SIZE);
         backgroundData.addImage(newStampedImg);
 
         // which frames to sample
@@ -159,28 +159,31 @@ namespace bias
         // hard code parameters
         // these should go in a config file/GUI
 
-        // parameters for background subtraction
-        backgroundThreshold_ = 75;
-        flyVsBgMode_ = FLY_DARKER_THAN_BG;
+        //// parameters for background subtraction
+        //backgroundThreshold_ = 75;
+        //flyVsBgMode_ = FLY_DARKER_THAN_BG;
 
         // parameters for background estimation
-        nFramesBgEst_ = 100;
+        //nFramesBgEst_ = 100;
         bgVideoFilePath_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1.avi");
         bgImageFilePath_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1_bg.png");
         tmpOutDir_ = QString("C:\\Code\\BIAS\\testdata\\tmp");
-        lastFrameSample_ = -1;
-        DEBUG_ = true;
+        config_.DEBUG = true;
+        //lastFrameSample_ = -1;
 
         // parameters for region of interest
-        roiType_ = CIRCLE;
-        roiCenterX_ = 468.6963;
-        roiCenterY_ = 480.2917;
-        roiRadius_ = 428.3618;
+        config_.roiType = CIRCLE;
+        config_.roiCenterX = 468.6963;
+        config_.roiCenterY = 480.2917;
+        config_.roiRadius = 428.3618;
+
+        imwriteParams_.push_back(cv::IMWRITE_PNG_COMPRESSION);
+        imwriteParams_.push_back(0);
 
         // parameters for resolving head/tail ambiguity
-        historyBufferLength_ = 5;
-        minVelocityMagnitude_ = 1.0; // .05; // could do this in pixels / second since we have timestamps
-        headTailWeightVelocity_ = 3.0; // weight of head-tail dot product vs previous orientation dot product
+        //historyBufferLength_ = 5;
+        //minVelocityMagnitude_ = 1.0; // .05; // could do this in pixels / second since we have timestamps
+        //headTailWeightVelocity_ = 3.0; // weight of head-tail dot product vs previous orientation dot product
 
         bgImageComputed_ = false;
         active_ = false;
@@ -244,12 +247,6 @@ namespace bias
 
         // Get background/foreground membership, 255=background, 0=foreground
         backgroundSubtraction();
-
-        if (DEBUG_ && isFirst_){
-            QString tmpOutFile;
-            tmpOutFile = tmpOutDir_ + QString("/isFg.png");
-            cv::imwrite(tmpOutFile.toStdString(), isFg_);
-		}
 
         // find connected components in isFg_
         int ccArea = largestConnectedComponent(isFg_);
@@ -456,6 +453,9 @@ namespace bias
         velocityHistory_.clear();
         orientationHistory_.clear();
         headTailResolved_ = false;
+
+        printf("Config:\n");
+        config_.print();
     }
 
     // cv::Mat circleROI(double centerX, double centerY, double centerRadius)
@@ -474,10 +474,12 @@ namespace bias
     // set the region of interest mask based on roiType_
     // currently only circle implemented
     void FlyTrackPlugin::setROI() {
+        printf("setting ROI\n");
         // roi mask
-        switch (roiType_) {
+        switch (config_.roiType) {
         case CIRCLE:
-            inROI_ = circleROI(roiCenterX_, roiCenterY_, roiRadius_);
+            printf("setting circle ROI\n");
+            inROI_ = circleROI(config_.roiCenterX, config_.roiCenterY, config_.roiRadius);
             break;
         }
     }
@@ -490,16 +492,18 @@ namespace bias
     // set inROI_ mask
     void FlyTrackPlugin::setBackgroundModel() {
 
+        printf("Computing background model\n");
+
         cv::Mat bgMedianImage;
         // check if bgImageFilePath_ exists
         if (QFile::exists(bgImageFilePath_)) {
             loadBackgroundModel(bgImageFilePath_, bgMedianImage);
         }
         else {
-            computeBackgroundMedian(bgVideoFilePath_, nFramesBgEst_, lastFrameSample_, bgMedianImage);
+            computeBackgroundMedian(bgVideoFilePath_, config_.nFramesBgEst, config_.lastFrameSample, bgMedianImage);
             // save the median image
             printf("Saving median image to %s\n", bgImageFilePath_.toStdString().c_str());
-            bool success = cv::imwrite(bgImageFilePath_.toStdString(), bgMedianImage);
+            bool success = cv::imwrite(bgImageFilePath_.toStdString(), bgMedianImage, imwriteParams_);
             if (success) printf("Done\n");
             else printf("Failed to write background median image to %s\n", bgImageFilePath_.toStdString().c_str());
         }
@@ -515,16 +519,19 @@ namespace bias
         releaseLock();
 
         //output lower bound to file
-        if (DEBUG_) {
+        if (config_.DEBUG) {
+            printf("Outputting background model debug images\n");
+            bool success;
             QString tmpOutFile;
-            tmpOutFile = tmpOutDir_ + QString("/bgLowerBound.png");
-            cv::imwrite(tmpOutFile.toStdString(), bgLowerBoundImage_);
+            tmpOutFile = tmpOutDir_ + QString("\\bgLowerBound.png");
+            printf("Writing lower bound to %s\n", tmpOutFile.toStdString().c_str());
+            success = cv::imwrite(tmpOutFile.toStdString(), bgLowerBoundImage_, imwriteParams_);
+            if(!success) printf("Failed writing lower bound to %s\n", tmpOutFile.toStdString().c_str());
             //output upper bound to file
-            tmpOutFile = tmpOutDir_ + QString("/bgUpperBound.png");
-            cv::imwrite(tmpOutFile.toStdString(), bgUpperBoundImage_);
-            //output ROI to file
-            tmpOutFile = tmpOutDir_ + QString("/inROI.png");
-            cv::imwrite(tmpOutFile.toStdString(), inROI_);
+            printf("Writing upper bound to %s\n", tmpOutFile.toStdString().c_str());
+            tmpOutFile = tmpOutDir_ + QString("\\bgUpperBound.png");
+            success = cv::imwrite(tmpOutFile.toStdString(), bgUpperBoundImage_, imwriteParams_);
+            if (!success) printf("Failed writing upper bound to %s\n", tmpOutFile.toStdString().c_str());
         }
 
         printf("Finished computing background model\n");
@@ -540,18 +547,19 @@ namespace bias
     void FlyTrackPlugin::storeBackgroundModel(cv::Mat& bgMedianImage) {
 
         bgMedianImage_ = bgMedianImage.clone();
-        cv::add(bgMedianImage, backgroundThreshold_, bgUpperBoundImage_);
-        cv::subtract(bgMedianImage, backgroundThreshold_, bgLowerBoundImage_);
+        cv::add(bgMedianImage, config_.backgroundThreshold, bgUpperBoundImage_);
+        cv::subtract(bgMedianImage, config_.backgroundThreshold, bgLowerBoundImage_);
+        config_.setImageSize(bgMedianImage.cols, bgMedianImage.rows);
     }
 
     // void backgroundSubtraction()
-// perform background subtraction on currentImage_ and stores results in isFg_
-// use bgLowerBoundImage_, bgUpperBoundImage_ to threshold
-// difference from bgMedianImage_ to determine background/foreground membership.
-// if roiType_ is not NONE, use inROI_ mask to restrict foreground to ROI.
+    // perform background subtraction on currentImage_ and stores results in isFg_
+    // use bgLowerBoundImage_, bgUpperBoundImage_ to threshold
+    // difference from bgMedianImage_ to determine background/foreground membership.
+    // if roiType_ is not NONE, use inROI_ mask to restrict foreground to ROI.
     void FlyTrackPlugin::backgroundSubtraction() {
         // Get background/foreground membership, 255=background, 0=foreground
-        switch (flyVsBgMode_) {
+        switch (config_.flyVsBgMode) {
         case FLY_DARKER_THAN_BG:
             isFg_ = currentImage_ < bgLowerBoundImage_;
             break;
@@ -563,8 +571,29 @@ namespace bias
             cv::bitwise_not(isFg_, isFg_);
             break;
         }
-        if (roiType_ != NONE) {
+        if (config_.roiType != NONE) {
             cv::bitwise_and(isFg_, inROI_, isFg_);
+        }
+        if (config_.DEBUG && isFirst_) {
+            printf("Outputting background subtraction debug images\n");
+			QString tmpOutFile;
+            bool success;
+            cv::Mat dBkgd;
+            cv::absdiff(currentImage_, bgMedianImage_, dBkgd);
+            tmpOutFile = tmpOutDir_ + QString("\\dBkgd.png");
+            printf("Writing difference from background to %s\n", tmpOutFile.toStdString().c_str());
+            success = cv::imwrite(tmpOutFile.toStdString(), dBkgd, imwriteParams_);
+            if (!success) printf("Failed writing difference from background to %s\n", tmpOutFile.toStdString().c_str());
+            tmpOutFile = tmpOutDir_ + QString("\\isFg.png");
+            printf("Writing foreground mask to %s\n", tmpOutFile.toStdString().c_str());
+            success = cv::imwrite(tmpOutFile.toStdString(), isFg_);
+            if (!success) printf("Failed writing foreground mask to %s\n", tmpOutFile.toStdString().c_str());
+            if (config_.roiType != NONE) {
+				tmpOutFile = tmpOutDir_ + QString("\\inROI.png");
+                printf("Writing ROI mask to %s\n", tmpOutFile.toStdString().c_str());
+				success = cv::imwrite(tmpOutFile.toStdString(), inROI_);
+                if (!success) printf("Failed writing ROI mask to %s\n", tmpOutFile.toStdString().c_str());
+            }
         }
     }
 
@@ -592,7 +621,7 @@ namespace bias
         nHistory = nHistory + 1.0;
 
         // if we are removing from buffer, update mean velocity
-        if (velocityHistory_.size() > historyBufferLength_) {
+        if (velocityHistory_.size() > config_.historyBufferLength) {
             meanFlyVelocity_ = (meanFlyVelocity_ * nHistory - velocityHistory_.front()) / (nHistory - 1);
             velocityHistory_.pop_front();
         }
@@ -626,7 +655,7 @@ namespace bias
         nHistory = (double)orientationHistory_.size();
         meanFlyOrientation_ = (meanFlyOrientation_ * (nHistory - 1) + currOrientation) / nHistory;
         // if we are removing from buffer, update mean orientation
-        if (orientationHistory_.size() > historyBufferLength_) {
+        if (orientationHistory_.size() > config_.historyBufferLength) {
             meanFlyOrientation_ = (meanFlyOrientation_ * nHistory - orientationHistory_.front()) / (nHistory - 1);
             orientationHistory_.pop_front();
         }
@@ -660,7 +689,7 @@ namespace bias
         if (velocityHistory_.size() > 0) velmag = cv::norm(meanFlyVelocity_);
 
         // if fly is walking fast enough, try to match the velocity direction
-        if (velmag > minVelocityMagnitude_) {
+        if (velmag > config_.minVelocityMagnitude) {
             dotprod = headDir.dot(meanFlyVelocity_) / velmag;
             costVel1 = dotprod;
             costVel0 = -dotprod;
@@ -685,8 +714,8 @@ namespace bias
             costOri0 = -dotprod;
         }
 
-        cost0 = headTailWeightVelocity_ * costVel0 + costOri0;
-        cost1 = headTailWeightVelocity_ * costVel1 + costOri1;
+        cost0 = config_.headTailWeightVelocity * costVel0 + costOri0;
+        cost1 = config_.headTailWeightVelocity * costVel1 + costOri1;
         //printf("Total cost0: %f, cost1: %f\n", cost0, cost1);
 
         if (cost1 < cost0) {
