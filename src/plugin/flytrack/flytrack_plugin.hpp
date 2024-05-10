@@ -78,6 +78,12 @@ namespace bias
             virtual QString getLogFileName(bool includeAutoNaming);
             virtual QString getLogFileFullPath(bool includeAutoNaming);
 
+        signals:
+
+            void setCaptureDurationRequest(unsigned long);
+
+        protected:
+
             void initialize();
             void setBackgroundModel();
             void storeBackgroundModel(cv::Mat& bgMedianImage);
@@ -89,12 +95,6 @@ namespace bias
             void updateEllipseHistory();
             void resolveHeadTail();
             void flipFlyOrientationHistory();
-
-        signals:
-
-            void setCaptureDurationRequest(unsigned long);
-
-        protected:
 
             bool active_;
             bool requireTimer_;

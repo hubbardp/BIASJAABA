@@ -14,8 +14,8 @@ namespace bias
 
     const QString FlyTrackPlugin::PLUGIN_NAME = QString("FlyTrack"); 
     const QString FlyTrackPlugin::PLUGIN_DISPLAY_NAME = QString("Fly Track");
-    const QString FlyTrackPlugin::LOG_FILE_EXTENSION = QString("txt");
-    const QString FlyTrackPlugin::LOG_FILE_POSTFIX = QString("flytrack_log");
+    const QString FlyTrackPlugin::LOG_FILE_EXTENSION = QString("json");
+    const QString FlyTrackPlugin::LOG_FILE_POSTFIX = QString("flytrack");
 
     const unsigned int FlyTrackPlugin::DEFAULT_NUM_BINS = 256;
     const unsigned int FlyTrackPlugin::DEFAULT_BIN_SIZE = 1;
@@ -188,102 +188,6 @@ namespace bias
         setRequireTimer(false);
     }
 
-    void FlyTrackPlugin::initialize() {
-        isFirst_ = false;
-        meanFlyVelocity_ = cv::Point2d(0.0, 0.0);
-        meanFlyOrientation_ = 0.0;
-        flyEllipseHistory_.clear();
-        velocityHistory_.clear();
-        orientationHistory_.clear();
-        headTailResolved_ = false;
-    }
-
-    // cv::Mat circleROI(double centerX, double centerY, double centerRadius)
-    // create a circular region of interest mask, inside is 255, outside 0
-    // inputs:
-    // centerX, centerY: center of circle
-    // centerRadius: radius of circle
-    // returns: mask image
-    cv::Mat FlyTrackPlugin::circleROI(double centerX, double centerY, double centerRadius){
-        cv::Mat mask = cv::Mat::zeros(bgMedianImage_.size(), CV_8U);
-  		cv::circle(mask, cv::Point(centerX, centerY), centerRadius, cv::Scalar(255), -1);
-   		return mask;
-    }
-
-    // void setROI()
-    // set the region of interest mask based on roiType_
-    // currently only circle implemented
-    void FlyTrackPlugin::setROI() {
-        // roi mask
-        switch (roiType_) {
-        case CIRCLE:
-            inROI_ = circleROI(roiCenterX_, roiCenterY_, roiRadius_);
-            break;
-        }
-	}
-
-    // void setBackgroundModel()
-    // compute and set the background model fields
-    // if bgImageFilePath_ exists, load background model from file
-    // otherwise, compute median background image from bgVideoFilePath_
-    // store background model in bgMedianImage_, bgLowerBoundImage_, bgUpperBoundImage_
-    // set inROI_ mask
-    void FlyTrackPlugin::setBackgroundModel() {
-
-        cv::Mat bgMedianImage;
-        // check if bgImageFilePath_ exists
-        if (QFile::exists(bgImageFilePath_)) {
-            loadBackgroundModel(bgImageFilePath_, bgMedianImage);
-		}
-        else {
-            computeBackgroundMedian(bgVideoFilePath_,nFramesBgEst_,lastFrameSample_,bgMedianImage);
-            // save the median image
-            printf("Saving median image to %s\n", bgImageFilePath_.toStdString().c_str());
-            bool success = cv::imwrite(bgImageFilePath_.toStdString(), bgMedianImage);
-            if (success) printf("Done\n");
-            else printf("Failed to write background median image to %s\n", bgImageFilePath_.toStdString().c_str());
-        }
-
-        // store background model
-        acquireLock();
-        storeBackgroundModel(bgMedianImage);
-
-        // roi mask
-        setROI();
-
-        bgImageComputed_ = true;
-        releaseLock();
-
-        //output lower bound to file
-        if (DEBUG_) {
-            QString tmpOutFile;
-            tmpOutFile = tmpOutDir_ + QString("/bgLowerBound.png");
-            cv::imwrite(tmpOutFile.toStdString(), bgLowerBoundImage_);
-            //output upper bound to file
-            tmpOutFile = tmpOutDir_ + QString("/bgUpperBound.png");
-            cv::imwrite(tmpOutFile.toStdString(), bgUpperBoundImage_);
-            //output ROI to file
-            tmpOutFile = tmpOutDir_ + QString("/inROI.png");
-            cv::imwrite(tmpOutFile.toStdString(), inROI_);
-        }
-
-        printf("Finished computing background model\n");
-
-    }
-
-    // void storeBackgroundModel(cv::Mat& bgMedianImage)
-    // store background model in bgMedianImage_
-    // use background subtraction threshold to pre-compute lower bound 
-    // and upper bound images. 
-    // inputs:
-    // bgMedianImage: median background image to store
-    void FlyTrackPlugin::storeBackgroundModel(cv::Mat& bgMedianImage) {
-
-        bgMedianImage_ = bgMedianImage.clone();
-        cv::add(bgMedianImage, backgroundThreshold_, bgUpperBoundImage_);
-        cv::subtract(bgMedianImage, backgroundThreshold_, bgLowerBoundImage_);
-    }
-
     void FlyTrackPlugin::reset()
     { 
         initialize();
@@ -309,159 +213,6 @@ namespace bias
         if (value && !bgImageComputed_) {
             setBackgroundModel();
         }
-    }
-
-    // void backgroundSubtraction()
-    // perform background subtraction on currentImage_ and stores results in isFg_
-    // use bgLowerBoundImage_, bgUpperBoundImage_ to threshold
-    // difference from bgMedianImage_ to determine background/foreground membership.
-    // if roiType_ is not NONE, use inROI_ mask to restrict foreground to ROI.
-    void FlyTrackPlugin::backgroundSubtraction() {
-        // Get background/foreground membership, 255=background, 0=foreground
-        switch (flyVsBgMode_) {
-        case FLY_DARKER_THAN_BG:
-            isFg_ = currentImage_ < bgLowerBoundImage_;
-            break;
-        case FLY_BRIGHTER_THAN_BG:
-            isFg_ = currentImage_ > bgUpperBoundImage_;
-            break;
-        case FLY_ANY_DIFFERENCE_BG:
-            cv::inRange(currentImage_, bgLowerBoundImage_, bgUpperBoundImage_, isFg_);
-            cv::bitwise_not(isFg_, isFg_);
-            break;
-        }
-        if (roiType_ != NONE) {
-            cv::bitwise_and(isFg_, inROI_, isFg_);
-        }
-    }
-
-    // void updateVelocityHistory()
-    // update velocity history buffer velocityHistory_ and mean velocity meanFlyVelocity_ over that buffer
-    // with velocity between current flyEllipse_ and previous center flyEllipseHistory_.back()
-    void FlyTrackPlugin::updateVelocityHistory() {
-
-        if (flyEllipseHistory_.size() == 0)
-            return;
-
-        double nHistory;
-        // update velocity history
-        cv::Point2d velocityLast;
-        // compute velocity of center between current ellipse and last ellipse
-        velocityLast = cv::Point2d(flyEllipse_.x - flyEllipseHistory_.back().x,
-            flyEllipse_.y - flyEllipseHistory_.back().y);
-
-        // update mean velocity for adding velocityLast
-        nHistory = (double)velocityHistory_.size();
-        meanFlyVelocity_ = (meanFlyVelocity_ * nHistory + velocityLast) / (nHistory+1.0);
-
-        // add to velocity history
-        velocityHistory_.push_back(velocityLast);
-        nHistory = nHistory + 1.0;
-
-        // if we are removing from buffer, update mean velocity
-        if (velocityHistory_.size() > historyBufferLength_) {
-            meanFlyVelocity_ = (meanFlyVelocity_ * nHistory - velocityHistory_.front()) / (nHistory - 1);
-            velocityHistory_.pop_front();
-        }
-    }
-
-    // void updateEllipseHistory()
-    // add current flyEllipse_ to end of flyEllipseHistory_
-    void FlyTrackPlugin::updateEllipseHistory() {
-        // add ellipse to history
-        flyEllipseHistory_.push_back(flyEllipse_);
-    }
-
-    // void updateOrientationHistory()
-    // update orientation history buffer orientationHistory_ and mean orientation meanFlyOrientation_ over that buffer
-    // orientations will be stored so that they are in the same range of 2*pi
-    void FlyTrackPlugin::updateOrientationHistory() {
-        double nHistory;
-        // update orientation history
-        double currOrientation = flyEllipse_.theta;
-        if (orientationHistory_.size() > 0) {
-            // make orientations in same range of 2*pi
-            double prevOrientation = orientationHistory_.back();
-            // compute orientation change
-            double orientationChange = mod2pi(currOrientation - prevOrientation);
-            currOrientation = prevOrientation + orientationChange;
-		}
-        // add to orientation history
-        orientationHistory_.push_back(currOrientation);
-        // update mean orientation for adding currOrientation
-        nHistory = (double)orientationHistory_.size();
-        meanFlyOrientation_ = (meanFlyOrientation_ * (nHistory - 1) + currOrientation) / nHistory;
-        // if we are removing from buffer, update mean orientation
-        if (orientationHistory_.size() > historyBufferLength_) {
-			meanFlyOrientation_ = (meanFlyOrientation_ * nHistory - orientationHistory_.front()) / (nHistory-1);
-            orientationHistory_.pop_front();
-		}
-    }
-
-    // void flipFlyOrientationHistory()
-    // flip all orientations in orientationHistory_ and the mean meanFlyOrientation_ by adding pi
-    void FlyTrackPlugin::flipFlyOrientationHistory() {
-        meanFlyOrientation_ = meanFlyOrientation_ + M_PI;
-        for (int i = 0; i < orientationHistory_.size(); i++) {
-            orientationHistory_[i] += M_PI;
-        }
-    }
-
-    // void resolveHeadTail()
-    // resolve head/tail ambiguity by comparing orientation flyEllipse_.theta
-    // to velocity meanFlyVelocity_ and past orientation meanFlyOrientation_
-    // flyEllipse_.theta is updated 
-    void FlyTrackPlugin::resolveHeadTail() {
-
-        double velmag = 0.0;
-        double dotprod;
-        double costVel0 = 0.0, costVel1 = 0.0;
-        double costOri0 = 0.0, costOri1 = 0.0;
-        double cost0 = 0.0, cost1 = 0.0;
-        double theta0 = flyEllipse_.theta;
-        cv::Point2d headDir = cv::Point2d(std::cos(flyEllipse_.theta), std::sin(flyEllipse_.theta));
-        cv::Point2d headDirPrev = cv::Point2d(0.0, 0.0);
-
-        // velocity magnitude
-        if(velocityHistory_.size() > 0) velmag = cv::norm(meanFlyVelocity_);
-
-        // if fly is walking fast enough, try to match the velocity direction
-        if (velmag > minVelocityMagnitude_) {
-            dotprod = headDir.dot(meanFlyVelocity_) / velmag;
-            costVel1 = dotprod;
-            costVel0 = -dotprod;
-            // if we haven't ever resolved headTail, we don't care about orientation history
-            if (!headTailResolved_ && std::abs(dotprod) > MIN_VEL_MATCH_DOTPROD) {
-                if (costVel1 < costVel0) {
-                    // add pi
-                    flyEllipse_.theta += M_PI;
-                    flipFlyOrientationHistory();
-                }
-                headTailResolved_ = true;
-                return;
-			}
-        }
-
-        // try to match current and previous orientation
-        if (orientationHistory_.size() > 0) {
-            headDirPrev.x = std::cos(meanFlyOrientation_);
-            headDirPrev.y = std::sin(meanFlyOrientation_);
-            dotprod = headDir.dot(headDirPrev);
-            costOri1 = dotprod;
-            costOri0 = -dotprod;
-        }
-
-        cost0 = headTailWeightVelocity_ * costVel0 + costOri0;
-        cost1 = headTailWeightVelocity_ * costVel1 + costOri1;
-        //printf("Total cost0: %f, cost1: %f\n", cost0, cost1);
-
-        if (cost1 < cost0) {
-			// add pi
-			flyEllipse_.theta += M_PI;
-		}
-
-        // store theta in range -pi, pi
-        flyEllipse_.theta = mod2pi(flyEllipse_.theta);
     }
 
     void FlyTrackPlugin::processFrames(QList<StampedImage> frameList) 
@@ -673,5 +424,259 @@ namespace bias
             logFile_.close();
         }
     }
+
+    // Protected
+    // ------------------------------------------------------------------------
+
+    void FlyTrackPlugin::initialize() {
+        isFirst_ = false;
+        meanFlyVelocity_ = cv::Point2d(0.0, 0.0);
+        meanFlyOrientation_ = 0.0;
+        flyEllipseHistory_.clear();
+        velocityHistory_.clear();
+        orientationHistory_.clear();
+        headTailResolved_ = false;
+    }
+
+    // cv::Mat circleROI(double centerX, double centerY, double centerRadius)
+    // create a circular region of interest mask, inside is 255, outside 0
+    // inputs:
+    // centerX, centerY: center of circle
+    // centerRadius: radius of circle
+    // returns: mask image
+    cv::Mat FlyTrackPlugin::circleROI(double centerX, double centerY, double centerRadius) {
+        cv::Mat mask = cv::Mat::zeros(bgMedianImage_.size(), CV_8U);
+        cv::circle(mask, cv::Point(centerX, centerY), centerRadius, cv::Scalar(255), -1);
+        return mask;
+    }
+
+    // void setROI()
+    // set the region of interest mask based on roiType_
+    // currently only circle implemented
+    void FlyTrackPlugin::setROI() {
+        // roi mask
+        switch (roiType_) {
+        case CIRCLE:
+            inROI_ = circleROI(roiCenterX_, roiCenterY_, roiRadius_);
+            break;
+        }
+    }
+
+    // void setBackgroundModel()
+    // compute and set the background model fields
+    // if bgImageFilePath_ exists, load background model from file
+    // otherwise, compute median background image from bgVideoFilePath_
+    // store background model in bgMedianImage_, bgLowerBoundImage_, bgUpperBoundImage_
+    // set inROI_ mask
+    void FlyTrackPlugin::setBackgroundModel() {
+
+        cv::Mat bgMedianImage;
+        // check if bgImageFilePath_ exists
+        if (QFile::exists(bgImageFilePath_)) {
+            loadBackgroundModel(bgImageFilePath_, bgMedianImage);
+        }
+        else {
+            computeBackgroundMedian(bgVideoFilePath_, nFramesBgEst_, lastFrameSample_, bgMedianImage);
+            // save the median image
+            printf("Saving median image to %s\n", bgImageFilePath_.toStdString().c_str());
+            bool success = cv::imwrite(bgImageFilePath_.toStdString(), bgMedianImage);
+            if (success) printf("Done\n");
+            else printf("Failed to write background median image to %s\n", bgImageFilePath_.toStdString().c_str());
+        }
+
+        // store background model
+        acquireLock();
+        storeBackgroundModel(bgMedianImage);
+
+        // roi mask
+        setROI();
+
+        bgImageComputed_ = true;
+        releaseLock();
+
+        //output lower bound to file
+        if (DEBUG_) {
+            QString tmpOutFile;
+            tmpOutFile = tmpOutDir_ + QString("/bgLowerBound.png");
+            cv::imwrite(tmpOutFile.toStdString(), bgLowerBoundImage_);
+            //output upper bound to file
+            tmpOutFile = tmpOutDir_ + QString("/bgUpperBound.png");
+            cv::imwrite(tmpOutFile.toStdString(), bgUpperBoundImage_);
+            //output ROI to file
+            tmpOutFile = tmpOutDir_ + QString("/inROI.png");
+            cv::imwrite(tmpOutFile.toStdString(), inROI_);
+        }
+
+        printf("Finished computing background model\n");
+
+    }
+
+    // void storeBackgroundModel(cv::Mat& bgMedianImage)
+    // store background model in bgMedianImage_
+    // use background subtraction threshold to pre-compute lower bound 
+    // and upper bound images. 
+    // inputs:
+    // bgMedianImage: median background image to store
+    void FlyTrackPlugin::storeBackgroundModel(cv::Mat& bgMedianImage) {
+
+        bgMedianImage_ = bgMedianImage.clone();
+        cv::add(bgMedianImage, backgroundThreshold_, bgUpperBoundImage_);
+        cv::subtract(bgMedianImage, backgroundThreshold_, bgLowerBoundImage_);
+    }
+
+    // void backgroundSubtraction()
+// perform background subtraction on currentImage_ and stores results in isFg_
+// use bgLowerBoundImage_, bgUpperBoundImage_ to threshold
+// difference from bgMedianImage_ to determine background/foreground membership.
+// if roiType_ is not NONE, use inROI_ mask to restrict foreground to ROI.
+    void FlyTrackPlugin::backgroundSubtraction() {
+        // Get background/foreground membership, 255=background, 0=foreground
+        switch (flyVsBgMode_) {
+        case FLY_DARKER_THAN_BG:
+            isFg_ = currentImage_ < bgLowerBoundImage_;
+            break;
+        case FLY_BRIGHTER_THAN_BG:
+            isFg_ = currentImage_ > bgUpperBoundImage_;
+            break;
+        case FLY_ANY_DIFFERENCE_BG:
+            cv::inRange(currentImage_, bgLowerBoundImage_, bgUpperBoundImage_, isFg_);
+            cv::bitwise_not(isFg_, isFg_);
+            break;
+        }
+        if (roiType_ != NONE) {
+            cv::bitwise_and(isFg_, inROI_, isFg_);
+        }
+    }
+
+    // void updateVelocityHistory()
+    // update velocity history buffer velocityHistory_ and mean velocity meanFlyVelocity_ over that buffer
+    // with velocity between current flyEllipse_ and previous center flyEllipseHistory_.back()
+    void FlyTrackPlugin::updateVelocityHistory() {
+
+        if (flyEllipseHistory_.size() == 0)
+            return;
+
+        double nHistory;
+        // update velocity history
+        cv::Point2d velocityLast;
+        // compute velocity of center between current ellipse and last ellipse
+        velocityLast = cv::Point2d(flyEllipse_.x - flyEllipseHistory_.back().x,
+            flyEllipse_.y - flyEllipseHistory_.back().y);
+
+        // update mean velocity for adding velocityLast
+        nHistory = (double)velocityHistory_.size();
+        meanFlyVelocity_ = (meanFlyVelocity_ * nHistory + velocityLast) / (nHistory + 1.0);
+
+        // add to velocity history
+        velocityHistory_.push_back(velocityLast);
+        nHistory = nHistory + 1.0;
+
+        // if we are removing from buffer, update mean velocity
+        if (velocityHistory_.size() > historyBufferLength_) {
+            meanFlyVelocity_ = (meanFlyVelocity_ * nHistory - velocityHistory_.front()) / (nHistory - 1);
+            velocityHistory_.pop_front();
+        }
+    }
+
+    // void updateEllipseHistory()
+    // add current flyEllipse_ to end of flyEllipseHistory_
+    void FlyTrackPlugin::updateEllipseHistory() {
+        // add ellipse to history
+        flyEllipseHistory_.push_back(flyEllipse_);
+    }
+
+    // void updateOrientationHistory()
+    // update orientation history buffer orientationHistory_ and mean orientation meanFlyOrientation_ over that buffer
+    // orientations will be stored so that they are in the same range of 2*pi
+    void FlyTrackPlugin::updateOrientationHistory() {
+        double nHistory;
+        // update orientation history
+        double currOrientation = flyEllipse_.theta;
+        if (orientationHistory_.size() > 0) {
+            // make orientations in same range of 2*pi
+            double prevOrientation = orientationHistory_.back();
+            // compute orientation change
+            double orientationChange = mod2pi(currOrientation - prevOrientation);
+            // this could become way out of the range -pi, pi if we run for a really long time
+            currOrientation = prevOrientation + orientationChange;
+        }
+        // add to orientation history
+        orientationHistory_.push_back(currOrientation);
+        // update mean orientation for adding currOrientation
+        nHistory = (double)orientationHistory_.size();
+        meanFlyOrientation_ = (meanFlyOrientation_ * (nHistory - 1) + currOrientation) / nHistory;
+        // if we are removing from buffer, update mean orientation
+        if (orientationHistory_.size() > historyBufferLength_) {
+            meanFlyOrientation_ = (meanFlyOrientation_ * nHistory - orientationHistory_.front()) / (nHistory - 1);
+            orientationHistory_.pop_front();
+        }
+    }
+
+    // void flipFlyOrientationHistory()
+    // flip all orientations in orientationHistory_ and the mean meanFlyOrientation_ by adding pi
+    void FlyTrackPlugin::flipFlyOrientationHistory() {
+        meanFlyOrientation_ = meanFlyOrientation_ + M_PI;
+        for (int i = 0; i < orientationHistory_.size(); i++) {
+            orientationHistory_[i] += M_PI;
+        }
+    }
+
+    // void resolveHeadTail()
+    // resolve head/tail ambiguity by comparing orientation flyEllipse_.theta
+    // to velocity meanFlyVelocity_ and past orientation meanFlyOrientation_
+    // flyEllipse_.theta is updated 
+    void FlyTrackPlugin::resolveHeadTail() {
+
+        double velmag = 0.0;
+        double dotprod;
+        double costVel0 = 0.0, costVel1 = 0.0;
+        double costOri0 = 0.0, costOri1 = 0.0;
+        double cost0 = 0.0, cost1 = 0.0;
+        double theta0 = flyEllipse_.theta;
+        cv::Point2d headDir = cv::Point2d(std::cos(flyEllipse_.theta), std::sin(flyEllipse_.theta));
+        cv::Point2d headDirPrev = cv::Point2d(0.0, 0.0);
+
+        // velocity magnitude
+        if (velocityHistory_.size() > 0) velmag = cv::norm(meanFlyVelocity_);
+
+        // if fly is walking fast enough, try to match the velocity direction
+        if (velmag > minVelocityMagnitude_) {
+            dotprod = headDir.dot(meanFlyVelocity_) / velmag;
+            costVel1 = dotprod;
+            costVel0 = -dotprod;
+            // if we haven't ever resolved headTail, we don't care about orientation history
+            if (!headTailResolved_ && std::abs(dotprod) > MIN_VEL_MATCH_DOTPROD) {
+                if (costVel1 < costVel0) {
+                    // add pi
+                    flyEllipse_.theta += M_PI;
+                    flipFlyOrientationHistory();
+                }
+                headTailResolved_ = true;
+                return;
+            }
+        }
+
+        // try to match current and previous orientation
+        if (orientationHistory_.size() > 0) {
+            headDirPrev.x = std::cos(meanFlyOrientation_);
+            headDirPrev.y = std::sin(meanFlyOrientation_);
+            dotprod = headDir.dot(headDirPrev);
+            costOri1 = dotprod;
+            costOri0 = -dotprod;
+        }
+
+        cost0 = headTailWeightVelocity_ * costVel0 + costOri0;
+        cost1 = headTailWeightVelocity_ * costVel1 + costOri1;
+        //printf("Total cost0: %f, cost1: %f\n", cost0, cost1);
+
+        if (cost1 < cost0) {
+            // add pi
+            flyEllipse_.theta += M_PI;
+        }
+
+        // store theta in range -pi, pi
+        flyEllipse_.theta = mod2pi(flyEllipse_.theta);
+    }
+
 
 }
