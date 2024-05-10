@@ -13,6 +13,10 @@ namespace bias
 
     enum FlyVsBgModeType { FLY_DARKER_THAN_BG, FLY_BRIGHTER_THAN_BG, FLY_ANY_DIFFERENCE_BG };
 
+    void setRoiFracAbsFromMap(QVariantMap configMap, RtnStatus& rtnStatus,
+        QString fracField, QString absField, double& fracParam, double& absParam, int imgSize);
+
+
     class FlyTrackConfig
     {
 
@@ -50,6 +54,14 @@ namespace bias
 
         FlyTrackConfig();
         void setImageSize(int width, int height);
+
+        RtnStatus setBgEstFromMap(QVariantMap configMap);
+        RtnStatus setRoiFromMap(QVariantMap configMap);
+        RtnStatus setBgSubFromMap(QVariantMap configMap);
+        RtnStatus setHeadTailFromMap(QVariantMap configMap);
+        RtnStatus setMiscFromMap(QVariantMap configMap);
+        QVariantMap toMap();
+        RtnStatus fromMap(QVariantMap configMap);
 
         void print();
 
