@@ -50,6 +50,7 @@ namespace bias
             static const QString PLUGIN_DISPLAY_NAME;
             static const QString LOG_FILE_EXTENSION;
             static const QString LOG_FILE_POSTFIX;
+            static const int LOGGING_PRECISION;
             static const unsigned int DEFAULT_NUM_BINS;
             static const unsigned int DEFAULT_BIN_SIZE;
             static const double MIN_VEL_MATCH_DOTPROD; // minimum dot product for velocity matching
@@ -95,6 +96,7 @@ namespace bias
             void updateEllipseHistory();
             void resolveHeadTail();
             void flipFlyOrientationHistory();
+            void logCurrentFrame();
 
             bool active_;
             bool requireTimer_;

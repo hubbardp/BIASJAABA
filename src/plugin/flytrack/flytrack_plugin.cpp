@@ -16,6 +16,7 @@ namespace bias
     const QString FlyTrackPlugin::PLUGIN_DISPLAY_NAME = QString("Fly Track");
     const QString FlyTrackPlugin::LOG_FILE_EXTENSION = QString("json");
     const QString FlyTrackPlugin::LOG_FILE_POSTFIX = QString("flytrack");
+    const int FlyTrackPlugin::LOGGING_PRECISION = 6;
 
     const unsigned int FlyTrackPlugin::DEFAULT_NUM_BINS = 256;
     const unsigned int FlyTrackPlugin::DEFAULT_BIN_SIZE = 1;
@@ -191,6 +192,7 @@ namespace bias
     void FlyTrackPlugin::reset()
     { 
         initialize();
+        openLogFile();
     }
 
     void FlyTrackPlugin::setFileAutoNamingString(QString autoNamingString)
@@ -203,8 +205,9 @@ namespace bias
         fileVersionNumber_ = verNum;
     }
 
-    void FlyTrackPlugin::stop()
-    { }
+    void FlyTrackPlugin::stop(){ 
+        closeLogFile();
+    }
 
     void FlyTrackPlugin::setActive(bool value)
     {
@@ -242,8 +245,7 @@ namespace bias
         // Get background/foreground membership, 255=background, 0=foreground
         backgroundSubtraction();
 
-        if (isFirst_){
-			isFirst_ = false;
+        if (DEBUG_ && isFirst_){
             QString tmpOutFile;
             tmpOutFile = tmpOutDir_ + QString("/isFg.png");
             cv::imwrite(tmpOutFile.toStdString(), isFg_);
@@ -266,6 +268,12 @@ namespace bias
 
         // store orientation
         updateOrientationHistory();
+
+        if (loggingEnabled_) {
+            logCurrentFrame();
+        }
+
+        isFirst_ = false;
 
         releaseLock();
     } 
@@ -411,7 +419,15 @@ namespace bias
             if (isOpen)
             {
                 logStream_.setDevice(&logFile_);
+                logStream_.setRealNumberNotation(QTextStream::ScientificNotation);
+                logStream_.setRealNumberPrecision(FlyTrackPlugin::LOGGING_PRECISION);
+                logStream_ << "{\n  \"track\": [\n";
             }
+            else
+            {
+				fprintf(stderr,"Failed to open log file: %s\n",logFileFullPath.toStdString().c_str());
+                loggingEnabled_ = false;
+			}
         }
     }
 
@@ -420,6 +436,7 @@ namespace bias
     {
         if (loggingEnabled_ && logFile_.isOpen())
         {
+            logStream_ << "\n  ]\n}";
             logStream_.flush();
             logFile_.close();
         }
@@ -428,8 +445,11 @@ namespace bias
     // Protected
     // ------------------------------------------------------------------------
 
+    // void initialize()
+    // (re-)initialize state
     void FlyTrackPlugin::initialize() {
-        isFirst_ = false;
+        printf("Initializing FlyTrackPlugin\n");
+        isFirst_ = true;
         meanFlyVelocity_ = cv::Point2d(0.0, 0.0);
         meanFlyOrientation_ = 0.0;
         flyEllipseHistory_.clear();
@@ -678,5 +698,17 @@ namespace bias
         flyEllipse_.theta = mod2pi(flyEllipse_.theta);
     }
 
-
+    void FlyTrackPlugin::logCurrentFrame(){
+        if (!loggingEnabled_) return;
+        if (!logFile_.isOpen()) return;
+        if (!isFirst_) logStream_ << ",\n";
+        logStream_ << "    {\"frame\": " << frameCount_
+            << ", \"timestamp\": " << timeStamp_
+            << ", \"x\": " << flyEllipse_.x
+            << ", \"y\": " << flyEllipse_.y
+            << ", \"a\": " << flyEllipse_.a
+            << ", \"b\": " << flyEllipse_.b
+            << ", \"theta\": " << flyEllipse_.theta
+            << "}";
+    }
 }
