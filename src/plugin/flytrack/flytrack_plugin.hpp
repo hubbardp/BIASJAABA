@@ -113,9 +113,6 @@ namespace bias
             FlyTrackConfig config_; 
 
             // background model
-            QString bgVideoFilePath_; // video to estimate background from
-            QString bgImageFilePath_; // saved background median estimate
-            QString tmpOutDir_; // temporary output directory
             cv::Mat bgMedianImage_; // median background image
             cv::Mat bgLowerBoundImage_; // lower bound image for background
             cv::Mat bgUpperBoundImage_; // upper bound image for background

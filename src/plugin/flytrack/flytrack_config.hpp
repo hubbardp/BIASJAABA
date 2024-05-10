@@ -23,6 +23,10 @@ namespace bias
     public:
 
         // default parameters
+        static const QString DEFAULT_BG_VIDEO_FILE_PATH; // video to estimate background from
+        static const QString DEFAULT_BG_IMAGE_FILE_PATH; // saved background median estimate
+        static const QString DEFAULT_TMP_OUT_DIR; // temporary output directory
+
         static const int DEFAULT_BACKGROUND_THRESHOLD; // foreground/background threshold, between 0 and 255
         static const int DEFAULT_N_FRAMES_BG_EST; // number of frames used for background estimation, set to 0 to use all frames
         static const int DEFAULT_LAST_FRAME_SAMPLE; // last frame sampled for background estimation, set to 0 to use last frame of video
@@ -39,6 +43,9 @@ namespace bias
 
 
         // parameters
+        QString bgVideoFilePath; // video to estimate background from
+        QString bgImageFilePath; // saved background median estimate
+        QString tmpOutDir; // temporary output directory
         int backgroundThreshold; // foreground threshold
         int nFramesBgEst; // number of frames used for background estimation, set to 0 to use all frames
         int lastFrameSample; // last frame sampled for background estimation, set to 0 to use last frame of video
@@ -54,6 +61,7 @@ namespace bias
 
         FlyTrackConfig();
         void setImageSize(int width, int height);
+        void setBgVideoFilePath(QString bgVideoFilePath);
 
         RtnStatus setBgEstFromMap(QVariantMap configMap);
         RtnStatus setRoiFromMap(QVariantMap configMap);

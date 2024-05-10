@@ -165,9 +165,9 @@ namespace bias
 
         // parameters for background estimation
         //nFramesBgEst_ = 100;
-        bgVideoFilePath_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1.avi");
-        bgImageFilePath_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1_bg.png");
-        tmpOutDir_ = QString("C:\\Code\\BIAS\\testdata\\tmp");
+        config_.bgVideoFilePath = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1.avi");
+        config_.bgImageFilePath = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1_bg.png");
+        config_.tmpOutDir = QString("C:\\Code\\BIAS\\testdata\\tmp");
         config_.DEBUG = true;
         //lastFrameSample_ = -1;
 
@@ -496,16 +496,16 @@ namespace bias
 
         cv::Mat bgMedianImage;
         // check if bgImageFilePath_ exists
-        if (QFile::exists(bgImageFilePath_)) {
-            loadBackgroundModel(bgImageFilePath_, bgMedianImage);
+        if (QFile::exists(config_.bgImageFilePath)) {
+            loadBackgroundModel(config_.bgImageFilePath, bgMedianImage);
         }
         else {
-            computeBackgroundMedian(bgVideoFilePath_, config_.nFramesBgEst, config_.lastFrameSample, bgMedianImage);
+            computeBackgroundMedian(config_.bgVideoFilePath, config_.nFramesBgEst, config_.lastFrameSample, bgMedianImage);
             // save the median image
-            printf("Saving median image to %s\n", bgImageFilePath_.toStdString().c_str());
-            bool success = cv::imwrite(bgImageFilePath_.toStdString(), bgMedianImage, imwriteParams_);
+            printf("Saving median image to %s\n", config_.bgImageFilePath.toStdString().c_str());
+            bool success = cv::imwrite(config_.bgImageFilePath.toStdString(), bgMedianImage, imwriteParams_);
             if (success) printf("Done\n");
-            else printf("Failed to write background median image to %s\n", bgImageFilePath_.toStdString().c_str());
+            else printf("Failed to write background median image to %s\n", config_.bgImageFilePath.toStdString().c_str());
         }
 
         // store background model
@@ -523,13 +523,13 @@ namespace bias
             printf("Outputting background model debug images\n");
             bool success;
             QString tmpOutFile;
-            tmpOutFile = tmpOutDir_ + QString("\\bgLowerBound.png");
+            tmpOutFile = config_.tmpOutDir + QString("\\bgLowerBound.png");
             printf("Writing lower bound to %s\n", tmpOutFile.toStdString().c_str());
             success = cv::imwrite(tmpOutFile.toStdString(), bgLowerBoundImage_, imwriteParams_);
             if(!success) printf("Failed writing lower bound to %s\n", tmpOutFile.toStdString().c_str());
             //output upper bound to file
             printf("Writing upper bound to %s\n", tmpOutFile.toStdString().c_str());
-            tmpOutFile = tmpOutDir_ + QString("\\bgUpperBound.png");
+            tmpOutFile = config_.tmpOutDir + QString("\\bgUpperBound.png");
             success = cv::imwrite(tmpOutFile.toStdString(), bgUpperBoundImage_, imwriteParams_);
             if (!success) printf("Failed writing upper bound to %s\n", tmpOutFile.toStdString().c_str());
         }
@@ -580,16 +580,16 @@ namespace bias
             bool success;
             cv::Mat dBkgd;
             cv::absdiff(currentImage_, bgMedianImage_, dBkgd);
-            tmpOutFile = tmpOutDir_ + QString("\\dBkgd.png");
+            tmpOutFile = config_.tmpOutDir + QString("\\dBkgd.png");
             printf("Writing difference from background to %s\n", tmpOutFile.toStdString().c_str());
             success = cv::imwrite(tmpOutFile.toStdString(), dBkgd, imwriteParams_);
             if (!success) printf("Failed writing difference from background to %s\n", tmpOutFile.toStdString().c_str());
-            tmpOutFile = tmpOutDir_ + QString("\\isFg.png");
+            tmpOutFile = config_.tmpOutDir + QString("\\isFg.png");
             printf("Writing foreground mask to %s\n", tmpOutFile.toStdString().c_str());
             success = cv::imwrite(tmpOutFile.toStdString(), isFg_);
             if (!success) printf("Failed writing foreground mask to %s\n", tmpOutFile.toStdString().c_str());
             if (config_.roiType != NONE) {
-				tmpOutFile = tmpOutDir_ + QString("\\inROI.png");
+				tmpOutFile = config_.tmpOutDir + QString("\\inROI.png");
                 printf("Writing ROI mask to %s\n", tmpOutFile.toStdString().c_str());
 				success = cv::imwrite(tmpOutFile.toStdString(), inROI_);
                 if (!success) printf("Failed writing ROI mask to %s\n", tmpOutFile.toStdString().c_str());

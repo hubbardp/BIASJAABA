@@ -38,6 +38,9 @@ namespace bias
         }
     }
 
+    const QString FlyTrackConfig::DEFAULT_BG_VIDEO_FILE_PATH = QString("dummy_bg_video.avi"); // video to estimate background from
+    const QString FlyTrackConfig::DEFAULT_BG_IMAGE_FILE_PATH = QString(""); // saved background median estimate
+    const QString FlyTrackConfig::DEFAULT_TMP_OUT_DIR = QString("tmp"); // temporary output directory
     const int FlyTrackConfig::DEFAULT_BACKGROUND_THRESHOLD = 75; // foreground/background threshold, between 0 and 255
     const int FlyTrackConfig::DEFAULT_N_FRAMES_BG_EST = 100; // number of frames used for background estimation, set to 0 to use all frames
     const int FlyTrackConfig::DEFAULT_LAST_FRAME_SAMPLE = 0; // last frame sampled for background estimation, set to 0 to use last frame of video
@@ -54,6 +57,9 @@ namespace bias
 
     FlyTrackConfig::FlyTrackConfig()
     {
+        bgVideoFilePath = DEFAULT_BG_VIDEO_FILE_PATH;
+        bgImageFilePath = DEFAULT_BG_IMAGE_FILE_PATH;
+        tmpOutDir = DEFAULT_TMP_OUT_DIR;
 		backgroundThreshold = DEFAULT_BACKGROUND_THRESHOLD;
 		nFramesBgEst = DEFAULT_N_FRAMES_BG_EST;
 		lastFrameSample = DEFAULT_LAST_FRAME_SAMPLE;
@@ -81,8 +87,24 @@ namespace bias
 		roiCenterY = imageHeight_*roiCenterYFrac_;
 		roiRadius = std::min(imageWidth_, imageHeight_)*roiRadiusFrac_;
 	}
+    void FlyTrackConfig::setBgVideoFilePath(QString bgVideoFilePathIn) {
+        bgVideoFilePath = bgVideoFilePathIn;
+        if (!bgImageFilePath.isEmpty()) {
+            return;
+		}
+        // remove extension from bgVideoFilePath
+        QString bgVideoFilePathNoExt = bgVideoFilePath;
+        int lastDotIndex = bgVideoFilePath.lastIndexOf(".");
+        if (lastDotIndex > 0) {
+            bgVideoFilePathNoExt = bgVideoFilePath.left(lastDotIndex);
+        }
+        bgImageFilePath = bgVideoFilePathNoExt + QString("_bg.png");
+    }
 
     void FlyTrackConfig::print() {
+        std::cout << "bgVideoFilePath: " << bgVideoFilePath.toStdString() << std::endl;
+        std::cout << "bgImageFilePath: " << bgImageFilePath.toStdString() << std::endl;
+        std::cout << "tmpOutDir: " << tmpOutDir.toStdString() << std::endl;
 		std::cout << "backgroundThreshold: " << backgroundThreshold << std::endl;
 		std::cout << "nFramesBgEst: " << nFramesBgEst << std::endl;
 		std::cout << "lastFrameSample: " << lastFrameSample << std::endl;
@@ -129,7 +151,23 @@ namespace bias
             rtnStatus.message = QString("flyTrack bgEst config empty");
             return rtnStatus;
         }
-
+        if (configMap.contains("bgImageFilePath")) {
+            if (configMap["bgImageFilePath"].canConvert<QString>())
+                bgImageFilePath = configMap["bgImageFilePath"].toString();
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert bgImageFilePath to string");
+            }
+        }
+        if (configMap.contains("bgVideoFilePath")) {
+            if (configMap["bgVideoFilePath"].canConvert<QString>()) {
+                setBgVideoFilePath(configMap["bgVideoFilePath"].toString());
+            }
+            else {
+				rtnStatus.success = false;
+				rtnStatus.appendMessage("unable to convert bgVideoFilePath to string");
+			}
+		}
         if (configMap.contains("nFramesBgEst")) {
             if(configMap["nFramesBgEst"].canConvert<int>()) 
                 nFramesBgEst = configMap["nFramesBgEst"].toInt();
@@ -292,6 +330,14 @@ namespace bias
 				rtnStatus.appendMessage("unable to convert imageHeight to int");
 			}
 		}
+        if (configMap.contains("tmpOutDir")) {
+			if (configMap["tmpOutDir"].canConvert<QString>())
+				tmpOutDir = configMap["tmpOutDir"].toString();
+            else {
+				rtnStatus.success = false;
+				rtnStatus.appendMessage("unable to convert tmpOutDir to string");
+			}
+		}
         return rtnStatus;
     }
 
@@ -300,6 +346,8 @@ namespace bias
         // Create Device map
         QVariantMap configMap;
         QVariantMap bgEstMap;
+        bgEstMap.insert("bgVideoFilePath", bgVideoFilePath);
+        bgEstMap.insert("bgImageFilePath", bgImageFilePath);
         bgEstMap.insert("nFramesBgEst", nFramesBgEst);
         bgEstMap.insert("lastFrameSample", lastFrameSample);
 
@@ -325,6 +373,7 @@ namespace bias
         miscMap.insert("DEBUG", DEBUG);
         miscMap.insert("imageWidth", imageWidth_);
         miscMap.insert("imageHeight", imageHeight_);
+        miscMap.insert("tmpOutDir", tmpOutDir);
 
 		configMap.insert("bgEst", bgEstMap);
         configMap.insert("roi", roiMap);
