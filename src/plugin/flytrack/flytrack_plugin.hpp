@@ -20,6 +20,8 @@ namespace bias
     class CameraWindow;
 
     enum ROIType { CIRCLE, NONE};
+
+    enum FlyVsBgModeType { FLY_DARKER_THAN_BG, FLY_BRIGHTER_THAN_BG, FLY_ANY_DIFFERENCE_BG };
     
     struct EllipseParams
     {
@@ -36,6 +38,7 @@ namespace bias
         int lastFrameSample,cv::Mat& bgMedianImage);
     int largestConnectedComponent(cv::Mat& isFg);
     void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse);
+    double mod2pi(double angle);
 
     class FlyTrackPlugin : public BiasPlugin
     {
@@ -49,9 +52,7 @@ namespace bias
             static const QString LOG_FILE_POSTFIX;
             static const unsigned int DEFAULT_NUM_BINS;
             static const unsigned int DEFAULT_BIN_SIZE;
-            static const unsigned int FLY_DARKER_THAN_BG;
-            static const unsigned int FLY_BRIGHTER_THAN_BG;
-            static const unsigned int FLY_ANY_DIFFERENCE_BG;
+            static const double MIN_VEL_MATCH_DOTPROD; // minimum dot product for velocity matching
 
             FlyTrackPlugin(QWidget *parent=0);
             bool pluginsEnabled();
@@ -77,11 +78,17 @@ namespace bias
             virtual QString getLogFileName(bool includeAutoNaming);
             virtual QString getLogFileFullPath(bool includeAutoNaming);
 
+            void initialize();
             void setBackgroundModel();
             void storeBackgroundModel(cv::Mat& bgMedianImage);
             cv::Mat circleROI(double centerX, double centerY, double centerRadius);
             void backgroundSubtraction();
             void setROI();
+            void updateVelocityHistory();
+            void updateOrientationHistory();
+            void updateEllipseHistory();
+            void resolveHeadTail();
+            void flipFlyOrientationHistory();
 
         signals:
 
@@ -108,13 +115,15 @@ namespace bias
             int backgroundThreshold_; // foreground threshold
             int nFramesBgEst_; // number of frames used for background estimation, set to 0 to use all frames
             int lastFrameSample_; // last frame sampled for background estimation, set to 0 to use last frame of video
-            int flyVsBgMode_; // whether the fly is darker than the background
+            FlyVsBgModeType flyVsBgMode_; // whether the fly is darker than the background
             ROIType roiType_; // type of ROI
-            double roiCenterX_ = 468.6963; // x-coordinate of ROI center
-            double roiCenterY_ = 480.2917; // y-coordinate of ROI center
-            double roiRadius_ = 428.3618; // radius of ROI
+            double roiCenterX_; // x-coordinate of ROI center
+            double roiCenterY_; // y-coordinate of ROI center
+            double roiRadius_; // radius of ROI
             bool DEBUG_; // flag for debugging
             int historyBufferLength_; // number of frames to buffer velocity, orientation
+            double minVelocityMagnitude_; // minimum velocity magnitude in pixels/frame to consider fly moving
+            double headTailWeightVelocity_; // weight of velocity dot product in head-tail orientation resolution
 
             // background model
             QString bgVideoFilePath_; // video to estimate background from
@@ -133,9 +142,11 @@ namespace bias
 
             // tracking history
             std::vector<EllipseParams> flyEllipseHistory_; // tracked ellipses
-            std::deque<double> velocityHistory_; // tracked velocities
+            std::deque<cv::Point2d> velocityHistory_; // tracked velocity buffer
+            std::deque<double> orientationHistory_; // tracked orientation buffer
             cv::Point2d meanFlyVelocity_; // mean velocity of fly
             double meanFlyOrientation_; // mean orientation of fly
+            bool headTailResolved_; // flag indicating if head-tail orientation has been resolved ever
 
             void setRequireTimer(bool value);
             void openLogFile();

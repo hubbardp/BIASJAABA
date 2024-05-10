@@ -184,6 +184,7 @@ namespace bias {
             releaseLock();
 
             // Grab an image
+            cameraPtr_->acquireLock();
             if (isVideo_) {
                 try
                 {
@@ -202,7 +203,6 @@ namespace bias {
 				}
             }
             else {
-                cameraPtr_->acquireLock();
                 try
                 {
                     stampImg.image = cameraPtr_->grabImage();
@@ -215,8 +215,8 @@ namespace bias {
                     std::cout << runtimeError.what() << std::endl;
                     error = true;
                 }
-                cameraPtr_->releaseLock();
             }
+            cameraPtr_->releaseLock();
 
             // grabImage is nonblocking - returned frame is empty is a new frame is not available.
             if (stampImg.image.empty()) 
