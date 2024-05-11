@@ -101,23 +101,30 @@ namespace bias
         bgImageFilePath = bgVideoFilePathNoExt + QString("_bg.png");
     }
 
-    void FlyTrackConfig::print() {
-        std::cout << "bgVideoFilePath: " << bgVideoFilePath.toStdString() << std::endl;
-        std::cout << "bgImageFilePath: " << bgImageFilePath.toStdString() << std::endl;
-        std::cout << "tmpOutDir: " << tmpOutDir.toStdString() << std::endl;
-		std::cout << "backgroundThreshold: " << backgroundThreshold << std::endl;
-		std::cout << "nFramesBgEst: " << nFramesBgEst << std::endl;
-		std::cout << "lastFrameSample: " << lastFrameSample << std::endl;
-		std::cout << "flyVsBgMode: " << flyVsBgMode << std::endl;
-		std::cout << "roiType: " << roiType << std::endl;
-		std::cout << "roiCenterX: " << roiCenterX << std::endl;
-		std::cout << "roiCenterY: " << roiCenterY << std::endl;
-		std::cout << "roiRadius: " << roiRadius << std::endl;
-		std::cout << "historyBufferLength: " << historyBufferLength << std::endl;
-		std::cout << "minVelocityMagnitude: " << minVelocityMagnitude << std::endl;
-		std::cout << "headTailWeightVelocity: " << headTailWeightVelocity << std::endl;
-		std::cout << "DEBUG: " << DEBUG << std::endl;
+    QString FlyTrackConfig::toString() {
+        QString configStr;
+        configStr += QString("bgVideoFilePath: %1\n").arg(bgVideoFilePath);
+        configStr += QString("bgImageFilePath: %1\n").arg(bgImageFilePath);
+        configStr += QString("tmpOutDir: %1\n").arg(tmpOutDir);
+        configStr += QString("backgroundThreshold: %1\n").arg(backgroundThreshold);
+        configStr += QString("nFramesBgEst: %1\n").arg(nFramesBgEst);
+        configStr += QString("lastFrameSample: %1\n").arg(lastFrameSample);
+        configStr += QString("flyVsBgMode: %1\n").arg(flyVsBgMode);
+        configStr += QString("roiType: %1\n").arg(roiType);
+        configStr += QString("roiCenterX: %1\n").arg(roiCenterX);
+        configStr += QString("roiCenterY: %1\n").arg(roiCenterY);
+        configStr += QString("roiRadius: %1\n").arg(roiRadius);
+        configStr += QString("historyBufferLength: %1\n").arg(historyBufferLength);
+        configStr += QString("minVelocityMagnitude: %1\n").arg(minVelocityMagnitude);
+        configStr += QString("headTailWeightVelocity: %1\n").arg(headTailWeightVelocity);
+        configStr += QString("DEBUG: %1\n").arg(DEBUG);
+        return configStr;
+
     }
+
+    void FlyTrackConfig::print() {
+		std::cout << toString().toStdString();
+	}
 
     RtnStatus FlyTrackConfig::fromMap(QVariantMap configMap) {
         RtnStatus rtnStatus;
@@ -205,7 +212,7 @@ namespace bias
                 else if (roiTypeStr == "NONE") roiType = NONE;
                 else {
                     rtnStatus.success = false;
-                    rtnStatus.appendMessage("unable to parse roiType");
+                    rtnStatus.appendMessage(QString("unknown roiType %1").arg(roiTypeStr));
                 }
             }
             else {
@@ -352,7 +359,14 @@ namespace bias
         bgEstMap.insert("lastFrameSample", lastFrameSample);
 
         QVariantMap roiMap;
-        roiMap.insert("roiType", roiType);
+        switch (roiType) {
+            case CIRCLE:
+				roiMap.insert("roiType", QString("CIRCLE"));
+				break;
+			case NONE:
+				roiMap.insert("roiType", QString("NONE"));
+				break;
+        }
         roiMap.insert("roiCenterXFrac", roiCenterXFrac_);
         roiMap.insert("roiCenterYFrac", roiCenterYFrac_);
         roiMap.insert("roiRadiusFrac", roiRadiusFrac_);
@@ -362,7 +376,17 @@ namespace bias
 
         QVariantMap bgSubMap;
         bgSubMap.insert("backgroundThreshold", backgroundThreshold);
-        bgSubMap.insert("flyVsBgMode", flyVsBgMode);
+        switch (flyVsBgMode) {
+			case FLY_DARKER_THAN_BG:
+				bgSubMap.insert("flyVsBgMode", QString("FLY_DARKER_THAN_BG"));
+				break;
+			case FLY_BRIGHTER_THAN_BG:
+				bgSubMap.insert("flyVsBgMode", QString("FLY_BRIGHTER_THAN_BG"));
+				break;
+			case FLY_ANY_DIFFERENCE_BG:
+				bgSubMap.insert("flyVsBgMode", QString("FLY_ANY_DIFFERENCE_BG"));
+				break;
+		}
 
         QVariantMap headTailMap;
         headTailMap.insert("historyBufferLength", historyBufferLength);
@@ -382,6 +406,37 @@ namespace bias
         configMap.insert("misc", miscMap);
 
         return configMap;
+    }
+
+    RtnStatus FlyTrackConfig::fromJson(QByteArray jsonConfigArray) {
+        RtnStatus rtnStatus;
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+
+        bool ok;
+        QVariantMap configMap = QtJson::parse(QString(jsonConfigArray), ok).toMap();
+        if (!ok)
+        {
+            rtnStatus.success = false;
+            rtnStatus.message = QString("FlyTrack unable to parse json configuration string");
+            return rtnStatus;
+
+        }
+        rtnStatus = fromMap(configMap);
+        return rtnStatus;
+    }
+
+    QByteArray FlyTrackConfig::toJson()
+    {
+        QVariantMap configMap = toMap();
+
+        bool ok;
+        QByteArray jsonConfigArray = QtJson::serialize(configMap, ok);
+        if (!ok)
+        {
+            jsonConfigArray = QByteArray();
+        }
+        return jsonConfigArray;
     }
 
 }

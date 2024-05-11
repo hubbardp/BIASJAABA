@@ -156,6 +156,9 @@ namespace bias
     // initializes state
     FlyTrackPlugin::FlyTrackPlugin(QWidget *parent) : BiasPlugin(parent) 
     { 
+
+        setupUi(this);
+
         // hard code parameters
         // these should go in a config file/GUI
 
@@ -323,23 +326,38 @@ namespace bias
 
     QVariantMap FlyTrackPlugin::getConfigAsMap()  
     {
-        QVariantMap configMap;
+        QVariantMap configMap = config_.toMap();
         return configMap;
     }
 
-    RtnStatus FlyTrackPlugin::setConfigFromMap(QVariantMap configMap)
-    {
-        RtnStatus rtnStatus;
+    RtnStatus FlyTrackPlugin::setFromConfig(FlyTrackConfig config)
+	{
+		RtnStatus rtnStatus;
         rtnStatus.success = true;
         rtnStatus.message = QString("");
+		config_ = config;
+		return rtnStatus;
+	}
+
+    RtnStatus FlyTrackPlugin::setConfigFromMap(QVariantMap configMap)
+    {
+        FlyTrackConfig config;
+        RtnStatus rtnStatus = config.fromMap(configMap);
+        if (rtnStatus.success)
+        {
+            rtnStatus = setFromConfig(config);
+        }
         return rtnStatus;
     }
 
     RtnStatus FlyTrackPlugin::setConfigFromJson(QByteArray jsonArray)
     {
-        RtnStatus rtnStatus;
-        rtnStatus.success = true;
-        rtnStatus.message = QString("");
+        FlyTrackConfig config;
+        RtnStatus rtnStatus = config.fromJson(jsonArray);
+        if (rtnStatus.success)
+        {
+            rtnStatus = setFromConfig(config);
+        }
         return rtnStatus;
     }
 

@@ -16,6 +16,7 @@ set(
     auto_naming_dialog.ui
     ../plugin/stampede/stampede_plugin.ui
     ../plugin/grab_detector/grab_detector_plugin.ui
+    ../plugin/flytrack/flytrack_plugin.ui
     )
 
 set(

@@ -1,5 +1,6 @@
 #ifndef FLYTRACK_PLUGIN_HPP
 #define FLYTRACK_PLUGIN_HPP
+#include "ui_flytrack_plugin.h"
 #include <QDialog>
 #include <QWidget>
 #include <QList>
@@ -36,7 +37,7 @@ namespace bias
     void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse);
     double mod2pi(double angle);
 
-    class FlyTrackPlugin : public BiasPlugin
+    class FlyTrackPlugin : public BiasPlugin, public Ui::FlyTrackPluginDialog
     {
         Q_OBJECT
 
@@ -67,6 +68,7 @@ namespace bias
             virtual QString getName();
             virtual QString getDisplayName();
             virtual QVariantMap getConfigAsMap();  
+            RtnStatus setFromConfig(FlyTrackConfig config);
             virtual RtnStatus setConfigFromMap(QVariantMap configMap);
             virtual RtnStatus setConfigFromJson(QByteArray jsonArray);
             virtual RtnStatus runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg=true);
