@@ -55,6 +55,7 @@ namespace bias
             FlyTrackPlugin(QWidget *parent=0);
             bool pluginsEnabled();
             void setPluginsEnabled(bool value);
+            RtnStatus getUiValues(FlyTrackConfig &config);
 
             QPointer<CameraWindow> getCameraWindow();
 
@@ -84,6 +85,12 @@ namespace bias
         protected:
 
             void initialize();
+            void initializeUi();
+            void setRoiUIValues();
+            void connectWidgets();
+            void setBgFilePaths(QString bgImageFilePath, QString bgVideoFilePath);
+            bool saveBgMedianImage(cv::Mat bgMedianImage, QString bgImageFilePath);
+
             void setBackgroundModel();
             void storeBackgroundModel(cv::Mat& bgMedianImage);
             cv::Mat circleROI(double centerX, double centerY, double centerRadius);
@@ -140,6 +147,10 @@ namespace bias
             void setRequireTimer(bool value);
             void openLogFile();
             void closeLogFile();
+
+        private slots:
+
+            void applyPushButtonClicked();
 
     };
 

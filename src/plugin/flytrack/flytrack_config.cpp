@@ -9,7 +9,65 @@ namespace bias
 
     // helper functions
 
-    void setRoiFracAbsFromMap(QVariantMap configMap, RtnStatus& rtnStatus,
+    bool roiTypeToString(ROIType roiType,QString& roiTypeString) {
+        switch (roiType) {
+        case CIRCLE:
+            roiTypeString = QString("CIRCLE");
+            return true;
+        case NONE:
+            roiTypeString = QString("NONE");
+            return true;
+        default:
+            return false;
+        }
+    }   
+    bool roiTypeFromString(QString roiTypeString, ROIType& roiType) {
+        if (roiTypeString == "CIRCLE") {
+            roiType = CIRCLE;
+            return true;
+        }
+        if (roiTypeString == "NONE") {
+            roiType = NONE;
+            return true;
+        }
+        roiTypeString = "UNKNOWN";
+        return false;
+    }
+
+    bool flyVsBgModeToString(FlyVsBgModeType flyVsBgMode, QString& flyVsBgModeString) {
+		switch (flyVsBgMode) {
+		case FLY_DARKER_THAN_BG:
+			flyVsBgModeString = QString("FLY_DARKER_THAN_BG");
+			return true;
+		case FLY_BRIGHTER_THAN_BG:
+			flyVsBgModeString = QString("FLY_BRIGHTER_THAN_BG");
+			return true;
+		case FLY_ANY_DIFFERENCE_BG:
+			flyVsBgModeString = QString("FLY_ANY_DIFFERENCE_BG");
+			return true;
+		default:
+			return false;
+		}
+	}
+
+    bool flyVsBgModeFromString(QString flyVsBgModeString, FlyVsBgModeType& flyVsBgMode) {
+        if (flyVsBgModeString == "FLY_DARKER_THAN_BG") {
+            flyVsBgMode = FLY_DARKER_THAN_BG;
+			return true;
+		}
+        if (flyVsBgModeString == "FLY_BRIGHTER_THAN_BG") {
+			flyVsBgMode = FLY_BRIGHTER_THAN_BG;
+            return true;
+            }
+        if (flyVsBgModeString == "FLY_ANY_DIFFERENCE_BG") {
+            flyVsBgMode = FLY_ANY_DIFFERENCE_BG;
+			return true;
+		}
+        flyVsBgModeString = "UNKNOWN";
+		return false;
+	}
+
+    void FlyTrackConfig::setRoiFracAbsFromMap(QVariantMap configMap, RtnStatus& rtnStatus,
         QString fracField, QString absField, double& fracParam, double& absParam, int imgSize) {
         bool roiFracSet = false;
         bool roiAbsSet = false;
@@ -27,6 +85,7 @@ namespace bias
             if (configMap[absField].canConvert<double>()) {
                 absParam = configMap[absField].toDouble();
                 roiAbsSet = true;
+                roiLocationSet_ = true;
             }
             else {
                 rtnStatus.success = false;
@@ -36,6 +95,7 @@ namespace bias
         if (roiFracSet && !roiAbsSet && imgSize > 0) {
             absField = (double)imgSize * fracParam;
         }
+
     }
 
     const QString FlyTrackConfig::DEFAULT_BG_VIDEO_FILE_PATH = QString("dummy_bg_video.avi"); // video to estimate background from
@@ -72,6 +132,7 @@ namespace bias
 		minVelocityMagnitude = DEFAULT_MIN_VELOCITY_MAGNITUDE;
 		headTailWeightVelocity = DEFAULT_HEAD_TAIL_WEIGHT_VELOCITY;
 		DEBUG = DEFAULT_DEBUG;
+        roiLocationSet_ = false;
 		roiCenterX = 0;
 		roiCenterY = 0;
 		roiRadius = 0;
@@ -83,9 +144,11 @@ namespace bias
 	{
 		imageWidth_ = width;
 		imageHeight_ = height;
-		roiCenterX = imageWidth_*roiCenterXFrac_;
-		roiCenterY = imageHeight_*roiCenterYFrac_;
-		roiRadius = std::min(imageWidth_, imageHeight_)*roiRadiusFrac_;
+        if (!roiLocationSet_) {
+            roiCenterX = imageWidth_ * roiCenterXFrac_;
+            roiCenterY = imageHeight_ * roiCenterYFrac_;
+            roiRadius = std::min(imageWidth_, imageHeight_) * roiRadiusFrac_;
+        }
 	}
     void FlyTrackConfig::setBgVideoFilePath(QString bgVideoFilePathIn) {
         bgVideoFilePath = bgVideoFilePathIn;
@@ -110,7 +173,9 @@ namespace bias
         configStr += QString("nFramesBgEst: %1\n").arg(nFramesBgEst);
         configStr += QString("lastFrameSample: %1\n").arg(lastFrameSample);
         configStr += QString("flyVsBgMode: %1\n").arg(flyVsBgMode);
-        configStr += QString("roiType: %1\n").arg(roiType);
+        QString roiTypeString;
+        roiTypeToString(roiType, roiTypeString);
+        configStr += QString("roiType: %1\n").arg(roiTypeString);
         configStr += QString("roiCenterX: %1\n").arg(roiCenterX);
         configStr += QString("roiCenterY: %1\n").arg(roiCenterY);
         configStr += QString("roiRadius: %1\n").arg(roiRadius);
@@ -208,9 +273,8 @@ namespace bias
         if (configMap.contains("roiType")) {
             if (configMap["roiType"].canConvert<QString>()) {
                 QString roiTypeStr = configMap["roiType"].toString();
-                if (roiTypeStr == "CIRCLE") roiType = CIRCLE;
-                else if (roiTypeStr == "NONE") roiType = NONE;
-                else {
+                bool success = roiTypeFromString(roiTypeStr, roiType);
+                if(!success) {
                     rtnStatus.success = false;
                     rtnStatus.appendMessage(QString("unknown roiType %1").arg(roiTypeStr));
                 }
@@ -359,14 +423,9 @@ namespace bias
         bgEstMap.insert("lastFrameSample", lastFrameSample);
 
         QVariantMap roiMap;
-        switch (roiType) {
-            case CIRCLE:
-				roiMap.insert("roiType", QString("CIRCLE"));
-				break;
-			case NONE:
-				roiMap.insert("roiType", QString("NONE"));
-				break;
-        }
+        QString roiTypeString;
+        roiTypeToString(roiType, roiTypeString);
+        roiMap.insert("roiType", roiTypeString);
         roiMap.insert("roiCenterXFrac", roiCenterXFrac_);
         roiMap.insert("roiCenterYFrac", roiCenterYFrac_);
         roiMap.insert("roiRadiusFrac", roiRadiusFrac_);

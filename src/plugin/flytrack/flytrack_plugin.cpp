@@ -1,5 +1,6 @@
 #include "flytrack_plugin.hpp"
 #include <QtDebug>
+#include <QMessageBox>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 #include "camera_window.hpp"
@@ -158,6 +159,8 @@ namespace bias
     { 
 
         setupUi(this);
+        initializeUi();
+        connectWidgets();
 
         // hard code parameters
         // these should go in a config file/GUI
@@ -330,35 +333,161 @@ namespace bias
         return configMap;
     }
 
+    void FlyTrackPlugin::setRoiUIValues() {
+        roiTypeComboBox->setCurrentIndex(config_.roiType);
+        roiCenterXLineEdit->setText(QString::number(config_.roiCenterX));
+        roiCenterYLineEdit->setText(QString::number(config_.roiCenterY));
+        roiRadiusLineEdit->setText(QString::number(config_.roiRadius));
+
+        if(config_.roiType == NONE) {
+			roiCenterXLineEdit->setEnabled(false);
+			roiCenterYLineEdit->setEnabled(false);
+			roiRadiusLineEdit->setEnabled(false);
+		} else {
+			roiCenterXLineEdit->setEnabled(true);
+			roiCenterYLineEdit->setEnabled(true);
+			roiRadiusLineEdit->setEnabled(true);
+		}
+
+    }
+
+    void FlyTrackPlugin::connectWidgets()
+    {
+        connect(
+            applyPushButton,
+            SIGNAL(clicked()),
+            this,
+            SLOT(applyPushButtonClicked())
+        );
+        printf("Connected applyPushButton\n");
+    }
+
+    void FlyTrackPlugin::applyPushButtonClicked() {
+        FlyTrackConfig config;
+        RtnStatus rtnStatus = getUiValues(config);
+        printf("APPLY - Got the following config from the settings UI:\n");
+        config.print();
+        if (rtnStatus.success) {
+			rtnStatus = setFromConfig(config);
+            if (rtnStatus.success) {
+                printf("Successfully applied, config is now:\n");
+                config_.print();
+            }
+            else{
+				QMessageBox::critical(this, QString("Error setting config values"), rtnStatus.message);
+            }
+		}
+        else {
+            QMessageBox::critical(this, QString("Error getting config values"), rtnStatus.message);
+		}
+        printf("Applied!\n");
+        fflush(stdout);
+    }
+
     RtnStatus FlyTrackPlugin::setFromConfig(FlyTrackConfig config)
 	{
 		RtnStatus rtnStatus;
         rtnStatus.success = true;
         rtnStatus.message = QString("");
+
+
+        setBgFilePaths(config.bgImageFilePath, config.bgVideoFilePath);
 		config_ = config;
+
+        bgImageFilePathLineEdit->setText(config_.bgImageFilePath);
+        bgVideoFilePathLineEdit->setText(config_.bgVideoFilePath);
+        nFramesBgEstLineEdit->setText(QString::number(config_.nFramesBgEst));
+        lastFrameSampleLineEdit->setText(QString::number(config_.lastFrameSample));
+        progressBar->setVisible(false);
+        flyVsBgModeComboBox->setCurrentIndex(config_.flyVsBgMode);
+        backgroundThresholdLineEdit->setText(QString::number(config_.backgroundThreshold));
+        setRoiUIValues();
+        historyBufferLengthLineEdit->setText(QString::number(config_.historyBufferLength));
+        minVelocityMagnitudeLineEdit->setText(QString::number(config_.minVelocityMagnitude));
+        headTailWeightVelocityLineEdit->setText(QString::number(config_.headTailWeightVelocity));
+        logFilePathLineEdit->setText(getLogFileFullPath(false));
+        tmpOutDirLineEdit->setText(config_.tmpOutDir);
+        DEBUGCheckBox->setChecked(config_.DEBUG);
+
 		return rtnStatus;
 	}
 
-    RtnStatus FlyTrackPlugin::setConfigFromMap(QVariantMap configMap)
-    {
-        FlyTrackConfig config;
-        RtnStatus rtnStatus = config.fromMap(configMap);
-        if (rtnStatus.success)
-        {
-            rtnStatus = setFromConfig(config);
-        }
-        return rtnStatus;
+    bool FlyTrackPlugin::saveBgMedianImage(cv::Mat bgMedianImage, QString bgImageFilePath) {
+        printf("Saving median image to %s\n", bgImageFilePath.toStdString().c_str());
+        bool success = cv::imwrite(bgImageFilePath.toStdString(), bgMedianImage, imwriteParams_);
+        if (success) printf("Done\n");
+        else printf("Failed to write background median image to %s\n", bgImageFilePath.toStdString().c_str());
+		return success;
     }
 
-    RtnStatus FlyTrackPlugin::setConfigFromJson(QByteArray jsonArray)
-    {
-        FlyTrackConfig config;
-        RtnStatus rtnStatus = config.fromJson(jsonArray);
+    void FlyTrackPlugin::setBgFilePaths(QString bgImageFilePath, QString bgVideoFilePath) {
+        QString bgImageFilePathPrev = config_.bgImageFilePath;
+        QString bgVideoFilePathPrev = config_.bgVideoFilePath;
+        config_.bgImageFilePath = bgImageFilePath;
+        config_.bgVideoFilePath = bgVideoFilePath;
+        if (QFile::exists(bgImageFilePath)) {
+            if ((bgImageFilePath != bgImageFilePathPrev) || !bgImageComputed_) {
+                loadBackgroundModel(bgImageFilePath, bgMedianImage_);
+                storeBackgroundModel(bgMedianImage_);
+                bgImageComputed_ = true;
+            }
+            // if bgImageFilePath matches and bgImageComputed_ is true, do nothing
+        }
+        else {
+            if ((bgVideoFilePath == bgVideoFilePathPrev) && bgImageComputed_) {
+                // if the video file hasn't changed and the median has been computed
+                // just save the image
+                saveBgMedianImage(bgMedianImage_, bgImageFilePath);
+            }
+            else {
+                bgImageComputed_ = false;
+            }
+        }
+    }
+
+    RtnStatus FlyTrackPlugin::getUiValues(FlyTrackConfig& config) {
+        RtnStatus rtnStatus;
+		rtnStatus.success = true;
+		rtnStatus.message = QString("");
+        QString bgImgStr, bgVideoStr;
+        config.bgImageFilePath = bgImageFilePathLineEdit->text();
+		config.bgVideoFilePath = bgVideoFilePathLineEdit->text();
+		config.nFramesBgEst = nFramesBgEstLineEdit->text().toInt();
+		config.lastFrameSample = lastFrameSampleLineEdit->text().toInt();
+		config.flyVsBgMode = (FlyVsBgModeType)flyVsBgModeComboBox->currentIndex();
+		config.backgroundThreshold = backgroundThresholdLineEdit->text().toInt();
+		config.roiType = (ROIType)roiTypeComboBox->currentIndex();
+		config.roiCenterX = roiCenterXLineEdit->text().toDouble();
+		config.roiCenterY = roiCenterYLineEdit->text().toDouble();
+		config.roiRadius = roiRadiusLineEdit->text().toDouble();
+		config.historyBufferLength = historyBufferLengthLineEdit->text().toInt();
+		config.minVelocityMagnitude = minVelocityMagnitudeLineEdit->text().toDouble();
+		config.headTailWeightVelocity = headTailWeightVelocityLineEdit->text().toDouble();
+		config.tmpOutDir = tmpOutDirLineEdit->text();
+		config.DEBUG = DEBUGCheckBox->isChecked();
+		return rtnStatus;
+	}
+
+	RtnStatus FlyTrackPlugin::setConfigFromMap(QVariantMap configMap)
+	{
+		FlyTrackConfig config;
+		RtnStatus rtnStatus = config.fromMap(configMap);
         if (rtnStatus.success)
         {
-            rtnStatus = setFromConfig(config);
-        }
-        return rtnStatus;
+			rtnStatus = setFromConfig(config);
+		}
+		return rtnStatus;
+	}
+
+	RtnStatus FlyTrackPlugin::setConfigFromJson(QByteArray jsonArray)
+	{
+		FlyTrackConfig config;
+		RtnStatus rtnStatus = config.fromJson(jsonArray);
+        if (rtnStatus.success)
+        {
+			rtnStatus = setFromConfig(config);
+		}
+		return rtnStatus;
     }
 
     bool FlyTrackPlugin::pluginsEnabled()
@@ -472,9 +601,28 @@ namespace bias
         orientationHistory_.clear();
         headTailResolved_ = false;
 
+        setFromConfig(config_);
         printf("Config:\n");
         config_.print();
     }
+
+    void FlyTrackPlugin::initializeUi() {
+
+        // set items in ROI combobox to match order of enum
+        roiTypeComboBox->clear();
+        QString s;
+        for(int i=0; i<N_ROI_TYPES; i++){
+			roiTypeToString((ROIType)i, s);
+			roiTypeComboBox->addItem(s, i);
+		}
+        // set items in flyVsBgMode combobox to match order of enum
+        flyVsBgModeComboBox->clear();
+        for (int i = 0; i < N_FLY_VS_BG_MODES; i++) {
+            flyVsBgModeToString((FlyVsBgModeType)i, s);
+            flyVsBgModeComboBox->addItem(s, i);
+        }
+    }
+
 
     // cv::Mat circleROI(double centerX, double centerY, double centerRadius)
     // create a circular region of interest mask, inside is 255, outside 0

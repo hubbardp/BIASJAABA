@@ -9,13 +9,16 @@
 namespace bias
 {
 
+    const int N_ROI_TYPES = 2;
     enum ROIType { CIRCLE, NONE };
 
+    const int N_FLY_VS_BG_MODES = 3;
     enum FlyVsBgModeType { FLY_DARKER_THAN_BG, FLY_BRIGHTER_THAN_BG, FLY_ANY_DIFFERENCE_BG };
 
-    void setRoiFracAbsFromMap(QVariantMap configMap, RtnStatus& rtnStatus,
-        QString fracField, QString absField, double& fracParam, double& absParam, int imgSize);
-
+    bool roiTypeToString(ROIType roiType, QString& roiTypeString);
+    bool roiTypeFromString(QString roiTypeString, ROIType& roiType);
+    bool flyVsBgModeToString(FlyVsBgModeType flyVsBgMode, QString& flyVsBgModeString);
+    bool flyVsBgModeFromString(QString flyVsBgModeString, FlyVsBgModeType& flyVsBgMode);
 
     class FlyTrackConfig
     {
@@ -75,8 +78,12 @@ namespace bias
             QString toString();
 
             void print();
+            void setRoiFracAbsFromMap(QVariantMap configMap, RtnStatus& rtnStatus,
+                QString fracField, QString absField, double& fracParam, double& absParam, int imgSize);
+
 
         protected:
+            bool roiLocationSet_; // whether the absolute ROI location has been set
             double roiCenterXFrac_; // x-coordinate of ROI center, relative to image width
             double roiCenterYFrac_; // y-coordinate of ROI center, relative to image height
             double roiRadiusFrac_; // radius of ROI, relative to min(image width, image height)
