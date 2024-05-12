@@ -32,7 +32,7 @@ namespace bias
     // helper functions
     void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage);
     void computeBackgroundMedian(QString bgVideoFilePath, int nFramesBgEst, 
-        int lastFrameSample,cv::Mat& bgMedianImage);
+        int lastFrameSample,cv::Mat& bgMedianImage,QProgressBar* progressBar);
     int largestConnectedComponent(cv::Mat& isFg);
     void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse);
     double mod2pi(double angle);
@@ -55,7 +55,9 @@ namespace bias
             FlyTrackPlugin(QWidget *parent=0);
             bool pluginsEnabled();
             void setPluginsEnabled(bool value);
-            RtnStatus getUiValues(FlyTrackConfig &config);
+            void getUiValues(FlyTrackConfig &config);
+            void getUiBgEstValues(FlyTrackConfig& config);
+            void getUiRoiValues(FlyTrackConfig& config);
 
             QPointer<CameraWindow> getCameraWindow();
 
@@ -77,6 +79,7 @@ namespace bias
             virtual QString getLogFilePostfix();
             virtual QString getLogFileName(bool includeAutoNaming);
             virtual QString getLogFileFullPath(bool includeAutoNaming);
+            virtual void showEvent(QShowEvent *event);
 
         signals:
 
@@ -88,11 +91,12 @@ namespace bias
             void initializeUi();
             void setRoiUIValues();
             void connectWidgets();
-            void setBgFilePaths(QString bgImageFilePath, QString bgVideoFilePath);
+            void setBgEstParams(FlyTrackConfig& newConfig);
             bool saveBgMedianImage(cv::Mat bgMedianImage, QString bgImageFilePath);
+            void setPreviewImage(cv::Mat matImage, FlyTrackConfig config);
 
             void setBackgroundModel();
-            void storeBackgroundModel(cv::Mat& bgMedianImage);
+            void storeBackgroundModel(cv::Mat& bgMedianImage, FlyTrackConfig& config);
             cv::Mat circleROI(double centerX, double centerY, double centerRadius);
             void backgroundSubtraction();
             void setROI();
@@ -151,6 +155,10 @@ namespace bias
         private slots:
 
             void applyPushButtonClicked();
+            void loadBgPushButtonClicked();
+            void roiUiChanged(int v);
+            void bgImageFilePathToolButtonClicked();
+            void bgVideoFilePathToolButtonClicked();
 
     };
 

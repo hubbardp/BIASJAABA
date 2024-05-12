@@ -63,8 +63,10 @@ namespace bias
             bool DEBUG; // flag for debugging
 
             FlyTrackConfig();
+            FlyTrackConfig FlyTrackConfig::copy();
             void setImageSize(int width, int height);
             void setBgVideoFilePath(QString bgVideoFilePath);
+            void setRoiParams(ROIType roiTypeNew, double roiCenterXNew, double roiCenterYNew, double roiRadiusNew);
 
             RtnStatus setBgEstFromMap(QVariantMap configMap);
             RtnStatus setRoiFromMap(QVariantMap configMap);

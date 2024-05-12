@@ -67,6 +67,14 @@ namespace bias
 		return false;
 	}
 
+    void FlyTrackConfig::setRoiParams(ROIType roiTypeNew, double roiCenterXNew, double roiCenterYNew, double roiRadiusNew) {
+    	roiType = roiTypeNew;
+		roiCenterX = roiCenterXNew;
+		roiCenterY = roiCenterYNew;
+		roiRadius = roiRadiusNew;
+        roiLocationSet_ = true;
+    }
+
     void FlyTrackConfig::setRoiFracAbsFromMap(QVariantMap configMap, RtnStatus& rtnStatus,
         QString fracField, QString absField, double& fracParam, double& absParam, int imgSize) {
         bool roiFracSet = false;
@@ -139,6 +147,33 @@ namespace bias
 		imageWidth_ = -1;
 		imageHeight_ = -1;
 	}
+
+    FlyTrackConfig FlyTrackConfig::copy() {
+    	FlyTrackConfig config;
+		config.bgVideoFilePath = bgVideoFilePath;
+		config.bgImageFilePath = bgImageFilePath;
+		config.tmpOutDir = tmpOutDir;
+		config.backgroundThreshold = backgroundThreshold;
+		config.nFramesBgEst = nFramesBgEst;
+		config.lastFrameSample = lastFrameSample;
+		config.flyVsBgMode = flyVsBgMode;
+		config.roiType = roiType;
+		config.roiCenterXFrac_ = roiCenterXFrac_;
+		config.roiCenterYFrac_ = roiCenterYFrac_;
+		config.roiRadiusFrac_ = roiRadiusFrac_;
+		config.historyBufferLength = historyBufferLength;
+		config.minVelocityMagnitude = minVelocityMagnitude;
+		config.headTailWeightVelocity = headTailWeightVelocity;
+		config.DEBUG = DEBUG;
+		config.roiLocationSet_ = roiLocationSet_;
+		config.roiCenterX = roiCenterX;
+		config.roiCenterY = roiCenterY;
+		config.roiRadius = roiRadius;
+		config.imageWidth_ = imageWidth_;
+		config.imageHeight_ = imageHeight_;
+		return config;
+	
+    }
 
 	void FlyTrackConfig::setImageSize(int width, int height)
 	{
