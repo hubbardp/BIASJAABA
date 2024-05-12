@@ -142,12 +142,14 @@ namespace bias
 
 	void FlyTrackConfig::setImageSize(int width, int height)
 	{
+        printf("set image size: width: %d, height: %d\n", width, height);
 		imageWidth_ = width;
 		imageHeight_ = height;
         if (!roiLocationSet_) {
             roiCenterX = imageWidth_ * roiCenterXFrac_;
             roiCenterY = imageHeight_ * roiCenterYFrac_;
             roiRadius = std::min(imageWidth_, imageHeight_) * roiRadiusFrac_;
+            printf("Set absolute ROI location based on frac: x: %f, y: %f, r: %f\n", roiCenterX, roiCenterY, roiRadius);
         }
 	}
     void FlyTrackConfig::setBgVideoFilePath(QString bgVideoFilePathIn) {
@@ -179,6 +181,10 @@ namespace bias
         configStr += QString("roiCenterX: %1\n").arg(roiCenterX);
         configStr += QString("roiCenterY: %1\n").arg(roiCenterY);
         configStr += QString("roiRadius: %1\n").arg(roiRadius);
+        configStr += QString("roiCenterXFrac: %1\n").arg(roiCenterXFrac_);
+        configStr += QString("roiCenterYFrac: %1\n").arg(roiCenterYFrac_);
+        configStr += QString("roiRadiusFrac: %1\n").arg(roiRadiusFrac_);
+        configStr += QString("roiLocationSet: %1\n").arg(roiLocationSet_);
         configStr += QString("historyBufferLength: %1\n").arg(historyBufferLength);
         configStr += QString("minVelocityMagnitude: %1\n").arg(minVelocityMagnitude);
         configStr += QString("headTailWeightVelocity: %1\n").arg(headTailWeightVelocity);

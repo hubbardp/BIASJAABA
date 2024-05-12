@@ -26,6 +26,7 @@ namespace bias
     // helper functions
 
     // void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage)
+    // void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage)
     // load background model from file with cv::imread
     // inputs:
     // bgImageFilePath: path to background image file to load
@@ -158,6 +159,7 @@ namespace bias
     FlyTrackPlugin::FlyTrackPlugin(QWidget *parent) : BiasPlugin(parent) 
     { 
 
+        printf("FlyTrackPlugin constructor...\n");
         setupUi(this);
         initializeUi();
         connectWidgets();
@@ -174,14 +176,13 @@ namespace bias
         config_.bgVideoFilePath = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1.avi");
         config_.bgImageFilePath = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1_bg.png");
         config_.tmpOutDir = QString("C:\\Code\\BIAS\\testdata\\tmp");
-        config_.DEBUG = true;
-        //lastFrameSample_ = -1;
+        //config_.DEBUG = true;
 
         // parameters for region of interest
-        config_.roiType = CIRCLE;
-        config_.roiCenterX = 468.6963;
-        config_.roiCenterY = 480.2917;
-        config_.roiRadius = 428.3618;
+        //config_.roiType = CIRCLE;
+        //config_.roiCenterX = 468.6963;
+        //config_.roiCenterY = 480.2917;
+        //config_.roiRadius = 428.3618;
 
         imwriteParams_.push_back(cv::IMWRITE_PNG_COMPRESSION);
         imwriteParams_.push_back(0);
@@ -196,12 +197,15 @@ namespace bias
         initialize();
 
         setRequireTimer(false);
+        printf("Leaving FlyTrackPlugin constructor\n");
     }
 
     void FlyTrackPlugin::reset()
     { 
+        printf("FlyTrackPlugin::reset\n");
         initialize();
         openLogFile();
+        printf("Leaving reset\n");
     }
 
     void FlyTrackPlugin::setFileAutoNamingString(QString autoNamingString)
@@ -222,9 +226,11 @@ namespace bias
     {
         active_ = value;
         // compute background model
+        acquireLock();
         if (value && !bgImageComputed_) {
             setBackgroundModel();
         }
+        releaseLock();
     }
 
     void FlyTrackPlugin::processFrames(QList<StampedImage> frameList) 
@@ -235,6 +241,11 @@ namespace bias
         currentImage_ = latestFrame.image;
         timeStamp_ = latestFrame.timeStamp;
         frameCount_ = latestFrame.frameCount;
+        if (!bgImageComputed_) {
+			releaseLock();
+            fprintf(stderr, "Background model not computed\n");
+			return;
+		}
         //printf("\nProcessing frame %lu, timestamp = %f\n", frameCount_, timeStamp_);
         // empty frame
         if ((currentImage_.rows == 0) || (currentImage_.cols == 0))
@@ -286,6 +297,10 @@ namespace bias
     {
         cv::Mat currentImageCopy;
         acquireLock();
+        if (!bgImageComputed_) {
+            currentImageCopy = currentImage_.clone();
+			releaseLock();
+		}
         currentImageCopy = isFg_.clone(); 
         cv::cvtColor(currentImageCopy, currentImageCopy, cv::COLOR_GRAY2BGR);
         // plot fit ellipse
@@ -390,9 +405,12 @@ namespace bias
         rtnStatus.success = true;
         rtnStatus.message = QString("");
 
+        printf("Setting config:\n");
+        printf("Before:\n");
+        config_.print();
 
-        setBgFilePaths(config.bgImageFilePath, config.bgVideoFilePath);
 		config_ = config;
+        setBgFilePaths(config.bgImageFilePath, config.bgVideoFilePath);
 
         bgImageFilePathLineEdit->setText(config_.bgImageFilePath);
         bgVideoFilePathLineEdit->setText(config_.bgVideoFilePath);
@@ -408,6 +426,10 @@ namespace bias
         logFilePathLineEdit->setText(getLogFileFullPath(false));
         tmpOutDirLineEdit->setText(config_.tmpOutDir);
         DEBUGCheckBox->setChecked(config_.DEBUG);
+
+        printf("After:\n");
+        config_.print();
+        printf("Leaving setFromConfig\n");
 
 		return rtnStatus;
 	}
@@ -427,8 +449,9 @@ namespace bias
         config_.bgVideoFilePath = bgVideoFilePath;
         if (QFile::exists(bgImageFilePath)) {
             if ((bgImageFilePath != bgImageFilePathPrev) || !bgImageComputed_) {
-                loadBackgroundModel(bgImageFilePath, bgMedianImage_);
-                storeBackgroundModel(bgMedianImage_);
+                cv::Mat bgMedianImage;
+                loadBackgroundModel(bgImageFilePath, bgMedianImage);
+                storeBackgroundModel(bgMedianImage);
                 bgImageComputed_ = true;
             }
             // if bgImageFilePath matches and bgImageComputed_ is true, do nothing
@@ -592,7 +615,7 @@ namespace bias
     // void initialize()
     // (re-)initialize state
     void FlyTrackPlugin::initialize() {
-        printf("Initializing FlyTrackPlugin\n");
+        printf("FlyTrackPlugin::initialize()\n");
         isFirst_ = true;
         meanFlyVelocity_ = cv::Point2d(0.0, 0.0);
         meanFlyOrientation_ = 0.0;
@@ -604,6 +627,7 @@ namespace bias
         setFromConfig(config_);
         printf("Config:\n");
         config_.print();
+        printf("Leaving initialize\n");
     }
 
     void FlyTrackPlugin::initializeUi() {
@@ -666,6 +690,10 @@ namespace bias
             loadBackgroundModel(config_.bgImageFilePath, bgMedianImage);
         }
         else {
+            if (!QFile::exists(config_.bgVideoFilePath)) {
+				printf("Background video file %s does not exist\n", config_.bgVideoFilePath.toStdString().c_str());
+				return;
+			}
             computeBackgroundMedian(config_.bgVideoFilePath, config_.nFramesBgEst, config_.lastFrameSample, bgMedianImage);
             // save the median image
             printf("Saving median image to %s\n", config_.bgImageFilePath.toStdString().c_str());
@@ -675,14 +703,9 @@ namespace bias
         }
 
         // store background model
-        acquireLock();
         storeBackgroundModel(bgMedianImage);
 
-        // roi mask
-        setROI();
-
         bgImageComputed_ = true;
-        releaseLock();
 
         //output lower bound to file
         if (config_.DEBUG) {
@@ -712,10 +735,15 @@ namespace bias
     // bgMedianImage: median background image to store
     void FlyTrackPlugin::storeBackgroundModel(cv::Mat& bgMedianImage) {
 
+        printf("Storing background model\n");
         bgMedianImage_ = bgMedianImage.clone();
         cv::add(bgMedianImage, config_.backgroundThreshold, bgUpperBoundImage_);
         cv::subtract(bgMedianImage, config_.backgroundThreshold, bgLowerBoundImage_);
         config_.setImageSize(bgMedianImage.cols, bgMedianImage.rows);
+        // roi mask
+        setROI();
+
+        printf("Done\n");
     }
 
     // void backgroundSubtraction()
@@ -723,6 +751,7 @@ namespace bias
     // use bgLowerBoundImage_, bgUpperBoundImage_ to threshold
     // difference from bgMedianImage_ to determine background/foreground membership.
     // if roiType_ is not NONE, use inROI_ mask to restrict foreground to ROI.
+    // lock must be acquired outside of this function
     void FlyTrackPlugin::backgroundSubtraction() {
         // Get background/foreground membership, 255=background, 0=foreground
         switch (config_.flyVsBgMode) {
