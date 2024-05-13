@@ -990,7 +990,7 @@ namespace bias
         {
             QString logFileFullPath = getLogFileFullPath(true);
             qDebug() << logFileFullPath;
-            fprintf(stderr,"LOGGING tracking to logfile: %s",logFileFullPath.toStdString().c_str());
+            fprintf(stderr,"Outputting trajectory to file: %s",logFileFullPath.toStdString().c_str());
             logFile_.setFileName(logFileFullPath);
             bool isOpen = logFile_.open(QIODevice::WriteOnly | QIODevice::Text);
             if (isOpen)
