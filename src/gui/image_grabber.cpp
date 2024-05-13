@@ -61,7 +61,7 @@ namespace bias {
 
         // read from video instead
         isVideo_ = false;
-        vidFileName_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1.avi");
+        vidFileName_ = QString("");
 
     }
 
