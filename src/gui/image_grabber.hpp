@@ -41,6 +41,8 @@ namespace bias
             void stop();
             void enableErrorCount();
             void disableErrorCount();
+            void setIsVideo(bool v);
+            void setVideoFileName(QString captureVideoFileName);
 
             static unsigned int DEFAULT_NUM_STARTUP_SKIP;
             static unsigned int MIN_STARTUP_SKIP;

@@ -60,9 +60,16 @@ namespace bias {
         errorCountEnabled_ = true;
 
         // read from video instead
-        isVideo_ = true;
+        isVideo_ = false;
         vidFileName_ = QString("C:\\Code\\BIAS\\testdata\\20240409T155835_P1_movie1.avi");
 
+    }
+
+    void ImageGrabber::setIsVideo(bool v) {
+        isVideo_ = v;
+    }
+    void ImageGrabber::setVideoFileName(QString captureVideoFileName) {
+        vidFileName_ = captureVideoFileName;
     }
 
     void ImageGrabber::initializeVidBackend()

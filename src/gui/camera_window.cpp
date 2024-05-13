@@ -450,6 +450,11 @@ namespace bias
                 this
                 );
         imageGrabberPtr_ -> setAutoDelete(false);
+        if (captureVideoFileName_.isEmpty()) {
+            doCaptureFromVideo_ = false;
+        }
+        imageGrabberPtr_->setIsVideo(doCaptureFromVideo_);
+        imageGrabberPtr_->setVideoFileName(captureVideoFileName_);
 
         imageDispatcherPtr_ = new ImageDispatcher(
                 logging_, 
@@ -2510,6 +2515,29 @@ namespace bias
         QMessageBox::information(this, msgTitle, msgText);
     }
 
+    void CameraWindow::actionCaptureFromVideoTriggered() {
+        doCaptureFromVideo_ = actionCaptureFromVideoPtr_->isChecked();
+    }
+
+    void CameraWindow::actionChooseVideoFileTriggered() {
+        // get directory from captureVideoFileName_
+        QString captureVideoDir;
+        if (captureVideoFileName_.isEmpty()) {
+            captureVideoDir = QString("");
+		} 
+        else {
+            captureVideoDir = QFileInfo(captureVideoFileName_).absoluteDir().absolutePath();
+		}
+        QString s = QFileDialog::getOpenFileName(this, 
+            "Choose Video File to Capture from", captureVideoDir, 
+            "Video Files (*.avi *.mp4 *.mov *.wmv *.flv)");
+        if(!s.isEmpty()) {
+            captureVideoFileName_ = s;
+			actionCaptureFromVideoPtr_->setChecked(true);
+			doCaptureFromVideo_ = true;
+		}
+
+    }
 
     void CameraWindow::pluginActionGroupTriggered(QAction *action)
     {
@@ -2583,6 +2611,9 @@ namespace bias
         currentConfigFileDir_ = defaultConfigFileDir_;
         currentConfigFileName_ = DEFAULT_CONFIG_FILE_NAME;
 
+        doCaptureFromVideo_ = false;
+        captureVideoFileName_ = QString("");
+
         // Temporary - plugin development
         // -------------------------------------------------------------------------------
         pluginHandlerPtr_  = new PluginHandler(this);
@@ -2601,7 +2632,7 @@ namespace bias
         setupPluginMenu();
         updateAllMenus(); 
 
-        tabWidgetPtr_ -> setCurrentWidget(previewTabPtr_);
+        tabWidgetPtr_->setCurrentWidget(previewTabPtr_);
 
         //setCurrentPlugin(pluginMap_.firstKey());
         //setCurrentPlugin("grabDetector");
@@ -2943,7 +2974,18 @@ namespace bias
                 this,
                 SLOT(tabWidgetChanged(int))
                );
-
+        connect(
+            actionCaptureFromVideoPtr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionCaptureFromVideoTriggered())
+        );
+        connect(
+            actionChooseVideoFilePtr_,
+            SIGNAL(triggered()),
+            this,
+            SLOT(actionChooseVideoFileTriggered())
+        );
     }
 
 
@@ -4055,11 +4097,16 @@ namespace bias
         if (connected_)
         {
             actionDumpCameraPropsPtr_ -> setEnabled(true);
+            actionCaptureFromVideoPtr_ -> setEnabled(true);
+            actionChooseVideoFilePtr_ -> setEnabled(true);
         }
         else
         {
             actionDumpCameraPropsPtr_ -> setEnabled(false);
+            actionCaptureFromVideoPtr_->setEnabled(false);
+            actionChooseVideoFilePtr_->setEnabled(false);
         }
+        actionCaptureFromVideoPtr_->setChecked(doCaptureFromVideo_);
     }
 
 

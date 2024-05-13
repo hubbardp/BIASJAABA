@@ -195,6 +195,8 @@ namespace bias
             void actionServerCommandsTriggered();
             void actionHelpAboutTriggered();
             void actionDumpCameraPropsTriggered();
+            void actionCaptureFromVideoTriggered();
+            void actionChooseVideoFileTriggered();
             void pluginActionGroupTriggered(QAction *action);
 
             // Signal mappers for menu items e.g. videomode, framerate, properties and colormaps
@@ -299,6 +301,9 @@ namespace bias
 
             QPointer<ExtCtlHttpServer> httpServerPtr_;
             unsigned int httpServerPort_;
+
+            QString captureVideoFileName_;
+            bool doCaptureFromVideo_;
 
             void connectWidgets();
             void initialize(
