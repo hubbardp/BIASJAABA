@@ -19,6 +19,7 @@ namespace bias
         numCols_ = 0;
         binPtr_ = NULL;
         cntPtr_ = NULL;
+        nFrames_ = 0;
     }
 
 
@@ -75,7 +76,13 @@ namespace bias
             } 
 
         } 
+        nFrames_++;
     }
+
+    int BackgroundData_ufmf::getNFrames()
+    {
+		return nFrames_;
+	}
 
     cv::Mat BackgroundData_ufmf::getMedianImage() const
     {
@@ -147,6 +154,7 @@ namespace bias
     {
         std::fill_n(binPtr_.get(), numRows_*numCols_*numBins_, 0);
         std::fill_n(cntPtr_.get(), numRows_*numCols_, 0);
+        nFrames_ = 0;
     }
 
 } // namespace bias

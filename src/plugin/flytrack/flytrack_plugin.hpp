@@ -6,6 +6,7 @@
 #include <QList>
 #include "bias_plugin.hpp"
 #include "stamped_image.hpp"
+#include "background_data_ufmf.hpp"
 #include "rtn_status.hpp"
 #include <QDir>
 #include <QTextStream>
@@ -58,6 +59,10 @@ namespace bias
             void getUiValues(FlyTrackConfig &config);
             void getUiBgEstValues(FlyTrackConfig& config);
             void getUiRoiValues(FlyTrackConfig& config);
+            void processFramesTrackMode(QList<StampedImage> frameList);
+            void processFramesBgEstMode(QList<StampedImage> frameList);
+            void getCurrentImageTrackMode(cv::Mat& currentImageCopy);
+            void getCurrentImageComputeBgMode(cv::Mat& currentImageCopy);
 
             QPointer<CameraWindow> getCameraWindow();
 
@@ -87,6 +92,8 @@ namespace bias
 
         protected:
 
+            QWidget *parent_;
+
             void initialize();
             void initializeUi();
             void setRoiUIValues();
@@ -99,13 +106,14 @@ namespace bias
             void storeBackgroundModel(cv::Mat& bgMedianImage, FlyTrackConfig& config);
             cv::Mat circleROI(double centerX, double centerY, double centerRadius);
             void backgroundSubtraction();
-            void setROI();
+            void setROI(FlyTrackConfig config);
             void updateVelocityHistory();
             void updateOrientationHistory();
             void updateEllipseHistory();
             void resolveHeadTail();
             void flipFlyOrientationHistory();
             void logCurrentFrame();
+            void finishComputeBgMode();
 
             bool active_;
             bool requireTimer_;
@@ -131,11 +139,18 @@ namespace bias
             cv::Mat bgUpperBoundImage_; // upper bound image for background
 			bool bgImageComputed_; // flag indicating if background image has been computed
 
+            BackgroundData_ufmf backgroundData_; // background estimation data
+            int lastFrameAdded_; // last frame added to background model
+            int nFramesAddedBgEst_; // number of frames added to background model so far
+
 			// processing of current frame
             bool isFirst_; // flag indicating if this is the first frame
             cv::Mat isFg_; // foreground mask
             cv::Mat inROI_; // mask for ROI
             EllipseParams flyEllipse_; // fly ellipse parameters
+            int lastFramePreviewed_; // last frame shown in preview window
+            int lastFrameMedianComputed_; // last frame median computed
+            cv::Mat lastImagePreviewed_; // last image shown in preview window
 
             // tracking history
             std::vector<EllipseParams> flyEllipseHistory_; // tracked ellipses

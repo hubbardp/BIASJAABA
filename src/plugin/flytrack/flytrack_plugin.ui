@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>907</width>
-    <height>472</height>
+    <height>476</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -32,10 +32,54 @@
       <enum>QLayout::SetNoConstraint</enum>
      </property>
      <item>
-      <layout class="QVBoxLayout" name="controlsVerticalLayout"/>
+      <layout class="QVBoxLayout" name="controlsVerticalLayout">
+       <property name="spacing">
+        <number>1</number>
+       </property>
+      </layout>
      </item>
      <item>
       <layout class="QVBoxLayout" name="bgEstVerticalLayout">
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <property name="sizeConstraint">
+          <enum>QLayout::SetMinimumSize</enum>
+         </property>
+         <property name="topMargin">
+          <number>0</number>
+         </property>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="computeBgModeLabel">
+           <property name="text">
+            <string>Mode</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="computeBgModeComboBox">
+           <item>
+            <property name="text">
+             <string>Compute Background Image</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>Track Fly</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+        </layout>
+       </item>
        <item>
         <layout class="QHBoxLayout" name="bgImageFilePathHorizontalLayout">
          <item>
@@ -168,6 +212,16 @@
             <string/>
            </property>
           </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="nFramesSkipLabel">
+           <property name="text">
+            <string>N. Frames Skip</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLineEdit" name="nFramesSkipLineEdit"/>
          </item>
         </layout>
        </item>

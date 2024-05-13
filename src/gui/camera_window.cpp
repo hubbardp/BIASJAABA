@@ -1294,6 +1294,13 @@ namespace bias
         return guidString;
     }
 
+    QString CameraWindow::getVideoFile() {
+        if (currentVideoFileName_.isEmpty()) {
+			return QString("");
+		}
+        QFileInfo currentVideoFileInfo(currentVideoFileDir_, currentVideoFileName_);
+        return currentVideoFileInfo.absoluteFilePath();
+    }
 
     RtnStatus CameraWindow::setVideoFile(QString videoFileString)
     {

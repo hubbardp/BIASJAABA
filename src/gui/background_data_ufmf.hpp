@@ -20,6 +20,7 @@ namespace bias
             void addImage(StampedImage stampedImg);
             cv::Mat getMedianImage() const;
             void clear();
+            int getNFrames();
 
         private:
             // Move these to std vectors ??
@@ -29,6 +30,7 @@ namespace bias
             unsigned int numCols_;
             unsigned int numBins_;
             unsigned int binSize_;
+            int nFrames_;
     };
 }
 

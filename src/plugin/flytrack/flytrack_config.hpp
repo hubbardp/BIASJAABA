@@ -32,6 +32,7 @@ namespace bias
 
             static const int DEFAULT_BACKGROUND_THRESHOLD; // foreground/background threshold, between 0 and 255
             static const int DEFAULT_N_FRAMES_BG_EST; // number of frames used for background estimation, set to 0 to use all frames
+            static const int DEFAULT_N_FRAMES_SKIP_BG_EST; // number of frames skipped between frames added to background model
             static const int DEFAULT_LAST_FRAME_SAMPLE; // last frame sampled for background estimation, set to 0 to use last frame of video
             static const FlyVsBgModeType DEFAULT_FLY_VS_BG_MODE; // whether the fly is darker than the background
             static const ROIType DEFAULT_ROI_TYPE; // type of ROI
@@ -43,15 +44,18 @@ namespace bias
             static const double DEFAULT_HEAD_TAIL_WEIGHT_VELOCITY; // weight of velocity dot product in head-tail orientation resolution
             static const double DEFAULT_MIN_VEL_MATCH_DOTPROD; // minimum dot product for velocity matching
             static const bool DEFAULT_DEBUG; // flag for debugging
+            static const bool DEFAULT_COMPUTE_BG_MODE; // flag of whether to compute the background (true) when camera is running or track a fly (false)
 
 
             // parameters
+            bool computeBgMode; // flag of whether to compute the background (true) when camera is running or track a fly (false)
             QString bgVideoFilePath; // video to estimate background from
             QString bgImageFilePath; // saved background median estimate
             QString tmpOutDir; // temporary output directory
             int backgroundThreshold; // foreground threshold
             int nFramesBgEst; // number of frames used for background estimation, set to 0 to use all frames
             int lastFrameSample; // last frame sampled for background estimation, set to 0 to use last frame of video
+            int nFramesSkipBgEst; // number of frames to skip between frames added to background model
             FlyVsBgModeType flyVsBgMode; // whether the fly is darker than the background
             ROIType roiType; // type of ROI
             double roiCenterX; // x-coordinate of ROI center

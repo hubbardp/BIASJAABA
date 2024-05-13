@@ -93,6 +93,7 @@ namespace bias
                     );
 
             RtnStatus setVideoFile(QString videoFileString);
+            QString getVideoFile();
             void setUserCameraName(QString cameraName);
 
 
