@@ -375,10 +375,24 @@ namespace bias
     void FlyTrackPlugin::connectWidgets()
     {
         connect(
+            donePushButton,
+            SIGNAL(clicked()),
+            this,
+            SLOT(donePushButtonClicked())
+        );
+
+        connect(
             applyPushButton,
             SIGNAL(clicked()),
             this,
             SLOT(applyPushButtonClicked())
+        );
+
+        connect(
+            cancelPushButton,
+            SIGNAL(clicked()),
+            this,
+            SLOT(cancelPushButtonClicked())
         );
 
         connect(
@@ -424,12 +438,32 @@ namespace bias
             this,
             SLOT(bgVideoFilePathToolButtonClicked())
         );
-
+        connect(
+            logFilePathToolButton,
+            SIGNAL(clicked()),
+            this,
+            SLOT(logFilePathToolButtonClicked())
+        );
+        connect(
+			tmpOutDirToolButton,
+			SIGNAL(clicked()),
+			this,
+			SLOT(tmpOutDirToolButtonClicked())
+		);
     }
 
     void FlyTrackPlugin::showEvent(QShowEvent* event) {
         QWidget::showEvent(event);
         setFromConfig(config_);
+    }
+
+    void FlyTrackPlugin::donePushButtonClicked() {
+        applyPushButtonClicked();
+        // close the dialog
+        close();
+    }
+    void FlyTrackPlugin::cancelPushButtonClicked() {
+        close();
     }
 
     void FlyTrackPlugin::applyPushButtonClicked() {
@@ -458,7 +492,7 @@ namespace bias
     }
 
     void FlyTrackPlugin::bgImageFilePathToolButtonClicked() {
-        QString bgImageFilePath = config_.bgImageFilePath;
+        QString bgImageFilePath = bgImageFilePathLineEdit->text();
         QString bgImageDir = QFileInfo(bgImageFilePath).absoluteDir().absolutePath();
 		bgImageFilePath = QFileDialog::getOpenFileName(this, "Select Background Image File", 
             bgImageDir, "Image Files (*.png *.jpg *.bmp)");
@@ -470,7 +504,7 @@ namespace bias
     }
 
     void FlyTrackPlugin::bgVideoFilePathToolButtonClicked() {
-        QString bgVideoFilePath = config_.bgVideoFilePath;
+        QString bgVideoFilePath = bgVideoFilePathLineEdit->text();
         QString bgVideoDir = QFileInfo(bgVideoFilePath).absoluteDir().absolutePath();
         bgVideoFilePath = QFileDialog::getOpenFileName(this, "Select Video to compute background from",
             bgVideoDir, "Video Files (*.avi *.ufmf *.fmf *mp4)");
@@ -481,6 +515,26 @@ namespace bias
         bgVideoFilePathLineEdit->setText(bgVideoFilePath);
     }
 
+    void FlyTrackPlugin::logFilePathToolButtonClicked() {
+        QString logFilePath = logFilePathLineEdit->text();
+		QString logFileDir = QFileInfo(logFilePath).absoluteDir().absolutePath();
+		logFilePath = QFileDialog::getSaveFileName(this, "Output track file", logFileDir, "JSON Files (*." + LOG_FILE_EXTENSION + ")");
+        if (logFilePath.isEmpty()) {
+			printf("No output file selected\n");
+			return;
+		}
+		logFilePathLineEdit->setText(logFilePath);
+    }
+
+    void FlyTrackPlugin::tmpOutDirToolButtonClicked() {
+        QString tmpOutDir = tmpOutDirLineEdit->text();
+        tmpOutDir = QFileDialog::getExistingDirectory(this, "Debug output folder", tmpOutDir);
+        if (tmpOutDir.isEmpty()) {
+            printf("No output directory selected\n");
+            return;
+        }
+        tmpOutDirLineEdit->setText(tmpOutDir);
+    }
 
     void FlyTrackPlugin::roiUiChanged(int v) {
         printf("roi UI changed\n");
@@ -781,7 +835,6 @@ namespace bias
 
         previewImageLabel->setBackgroundRole(QPalette::Base);
         previewImageLabel->setScaledContents(true);
-        previewImageScrollArea->setBackgroundRole(QPalette::Dark);
 
     }
 

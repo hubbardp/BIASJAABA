@@ -155,10 +155,15 @@ namespace bias
         private slots:
 
             void applyPushButtonClicked();
+            void donePushButtonClicked();
+            void cancelPushButtonClicked();
+
             void loadBgPushButtonClicked();
             void roiUiChanged(int v);
             void bgImageFilePathToolButtonClicked();
             void bgVideoFilePathToolButtonClicked();
+            void logFilePathToolButtonClicked();
+            void tmpOutDirToolButtonClicked();
 
     };
 
