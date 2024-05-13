@@ -216,6 +216,7 @@ namespace bias
         lastFramePreviewed_ = -1;
         initialize();
 
+
         setRequireTimer(false);
     }
 
@@ -568,6 +569,12 @@ namespace bias
 			this,
 			SLOT(tmpOutDirToolButtonClicked())
 		);
+        connect(
+            computeBgModeComboBox,
+            SIGNAL(activated(int)),
+            this,
+            SLOT(computeBgModeComboBoxChanged())
+        );
     }
 
     void FlyTrackPlugin::showEvent(QShowEvent* event) {
@@ -661,10 +668,15 @@ namespace bias
         tmpOutDirLineEdit->setText(tmpOutDir);
     }
 
+    void FlyTrackPlugin::computeBgModeComboBoxChanged() {
+        setUiEnabled();
+	}
+
     void FlyTrackPlugin::roiUiChanged(int v) {
         FlyTrackConfig roiConfig = config_.copy();
         getUiRoiValues(roiConfig);
         setPreviewImage(bgMedianImage_, roiConfig);
+        setUiEnabled();
     }
 
     void FlyTrackPlugin::loadBgPushButtonClicked() {
@@ -690,7 +702,7 @@ namespace bias
         rtnStatus.success = true;
         rtnStatus.message = QString("");
 
-        printf("Setting config:\n");
+        //printf("Setting config:\n");
 
         setBgEstParams(config);
         config_ = config;
@@ -713,11 +725,13 @@ namespace bias
         historyBufferLengthSpinBox->setValue(config_.historyBufferLength);
         minVelocityMagnitudeLineEdit->setText(QString::number(config_.minVelocityMagnitude));
         headTailWeightVelocityLineEdit->setText(QString::number(config_.headTailWeightVelocity));
-        logFilePathLineEdit->setText(getLogFileFullPath(false));
+        logFilePathLineEdit->setText(config_.tmpTrackFilePath);
+        logFileNameLineEdit->setText(config_.trackFileName);
         tmpOutDirLineEdit->setText(config_.tmpOutDir);
         DEBUGCheckBox->setChecked(config_.DEBUG);
 
-        config_.print();
+        //config_.print();
+        setUiEnabled();
 
 		return rtnStatus;
 	}
@@ -801,12 +815,81 @@ namespace bias
             config.headTailWeightVelocity = headTailWeightVelocityLineEdit->text().toDouble();
             config.tmpOutDir = tmpOutDirLineEdit->text();
             config.DEBUG = DEBUGCheckBox->isChecked();
+            config.tmpTrackFilePath = logFilePathLineEdit->text();
+            config.trackFileName = logFileNameLineEdit->text();
         }
         catch (std::exception& e) {
             fflush(stdout);
 			fprintf(stderr,"Error getting UI values: %s\n", e.what());
 		}
 	}
+
+    void FlyTrackPlugin::setUiEnabled() {
+        FlyTrackConfig config;
+        getUiValues(config);
+        if (config.computeBgMode) {
+            bgImageFilePathLineEdit->setEnabled(true);
+            bgImageFilePathLabel->setEnabled(true);
+			bgVideoFilePathLineEdit->setEnabled(false);
+            bgVideoFilePathLabel->setEnabled(false);
+			nFramesBgEstLineEdit->setEnabled(false);
+            nFramesBgEstLabel->setEnabled(false);
+			nFramesSkipLineEdit->setEnabled(true);
+            nFramesSkipLabel->setEnabled(true);
+			lastFrameSampleLineEdit->setEnabled(false);
+            lastFrameSampleLabel->setEnabled(false);
+			loadBgPushButton->setEnabled(false);
+            progressBar->setEnabled(false);
+		}
+        else {
+			bgImageFilePathLineEdit->setEnabled(true);
+            bgImageFilePathLabel->setEnabled(true);
+			bgVideoFilePathLineEdit->setEnabled(true);
+            bgVideoFilePathLabel->setEnabled(true);
+			nFramesBgEstLineEdit->setEnabled(true);
+            nFramesBgEstLabel->setEnabled(true);
+			nFramesSkipLineEdit->setEnabled(false);
+            nFramesSkipLabel->setEnabled(false);
+			lastFrameSampleLineEdit->setEnabled(true);
+            lastFrameSampleLabel->setEnabled(true);
+			loadBgPushButton->setEnabled(true);
+        }
+        flyVsBgModeComboBox->setEnabled(true);
+        flyVsBgModeLabel->setEnabled(true);
+        backgroundThresholdLineEdit->setEnabled(true);
+        backgroundThresholdLabel->setEnabled(true);
+        roiTypeComboBox->setEnabled(true);
+        roiTypeLabel->setEnabled(true);
+        switch (config.roiType) {
+			case NONE:
+				roiCenterXSpinBox->setEnabled(false);
+                roiCenterXLabel->setEnabled(false);
+				roiCenterYSpinBox->setEnabled(false);
+                roiCenterYLabel->setEnabled(false);
+				roiRadiusSpinBox->setEnabled(false);
+                roiRadiusLabel->setEnabled(false);
+				break;
+			case CIRCLE:
+				roiCenterXSpinBox->setEnabled(true);
+                roiCenterXLabel->setEnabled(true);
+				roiCenterYSpinBox->setEnabled(true);
+                roiCenterYLabel->setEnabled(true);
+				roiRadiusSpinBox->setEnabled(true);
+                roiRadiusLabel->setEnabled(true);
+				break;
+		}
+        historyBufferLengthSpinBox->setEnabled(true);
+        historyBufferLengthLabel->setEnabled(true);
+		minVelocityMagnitudeLineEdit->setEnabled(true);
+        minVelocityMagnitudeLabel->setEnabled(true);
+		headTailWeightVelocityLineEdit->setEnabled(true);
+        headTailWeightVelocityLabel->setEnabled(true);
+		logFilePathLineEdit->setEnabled(true);
+        logFilePathLabel->setEnabled(true);
+		tmpOutDirLineEdit->setEnabled(true);
+        tmpOutDirLabel->setEnabled(true);
+		DEBUGCheckBox->setEnabled(true);
+    }
 
 	RtnStatus FlyTrackPlugin::setConfigFromMap(QVariantMap configMap)
 	{
@@ -854,8 +937,14 @@ namespace bias
 
     QString FlyTrackPlugin::getLogFileName(bool includeAutoNaming)
     {
-        QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
-        QString logFileName = cameraWindowPtr -> getVideoFileName() + QString("_") + getLogFilePostfix();
+        QString logFileName;
+        if (config_.trackFileNameSet()) {
+            logFileName = config_.trackFileName;
+        }
+        else{
+            QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
+            logFileName = cameraWindowPtr->getVideoFileName() + QString("_") + getLogFilePostfix();
+        }
         if (includeAutoNaming)
         {
             if (!fileAutoNamingString_.isEmpty())
@@ -875,6 +964,9 @@ namespace bias
 
     QString FlyTrackPlugin::getLogFileFullPath(bool includeAutoNaming)
     {
+        if (config_.trackFilePathSet()) {
+            return config_.tmpTrackFilePath;
+        }
         QString logFileName = getLogFileName(includeAutoNaming);
         QPointer<CameraWindow> cameraWindowPtr = getCameraWindow();
         logFileDir_ = cameraWindowPtr -> getVideoFileDir();
@@ -898,6 +990,7 @@ namespace bias
         {
             QString logFileFullPath = getLogFileFullPath(true);
             qDebug() << logFileFullPath;
+            fprintf(stderr,"LOGGING tracking to logfile: %s",logFileFullPath.toStdString().c_str());
             logFile_.setFileName(logFileFullPath);
             bool isOpen = logFile_.open(QIODevice::WriteOnly | QIODevice::Text);
             if (isOpen)
@@ -914,7 +1007,6 @@ namespace bias
 			}
         }
     }
-
 
     void FlyTrackPlugin::closeLogFile()
     {
@@ -1057,7 +1149,6 @@ namespace bias
         bgMedianImage_ = bgMedianImage.clone();
         cv::add(bgMedianImage, config_.backgroundThreshold, bgUpperBoundImage_);
         cv::subtract(bgMedianImage, config_.backgroundThreshold, bgLowerBoundImage_);
-        config.setImageSize(bgMedianImage.cols, bgMedianImage.rows);
         roiCenterXSpinBox->setRange(0, bgMedianImage.cols);
         roiCenterYSpinBox->setRange(0, bgMedianImage.rows);
         roiRadiusSpinBox->setRange(0, std::max(bgMedianImage.cols,bgMedianImage.rows));

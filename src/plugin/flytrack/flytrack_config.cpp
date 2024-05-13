@@ -3,6 +3,7 @@
 #include <iostream>
 #include <QMessageBox>
 #include <QtDebug>
+#include <QFileInfo>
 
 namespace bias
 {
@@ -72,38 +73,6 @@ namespace bias
 		roiCenterX = roiCenterXNew;
 		roiCenterY = roiCenterYNew;
 		roiRadius = roiRadiusNew;
-        roiLocationSet_ = true;
-    }
-
-    void FlyTrackConfig::setRoiFracAbsFromMap(QVariantMap configMap, RtnStatus& rtnStatus,
-        QString fracField, QString absField, double& fracParam, double& absParam, int imgSize) {
-        bool roiFracSet = false;
-        bool roiAbsSet = false;
-        if (configMap.contains(fracField)) {
-            if (configMap[fracField].canConvert<double>()) {
-                fracParam = configMap[fracField].toDouble();
-                roiFracSet = true;
-            }
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage(QString("unable to convert %1 to double").arg(fracField));
-            }
-        }
-        if (configMap.contains(absField)) {
-            if (configMap[absField].canConvert<double>()) {
-                absParam = configMap[absField].toDouble();
-                roiAbsSet = true;
-                roiLocationSet_ = true;
-            }
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage(QString("unable to convert %1 to double").arg(absField));
-            }
-        }
-        if (roiFracSet && !roiAbsSet && imgSize > 0) {
-            absField = (double)imgSize * fracParam;
-        }
-
     }
 
     const QString FlyTrackConfig::DEFAULT_BG_VIDEO_FILE_PATH = QString("dummy_bg_video.avi"); // video to estimate background from
@@ -115,9 +84,6 @@ namespace bias
     const int FlyTrackConfig::DEFAULT_LAST_FRAME_SAMPLE = 0; // last frame sampled for background estimation, set to 0 to use last frame of video
     const FlyVsBgModeType FlyTrackConfig::DEFAULT_FLY_VS_BG_MODE = FLY_DARKER_THAN_BG; // whether the fly is darker than the background
     const ROIType FlyTrackConfig::DEFAULT_ROI_TYPE = CIRCLE; // type of ROI
-    const double FlyTrackConfig::DEFAULT_ROI_CENTER_X_FRAC = 0.5; // x-coordinate of ROI center, relative
-    const double FlyTrackConfig::DEFAULT_ROI_CENTER_Y_FRAC = 0.5; // y-coordinate of ROI center, relative
-    const double FlyTrackConfig::DEFAULT_ROI_RADIUS_FRAC = 0.475; // radius of ROI, relative
     const int FlyTrackConfig::DEFAULT_HISTORY_BUFFER_LENGTH = 5; // number of frames to buffer velocity, orientation
     const double FlyTrackConfig::DEFAULT_MIN_VELOCITY_MAGNITUDE = 1.0; // minimum velocity magnitude in pixels/frame to consider fly moving
     const double FlyTrackConfig::DEFAULT_HEAD_TAIL_WEIGHT_VELOCITY = 3.0; // weight of velocity dot product in head-tail orientation resolution
@@ -137,19 +103,15 @@ namespace bias
 		lastFrameSample = DEFAULT_LAST_FRAME_SAMPLE;
 		flyVsBgMode = DEFAULT_FLY_VS_BG_MODE;
 		roiType = DEFAULT_ROI_TYPE;
-		roiCenterXFrac_ = DEFAULT_ROI_CENTER_X_FRAC;
-		roiCenterYFrac_ = DEFAULT_ROI_CENTER_Y_FRAC;
-		roiRadiusFrac_ = DEFAULT_ROI_RADIUS_FRAC;
 		historyBufferLength = DEFAULT_HISTORY_BUFFER_LENGTH;
 		minVelocityMagnitude = DEFAULT_MIN_VELOCITY_MAGNITUDE;
 		headTailWeightVelocity = DEFAULT_HEAD_TAIL_WEIGHT_VELOCITY;
 		DEBUG = DEFAULT_DEBUG;
-        roiLocationSet_ = false;
 		roiCenterX = 0;
 		roiCenterY = 0;
 		roiRadius = 0;
-		imageWidth_ = -1;
-		imageHeight_ = -1;
+        trackFileName = QString(""); // empty string means it is not set
+        tmpTrackFilePath = QString(""); // empty string means it is not set
 	}
 
     FlyTrackConfig FlyTrackConfig::copy() {
@@ -164,35 +126,18 @@ namespace bias
 		config.lastFrameSample = lastFrameSample;
 		config.flyVsBgMode = flyVsBgMode;
 		config.roiType = roiType;
-		config.roiCenterXFrac_ = roiCenterXFrac_;
-		config.roiCenterYFrac_ = roiCenterYFrac_;
-		config.roiRadiusFrac_ = roiRadiusFrac_;
 		config.historyBufferLength = historyBufferLength;
 		config.minVelocityMagnitude = minVelocityMagnitude;
 		config.headTailWeightVelocity = headTailWeightVelocity;
 		config.DEBUG = DEBUG;
-		config.roiLocationSet_ = roiLocationSet_;
 		config.roiCenterX = roiCenterX;
 		config.roiCenterY = roiCenterY;
 		config.roiRadius = roiRadius;
-		config.imageWidth_ = imageWidth_;
-		config.imageHeight_ = imageHeight_;
+        config.trackFileName = trackFileName;
+        config.tmpTrackFilePath = tmpTrackFilePath;
 		return config;
 	
     }
-
-	void FlyTrackConfig::setImageSize(int width, int height)
-	{
-        printf("set image size: width: %d, height: %d\n", width, height);
-		imageWidth_ = width;
-		imageHeight_ = height;
-        if (!roiLocationSet_) {
-            roiCenterX = imageWidth_ * roiCenterXFrac_;
-            roiCenterY = imageHeight_ * roiCenterYFrac_;
-            roiRadius = std::min(imageWidth_, imageHeight_) * roiRadiusFrac_;
-            printf("Set absolute ROI location based on frac: x: %f, y: %f, r: %f\n", roiCenterX, roiCenterY, roiRadius);
-        }
-	}
     void FlyTrackConfig::setBgVideoFilePath(QString bgVideoFilePathIn) {
         bgVideoFilePath = bgVideoFilePathIn;
         if (!bgImageFilePath.isEmpty()) {
@@ -213,6 +158,8 @@ namespace bias
         configStr += QString("bgVideoFilePath: %1\n").arg(bgVideoFilePath);
         configStr += QString("bgImageFilePath: %1\n").arg(bgImageFilePath);
         configStr += QString("tmpOutDir: %1\n").arg(tmpOutDir);
+        configStr += QString("trackFileName: %1\n").arg(trackFileName);
+        configStr += QString("tmpTrackFilePath: %1\n").arg(tmpTrackFilePath);
         configStr += QString("backgroundThreshold: %1\n").arg(backgroundThreshold);
         configStr += QString("nFramesBgEst: %1\n").arg(nFramesBgEst);
         configStr += QString("lastFrameSample: %1\n").arg(lastFrameSample);
@@ -224,10 +171,6 @@ namespace bias
         configStr += QString("roiCenterX: %1\n").arg(roiCenterX);
         configStr += QString("roiCenterY: %1\n").arg(roiCenterY);
         configStr += QString("roiRadius: %1\n").arg(roiRadius);
-        configStr += QString("roiCenterXFrac: %1\n").arg(roiCenterXFrac_);
-        configStr += QString("roiCenterYFrac: %1\n").arg(roiCenterYFrac_);
-        configStr += QString("roiRadiusFrac: %1\n").arg(roiRadiusFrac_);
-        configStr += QString("roiLocationSet: %1\n").arg(roiLocationSet_);
         configStr += QString("historyBufferLength: %1\n").arg(historyBufferLength);
         configStr += QString("minVelocityMagnitude: %1\n").arg(minVelocityMagnitude);
         configStr += QString("headTailWeightVelocity: %1\n").arg(headTailWeightVelocity);
@@ -239,6 +182,14 @@ namespace bias
     void FlyTrackConfig::print() {
 		std::cout << toString().toStdString();
 	}
+
+    bool FlyTrackConfig::trackFilePathSet() {
+  		return !tmpTrackFilePath.isEmpty();
+    }
+    bool FlyTrackConfig::trackFileNameSet(){
+        return !trackFileName.isEmpty();
+    }
+
 
     RtnStatus FlyTrackConfig::fromMap(QVariantMap configMap) {
         RtnStatus rtnStatus;
@@ -350,10 +301,35 @@ namespace bias
 			}
 		}
 
-        setRoiFracAbsFromMap(configMap, rtnStatus, "roiCenterXFrac", "roiCenterX", roiCenterXFrac_, roiCenterX, imageWidth_);
-        setRoiFracAbsFromMap(configMap, rtnStatus, "roiCenterYFrac", "roiCenterY", roiCenterYFrac_, roiCenterY, imageHeight_);
-		setRoiFracAbsFromMap(configMap, rtnStatus, "roiRadiusFrac", "roiRadius", roiRadiusFrac_, roiRadius, std::min(imageWidth_, imageHeight_));
+        if (configMap.contains("roiCenterX")) {
+            if (configMap["roiCenterX"].canConvert<double>()) {
+                roiCenterX = configMap["roiCenterX"].toDouble();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage(QString("unable to convert roiCenterX to double"));
+            }
+        }
 
+        if (configMap.contains("roiCenterY")) {
+            if (configMap["roiCenterY"].canConvert<double>()) {
+                roiCenterY = configMap["roiCenterY"].toDouble();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage(QString("unable to convert roiCenterY to double"));
+            }
+        }
+
+        if (configMap.contains("roiRadius")) {
+            if (configMap["roiRadius"].canConvert<double>()) {
+                roiRadius = configMap["roiRadius"].toDouble();
+            }
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage(QString("unable to convert roiRadius to double"));
+            }
+        }
 		return rtnStatus;
 	}   
 
@@ -450,22 +426,6 @@ namespace bias
                 rtnStatus.appendMessage("unable to convert DEBUG to bool");
             }
         }
-        if (configMap.contains("imageWidth")) {
-            if (configMap["imageWidth"].canConvert<int>())
-                imageWidth_ = configMap["imageWidth"].toInt();
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert imageWidth to int");
-            }
-        }
-        if (configMap.contains("imageHeight")) {
-			if (configMap["imageHeight"].canConvert<int>())
-				imageHeight_ = configMap["imageHeight"].toInt();
-            else {
-				rtnStatus.success = false;
-				rtnStatus.appendMessage("unable to convert imageHeight to int");
-			}
-		}
         if (configMap.contains("tmpOutDir")) {
 			if (configMap["tmpOutDir"].canConvert<QString>())
 				tmpOutDir = configMap["tmpOutDir"].toString();
@@ -474,6 +434,14 @@ namespace bias
 				rtnStatus.appendMessage("unable to convert tmpOutDir to string");
 			}
 		}
+        if (configMap.contains("trackFileName")) {
+			if (configMap["trackFileName"].canConvert<QString>())
+				trackFileName = configMap["trackFileName"].toString();
+            else {
+				rtnStatus.success = false;
+				rtnStatus.appendMessage("unable to convert trackFileName to string");
+			}
+		} 
         return rtnStatus;
     }
 
@@ -494,9 +462,6 @@ namespace bias
         QString roiTypeString;
         roiTypeToString(roiType, roiTypeString);
         roiMap.insert("roiType", roiTypeString);
-        roiMap.insert("roiCenterXFrac", roiCenterXFrac_);
-        roiMap.insert("roiCenterYFrac", roiCenterYFrac_);
-        roiMap.insert("roiRadiusFrac", roiRadiusFrac_);
         roiMap.insert("roiCenterX", roiCenterX);
         roiMap.insert("roiCenterY", roiCenterY);
         roiMap.insert("roiRadius", roiRadius);
@@ -514,9 +479,8 @@ namespace bias
 
         QVariantMap miscMap;
         miscMap.insert("DEBUG", DEBUG);
-        miscMap.insert("imageWidth", imageWidth_);
-        miscMap.insert("imageHeight", imageHeight_);
         miscMap.insert("tmpOutDir", tmpOutDir);
+        miscMap.insert("trackFileName", trackFileName);
 
 		configMap.insert("bgEst", bgEstMap);
         configMap.insert("roi", roiMap);

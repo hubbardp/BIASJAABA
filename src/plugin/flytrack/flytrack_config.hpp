@@ -52,6 +52,7 @@ namespace bias
             QString bgVideoFilePath; // video to estimate background from
             QString bgImageFilePath; // saved background median estimate
             QString tmpOutDir; // temporary output directory
+            QString logFilePath; // log file path
             int backgroundThreshold; // foreground threshold
             int nFramesBgEst; // number of frames used for background estimation, set to 0 to use all frames
             int lastFrameSample; // last frame sampled for background estimation, set to 0 to use last frame of video
@@ -65,10 +66,11 @@ namespace bias
             double minVelocityMagnitude; // minimum velocity magnitude in pixels/frame to consider fly moving
             double headTailWeightVelocity; // weight of velocity dot product in head-tail orientation resolution
             bool DEBUG; // flag for debugging
+            QString trackFileName; // relative name of output track file
+            QString tmpTrackFilePath; // absolute path of track file -- not stored in config file
 
             FlyTrackConfig();
             FlyTrackConfig FlyTrackConfig::copy();
-            void setImageSize(int width, int height);
             void setBgVideoFilePath(QString bgVideoFilePath);
             void setRoiParams(ROIType roiTypeNew, double roiCenterXNew, double roiCenterYNew, double roiRadiusNew);
 
@@ -82,19 +84,10 @@ namespace bias
             RtnStatus fromJson(QByteArray jsonConfigArray);
             QByteArray toJson();
             QString toString();
+            bool trackFilePathSet();
+            bool trackFileNameSet();
 
             void print();
-            void setRoiFracAbsFromMap(QVariantMap configMap, RtnStatus& rtnStatus,
-                QString fracField, QString absField, double& fracParam, double& absParam, int imgSize);
-
-
-        protected:
-            bool roiLocationSet_; // whether the absolute ROI location has been set
-            double roiCenterXFrac_; // x-coordinate of ROI center, relative to image width
-            double roiCenterYFrac_; // y-coordinate of ROI center, relative to image height
-            double roiRadiusFrac_; // radius of ROI, relative to min(image width, image height)
-            int imageWidth_; // image width
-            int imageHeight_; // image height
 
     };
 }

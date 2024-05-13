@@ -96,6 +96,7 @@ namespace bias
 
             void initialize();
             void initializeUi();
+            void setUiEnabled();
             void setRoiUIValues();
             void connectWidgets();
             void setBgEstParams(FlyTrackConfig& newConfig);
@@ -179,6 +180,7 @@ namespace bias
             void bgVideoFilePathToolButtonClicked();
             void logFilePathToolButtonClicked();
             void tmpOutDirToolButtonClicked();
+            void computeBgModeComboBoxChanged();
 
     };
 

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>907</width>
-    <height>476</height>
+    <width>1005</width>
+    <height>527</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -41,19 +41,22 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>400</width>
+         <width>500</width>
          <height>500</height>
         </size>
        </property>
        <property name="maximumSize">
         <size>
-         <width>600</width>
+         <width>800</width>
          <height>16777215</height>
         </size>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_4">
         <item>
          <layout class="QVBoxLayout" name="controlsVerticalLayout">
+          <property name="spacing">
+           <number>1</number>
+          </property>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_4">
             <property name="sizeConstraint">
@@ -99,6 +102,13 @@
              </widget>
             </item>
            </layout>
+          </item>
+          <item>
+           <widget class="Line" name="line_6">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+           </widget>
           </item>
           <item>
            <layout class="QHBoxLayout" name="bgImageFilePathHorizontalLayout">
@@ -162,7 +172,14 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="bgVideoFilePathLineEdit"/>
+             <widget class="QLineEdit" name="bgVideoFilePathLineEdit">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
             </item>
             <item>
              <widget class="QToolButton" name="bgVideoFilePathToolButton">
@@ -181,6 +198,9 @@
           </item>
           <item>
            <layout class="QHBoxLayout" name="bgSampleHorizontalLayout">
+            <property name="spacing">
+             <number>8</number>
+            </property>
             <item>
              <widget class="QLabel" name="nFramesBgEstLabel">
               <property name="layoutDirection">
@@ -476,7 +496,7 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_13">
             <item>
-             <widget class="QLabel" name="roiCenterXLabel_2">
+             <widget class="QLabel" name="roiRadiusLabel">
               <property name="layoutDirection">
                <enum>Qt::RightToLeft</enum>
               </property>
@@ -606,12 +626,29 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_16">
             <item>
+             <widget class="QLabel" name="logFileNameLabel">
+              <property name="text">
+               <string>Output Trajectory File Name</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="logFileNameLineEdit">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QLabel" name="logFilePathLabel">
               <property name="layoutDirection">
                <enum>Qt::RightToLeft</enum>
               </property>
               <property name="text">
-               <string>Output Trajectory Path</string>
+               <string>Absolute Path</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -681,23 +718,23 @@
               </property>
              </widget>
             </item>
+            <item>
+             <widget class="QCheckBox" name="DEBUGCheckBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="layoutDirection">
+               <enum>Qt::RightToLeft</enum>
+              </property>
+              <property name="text">
+               <string>Debug</string>
+              </property>
+             </widget>
+            </item>
            </layout>
-          </item>
-          <item>
-           <widget class="QCheckBox" name="DEBUGCheckBox">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="layoutDirection">
-             <enum>Qt::RightToLeft</enum>
-            </property>
-            <property name="text">
-             <string>Debug</string>
-            </property>
-           </widget>
           </item>
           <item>
            <widget class="Line" name="line_5">
@@ -755,33 +792,23 @@
       </widget>
      </item>
      <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
       <widget class="QLabel" name="previewImageLabel">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
        <property name="minimumSize">
         <size>
-         <width>400</width>
-         <height>400</height>
+         <width>500</width>
+         <height>500</height>
+        </size>
+       </property>
+       <property name="baseSize">
+        <size>
+         <width>500</width>
+         <height>500</height>
         </size>
        </property>
        <property name="mouseTracking">
