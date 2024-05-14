@@ -226,7 +226,7 @@ namespace bias
         bgImageComputed_ = false;
         active_ = false;
         lastFramePreviewed_ = -1;
-        flyEllipseQueuePtr_ = std::make_shared<LockableQueue<EllipseParams>>();
+        flyEllipseDequePtr_ = std::make_shared<LockableDeque<EllipseParams>>();
         initialize();
 
 
@@ -506,12 +506,20 @@ namespace bias
         }
         QString cmd = cmdMap["cmd"].toString();
 
-        if (cmd == QString("pop-track"))
+        if (cmd == QString("pop-front-track"))
         {
             EllipseParams ell;
-            rtnStatus = popTrack(ell);
+            rtnStatus = popFrontTrack(ell);
             if (rtnStatus.success) {
 				value = ellipseToJson(ell);
+            }
+        }
+        else if (cmd == QString("pop-back-track"))
+        {
+			EllipseParams ell;
+			rtnStatus = popBackTrack(ell);
+			if (rtnStatus.success) {
+                value = ellipseToJson(ell);
             }
         }
         else
@@ -528,26 +536,48 @@ namespace bias
         return rtnStatus;
     }
 
-    RtnStatus FlyTrackPlugin::popTrack(EllipseParams& ell) {
+    RtnStatus FlyTrackPlugin::popFrontTrack(EllipseParams& ell) {
         RtnStatus rtnStatus;
 		rtnStatus.success = false;
 		rtnStatus.message = QString("");
-        if (flyEllipseQueuePtr_ == NULL) {
+        if (flyEllipseDequePtr_ == NULL) {
             rtnStatus.message = QString("Ellipse queue not allocated");
             return rtnStatus;
         }
-        flyEllipseQueuePtr_->acquireLock();
-        if (flyEllipseQueuePtr_->empty()) {
+        flyEllipseDequePtr_->acquireLock();
+        if (flyEllipseDequePtr_->empty()) {
 			rtnStatus.message = QString("Ellipse queue empty");
 		}
         else {
-            ell = flyEllipseQueuePtr_->front();
-            flyEllipseQueuePtr_->pop();
+            ell = flyEllipseDequePtr_->front();
+            flyEllipseDequePtr_->pop_front();
             rtnStatus.success = true;
         }
-        flyEllipseQueuePtr_->releaseLock();
+        flyEllipseDequePtr_->releaseLock();
 		return rtnStatus;
 	
+    }
+
+    RtnStatus FlyTrackPlugin::popBackTrack(EllipseParams& ell) {
+        RtnStatus rtnStatus;
+        rtnStatus.success = false;
+        rtnStatus.message = QString("");
+        if (flyEllipseDequePtr_ == NULL) {
+            rtnStatus.message = QString("Ellipse queue not allocated");
+            return rtnStatus;
+        }
+        flyEllipseDequePtr_->acquireLock();
+        if (flyEllipseDequePtr_->empty()) {
+            rtnStatus.message = QString("Ellipse queue empty");
+        }
+        else {
+            ell = flyEllipseDequePtr_->back();
+            flyEllipseDequePtr_->pop_back();
+            rtnStatus.success = true;
+        }
+        flyEllipseDequePtr_->releaseLock();
+        return rtnStatus;
+
     }
 
     QVariantMap FlyTrackPlugin::getConfigAsMap()  
@@ -1113,9 +1143,9 @@ namespace bias
         meanFlyVelocity_ = cv::Point2d(0.0, 0.0);
         meanFlyOrientation_ = 0.0;
         flyEllipseHistory_.clear();
-        flyEllipseQueuePtr_->acquireLock();
-        flyEllipseQueuePtr_->clear();
-        flyEllipseQueuePtr_->releaseLock();
+        flyEllipseDequePtr_->acquireLock();
+        flyEllipseDequePtr_->clear();
+        flyEllipseDequePtr_->releaseLock();
         velocityHistory_.clear();
         orientationHistory_.clear();
         headTailResolved_ = false;
@@ -1356,9 +1386,9 @@ namespace bias
     void FlyTrackPlugin::updateEllipseHistory() {
         // add ellipse to history
         flyEllipseHistory_.push_back(flyEllipse_);
-        flyEllipseQueuePtr_->acquireLock();
-        flyEllipseQueuePtr_->push(flyEllipse_);
-        flyEllipseQueuePtr_->releaseLock();
+        flyEllipseDequePtr_->acquireLock();
+        flyEllipseDequePtr_->push_back(flyEllipse_);
+        flyEllipseDequePtr_->releaseLock();
     }
 
     // void updateOrientationHistory()

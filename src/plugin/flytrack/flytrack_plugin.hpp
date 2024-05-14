@@ -65,7 +65,8 @@ namespace bias
             void processFramesBgEstMode(QList<StampedImage> frameList);
             void getCurrentImageTrackMode(cv::Mat& currentImageCopy);
             void getCurrentImageComputeBgMode(cv::Mat& currentImageCopy);
-            RtnStatus popTrack(EllipseParams& ell);
+            RtnStatus popFrontTrack(EllipseParams& ell);
+            RtnStatus popBackTrack(EllipseParams& ell);
 
             QPointer<CameraWindow> getCameraWindow();
 
@@ -157,7 +158,7 @@ namespace bias
             cv::Mat lastImagePreviewed_; // last image shown in preview window
 
             // tracking history
-            std::shared_ptr<LockableQueue<EllipseParams>> flyEllipseQueuePtr_; // queue for serving tracking
+            std::shared_ptr<LockableDeque<EllipseParams>> flyEllipseDequePtr_; // queue for serving tracking
             std::vector<EllipseParams> flyEllipseHistory_; // tracked ellipses
             std::deque<cv::Point2d> velocityHistory_; // tracked velocity buffer
             std::deque<double> orientationHistory_; // tracked orientation buffer

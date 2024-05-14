@@ -119,6 +119,45 @@ namespace bias
 
     };
 
+    template <class T>
+    class LockableDeque : public std::deque<T>, public Lockable<Empty>
+    {
+        // Mixin class for creating lockable queues 
+
+    public:
+
+        LockableDeque() : std::deque<T>() {};
+
+        void clear()
+        {
+            while (!(this->empty()))
+            {
+                this->pop_front();
+            }
+        }
+
+        void waitIfEmpty()
+        {
+            if (this->empty())
+            {
+                emptyWaitCond_.wait(&mutex_);
+            }
+        }
+
+        void signalNotEmpty()
+        {
+            emptyWaitCond_.wakeAll();
+        }
+
+        void wakeOne()
+        {
+            emptyWaitCond_.wakeOne();
+        }
+
+    protected:
+        QWaitCondition emptyWaitCond_;
+    };
+
 } // namespace bias
 
 #endif // #ifndef BIAS_LOCKABLE_HPP
