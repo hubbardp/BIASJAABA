@@ -45,6 +45,12 @@ namespace bias
     template <class T> class Lockable;
     template <class T> class LockableQueue;
 
+    struct CmdLineParams
+    {
+		QString inVideoFile;
+		QString configFile;
+	};
+
     class CameraWindow : public QMainWindow, private Ui::CameraWindow
     {
         Q_OBJECT
@@ -55,6 +61,7 @@ namespace bias
                     Guid cameraGuid, 
                     unsigned int cameraNumber, 
                     unsigned int numberOfCameras, 
+                    CmdLineParams params,
                     QWidget *parent=0
                     );
             RtnStatus connectCamera(bool showErrorDlg=true);
@@ -310,9 +317,9 @@ namespace bias
             void initialize(
                     Guid guid, 
                     unsigned int cameraNumber, 
-                    unsigned int numberOfCameras
+                    unsigned int numberOfCameras,
+                    CmdLineParams params
                     );
-
 
             void setDefaultFileDirs();
             void setupImageDisplayTimer();

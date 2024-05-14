@@ -134,12 +134,13 @@ namespace bias
             Guid cameraGuid, 
             unsigned int cameraNumber, 
             unsigned int numberOfCameras, 
+            CmdLineParams params,
             QWidget *parent
             ) : QMainWindow(parent)
     {
         setupUi(this);
         connectWidgets();
-        initialize(cameraGuid, cameraNumber, numberOfCameras);
+        initialize(cameraGuid, cameraNumber, numberOfCameras, params);
     }
 
 
@@ -2566,7 +2567,8 @@ namespace bias
     void CameraWindow::initialize(
             Guid guid, 
             unsigned int cameraNumber, 
-            unsigned int numberOfCameras
+            unsigned int numberOfCameras,
+            CmdLineParams params
             )
     {
         connected_ = false;
@@ -2611,8 +2613,17 @@ namespace bias
         currentConfigFileDir_ = defaultConfigFileDir_;
         currentConfigFileName_ = DEFAULT_CONFIG_FILE_NAME;
 
-        doCaptureFromVideo_ = false;
         captureVideoFileName_ = QString("");
+        doCaptureFromVideo_ = false;
+        if (!params.inVideoFile.isEmpty()) {
+            if (QFileInfo::exists(params.inVideoFile)) {
+                captureVideoFileName_ = params.inVideoFile;
+                doCaptureFromVideo_ = true;
+            }
+            else {
+                qWarning() << QString("Input video file %1 does not exist: ").arg(params.inVideoFile);
+            }
+        }
 
         // Temporary - plugin development
         // -------------------------------------------------------------------------------
@@ -2669,6 +2680,15 @@ namespace bias
             actionServerEnabledPtr_ -> setChecked(false);
         }
 
+        if (!params.configFile.isEmpty()) {
+            if (QFileInfo::exists(params.configFile)) {
+                connectCamera();
+                loadConfiguration(params.configFile, true);
+            }
+            else {
+                qWarning() << QString("Configuration file %1 does not exist: ").arg(params.configFile);
+            }
+        }
 
     }
 

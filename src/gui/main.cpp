@@ -6,6 +6,7 @@
 #include "camera_facade.hpp"
 #include "affinity.hpp"
 #include <iostream>
+#include <QCommandLineParser>
 
 
 // ------------------------------------------------------------------------
@@ -16,6 +17,28 @@ int main (int argc, char *argv[])
 {
     QApplication app(argc, argv);
    
+    QCoreApplication::setApplicationName("BIAS");
+
+    QCommandLineParser parser;
+    parser.setApplicationDescription("BIAS help");
+    parser.addHelpOption();
+    // -v <in-video-file> or -video <in-video-file> 
+    // capture from video instead of camera
+    parser.addOption(QCommandLineOption(
+        QStringList() << "i" << "in" << "in-video",
+        QString("Capture video from file <in-video-file>"),
+        QString("in-video-file")));
+    parser.addOption(QCommandLineOption(
+		QStringList() << "c" << "config",
+		QString("Load configuration from <config-file>"),
+		QString("config-file")));
+
+    parser.process(app);
+    bias::CmdLineParams params;
+    params.inVideoFile = parser.value("in-video");
+    params.configFile = parser.value("config");
+
+
     bias::GuidList guidList;
     bias::CameraFinder cameraFinder;
     std::list<QSharedPointer<bias::CameraWindow>> windowPtrList;
@@ -57,7 +80,7 @@ int main (int argc, char *argv[])
     for (guidIt=guidList.begin(), camCnt=0; guidIt!=guidList.end(); guidIt++, camCnt++)
     {
         bias::Guid guid = *guidIt;
-        QSharedPointer<bias::CameraWindow> windowPtr(new bias::CameraWindow(guid, camCnt, numCam));
+        QSharedPointer<bias::CameraWindow> windowPtr(new bias::CameraWindow(guid, camCnt, numCam, params));
         windowPtr -> show();
         if (camCnt==0)
         {

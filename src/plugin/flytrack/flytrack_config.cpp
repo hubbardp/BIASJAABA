@@ -8,74 +8,7 @@
 namespace bias
 {
 
-    // helper functions
-
-    bool roiTypeToString(ROIType roiType,QString& roiTypeString) {
-        switch (roiType) {
-        case CIRCLE:
-            roiTypeString = QString("CIRCLE");
-            return true;
-        case NONE:
-            roiTypeString = QString("NONE");
-            return true;
-        default:
-            return false;
-        }
-    }   
-    bool roiTypeFromString(QString roiTypeString, ROIType& roiType) {
-        if (roiTypeString == "CIRCLE") {
-            roiType = CIRCLE;
-            return true;
-        }
-        if (roiTypeString == "NONE") {
-            roiType = NONE;
-            return true;
-        }
-        roiTypeString = "UNKNOWN";
-        return false;
-    }
-
-    bool flyVsBgModeToString(FlyVsBgModeType flyVsBgMode, QString& flyVsBgModeString) {
-		switch (flyVsBgMode) {
-		case FLY_DARKER_THAN_BG:
-			flyVsBgModeString = QString("FLY_DARKER_THAN_BG");
-			return true;
-		case FLY_BRIGHTER_THAN_BG:
-			flyVsBgModeString = QString("FLY_BRIGHTER_THAN_BG");
-			return true;
-		case FLY_ANY_DIFFERENCE_BG:
-			flyVsBgModeString = QString("FLY_ANY_DIFFERENCE_BG");
-			return true;
-		default:
-			return false;
-		}
-	}
-
-    bool flyVsBgModeFromString(QString flyVsBgModeString, FlyVsBgModeType& flyVsBgMode) {
-        if (flyVsBgModeString == "FLY_DARKER_THAN_BG") {
-            flyVsBgMode = FLY_DARKER_THAN_BG;
-			return true;
-		}
-        if (flyVsBgModeString == "FLY_BRIGHTER_THAN_BG") {
-			flyVsBgMode = FLY_BRIGHTER_THAN_BG;
-            return true;
-            }
-        if (flyVsBgModeString == "FLY_ANY_DIFFERENCE_BG") {
-            flyVsBgMode = FLY_ANY_DIFFERENCE_BG;
-			return true;
-		}
-        flyVsBgModeString = "UNKNOWN";
-		return false;
-	}
-
-    void FlyTrackConfig::setRoiParams(ROIType roiTypeNew, double roiCenterXNew, double roiCenterYNew, double roiRadiusNew) {
-    	roiType = roiTypeNew;
-		roiCenterX = roiCenterXNew;
-		roiCenterY = roiCenterYNew;
-		roiRadius = roiRadiusNew;
-    }
-
-    const QString FlyTrackConfig::DEFAULT_BG_VIDEO_FILE_PATH = QString("dummy_bg_video.avi"); // video to estimate background from
+    const QString FlyTrackConfig::DEFAULT_BG_VIDEO_FILE_PATH = QString(""); // video to estimate background from
     const QString FlyTrackConfig::DEFAULT_BG_IMAGE_FILE_PATH = QString(""); // saved background median estimate
     const QString FlyTrackConfig::DEFAULT_TMP_OUT_DIR = QString("tmp"); // temporary output directory
     const int FlyTrackConfig::DEFAULT_BACKGROUND_THRESHOLD = 75; // foreground/background threshold, between 0 and 255
@@ -523,5 +456,73 @@ namespace bias
         }
         return jsonConfigArray;
     }
+
+    // helper functions
+
+    bool roiTypeToString(ROIType roiType, QString& roiTypeString) {
+        switch (roiType) {
+        case CIRCLE:
+            roiTypeString = QString("CIRCLE");
+            return true;
+        case NONE:
+            roiTypeString = QString("NONE");
+            return true;
+        default:
+            return false;
+        }
+    }
+    bool roiTypeFromString(QString roiTypeString, ROIType& roiType) {
+        if (roiTypeString == "CIRCLE") {
+            roiType = CIRCLE;
+            return true;
+        }
+        if (roiTypeString == "NONE") {
+            roiType = NONE;
+            return true;
+        }
+        roiTypeString = "UNKNOWN";
+        return false;
+    }
+
+    bool flyVsBgModeToString(FlyVsBgModeType flyVsBgMode, QString& flyVsBgModeString) {
+        switch (flyVsBgMode) {
+        case FLY_DARKER_THAN_BG:
+            flyVsBgModeString = QString("FLY_DARKER_THAN_BG");
+            return true;
+        case FLY_BRIGHTER_THAN_BG:
+            flyVsBgModeString = QString("FLY_BRIGHTER_THAN_BG");
+            return true;
+        case FLY_ANY_DIFFERENCE_BG:
+            flyVsBgModeString = QString("FLY_ANY_DIFFERENCE_BG");
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool flyVsBgModeFromString(QString flyVsBgModeString, FlyVsBgModeType& flyVsBgMode) {
+        if (flyVsBgModeString == "FLY_DARKER_THAN_BG") {
+            flyVsBgMode = FLY_DARKER_THAN_BG;
+            return true;
+        }
+        if (flyVsBgModeString == "FLY_BRIGHTER_THAN_BG") {
+            flyVsBgMode = FLY_BRIGHTER_THAN_BG;
+            return true;
+        }
+        if (flyVsBgModeString == "FLY_ANY_DIFFERENCE_BG") {
+            flyVsBgMode = FLY_ANY_DIFFERENCE_BG;
+            return true;
+        }
+        flyVsBgModeString = "UNKNOWN";
+        return false;
+    }
+
+    void FlyTrackConfig::setRoiParams(ROIType roiTypeNew, double roiCenterXNew, double roiCenterYNew, double roiRadiusNew) {
+        roiType = roiTypeNew;
+        roiCenterX = roiCenterXNew;
+        roiCenterY = roiCenterYNew;
+        roiRadius = roiRadiusNew;
+    }
+
 
 }

@@ -39,6 +39,8 @@ namespace bias
     void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse);
     double mod2pi(double angle);
     QString ellipseToJson(EllipseParams ell);
+    bool checkFileExists(QString file);
+
 
     class FlyTrackPlugin : public BiasPlugin, public Ui::FlyTrackPluginDialog
     {

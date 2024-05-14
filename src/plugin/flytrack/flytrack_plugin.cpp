@@ -24,161 +24,6 @@ namespace bias
     const unsigned int FlyTrackPlugin::BG_HIST_BIN_SIZE = 1;
     const double FlyTrackPlugin::MIN_VEL_MATCH_DOTPROD = 0.25;
 
-    // helper functions
-
-    // void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage)
-    // void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage)
-    // load background model from file with cv::imread
-    // inputs:
-    // bgImageFilePath: path to background image file to load
-    // bgMedianImage: destination for median background image
-    void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage) {
-        if (!QFile::exists(bgImageFilePath)) {
-            fprintf(stderr, "Background image file %s does not exist\n", bgImageFilePath.toStdString().c_str());
-            exit(-1);
-        }
-        printf("Reading background image from %s\n", bgImageFilePath.toStdString().c_str());
-        bgMedianImage = cv::imread(bgImageFilePath.toStdString(), cv::IMREAD_GRAYSCALE);
-        printf("Done\n");
-        fflush(stdout);
-    }
-
-    // void computeBackgroundMedian(cv::Mat& bgMedianImage)
-    // compute the median background image from video in bgVideoFilePath_
-    // inputs:
-    // bgMedianImage: destination for median background image
-    void computeBackgroundMedian(QString bgVideoFilePath,
-        int nFramesBgEst, int lastFrameSample,
-        cv::Mat& bgMedianImage,
-        QProgressBar* progressBar) {
-        if (bgVideoFilePath.isEmpty()) {
-            fprintf(stderr, "No background video file specified\n");
-            return;
-        }
-        else if (!QFile::exists(bgVideoFilePath)) {
-			fprintf(stderr, "Background video file %s does not exist\n", bgVideoFilePath.toStdString().c_str());
-			return;
-		}
-        videoBackend vidObj = videoBackend(bgVideoFilePath);
-        int nFrames = vidObj.getNumFrames();
-
-        StampedImage newStampedImg;
-        newStampedImg.image = vidObj.grabImage();
-
-        BackgroundData_ufmf backgroundData;
-        backgroundData = BackgroundData_ufmf(newStampedImg, 
-            FlyTrackPlugin::BG_HIST_NUM_BINS, 
-            FlyTrackPlugin::BG_HIST_BIN_SIZE);
-        backgroundData.addImage(newStampedImg);
-
-        // which frames to sample
-        if (nFrames < nFramesBgEst || nFramesBgEst <= 0) nFramesBgEst = nFrames;
-        if (nFrames < lastFrameSample || lastFrameSample <= 0) lastFrameSample = nFrames;
-        int nFramesSkip = lastFrameSample / nFramesBgEst;
-
-        // add evenly spaced frames to the background model
-        printf("Reading frames for background estimation\n");
-        fflush(stdout);
-        for (int f = nFramesSkip; f < lastFrameSample; f += nFramesSkip) {
-            printf("Reading frame %d\n", f);
-            fflush(stdout);
-            vidObj.setFrame(f);
-            newStampedImg.image = vidObj.grabImage();
-            backgroundData.addImage(newStampedImg);
-            if ((progressBar != NULL) && (progressBar->isVisible())) {
-                progressBar->setValue((100.0 * (f+nFramesSkip) / lastFrameSample));
-            }
-        }
-        printf("Finished reading.\n");
-        // compute the median image
-        printf("Computing median image\n");
-        fflush(stdout);
-        bgMedianImage = backgroundData.getMedianImage();
-        printf("Done\n");
-        fflush(stdout);
-        backgroundData.clear();
-    }
-    
-    // int largestConnectedComponent(cv::Mat& isFg)
-    // find largest connected components in isFg
-    // inputs:
-    // isFg: binary image, 255=background, 0=foreground
-    // returns: area of largest connected component
-    int largestConnectedComponent(cv::Mat& isFg) {
-        cv::Mat ccLabels;
-        int nCCs = cv::connectedComponents(isFg, ccLabels);
-        // find largest connected component
-        int maxArea = 0;
-        int cc = 0;
-        int currArea;
-        for (int i = 1; i < nCCs; i++) {
-            currArea = cv::countNonZero(ccLabels == i);
-            if (currArea > maxArea) {
-                maxArea = currArea;
-                cc = i;
-            }
-        }
-        isFg = ccLabels == cc;
-        return maxArea;
-    }
-
-    // void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse)
-    // fit an ellipse to the foreground pixels in isFg. 
-    // computes the principal components of the foreground pixel locations
-    // creates an ellipse with center the mean of the pixel locations,
-    // orientation the angle of the first principal component,
-    // semi-major and semi-minor axes twice the square roots of the eigenvalues.
-    // inputs:
-    // isFg: binary image, 255=background, 0=foreground
-    // flyEllipse: destination for ellipse parameters
-    void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse) {
-
-        // eigen decomposition of covariance matrix
-        // this probably isn't the fastest way to do this, but
-        // it seems to work
-        cv::Mat fgPixels;
-        cv::findNonZero(isFg, fgPixels);
-        cv::Mat fgPixelsD = cv::Mat::zeros(fgPixels.rows, 2, CV_64F);
-        for (int i = 0; i < fgPixels.rows; i++) {
-            fgPixelsD.at<double>(i, 0) = fgPixels.at<cv::Point>(i).x;
-            fgPixelsD.at<double>(i, 1) = fgPixels.at<cv::Point>(i).y;
-        }
-        cv::PCA pca_analysis(fgPixelsD, cv::Mat(), cv::PCA::DATA_AS_ROW);
-        flyEllipse.x = pca_analysis.mean.at<double>(0, 0);
-        flyEllipse.y = pca_analysis.mean.at<double>(0, 1);
-        // orientation of ellipse (modulo pi)
-        flyEllipse.theta = std::atan2(pca_analysis.eigenvectors.at<double>(0, 1),
-            pca_analysis.eigenvectors.at<double>(0, 0));
-        // semi major, minor axis lengths
-        double lambda1 = pca_analysis.eigenvalues.at<double>(0);
-        double lambda2 = pca_analysis.eigenvalues.at<double>(1);
-        flyEllipse.a = std::sqrt(lambda1) * 2.0;
-        flyEllipse.b = std::sqrt(lambda2) * 2.0;
-    }
-
-    double mod2pi(double angle) {
-        return std::fmod(angle + M_PI,2.0 * M_PI) - M_PI;
-	}
-
-    bool checkFileExists(QString file) {
-        if (file.isEmpty()) {
-			return false;
-		}
-        return QFile::exists(file);
-    }
-
-    QString ellipseToJson(EllipseParams ell) {
-		QString json = QString("{");
-        json += QString("\"frame\": %1,").arg(ell.frame);
-		json += QString("\"x\": %1,").arg(ell.x);
-		json += QString("\"y\": %1,").arg(ell.y);
-		json += QString("\"a\": %1,").arg(ell.a);
-		json += QString("\"b\": %1,").arg(ell.b);
-		json += QString("\"theta\": %1").arg(ell.theta);
-		json += QString("}");
-		return json;
-	}
-
     // Public
     // ------------------------------------------------------------------------
 
@@ -1490,4 +1335,160 @@ namespace bias
         if (!isFirst_) logStream_ << ",\n";
         logStream_ << ellipseToJson(flyEllipse_);
     }
+
+    // helper functions
+
+    // void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage)
+    // void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage)
+    // load background model from file with cv::imread
+    // inputs:
+    // bgImageFilePath: path to background image file to load
+    // bgMedianImage: destination for median background image
+    void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage) {
+        if (!QFile::exists(bgImageFilePath)) {
+            fprintf(stderr, "Background image file %s does not exist\n", bgImageFilePath.toStdString().c_str());
+            exit(-1);
+        }
+        printf("Reading background image from %s\n", bgImageFilePath.toStdString().c_str());
+        bgMedianImage = cv::imread(bgImageFilePath.toStdString(), cv::IMREAD_GRAYSCALE);
+        printf("Done\n");
+        fflush(stdout);
+    }
+
+    // void computeBackgroundMedian(cv::Mat& bgMedianImage)
+    // compute the median background image from video in bgVideoFilePath_
+    // inputs:
+    // bgMedianImage: destination for median background image
+    void computeBackgroundMedian(QString bgVideoFilePath,
+        int nFramesBgEst, int lastFrameSample,
+        cv::Mat& bgMedianImage,
+        QProgressBar* progressBar) {
+        if (bgVideoFilePath.isEmpty()) {
+            fprintf(stderr, "No background video file specified\n");
+            return;
+        }
+        else if (!QFile::exists(bgVideoFilePath)) {
+            fprintf(stderr, "Background video file %s does not exist\n", bgVideoFilePath.toStdString().c_str());
+            return;
+        }
+        videoBackend vidObj = videoBackend(bgVideoFilePath);
+        int nFrames = vidObj.getNumFrames();
+
+        StampedImage newStampedImg;
+        newStampedImg.image = vidObj.grabImage();
+
+        BackgroundData_ufmf backgroundData;
+        backgroundData = BackgroundData_ufmf(newStampedImg,
+            FlyTrackPlugin::BG_HIST_NUM_BINS,
+            FlyTrackPlugin::BG_HIST_BIN_SIZE);
+        backgroundData.addImage(newStampedImg);
+
+        // which frames to sample
+        if (nFrames < nFramesBgEst || nFramesBgEst <= 0) nFramesBgEst = nFrames;
+        if (nFrames < lastFrameSample || lastFrameSample <= 0) lastFrameSample = nFrames;
+        int nFramesSkip = lastFrameSample / nFramesBgEst;
+
+        // add evenly spaced frames to the background model
+        printf("Reading frames for background estimation\n");
+        fflush(stdout);
+        for (int f = nFramesSkip; f < lastFrameSample; f += nFramesSkip) {
+            printf("Reading frame %d\n", f);
+            fflush(stdout);
+            vidObj.setFrame(f);
+            newStampedImg.image = vidObj.grabImage();
+            backgroundData.addImage(newStampedImg);
+            if ((progressBar != NULL) && (progressBar->isVisible())) {
+                progressBar->setValue((100.0 * (f + nFramesSkip) / lastFrameSample));
+            }
+        }
+        printf("Finished reading.\n");
+        // compute the median image
+        printf("Computing median image\n");
+        fflush(stdout);
+        bgMedianImage = backgroundData.getMedianImage();
+        printf("Done\n");
+        fflush(stdout);
+        backgroundData.clear();
+    }
+
+    // int largestConnectedComponent(cv::Mat& isFg)
+    // find largest connected components in isFg
+    // inputs:
+    // isFg: binary image, 255=background, 0=foreground
+    // returns: area of largest connected component
+    int largestConnectedComponent(cv::Mat& isFg) {
+        cv::Mat ccLabels;
+        int nCCs = cv::connectedComponents(isFg, ccLabels);
+        // find largest connected component
+        int maxArea = 0;
+        int cc = 0;
+        int currArea;
+        for (int i = 1; i < nCCs; i++) {
+            currArea = cv::countNonZero(ccLabels == i);
+            if (currArea > maxArea) {
+                maxArea = currArea;
+                cc = i;
+            }
+        }
+        isFg = ccLabels == cc;
+        return maxArea;
+    }
+
+    // void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse)
+    // fit an ellipse to the foreground pixels in isFg. 
+    // computes the principal components of the foreground pixel locations
+    // creates an ellipse with center the mean of the pixel locations,
+    // orientation the angle of the first principal component,
+    // semi-major and semi-minor axes twice the square roots of the eigenvalues.
+    // inputs:
+    // isFg: binary image, 255=background, 0=foreground
+    // flyEllipse: destination for ellipse parameters
+    void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse) {
+
+        // eigen decomposition of covariance matrix
+        // this probably isn't the fastest way to do this, but
+        // it seems to work
+        cv::Mat fgPixels;
+        cv::findNonZero(isFg, fgPixels);
+        cv::Mat fgPixelsD = cv::Mat::zeros(fgPixels.rows, 2, CV_64F);
+        for (int i = 0; i < fgPixels.rows; i++) {
+            fgPixelsD.at<double>(i, 0) = fgPixels.at<cv::Point>(i).x;
+            fgPixelsD.at<double>(i, 1) = fgPixels.at<cv::Point>(i).y;
+        }
+        cv::PCA pca_analysis(fgPixelsD, cv::Mat(), cv::PCA::DATA_AS_ROW);
+        flyEllipse.x = pca_analysis.mean.at<double>(0, 0);
+        flyEllipse.y = pca_analysis.mean.at<double>(0, 1);
+        // orientation of ellipse (modulo pi)
+        flyEllipse.theta = std::atan2(pca_analysis.eigenvectors.at<double>(0, 1),
+            pca_analysis.eigenvectors.at<double>(0, 0));
+        // semi major, minor axis lengths
+        double lambda1 = pca_analysis.eigenvalues.at<double>(0);
+        double lambda2 = pca_analysis.eigenvalues.at<double>(1);
+        flyEllipse.a = std::sqrt(lambda1) * 2.0;
+        flyEllipse.b = std::sqrt(lambda2) * 2.0;
+    }
+
+    double mod2pi(double angle) {
+        return std::fmod(angle + M_PI, 2.0 * M_PI) - M_PI;
+    }
+
+    bool checkFileExists(QString file) {
+        if (file.isEmpty()) {
+            return false;
+        }
+        return QFile::exists(file);
+    }
+
+    QString ellipseToJson(EllipseParams ell) {
+        QString json = QString("{");
+        json += QString("\"frame\": %1,").arg(ell.frame);
+        json += QString("\"x\": %1,").arg(ell.x);
+        json += QString("\"y\": %1,").arg(ell.y);
+        json += QString("\"a\": %1,").arg(ell.a);
+        json += QString("\"b\": %1,").arg(ell.b);
+        json += QString("\"theta\": %1").arg(ell.theta);
+        json += QString("}");
+        return json;
+    }
+
 }
