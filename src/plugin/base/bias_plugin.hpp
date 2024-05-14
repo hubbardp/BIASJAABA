@@ -50,7 +50,7 @@ namespace bias
             virtual QVariantMap getConfigAsMap();  
             virtual RtnStatus setConfigFromMap(QVariantMap configMap);
             virtual RtnStatus setConfigFromJson(QByteArray jsonArray);
-            virtual RtnStatus runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg=true);
+            virtual RtnStatus runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg=true, QString& value=QString(""));
             virtual QString getLogFileExtension();
             virtual QString getLogFilePostfix();
             virtual QString getLogFileName(bool includeAutoNaming);

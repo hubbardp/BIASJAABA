@@ -113,7 +113,8 @@ namespace bias
             QString getCurrentPluginName(RtnStatus &rtnStatus);
             RtnStatus runPluginCmd(
                     QByteArray jsonPluginCmdArray, 
-                    bool showErrorDlg=true
+                    bool showErrorDlg=true,
+                    QString& value=QString("")
                     );
 
             QString getCameraGuidString(RtnStatus &rtnStatus);

@@ -93,7 +93,7 @@ namespace bias
     }
 
 
-    RtnStatus BiasPlugin::runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg)
+    RtnStatus BiasPlugin::runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg, QString& value)
     {
         qDebug() << __FUNCTION__;
         RtnStatus rtnStatus;

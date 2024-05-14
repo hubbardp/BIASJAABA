@@ -1547,7 +1547,7 @@ namespace bias
     }
 
 
-    RtnStatus CameraWindow::runPluginCmd(QByteArray jsonPluginCmdArray, bool showErrorDlg)
+    RtnStatus CameraWindow::runPluginCmd(QByteArray jsonPluginCmdArray, bool showErrorDlg, QString& value)
     {
         RtnStatus rtnStatus;
         rtnStatus.success = true;
@@ -1602,7 +1602,8 @@ namespace bias
             if (pluginName == cmdPluginName)
             {
                 nameFound = true;
-                rtnStatus = pluginMap_[pluginName] -> runCmdFromMap(pluginCmdMap,showErrorDlg);
+                rtnStatus = pluginMap_[pluginName] -> runCmdFromMap(pluginCmdMap,showErrorDlg,value);
+
             }
         }
         if (!nameFound)
@@ -1617,7 +1618,6 @@ namespace bias
         }
         return rtnStatus;
     }
-
 
     QVariantMap CameraWindow::getWindowGeometryMap()
     {
@@ -7096,7 +7096,6 @@ namespace bias
         rtnStatus.message = message;
         return rtnStatus;
     }
-
 
     // Utility functions
     // ----------------------------------------------------------------------------------

@@ -234,7 +234,7 @@ namespace bias
         return PLUGIN_DISPLAY_NAME;
     }
 
-    RtnStatus GrabDetectorPlugin::runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg)
+    RtnStatus GrabDetectorPlugin::runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg, QString& runCmdFromMap)
     {
         RtnStatus rtnStatus;
         rtnStatus.success = true;

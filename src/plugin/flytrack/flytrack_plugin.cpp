@@ -167,6 +167,18 @@ namespace bias
         return QFile::exists(file);
     }
 
+    QString ellipseToJson(EllipseParams ell) {
+		QString json = QString("{");
+        json += QString("\"frame\": %1,").arg(ell.frame);
+		json += QString("\"x\": %1,").arg(ell.x);
+		json += QString("\"y\": %1,").arg(ell.y);
+		json += QString("\"a\": %1,").arg(ell.a);
+		json += QString("\"b\": %1,").arg(ell.b);
+		json += QString("\"theta\": %1").arg(ell.theta);
+		json += QString("}");
+		return json;
+	}
+
     // Public
     // ------------------------------------------------------------------------
 
@@ -214,6 +226,7 @@ namespace bias
         bgImageComputed_ = false;
         active_ = false;
         lastFramePreviewed_ = -1;
+        flyEllipseQueuePtr_ = std::make_shared<LockableQueue<EllipseParams>>();
         initialize();
 
 
@@ -325,6 +338,7 @@ namespace bias
         int ccArea = largestConnectedComponent(isFg_);
 
         // compute mean and covariance of pixels in foreground
+        flyEllipse_.frame = frameCount_;
         fitEllipse(isFg_, flyEllipse_);
 
         // store velocity
@@ -460,11 +474,80 @@ namespace bias
     }
 
 
-    RtnStatus FlyTrackPlugin::runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg)
+    RtnStatus FlyTrackPlugin::runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg, QString& value)
     {
-        qDebug() << __FUNCTION__;
         RtnStatus rtnStatus;
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+
+        QString errMsgTitle("Plugin runCmdFromMap Error");
+
+        if (!cmdMap.contains("cmd"))
+        {
+            QString errMsgText("FlyTrackPlugin::runPluginCmd: cmd not found in map");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        if (!cmdMap["cmd"].canConvert<QString>())
+        {
+            QString errMsgText("FlyTrackPlugin::runPluginCmd: unable to convert plugin name to string");
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+            return rtnStatus;
+        }
+        QString cmd = cmdMap["cmd"].toString();
+
+        if (cmd == QString("pop-track"))
+        {
+            EllipseParams ell;
+            rtnStatus = popTrack(ell);
+            if (rtnStatus.success) {
+				value = ellipseToJson(ell);
+            }
+        }
+        else
+        {
+            QString errMsgText = QString("FlyTrackPlugin::runPluginCmd: unknown cmd %1").arg(cmd);
+            if (showErrorDlg)
+            {
+                QMessageBox::critical(this, errMsgTitle, errMsgText);
+            }
+            rtnStatus.success = false;
+            rtnStatus.message = errMsgText;
+        }
+
         return rtnStatus;
+    }
+
+    RtnStatus FlyTrackPlugin::popTrack(EllipseParams& ell) {
+        RtnStatus rtnStatus;
+		rtnStatus.success = false;
+		rtnStatus.message = QString("");
+        if (flyEllipseQueuePtr_ == NULL) {
+            rtnStatus.message = QString("Ellipse queue not allocated");
+            return rtnStatus;
+        }
+        flyEllipseQueuePtr_->acquireLock();
+        if (flyEllipseQueuePtr_->empty()) {
+			rtnStatus.message = QString("Ellipse queue empty");
+		}
+        else {
+            ell = flyEllipseQueuePtr_->front();
+            flyEllipseQueuePtr_->pop();
+            rtnStatus.success = true;
+        }
+        flyEllipseQueuePtr_->releaseLock();
+		return rtnStatus;
+	
     }
 
     QVariantMap FlyTrackPlugin::getConfigAsMap()  
@@ -706,6 +789,8 @@ namespace bias
 
         setBgEstParams(config);
         config_ = config;
+        setROI(config);
+        setROI(config);
 
         if (config_.computeBgMode) {
             computeBgModeComboBox->setCurrentIndex(0);
@@ -1028,6 +1113,9 @@ namespace bias
         meanFlyVelocity_ = cv::Point2d(0.0, 0.0);
         meanFlyOrientation_ = 0.0;
         flyEllipseHistory_.clear();
+        flyEllipseQueuePtr_->acquireLock();
+        flyEllipseQueuePtr_->clear();
+        flyEllipseQueuePtr_->releaseLock();
         velocityHistory_.clear();
         orientationHistory_.clear();
         headTailResolved_ = false;
@@ -1268,6 +1356,9 @@ namespace bias
     void FlyTrackPlugin::updateEllipseHistory() {
         // add ellipse to history
         flyEllipseHistory_.push_back(flyEllipse_);
+        flyEllipseQueuePtr_->acquireLock();
+        flyEllipseQueuePtr_->push(flyEllipse_);
+        flyEllipseQueuePtr_->releaseLock();
     }
 
     // void updateOrientationHistory()
@@ -1367,13 +1458,6 @@ namespace bias
         if (!loggingEnabled_) return;
         if (!logFile_.isOpen()) return;
         if (!isFirst_) logStream_ << ",\n";
-        logStream_ << "    {\"frame\": " << frameCount_
-            << ", \"timestamp\": " << timeStamp_
-            << ", \"x\": " << flyEllipse_.x
-            << ", \"y\": " << flyEllipse_.y
-            << ", \"a\": " << flyEllipse_.a
-            << ", \"b\": " << flyEllipse_.b
-            << ", \"theta\": " << flyEllipse_.theta
-            << "}";
+        logStream_ << ellipseToJson(flyEllipse_);
     }
 }

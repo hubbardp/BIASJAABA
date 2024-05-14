@@ -1,6 +1,7 @@
 #include "ext_ctl_http_server.hpp"
 #include "camera_window.hpp"
 #include <QtDebug>
+#include "flytrack_plugin.hpp"
 
 namespace bias
 {
@@ -375,14 +376,14 @@ namespace bias
     QVariantMap ExtCtlHttpServer::handlePluginCmd(QString jsonPluginCmd)
     {
         qDebug() << __FUNCTION__ << jsonPluginCmd;
-
         QVariantMap cmdMap;
         QByteArray jsonPluginCmdArray = jsonPluginCmd.toLatin1();
-        RtnStatus status = cameraWindowPtr_ -> runPluginCmd(jsonPluginCmdArray,false);
+        QString value = QString("");
+        RtnStatus status = cameraWindowPtr_ -> runPluginCmd(jsonPluginCmdArray,false,value);
 
         cmdMap.insert("success", status.success);
         cmdMap.insert("message", status.message);
-        cmdMap.insert("value", "");
+        cmdMap.insert("value", value);
         return cmdMap;
     }
 

@@ -23,6 +23,7 @@ namespace bias
 
     struct EllipseParams
     {
+        int frame;
         double x;
         double y;
         double a;
@@ -37,6 +38,7 @@ namespace bias
     int largestConnectedComponent(cv::Mat& isFg);
     void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse);
     double mod2pi(double angle);
+    QString ellipseToJson(EllipseParams ell);
 
     class FlyTrackPlugin : public BiasPlugin, public Ui::FlyTrackPluginDialog
     {
@@ -63,6 +65,7 @@ namespace bias
             void processFramesBgEstMode(QList<StampedImage> frameList);
             void getCurrentImageTrackMode(cv::Mat& currentImageCopy);
             void getCurrentImageComputeBgMode(cv::Mat& currentImageCopy);
+            RtnStatus popTrack(EllipseParams& ell);
 
             QPointer<CameraWindow> getCameraWindow();
 
@@ -79,7 +82,7 @@ namespace bias
             RtnStatus setFromConfig(FlyTrackConfig config);
             virtual RtnStatus setConfigFromMap(QVariantMap configMap);
             virtual RtnStatus setConfigFromJson(QByteArray jsonArray);
-            virtual RtnStatus runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg=true);
+            virtual RtnStatus runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg=true, QString& value = QString(""));
             virtual QString getLogFileExtension();
             virtual QString getLogFilePostfix();
             virtual QString getLogFileName(bool includeAutoNaming);
@@ -154,6 +157,7 @@ namespace bias
             cv::Mat lastImagePreviewed_; // last image shown in preview window
 
             // tracking history
+            std::shared_ptr<LockableQueue<EllipseParams>> flyEllipseQueuePtr_; // queue for serving tracking
             std::vector<EllipseParams> flyEllipseHistory_; // tracked ellipses
             std::deque<cv::Point2d> velocityHistory_; // tracked velocity buffer
             std::deque<double> orientationHistory_; // tracked orientation buffer

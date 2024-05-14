@@ -113,7 +113,7 @@ namespace bias
         return configMap;
     } 
 
-    RtnStatus StampedePlugin::runCmdFromMap(QVariantMap cmdMap,bool showErrorDlg)
+    RtnStatus StampedePlugin::runCmdFromMap(QVariantMap cmdMap, bool showErrorDlg, QString& value)
     {
         RtnStatus rtnStatus;
         return rtnStatus;

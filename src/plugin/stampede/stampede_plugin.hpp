@@ -43,7 +43,7 @@ namespace bias
             virtual QString getName();
             virtual QString getDisplayName();
             virtual QVariantMap getConfigAsMap();  
-            virtual RtnStatus runCmdFromMap(QVariantMap cmdMap,bool showErrorDlg=true);
+            virtual RtnStatus runCmdFromMap(QVariantMap cmdMap,bool showErrorDlg=true,QString& value = QString(""));
             virtual QString getLogFileExtension();
             virtual QString getLogFilePostfix();
 
