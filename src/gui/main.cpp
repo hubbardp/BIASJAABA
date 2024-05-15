@@ -22,12 +22,13 @@ int main (int argc, char *argv[])
     QCommandLineParser parser;
     parser.setApplicationDescription("BIAS help");
     parser.addHelpOption();
-    // -v <in-video-file> or -video <in-video-file> 
+    // -i <in-video-file> or --in <in-video-file> or --in-video <in-video-file> 
     // capture from video instead of camera
     parser.addOption(QCommandLineOption(
         QStringList() << "i" << "in" << "in-video",
         QString("Capture video from file <in-video-file>"),
         QString("in-video-file")));
+    // -c <config-file> or --config <config-file>
     parser.addOption(QCommandLineOption(
 		QStringList() << "c" << "config",
 		QString("Load configuration from <config-file>"),
