@@ -62,18 +62,17 @@ Notes
 Here is how I built BIAS on Windows, May 2024. 
 
 - Installed Visual Studio 2022 Community Edition
-https://visualstudio.microsoft.com/vs/community/
 Selected the following workloads during install:
 
-  - Desktop development with C++
-  - Universal Windows Platform development (not sure if this is necessary)
-  - Python development (probably not necessary)
-  - Github copilot workloads (definitely not necessary)
+    - Desktop development with C++
+    - Universal Windows Platform development (not sure if this is necessary)
+    - Python development (probably not necessary)
+    - Github copilot workloads (definitely not necessary)
 
 - Installed CMake 3.29.2
 https://cmake.org/download/
 
--  Anaconda version 2023.07-1 was installed on my machine already, used its build of Qt
+- Anaconda version 2023.07.1 was installed on my machine already, used its build of Qt
   - Added Qt to my PATH environment variable:
   - <anaconda3>\Library\Lib\cmake\Qt5
   - <anaconda3>\Library\plugins\platforms
