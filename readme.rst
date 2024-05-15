@@ -62,7 +62,6 @@ Notes
 Here is how I built BIAS on Windows, May 2024. 
 
 - Installed Visual Studio 2022 Community Edition. Selected the following workloads during install
-
     - Desktop development with C++
     - Universal Windows Platform development (not sure if this is necessary)
     - Python development (probably not necessary)
