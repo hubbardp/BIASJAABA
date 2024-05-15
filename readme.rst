@@ -60,6 +60,7 @@ Notes
 ^^^^^
   
 Here is how I built BIAS on Windows, May 2024. 
+
 - Installed Visual Studio 2022 Community Edition
 https://visualstudio.microsoft.com/vs/community/
 Selected the following workloads during install:
@@ -81,6 +82,7 @@ https://cmake.org/download/
 - Cloned OpenCV 4 from https://github.com/opencv/opencv
 
 - Built OpenCV:
+
   - In CMake, set <opencv> as source directory and <opencv>/build as build directory
   - Clicked Configure
   - Made sure WITH_FFMPEG was checked (default)
@@ -109,6 +111,7 @@ C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\v143
 windeployqt.exe test_gui.exe
 to copy Qt requirements into this directory
 - Manually copy OpenCV required dlls from <opencv>\build\bin\Release:
+
   - opencv_core490.dll
   - opencv_imgcodecs490.dll
   - opencv_imgproc490.dll
@@ -116,6 +119,7 @@ to copy Qt requirements into this directory
 - Manually copy Spinnaker requirements to this directory:
   - C:\Program Files\FLIR Systems\Spinnaker\bin\vs2015\SpinnakerC_v140.dll
   - C:\Program Files\FLIR Systems\Spinnaker\lib64\vs2015\SpinVideoC_v140.lib
+
 - Make a .bat file setup.bat with the following::
   @echo off
   vc_redist.x64.exe
