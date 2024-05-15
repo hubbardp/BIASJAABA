@@ -61,8 +61,8 @@ Notes
   
 Here is how I built BIAS on Windows, May 2024. 
 - Installed Visual Studio 2022 Community Edition
-  https://visualstudio.microsoft.com/vs/community/
-  Selected the following workloads during install:
+https://visualstudio.microsoft.com/vs/community/
+Selected the following workloads during install:
 
   - Desktop development with C++
   - Universal Windows Platform development (not sure if this is necessary)
@@ -70,7 +70,7 @@ Here is how I built BIAS on Windows, May 2024.
   - Github copilot workloads (definitely not necessary)
 
 - Installed CMake 3.29.2
-  https://cmake.org/download/
+https://cmake.org/download/
 
 -  Anaconda version 2023.07-1 was installed on my machine already, used its build of Qt
   - Added Qt to my PATH environment variable:
@@ -103,24 +103,24 @@ Creating a distributable
 
 - Make a directory, e.g. v0.71.0, and copy test_gui.exe into it
 - Copy vc_redist.x64.exe into this directory from
-  Visual Studio's redistributable directory, e.g.
-  C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\v143
+Visual Studio's redistributable directory, e.g.
+C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Redist\MSVC\v143
 - Within this directory, run
-  windeployqt.exe test_gui.exe
-  to copy Qt requirements into this directory
+windeployqt.exe test_gui.exe
+to copy Qt requirements into this directory
 - Manually copy OpenCV required dlls from <opencv>\build\bin\Release:
-    - opencv_core490.dll
-    - opencv_imgcodecs490.dll
-    - opencv_imgproc490.dll
-    - opencv_videoio490.dll
+  - opencv_core490.dll
+  - opencv_imgcodecs490.dll
+  - opencv_imgproc490.dll
+  - opencv_videoio490.dll
 - Manually copy Spinnaker requirements to this directory:
-    - C:\Program Files\FLIR Systems\Spinnaker\bin\vs2015\SpinnakerC_v140.dll
-    - C:\Program Files\FLIR Systems\Spinnaker\lib64\vs2015\SpinVideoC_v140.lib
+  - C:\Program Files\FLIR Systems\Spinnaker\bin\vs2015\SpinnakerC_v140.dll
+  - C:\Program Files\FLIR Systems\Spinnaker\lib64\vs2015\SpinVideoC_v140.lib
 - Make a .bat file setup.bat with the following::
   @echo off
   vc_redist.x64.exe
   robocopy . "C:\Program Files\BIAS" /E
 
 - Follow these instructions to use iexpress.exe to create a self-extracting executable installer:
-  https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170
-  I copied all files in the deploy directory, which required going into each directory created by windeployqt and selecting all the files in there. 
+https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170
+I copied all files in the deploy directory, which required going into each directory created by windeployqt and selecting all the files in there. 
