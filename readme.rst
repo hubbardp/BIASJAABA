@@ -50,18 +50,19 @@ Developer Build Instructions
 Requirements
 ^^^^^^^^^^^^
 
-* Visual Studio 2022 Community Edition
-* CMake 3.29.2
-* Qt 5
-* OpenCV 4
-* Spinnaker 2.6.0 
+- Visual Studio 2022 Community Edition
+- CMake 3.29.2
+- Qt 5
+- OpenCV 4
+- Spinnaker 2.6.0 
 
 Notes
 ^^^^^
   
 Here is how I built BIAS on Windows, May 2024. 
 
-- Installed Visual Studio 2022 Community Edition. Selected the following workloads during install
+- Installed Visual Studio 2022 Community Edition.
+- Selected the following workloads during install
     - Desktop development with C++
     - Universal Windows Platform development (not sure if this is necessary)
     - Python development (probably not necessary)
