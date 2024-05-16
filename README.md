@@ -56,20 +56,20 @@ Here is how I built BIAS on Windows, May 2024.
 - Installed CMake 3.29.2 https://cmake.org/download/
 - Anaconda version 2023.07.1 was installed on my machine already, used its build of Qt
   - Added Qt to my PATH environment variable:
-  - <anaconda3>\Library\Lib\cmake\Qt5
-  - <anaconda3>\Library\plugins\platforms
-  - <anaconda3>\Library\bin
+  - \<anaconda3\>\Library\Lib\cmake\Qt5
+  - \<anaconda3\>\Library\plugins\platforms
+  - \<anaconda3\>\Library\bin
 - Cloned OpenCV 4 from https://github.com/opencv/opencv
 - Built OpenCV:
   - In CMake, set <opencv> as source directory and <opencv>/build as build directory
   - Clicked Configure
   - Made sure WITH_FFMPEG was checked (default)
-  - Made sure CMAKE_INSTALL_PREFIX was <opencv4>/build/install (default)
+  - Made sure CMAKE_INSTALL_PREFIX was \<opencv4\>/build/install (default)
   - Clicked Configure
   - Clicked Generate
   - Opened the project in VisualStudio
   - Chose Release x64 and Build
-- Added <opencv>\build\bin\Release to PATH environment variable
-    - Downloaded and installed Spinnaker 2.6.0. There are newer versions, code might not be compatible.
+- Added \<opencv\>\build\bin\Release to PATH environment variable
+- Downloaded and installed Spinnaker 2.6.0. There are newer versions, code might not be compatible.
 - Opened BIAS in CMake, configured, made sure Spinnaker and Video backends were selected, generated, opened in VisualStudio, and built. 
 - This builds test_gui.exe, which can be run by double-clicking or from the command line.
