@@ -68,8 +68,7 @@ Here is how I built BIAS on Windows, May 2024.
     - Python development (probably not necessary)
     - Github copilot workloads (definitely not necessary)
 
-- Installed CMake 3.29.2
-https://cmake.org/download/
+- Installed CMake 3.29.2 https://cmake.org/download/
 
 - Anaconda version 2023.07.1 was installed on my machine already, used its build of Qt
   - Added Qt to my PATH environment variable:
