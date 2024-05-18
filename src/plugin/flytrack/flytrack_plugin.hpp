@@ -10,6 +10,7 @@
 #include "rtn_status.hpp"
 #include <QDir>
 #include <QTextStream>
+#include <QProgressBar> // progress bar obsolete, but function is still there
 #include "flytrack_config.hpp"
 
 namespace cv
@@ -32,9 +33,9 @@ namespace bias
     };
 
     // helper functions
-    void loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage);
+    bool loadBackgroundModel(QString bgImageFilePath, cv::Mat& bgMedianImage);
     void computeBackgroundMedian(QString bgVideoFilePath, int nFramesBgEst, 
-        int lastFrameSample,cv::Mat& bgMedianImage,QProgressBar* progressBar);
+    int lastFrameSample,cv::Mat& bgMedianImage,QProgressBar* progressBar);
     int largestConnectedComponent(cv::Mat& isFg);
     void fitEllipse(cv::Mat& isFg, EllipseParams& flyEllipse);
     double mod2pi(double angle);
@@ -105,12 +106,12 @@ namespace bias
             void setUiEnabled();
             void setRoiUIValues();
             void connectWidgets();
-            void setBgEstParams(FlyTrackConfig& newConfig);
+            bool setBgImageFilePath(QString newBgImageFilePath);
             bool saveBgMedianImage(cv::Mat bgMedianImage, QString bgImageFilePath);
             void setPreviewImage(cv::Mat matImage, FlyTrackConfig config);
 
-            void setBackgroundModel();
-            void storeBackgroundModel(cv::Mat& bgMedianImage, FlyTrackConfig& config);
+            //void setBackgroundModel();
+            void setBackgroundModel(cv::Mat& bgMedianImage, FlyTrackConfig& config);
             cv::Mat circleROI(double centerX, double centerY, double centerRadius);
             void backgroundSubtraction();
             void setROI(FlyTrackConfig config);
@@ -184,7 +185,6 @@ namespace bias
             void loadBgPushButtonClicked();
             void roiUiChanged(int v);
             void bgImageFilePathToolButtonClicked();
-            void bgVideoFilePathToolButtonClicked();
             void logFilePathToolButtonClicked();
             void tmpOutDirToolButtonClicked();
             void computeBgModeComboBoxChanged();
