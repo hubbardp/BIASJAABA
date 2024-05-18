@@ -26,14 +26,11 @@ namespace bias
         public:
 
             // default parameters
-            static const QString DEFAULT_BG_VIDEO_FILE_PATH; // video to estimate background from
             static const QString DEFAULT_BG_IMAGE_FILE_PATH; // saved background median estimate
             static const QString DEFAULT_TMP_OUT_DIR; // temporary output directory
 
             static const int DEFAULT_BACKGROUND_THRESHOLD; // foreground/background threshold, between 0 and 255
-            static const int DEFAULT_N_FRAMES_BG_EST; // number of frames used for background estimation, set to 0 to use all frames
             static const int DEFAULT_N_FRAMES_SKIP_BG_EST; // number of frames skipped between frames added to background model
-            static const int DEFAULT_LAST_FRAME_SAMPLE; // last frame sampled for background estimation, set to 0 to use last frame of video
             static const FlyVsBgModeType DEFAULT_FLY_VS_BG_MODE; // whether the fly is darker than the background
             static const ROIType DEFAULT_ROI_TYPE; // type of ROI
             static const double DEFAULT_ROI_CENTER_X_FRAC; // x-coordinate of ROI center, relative
@@ -49,13 +46,10 @@ namespace bias
 
             // parameters
             bool computeBgMode; // flag of whether to compute the background (true) when camera is running or track a fly (false)
-            QString bgVideoFilePath; // video to estimate background from
             QString bgImageFilePath; // saved background median estimate
             QString tmpOutDir; // temporary output directory
             QString logFilePath; // log file path
             int backgroundThreshold; // foreground threshold
-            int nFramesBgEst; // number of frames used for background estimation, set to 0 to use all frames
-            int lastFrameSample; // last frame sampled for background estimation, set to 0 to use last frame of video
             int nFramesSkipBgEst; // number of frames to skip between frames added to background model
             FlyVsBgModeType flyVsBgMode; // whether the fly is darker than the background
             ROIType roiType; // type of ROI
@@ -71,7 +65,6 @@ namespace bias
 
             FlyTrackConfig();
             FlyTrackConfig FlyTrackConfig::copy();
-            void setBgVideoFilePath(QString bgVideoFilePath);
             void setRoiParams(ROIType roiTypeNew, double roiCenterXNew, double roiCenterYNew, double roiRadiusNew);
 
             RtnStatus setBgEstFromMap(QVariantMap configMap);

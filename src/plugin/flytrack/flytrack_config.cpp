@@ -8,13 +8,10 @@
 namespace bias
 {
 
-    const QString FlyTrackConfig::DEFAULT_BG_VIDEO_FILE_PATH = QString(""); // video to estimate background from
     const QString FlyTrackConfig::DEFAULT_BG_IMAGE_FILE_PATH = QString(""); // saved background median estimate
     const QString FlyTrackConfig::DEFAULT_TMP_OUT_DIR = QString("tmp"); // temporary output directory
     const int FlyTrackConfig::DEFAULT_BACKGROUND_THRESHOLD = 75; // foreground/background threshold, between 0 and 255
-    const int FlyTrackConfig::DEFAULT_N_FRAMES_BG_EST = 100; // number of frames used for background estimation, set to 0 to use all frames
     const int FlyTrackConfig::DEFAULT_N_FRAMES_SKIP_BG_EST = 500; // number of frames used for background estimation, set to 0 to use all frames
-    const int FlyTrackConfig::DEFAULT_LAST_FRAME_SAMPLE = 0; // last frame sampled for background estimation, set to 0 to use last frame of video
     const FlyVsBgModeType FlyTrackConfig::DEFAULT_FLY_VS_BG_MODE = FLY_DARKER_THAN_BG; // whether the fly is darker than the background
     const ROIType FlyTrackConfig::DEFAULT_ROI_TYPE = CIRCLE; // type of ROI
     const int FlyTrackConfig::DEFAULT_HISTORY_BUFFER_LENGTH = 5; // number of frames to buffer velocity, orientation
@@ -24,16 +21,13 @@ namespace bias
     const bool FlyTrackConfig::DEFAULT_DEBUG = false; // flag for debugging
     const bool FlyTrackConfig::DEFAULT_COMPUTE_BG_MODE = false; // flag of whether to compute the background (true) when camera is running or track a fly (false)
 
-    FlyTrackConfig::FlyTrackConfig()
+	FlyTrackConfig::FlyTrackConfig()
     {
         computeBgMode = DEFAULT_COMPUTE_BG_MODE;
-        bgVideoFilePath = DEFAULT_BG_VIDEO_FILE_PATH;
         bgImageFilePath = DEFAULT_BG_IMAGE_FILE_PATH;
         tmpOutDir = DEFAULT_TMP_OUT_DIR;
 		backgroundThreshold = DEFAULT_BACKGROUND_THRESHOLD;
-		nFramesBgEst = DEFAULT_N_FRAMES_BG_EST;
         nFramesSkipBgEst = DEFAULT_N_FRAMES_SKIP_BG_EST;
-		lastFrameSample = DEFAULT_LAST_FRAME_SAMPLE;
 		flyVsBgMode = DEFAULT_FLY_VS_BG_MODE;
 		roiType = DEFAULT_ROI_TYPE;
 		historyBufferLength = DEFAULT_HISTORY_BUFFER_LENGTH;
@@ -50,13 +44,10 @@ namespace bias
     FlyTrackConfig FlyTrackConfig::copy() {
     	FlyTrackConfig config;
         config.computeBgMode = computeBgMode;
-		config.bgVideoFilePath = bgVideoFilePath;
 		config.bgImageFilePath = bgImageFilePath;
 		config.tmpOutDir = tmpOutDir;
 		config.backgroundThreshold = backgroundThreshold;
-		config.nFramesBgEst = nFramesBgEst;
         config.nFramesSkipBgEst = nFramesSkipBgEst;
-		config.lastFrameSample = lastFrameSample;
 		config.flyVsBgMode = flyVsBgMode;
 		config.roiType = roiType;
 		config.historyBufferLength = historyBufferLength;
@@ -71,31 +62,15 @@ namespace bias
 		return config;
 	
     }
-    void FlyTrackConfig::setBgVideoFilePath(QString bgVideoFilePathIn) {
-        bgVideoFilePath = bgVideoFilePathIn;
-        if (!bgImageFilePath.isEmpty()) {
-            return;
-		}
-        // remove extension from bgVideoFilePath
-        QString bgVideoFilePathNoExt = bgVideoFilePath;
-        int lastDotIndex = bgVideoFilePath.lastIndexOf(".");
-        if (lastDotIndex > 0) {
-            bgVideoFilePathNoExt = bgVideoFilePath.left(lastDotIndex);
-        }
-        bgImageFilePath = bgVideoFilePathNoExt + QString("_bg.png");
-    }
 
     QString FlyTrackConfig::toString() {
         QString configStr;
         configStr += QString("computeBgMode: %1\n").arg(computeBgMode);
-        configStr += QString("bgVideoFilePath: %1\n").arg(bgVideoFilePath);
         configStr += QString("bgImageFilePath: %1\n").arg(bgImageFilePath);
         configStr += QString("tmpOutDir: %1\n").arg(tmpOutDir);
         configStr += QString("trackFileName: %1\n").arg(trackFileName);
         configStr += QString("tmpTrackFilePath: %1\n").arg(tmpTrackFilePath);
         configStr += QString("backgroundThreshold: %1\n").arg(backgroundThreshold);
-        configStr += QString("nFramesBgEst: %1\n").arg(nFramesBgEst);
-        configStr += QString("lastFrameSample: %1\n").arg(lastFrameSample);
         configStr += QString("nFramesSkipBgEst: %1\n").arg(nFramesSkipBgEst);
         configStr += QString("flyVsBgMode: %1\n").arg(flyVsBgMode);
         QString roiTypeString;
@@ -172,37 +147,12 @@ namespace bias
                 rtnStatus.appendMessage("unable to convert bgImageFilePath to string");
             }
         }
-        if (configMap.contains("bgVideoFilePath")) {
-            if (configMap["bgVideoFilePath"].canConvert<QString>()) {
-                setBgVideoFilePath(configMap["bgVideoFilePath"].toString());
-            }
-            else {
-				rtnStatus.success = false;
-				rtnStatus.appendMessage("unable to convert bgVideoFilePath to string");
-			}
-		}
-        if (configMap.contains("nFramesBgEst")) {
-            if(configMap["nFramesBgEst"].canConvert<int>()) 
-                nFramesBgEst = configMap["nFramesBgEst"].toInt();
-            else {
-				rtnStatus.success = false;
-				rtnStatus.appendMessage("unable to convert nFramesBgEst to int");
-			}
-        }
         if (configMap.contains("nFramesSkipBgEst")) {
             if (configMap["nFramesSkipBgEst"].canConvert<int>())
                 nFramesSkipBgEst = configMap["nFramesSkipBgEst"].toInt();
             else {
                 rtnStatus.success = false;
                 rtnStatus.appendMessage("unable to convert nFramesSkipBgEst to int");
-            }
-        }
-        if (configMap.contains("lastFrameSample")) {
-			if(configMap["lastFrameSample"].canConvert<int>()) 
-                lastFrameSample = configMap["lastFrameSample"].toInt();
-            else {
-                rtnStatus.success = false;
-                rtnStatus.appendMessage("unable to convert lastFrameSample to int");
             }
         }
 		return rtnStatus;
@@ -385,10 +335,7 @@ namespace bias
         QVariantMap configMap;
         QVariantMap bgEstMap;
         bgEstMap.insert("computeBgMode", computeBgMode);
-        bgEstMap.insert("bgVideoFilePath", bgVideoFilePath);
         bgEstMap.insert("bgImageFilePath", bgImageFilePath);
-        bgEstMap.insert("nFramesBgEst", nFramesBgEst);
-        bgEstMap.insert("lastFrameSample", lastFrameSample);
         bgEstMap.insert("nFramesSkipBgEst", nFramesSkipBgEst);
 
         QVariantMap roiMap;
