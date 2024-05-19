@@ -16,7 +16,8 @@ transform = lambda x: scale*x
 
 # plotting parameters
 bkgdColor = pygame.Color(255,255,255,255)
-flyColor = pygame.Color(0,0,0,255)
+dotColor = pygame.Color(0,0,0,255)
+flyColor = pygame.Color(123,123,123,255)
 arenaColor = pygame.Color(0, 0, 0, 255)
 arenaLineWidth = 2
 
@@ -24,9 +25,9 @@ arenaLineWidth = 2
 pygameFlags = pygame.DOUBLEBUF
 bpp = 8
 
-# size of a fly -- currently we are doing a circle, and the radius is the semimajor axis length
-flyA = 11.77
-flyB =  4.01
+# size of a dot -- currently we are doing a circle, and the radius is the semimajor axis length
+dotA = 11.77
+dotB =  4.01
 
 # for closed-loop experiments: urls to communicate with BIAS
 getBIASUrl = lambda s: 'http://127.0.0.1:5010/?plugin-cmd={%22plugin%22:%22FlyTrack%22,%22cmd%22:%22'+s+'%22}'
@@ -37,16 +38,16 @@ arenaParamsUrl = getBIASUrl('get-arena-params')
 def OpenLoopCircle():
     """
     OpenLoopCircle()
-    Draw a fly that goes around in a circle
+    Draw a dot that goes around in a circle
     """
 
-    # How far from arena center is the fly's trajectory
-    flyDistCenter = 300
+    # How far from arena center is the dot's trajectory
+    dotDistCenter = 300
 
     # how fast to update the screen
     screenFPS = 60.
     
-    # how fast should the fly go
+    # how fast should the dot go
     dtheta_dt_deg_per_sec = 30
     dtheta_dt = dtheta_dt_deg_per_sec * np.pi / 180.0
 
@@ -66,10 +67,10 @@ def OpenLoopCircle():
     theta = 0.0
 
     # size of circle to plot
-    flyRadius = flyA*scale
-    # initialize fly center
-    flyPos = pygame.Vector2(transform(arena['x'] + flyDistCenter*np.cos(theta)),
-                            transform(arena['y'] + flyDistCenter*np.sin(theta)))
+    dotRadius = dotA*scale
+    # initialize dot center
+    dotPos = pygame.Vector2(transform(arena['x'] + dotDistCenter*np.cos(theta)),
+                            transform(arena['y'] + dotDistCenter*np.sin(theta)))
 
     while running:
         # poll for events
@@ -86,12 +87,12 @@ def OpenLoopCircle():
                            width=arenaLineWidth)
 
         # draw the stimulus
-        pygame.draw.circle(screen, flyColor, flyPos, flyRadius)
+        pygame.draw.circle(screen, dotColor, dotPos, dotRadius)
 
         # update position
         theta = dtheta_dt * t
-        flyPos.x = transform(arena['x']+flyDistCenter*np.cos(theta))
-        flyPos.y = transform(arena['y']+flyDistCenter*np.sin(theta))    
+        dotPos.x = transform(arena['x']+dotDistCenter*np.cos(theta))
+        dotPos.y = transform(arena['y']+dotDistCenter*np.sin(theta))    
 
         # flip() the display to put your work on screen
         pygame.display.flip()
@@ -104,9 +105,9 @@ def OpenLoopCircle():
 
     pygame.quit()
 
-def ClosedLoopOnFly(stimFun=None):
+def ClosedLoop(stimFun=None,debugPlotFly=False):
     """
-    ClosedLoopOnFly(stimFun=None)
+    ClosedLoopOnFly(stimFun=None,debugPlotFly=False)
     Get the current position of the fly from BIAS. 
     Plot the stimulus dot in a position relative to it, 
     as defined by input function stimFun. 
@@ -114,7 +115,7 @@ def ClosedLoopOnFly(stimFun=None):
     as a dict. It modifies these parameters in place to 
     set the desired location of the stimulus. 
     """
-
+    
     # get arena location
     with urllib.request.urlopen(arenaParamsUrl) as url:
         data = json.load(url)
@@ -131,9 +132,14 @@ def ClosedLoopOnFly(stimFun=None):
     arenaRadius = arena['r']*scale
 
     # size of the stimulus
-    flyRadius = flyA*scale
-    flyPos = pygame.Vector2(0,0)
+    dotRadius = dotA*scale
+    dotPos = pygame.Vector2(0,0)
 
+    # plot the fly for debugging
+    if debugPlotFly:
+        flyRadius = dotA/2*scale
+        flyPos = pygame.Vector2(0,0)
+    
     # keep track of how many frames we skip
     maxFrameSkipRecord = 10
     freqSkipFrame = np.zeros(maxFrameSkipRecord)
@@ -163,9 +169,11 @@ def ClosedLoopOnFly(stimFun=None):
             if event.type == pygame.QUIT:
                 running = False
 
-        # erase the fly
+        # erase the dot
         if not isFirst:
-            pygame.draw.circle(screen, bkgdColor, flyPos, flyRadius*2)
+            pygame.draw.circle(screen, bkgdColor, dotPos, dotRadius*2)
+            if debugPlotFly:
+                pygame.draw.circle(screen, bkgdColor, flyPos, flyRadius*2)                
         isFirst = False
 
         # get current fly position
@@ -183,13 +191,18 @@ def ClosedLoopOnFly(stimFun=None):
         currFrame = data['frame']
         dFrame = currFrame - lastFrame
 
+        if debugPlotFly:
+            flyPos.x = transform(data['x'])
+            flyPos.y = transform(data['y'])
+            pygame.draw.circle(screen, flyColor, flyPos, flyRadius)
+        
         # apply optional transformation to modify the stimulus location
         if stimFun is not None:
             stimFun(data)
 
         # move the stimulus dot
-        flyPos.x = transform(data['x'])
-        flyPos.y = transform(data['y'])
+        dotPos.x = transform(data['x'])
+        dotPos.y = transform(data['y'])
 
         # store number of frames skipped
         if dFrame > maxFrameSkipRecord:
@@ -204,8 +217,8 @@ def ClosedLoopOnFly(stimFun=None):
         #pygame.draw.circle(screen, arenaColor, arenaPos, arenaRadius,
         #                   width=arenaLineWidth)
 
-        # draw the fly dot
-        pygame.draw.circle(screen, flyColor, flyPos, flyRadius)
+        # draw the dot dot
+        pygame.draw.circle(screen, dotColor, dotPos, dotRadius)
 
         # flip() the display to put your work on screen
         pygame.display.flip()
@@ -228,13 +241,13 @@ def inFront(data):
     inFront(data)
     Set stimulus position to be 10 pixels in front of the tracked fly.
     """
-    offset = 10
+    offset = 50
     dx = offset*np.cos(data['theta'])
     dy = offset*np.sin(data['theta'])
     data['x'] += dx
     data['y'] += dy
     
 if __name__ == "__main__":
-    ClosedLoopOnFly()
+    ClosedLoop(inFront,true)
     #OpenLoopCircle()
 
