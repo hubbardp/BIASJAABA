@@ -20,12 +20,13 @@ flyColor = pygame.Color(0,0,0,255)
 arenaColor = pygame.Color(0, 0, 0, 255)
 arenaLineWidth = 2
 
+# flags to make pygame faster
+pygameFlags = pygame.DOUBLEBUF
+bpp = 8
+
 # size of a fly -- currently we are doing a circle, and the radius is the semimajor axis length
 flyA = 11.77
 flyB =  4.01
-
-# limit on how often to refresh the screen
-minDt = 100 # in milliseconds
 
 # for closed-loop experiments: urls to communicate with BIAS
 getBIASUrl = lambda s: 'http://127.0.0.1:5010/?plugin-cmd={%22plugin%22:%22FlyTrack%22,%22cmd%22:%22'+s+'%22}'
@@ -42,9 +43,12 @@ def OpenLoopCircle():
     # How far from arena center is the fly's trajectory
     flyDistCenter = 300
 
+    # how fast to update the screen
+    screenFPS = 60.
+    
     # how fast should the fly go
-    dtheta_dt_deg_per_sec = 15
-    dtheta_dt = dtheta_dt_deg_per_sec * np.pi / 180.0 * minDt / 1.0e3
+    dtheta_dt_deg_per_sec = 30
+    dtheta_dt = dtheta_dt_deg_per_sec * np.pi / 180.0
 
     # hard-coded arena location
     arena = {'x': 466.0, 'y': 483.0, 'r': 433.0}
@@ -57,9 +61,9 @@ def OpenLoopCircle():
     clock = pygame.time.Clock()
     running = True
 
-    # inital time and location
+    # inital time
+    t = 0.0
     theta = 0.0
-    dt = 0.0
 
     # size of circle to plot
     flyRadius = flyA*scale
@@ -85,7 +89,7 @@ def OpenLoopCircle():
         pygame.draw.circle(screen, flyColor, flyPos, flyRadius)
 
         # update position
-        theta += dtheta_dt
+        theta = dtheta_dt * t
         flyPos.x = transform(arena['x']+flyDistCenter*np.cos(theta))
         flyPos.y = transform(arena['y']+flyDistCenter*np.sin(theta))    
 
@@ -95,7 +99,9 @@ def OpenLoopCircle():
         # limits FPS to minDt
         # dt is delta time in seconds since last frame, used for framerate-
         # independent physics.
-        dt = clock.tick(minDt) / 1000
+        dt = clock.tick(screenFPS) / 1000
+        t+=dt
+
     pygame.quit()
 
 def ClosedLoopOnFly(stimFun=None):
@@ -135,7 +141,7 @@ def ClosedLoopOnFly(stimFun=None):
 
     # pygame setup
     pygame.init()
-    screen = pygame.display.set_mode(screenSz)
+    screen = pygame.display.set_mode(screenSz,pygameFlags,bpp)
     clock = pygame.time.Clock()
     running = True
 
@@ -207,7 +213,7 @@ def ClosedLoopOnFly(stimFun=None):
         # limits FPS to minDt
         # dt is delta time in seconds since last frame, used for framerate-
         # independent physics.
-        dt = clock.tick(minDt) / 1000
+        #dt = clock.tick(minDt) / 1000
         
     pygame.quit()
 
@@ -229,6 +235,6 @@ def inFront(data):
     data['y'] += dy
     
 if __name__ == "__main__":
-    ClosedLoopOnFly(inFront)
+    ClosedLoopOnFly()
     #OpenLoopCircle()
 
