@@ -15,6 +15,7 @@ namespace bias
     const FlyVsBgModeType FlyTrackConfig::DEFAULT_FLY_VS_BG_MODE = FLY_DARKER_THAN_BG; // whether the fly is darker than the background
     const ROIType FlyTrackConfig::DEFAULT_ROI_TYPE = CIRCLE; // type of ROI
     const int FlyTrackConfig::DEFAULT_HISTORY_BUFFER_LENGTH = 5; // number of frames to buffer velocity, orientation
+	const int FlyTrackConfig::DEFAULT_MAX_TRACK_QUEUE_LENGTH = 10000; // maximum number of track frames to buffer
     const double FlyTrackConfig::DEFAULT_MIN_VELOCITY_MAGNITUDE = 1.0; // minimum velocity magnitude in pixels/frame to consider fly moving
     const double FlyTrackConfig::DEFAULT_HEAD_TAIL_WEIGHT_VELOCITY = 3.0; // weight of velocity dot product in head-tail orientation resolution
     const double FlyTrackConfig::DEFAULT_MIN_VEL_MATCH_DOTPROD = 0.25; // minimum dot product for velocity matching
@@ -31,6 +32,7 @@ namespace bias
 		flyVsBgMode = DEFAULT_FLY_VS_BG_MODE;
 		roiType = DEFAULT_ROI_TYPE;
 		historyBufferLength = DEFAULT_HISTORY_BUFFER_LENGTH;
+		maxTrackQueueLength = DEFAULT_MAX_TRACK_QUEUE_LENGTH;
 		minVelocityMagnitude = DEFAULT_MIN_VELOCITY_MAGNITUDE;
 		headTailWeightVelocity = DEFAULT_HEAD_TAIL_WEIGHT_VELOCITY;
 		DEBUG = DEFAULT_DEBUG;
@@ -51,6 +53,7 @@ namespace bias
 		config.flyVsBgMode = flyVsBgMode;
 		config.roiType = roiType;
 		config.historyBufferLength = historyBufferLength;
+		config.maxTrackQueueLength = maxTrackQueueLength;
 		config.minVelocityMagnitude = minVelocityMagnitude;
 		config.headTailWeightVelocity = headTailWeightVelocity;
 		config.DEBUG = DEBUG;
@@ -80,6 +83,7 @@ namespace bias
         configStr += QString("roiCenterY: %1\n").arg(roiCenterY);
         configStr += QString("roiRadius: %1\n").arg(roiRadius);
         configStr += QString("historyBufferLength: %1\n").arg(historyBufferLength);
+        configStr += QString("maxTrackQueueLength: %1\n").arg(maxTrackQueueLength);
         configStr += QString("minVelocityMagnitude: %1\n").arg(minVelocityMagnitude);
         configStr += QString("headTailWeightVelocity: %1\n").arg(headTailWeightVelocity);
         configStr += QString("DEBUG: %1\n").arg(DEBUG);
@@ -273,6 +277,14 @@ namespace bias
                 rtnStatus.appendMessage("unable to convert historyBufferLength to int");
             }
         }
+        if (configMap.contains("maxTrackQueueLength")) {
+            if (configMap["maxTrackQueueLength"].canConvert<int>())
+                maxTrackQueueLength = configMap["maxTrackQueueLength"].toInt();
+            else {
+                rtnStatus.success = false;
+                rtnStatus.appendMessage("unable to convert maxTrackQueueLength to int");
+            }
+        }
         if (configMap.contains("minVelocityMagnitude")) {
             if (configMap["minVelocityMagnitude"].canConvert<double>())
                 minVelocityMagnitude = configMap["minVelocityMagnitude"].toDouble();
@@ -358,6 +370,7 @@ namespace bias
         headTailMap.insert("headTailWeightVelocity", headTailWeightVelocity);
 
         QVariantMap miscMap;
+        miscMap.insert("maxTrackQueueLength", maxTrackQueueLength);
         miscMap.insert("DEBUG", DEBUG);
         miscMap.insert("tmpOutDir", tmpOutDir);
         miscMap.insert("trackFileName", trackFileName);

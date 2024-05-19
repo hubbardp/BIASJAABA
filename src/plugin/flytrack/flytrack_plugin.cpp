@@ -359,6 +359,22 @@ namespace bias
                 value = ellipseToJson(ell);
             }
         }
+		else if (cmd == QString("get-last-clear-track"))
+		{
+			EllipseParams ell;
+			rtnStatus = getLastClearTrack(ell);
+			if (rtnStatus.success) {
+				value = ellipseToJson(ell);
+			}
+		}
+        else if (cmd == QString("get-arena-params"))
+		{
+            EllipseParams ell;
+			rtnStatus = getArenaParams(ell);
+            if (rtnStatus.success) {
+                value = ellipseToJson(ell);
+            }
+        }
         else
         {
             QString errMsgText = QString("FlyTrackPlugin::runPluginCmd: unknown cmd %1").arg(cmd);
@@ -415,6 +431,41 @@ namespace bias
         flyEllipseDequePtr_->releaseLock();
         return rtnStatus;
 
+    }
+
+    RtnStatus FlyTrackPlugin::getLastClearTrack(EllipseParams& ell) {
+        RtnStatus rtnStatus;
+        rtnStatus.success = false;
+        rtnStatus.message = QString("");
+        if (flyEllipseDequePtr_ == NULL) {
+            rtnStatus.message = QString("Ellipse queue not allocated");
+            return rtnStatus;
+        }
+        flyEllipseDequePtr_->acquireLock();
+        if (flyEllipseDequePtr_->empty()) {
+            rtnStatus.message = QString("Ellipse queue empty");
+        }
+        else {
+            ell = flyEllipseDequePtr_->back();
+			flyEllipseDequePtr_->clear();
+            rtnStatus.success = true;
+        }
+        flyEllipseDequePtr_->releaseLock();
+        return rtnStatus;
+
+    }
+
+    RtnStatus FlyTrackPlugin::getArenaParams(EllipseParams& ell) {
+        RtnStatus rtnStatus;
+        rtnStatus.success = true;
+        rtnStatus.message = QString("");
+        if (config_.roiType == NONE) return rtnStatus;
+		ell.x = config_.roiCenterX;
+		ell.y = config_.roiCenterY;
+		ell.a = config_.roiRadius;
+		ell.b = config_.roiRadius;
+		ell.theta = 0.0;
+        return rtnStatus;
     }
 
     QVariantMap FlyTrackPlugin::getConfigAsMap()  
@@ -1206,6 +1257,9 @@ namespace bias
         // add ellipse to history
         flyEllipseHistory_.push_back(flyEllipse_);
         flyEllipseDequePtr_->acquireLock();
+		if (flyEllipseDequePtr_->size() >= config_.maxTrackQueueLength-1) {
+			flyEllipseDequePtr_->pop_front();
+		}
         flyEllipseDequePtr_->push_back(flyEllipse_);
         flyEllipseDequePtr_->releaseLock();
     }

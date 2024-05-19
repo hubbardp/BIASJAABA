@@ -70,6 +70,8 @@ namespace bias
             void getCurrentImageComputeBgMode(cv::Mat& currentImageCopy);
             RtnStatus popFrontTrack(EllipseParams& ell);
             RtnStatus popBackTrack(EllipseParams& ell);
+            RtnStatus getLastClearTrack(EllipseParams& ell);
+            RtnStatus getArenaParams(EllipseParams& ell);
 
             QPointer<CameraWindow> getCameraWindow();
 

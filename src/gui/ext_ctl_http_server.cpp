@@ -375,7 +375,7 @@ namespace bias
 
     QVariantMap ExtCtlHttpServer::handlePluginCmd(QString jsonPluginCmd)
     {
-        qDebug() << __FUNCTION__ << jsonPluginCmd;
+        //qDebug() << __FUNCTION__ << jsonPluginCmd;
         QVariantMap cmdMap;
         QByteArray jsonPluginCmdArray = jsonPluginCmd.toLatin1();
         QString value = QString("");

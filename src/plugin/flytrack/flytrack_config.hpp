@@ -37,6 +37,7 @@ namespace bias
             static const double DEFAULT_ROI_CENTER_Y_FRAC; // y-coordinate of ROI center, relative
             static const double DEFAULT_ROI_RADIUS_FRAC; // radius of ROI, relative
             static const int DEFAULT_HISTORY_BUFFER_LENGTH; // number of frames to buffer velocity, orientation
+            static const int DEFAULT_MAX_TRACK_QUEUE_LENGTH; // maximum number of track frames to buffer
             static const double DEFAULT_MIN_VELOCITY_MAGNITUDE; // minimum velocity magnitude in pixels/frame to consider fly moving
             static const double DEFAULT_HEAD_TAIL_WEIGHT_VELOCITY; // weight of velocity dot product in head-tail orientation resolution
             static const double DEFAULT_MIN_VEL_MATCH_DOTPROD; // minimum dot product for velocity matching
@@ -57,6 +58,7 @@ namespace bias
             double roiCenterY; // y-coordinate of ROI center
             double roiRadius; // radius of ROI
             int historyBufferLength; // number of frames to buffer velocity, orientation
+            int maxTrackQueueLength; // number of tracks to buffer
             double minVelocityMagnitude; // minimum velocity magnitude in pixels/frame to consider fly moving
             double headTailWeightVelocity; // weight of velocity dot product in head-tail orientation resolution
             bool DEBUG; // flag for debugging
