@@ -248,6 +248,6 @@ def inFront(data):
     data['y'] += dy
     
 if __name__ == "__main__":
-    ClosedLoop(inFront,true)
+    ClosedLoop(inFront,True)
     #OpenLoopCircle()
 
