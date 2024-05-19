@@ -26,14 +26,21 @@ pygameFlags = pygame.DOUBLEBUF
 bpp = 8
 
 # size of a dot -- currently we are doing a circle, and the radius is the semimajor axis length
-dotA = 11.77
-dotB =  4.01
+dotA = 12
+dotB =  5
 
 # for closed-loop experiments: urls to communicate with BIAS
 getBIASUrl = lambda s: 'http://127.0.0.1:5010/?plugin-cmd={%22plugin%22:%22FlyTrack%22,%22cmd%22:%22'+s+'%22}'
 flyTrackUrl = getBIASUrl('get-last-clear-track')
 arenaParamsUrl = getBIASUrl('get-arena-params')
 
+def drawEllipse(screen,ell,color,width=0):
+  rectSz = (ell['a']*2,ell['b']*2)
+  rectCenter = (ell['x'],ell['y'])
+  shapeSurf = pygame.Surface(rectSz, pygame.SRCALPHA)
+  pygame.draw.ellipse(shapeSurf, color, (0, 0, *rectSz), width)
+  rotatedSurf = pygame.transform.rotate(shapeSurf, -ell['theta']*180./np.pi)
+  screen.blit(rotatedSurf, rotatedSurf.get_rect(center = rectCenter))
 
 def OpenLoopCircle():
     """
@@ -86,13 +93,18 @@ def OpenLoopCircle():
         pygame.draw.circle(screen, arenaColor, arenaPos, arenaRadius,
                            width=arenaLineWidth)
 
-        # draw the stimulus
-        pygame.draw.circle(screen, dotColor, dotPos, dotRadius)
-
         # update position
         theta = dtheta_dt * t
-        dotPos.x = transform(arena['x']+dotDistCenter*np.cos(theta))
-        dotPos.y = transform(arena['y']+dotDistCenter*np.sin(theta))    
+
+        # draw the stimulus
+        ell = {
+          'x': transform(arena['x']+dotDistCenter*np.cos(theta)),
+          'y': transform(arena['y']+dotDistCenter*np.sin(theta)),
+          'a': scale*dotA,
+          'b': scale*dotB,
+          'theta': theta+np.pi/2
+        }
+        drawEllipse(screen,ell,dotColor)
 
         # flip() the display to put your work on screen
         pygame.display.flip()
@@ -150,15 +162,6 @@ def ClosedLoop(stimFun=None,debugPlotFly=False):
     screen = pygame.display.set_mode(screenSz,pygameFlags,bpp)
     clock = pygame.time.Clock()
     running = True
-
-                
-    # fill the arena with a color to wipe away anything from last frame
-    screen.fill(bkgdColor)
-
-    # draw the arena
-    pygame.draw.circle(screen, arenaColor, arenaPos, arenaRadius,
-                       width=arenaLineWidth)
-
     isFirst = True
     
     while running:
@@ -168,14 +171,7 @@ def ClosedLoop(stimFun=None,debugPlotFly=False):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
-        # erase the dot
-        if not isFirst:
-            pygame.draw.circle(screen, bkgdColor, dotPos, dotRadius*2)
-            if debugPlotFly:
-                pygame.draw.circle(screen, bkgdColor, flyPos, flyRadius*2)                
-        isFirst = False
-
+                
         # get current fly position
         with urllib.request.urlopen(flyTrackUrl) as url:
             data = json.load(url)
@@ -191,18 +187,30 @@ def ClosedLoop(stimFun=None,debugPlotFly=False):
         currFrame = data['frame']
         dFrame = currFrame - lastFrame
 
+        # fill the arena with a color to wipe away anything from last frame
+        screen.fill(bkgdColor)
+
+        # draw the arena
+        pygame.draw.circle(screen, arenaColor, arenaPos, arenaRadius,
+                          width=arenaLineWidth)
+
         if debugPlotFly:
-            flyPos.x = transform(data['x'])
-            flyPos.y = transform(data['y'])
-            pygame.draw.circle(screen, flyColor, flyPos, flyRadius)
+          drawEllipse(screen,{'x':transform(data['x']),
+                              'y':transform(data['y']),
+                              'a':scale*data['a'],
+                              'b':scale*data['b'],
+                              'theta':data['theta']},flyColor)
+          # flyPos.x = transform(data['x'])
+          # flyPos.y = transform(data['y'])
+          # pygame.draw.circle(screen, flyColor, flyPos, flyRadius)
         
         # apply optional transformation to modify the stimulus location
         if stimFun is not None:
             stimFun(data)
 
         # move the stimulus dot
-        dotPos.x = transform(data['x'])
-        dotPos.y = transform(data['y'])
+        # dotPos.x = transform(data['x'])
+        # dotPos.y = transform(data['y'])
 
         # store number of frames skipped
         if dFrame > maxFrameSkipRecord:
@@ -210,23 +218,16 @@ def ClosedLoop(stimFun=None,debugPlotFly=False):
         if not np.isnan(dFrame) and dFrame >= 1:
             freqSkipFrame[dFrame-1] += 1
                 
-        # fill the arena with a color to wipe away anything from last frame
-        #screen.fill(bkgdColor)
-
-        # draw the arena
-        #pygame.draw.circle(screen, arenaColor, arenaPos, arenaRadius,
-        #                   width=arenaLineWidth)
-
-        # draw the dot dot
-        pygame.draw.circle(screen, dotColor, dotPos, dotRadius)
+        # draw the dot
+        drawEllipse(screen,{'x':transform(data['x']),
+                            'y':transform(data['y']),
+                            'a':scale*dotA,
+                            'b':scale*dotB,
+                            'theta':data['theta']},dotColor)        
+        #pygame.draw.circle(screen, dotColor, dotPos, dotRadius)
 
         # flip() the display to put your work on screen
         pygame.display.flip()
-
-        # limits FPS to minDt
-        # dt is delta time in seconds since last frame, used for framerate-
-        # independent physics.
-        #dt = clock.tick(minDt) / 1000
         
     pygame.quit()
 
@@ -241,9 +242,9 @@ def inFront(data):
     inFront(data)
     Set stimulus position to be 10 pixels in front of the tracked fly.
     """
-    offset = 50
-    dx = offset*np.cos(data['theta'])
-    dy = offset*np.sin(data['theta'])
+    offset = 20
+    dx = (offset+data['a'])*np.cos(data['theta'])
+    dy = (offset+data['a'])*np.sin(data['theta'])
     data['x'] += dx
     data['y'] += dy
     
