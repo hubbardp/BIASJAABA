@@ -1526,6 +1526,7 @@ namespace bias
     QString ellipseToJson(EllipseParams ell) {
         QString json = QString("{");
         json += QString("\"frame\": %1,").arg(ell.frame);
+        json += QString("\"timestamp\": %1,").arg(QDateTime::currentMSecsSinceEpoch());
         json += QString("\"x\": %1,").arg(ell.x);
         json += QString("\"y\": %1,").arg(ell.y);
         json += QString("\"a\": %1,").arg(ell.a);
